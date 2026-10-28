@@ -26,6 +26,19 @@ Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 | Clear the plate     | Reset button         | `Backspace`     |
 | Recipe Book         | Recipes button       | `R` (toggle), `Esc` (close) |
 
+## Dev console (testing only)
+
+Under `npm run dev`, press **`` ` ``** (backtick) or click **`>_`** (bottom-left)
+to open a command box. Up/Down recall previous commands; `` ` `` or `Esc` closes it.
+It isn't included in production builds.
+
+| Command     | What it does |
+| ----------- | ------------ |
+| `help`      | List all commands |
+| `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
+
+To add a command, add an entry in `createDevCommands` in `src/debug/commands.ts`.
+
 ## Project layout
 
 ```
@@ -38,6 +51,7 @@ src/
   logic/             pure game rules, no Phaser; each has a *.test.ts
   ui/                reusable drawing pieces (buttons, bubble, plate, book)
   scenes/            Phaser scenes that wire logic and ui together
+  debug/             dev console and its commands (dev builds only)
 ```
 
 The rule of thumb: **content goes in `data/`, rules go in `logic/` (with

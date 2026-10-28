@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
+import { devSettings } from '../debug/devSettings';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { createFloorState, stepFloor, type Customer, type FloorState } from '../logic/floor';
 import { parseLayout, type Layout, type Point, type TileKind } from '../logic/layout';
@@ -110,7 +111,9 @@ export class FloorScene extends Phaser.Scene {
 
   update(_time: number, deltaMs: number): void {
     const seconds = deltaMs / 1000;
-    this.floor = stepFloor(this.floor, this.layout, seconds);
+    // Dev console "speed" command scales time for the critters only; the
+    // player keeps walking at normal speed.
+    this.floor = stepFloor(this.floor, this.layout, seconds * devSettings.floorTimeScale);
     this.drawTableOverlay();
     this.syncCustomerSprites();
 
