@@ -1,5 +1,12 @@
 // Tuning for the cafe floor. Speeds are in tiles per second, times in seconds.
-export interface FloorConfig {
+//
+// Tip: under `npm run dev`, the dev console's `config` and `set` commands
+// change these live while you play. Copy values you like back into this file.
+//
+// A `type` rather than an `interface` on purpose: TypeScript treats a type
+// alias as "an object of numbers" (assignable to Record<string, number>),
+// which lets the dev console list and edit every field generically.
+export type FloorConfig = {
   playerSpeed: number;
   customerSpeed: number;
   /** Seconds before the first customer walks in. */
@@ -18,7 +25,7 @@ export interface FloorConfig {
   seatWaitSeconds: number;
   /** Seconds to wipe ONE mess, once standing next to the table (two messes take twice as long). */
   cleanSeconds: number;
-}
+};
 
 export const FLOOR_CONFIG: FloorConfig = {
   playerSpeed: 6,

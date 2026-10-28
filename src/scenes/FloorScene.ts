@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
-import { devSettings } from '../debug/devSettings';
 import { FLOOR_CONFIG } from '../data/floorConfig';
+import { devSettings } from '../debug/devSettings';
 import {
   cleanSeats,
   createFloorState,
@@ -11,9 +11,9 @@ import {
   type Customer,
   type FloorState,
 } from '../logic/floor';
-import { parseLayout, type Layout, type Point, type TileKind } from '../logic/layout';
+import { parseLayout, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import { cleaningProgress, createPlayer, stepPlayer, tapTile, type PlayerState } from '../logic/player';
-import { destination, isMoving, walkerPosition } from '../logic/walker';
+import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT } from '../ui/theme';
 
@@ -53,8 +53,8 @@ const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
  * data/cafeLayout.ts changes the room without touching this file.
  *
  * Like PrepScene, this only wires things up: the rules live in logic/
- * (walker, pathfinding, floor, player); this class turns taps into commands and
- * draws the current state each frame.
+ * (walker, pathfinding, floor, player); this class turns taps into commands
+ * and draws the current state each frame.
  */
 export class FloorScene extends Phaser.Scene {
   private layout!: Layout;
@@ -135,12 +135,8 @@ export class FloorScene extends Phaser.Scene {
     this.drawProgressBar();
     this.syncCustomerSprites();
 
-    const pos = walkerPosition(this.player.walker);
-    // Round to whole pixels so the sprite never sits between pixels (blurry).
-    this.playerSprite.setPosition(
-      Math.round(this.origin.x + pos.x * TILE_SIZE),
-      Math.round(this.origin.y + pos.y * TILE_SIZE),
-    );
+    const pos = this.walkerToPixel(this.player.walker);
+    this.playerSprite.setPosition(pos.x, pos.y);
     if (!isMoving(this.player.walker) && !this.player.cleaning) {
       this.destinationMarker.setVisible(false);
     }
@@ -153,7 +149,7 @@ export class FloorScene extends Phaser.Scene {
 
     // Outline the table being cleaned, or else the tile being walked to.
     const target = next.cleaning
-      ? this.layout.tables.find((t) => t.id === next.cleaning!.tableId)!.position
+      ? tableById(this.layout, next.cleaning.tableId).position
       : destination(next.walker);
     const marker = this.tileToPixel(target);
     this.destinationMarker.setPosition(marker.x + 1, marker.y + 1).setVisible(true);
@@ -162,6 +158,18 @@ export class FloorScene extends Phaser.Scene {
   /** Top-left pixel of a tile. */
   private tileToPixel(p: Point): Point {
     return { x: this.origin.x + p.x * TILE_SIZE, y: this.origin.y + p.y * TILE_SIZE };
+  }
+
+  /**
+   * Where to draw a walker (player or customer), which may be between tiles.
+   * Rounded to whole pixels so sprites never sit between pixels (blurry).
+   */
+  private walkerToPixel(walker: Walker): Point {
+    const pos = walkerPosition(walker);
+    return {
+      x: Math.round(this.origin.x + pos.x * TILE_SIZE),
+      y: Math.round(this.origin.y + pos.y * TILE_SIZE),
+    };
   }
 
   /** Which tile a screen pixel falls in (may be outside the grid). */
@@ -240,7 +248,7 @@ export class FloorScene extends Phaser.Scene {
 
     for (const c of this.floor.customers) {
       if (c.phase !== 'eating' || !c.seat) continue;
-      const table = this.layout.tables.find((t) => t.id === c.seat!.tableId)!;
+      const table = tableById(this.layout, c.seat.tableId);
       const { x, y } = this.seatSideCenter(table.position, c.seat.seat);
       g.fillStyle(COLORS.plate);
       g.fillRect(x - 3, y - 3, 6, 6);
@@ -271,7 +279,7 @@ export class FloorScene extends Phaser.Scene {
     const progress = cleaningProgress(this.player);
     if (progress === null || !this.player.cleaning) return;
 
-    const table = this.layout.tables.find((t) => t.id === this.player.cleaning!.tableId)!;
+    const table = tableById(this.layout, this.player.cleaning.tableId);
     const { x, y } = this.tileToPixel(table.position);
     const barWidth = TILE_SIZE - 2;
     g.fillStyle(COLORS.ink);
@@ -295,11 +303,8 @@ export class FloorScene extends Phaser.Scene {
         sprite = this.createCustomerSprite(c.id);
         this.customerSprites.set(c.id, sprite);
       }
-      const pos = walkerPosition(c.walker);
-      sprite.body.setPosition(
-        Math.round(this.origin.x + pos.x * TILE_SIZE),
-        Math.round(this.origin.y + pos.y * TILE_SIZE),
-      );
+      const pos = this.walkerToPixel(c.walker);
+      sprite.body.setPosition(pos.x, pos.y);
       sprite.label.setText(statusLabel(c));
     }
     for (const [id, sprite] of this.customerSprites) {
@@ -321,7 +326,7 @@ export class FloorScene extends Phaser.Scene {
     g.fillStyle(COLORS.ink);
     g.fillRect(5, 6, 2, 2); // eyes
     g.fillRect(9, 6, 2, 2);
-    // Small status text above the head ("..." ordering, "?" waiting).
+    // Small status text above the head; see statusLabel().
     const label = this.add.text(8, -2, '', TEXT.label).setOrigin(0.5, 1);
     const body = this.add.container(0, 0, [g, label]).setDepth(5);
     return { body, label };

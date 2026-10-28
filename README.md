@@ -44,6 +44,13 @@ It isn't included in production builds.
 | ----------- | ------------ |
 | `help`      | List all commands |
 | `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
+| `config`    | List every floor setting (`src/data/floorConfig.ts`) and its current value; changed ones show the file's value too |
+| `set <name> <value>` | Change a floor setting live, e.g. `set eatSecondsMax 15` |
+| `reset`     | Put all floor settings and the speed back to normal |
+
+**Tuning workflow:** play with `set` until it feels right, check `config`, then
+copy the values you like into `src/data/floorConfig.ts`. Changes made with
+`set` are lost on reload.
 
 To add a command, add an entry in `createDevCommands` in `src/debug/commands.ts`.
 

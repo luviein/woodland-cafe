@@ -4,7 +4,8 @@ import type { DevSettings } from './devSettings';
 
 const setup = () => {
   const settings: DevSettings = { floorTimeScale: 1 };
-  return { settings, commands: createDevCommands(settings) };
+  const tunables: Record<string, number> = { eatSecondsMax: 10, seatWaitSeconds: 20 };
+  return { settings, tunables, commands: createDevCommands(settings, tunables) };
 };
 
 describe('runCommand', () => {
@@ -54,6 +55,43 @@ describe('speed', () => {
     for (const bad of ['abc', '0', '-2', '50']) {
       expect(runCommand(commands, `speed ${bad}`)).toMatch(/must be a number/);
     }
+    expect(settings.floorTimeScale).toBe(1);
+  });
+});
+
+describe('config / set / reset', () => {
+  it('config lists every setting with its value', () => {
+    const { commands } = setup();
+    expect(runCommand(commands, 'config')).toBe('eatSecondsMax = 10\nseatWaitSeconds = 20');
+  });
+
+  it('set changes the live config object, ignoring name case', () => {
+    const { commands, tunables } = setup();
+    expect(runCommand(commands, 'set eatsecondsmax 15')).toBe('eatSecondsMax = 15');
+    expect(tunables.eatSecondsMax).toBe(15);
+  });
+
+  it('config marks changed values with the value from the file', () => {
+    const { commands } = setup();
+    runCommand(commands, 'set seatWaitSeconds 30');
+    expect(runCommand(commands, 'config')).toContain('seatWaitSeconds = 30  (file: 20)');
+  });
+
+  it('set rejects unknown names, bad values and missing arguments', () => {
+    const { commands, tunables } = setup();
+    expect(runCommand(commands, 'set fooBar 3')).toMatch(/No setting called 'fooBar'/);
+    expect(runCommand(commands, 'set eatSecondsMax abc')).toMatch(/must be a number/);
+    expect(runCommand(commands, 'set eatSecondsMax -1')).toMatch(/must be a number/);
+    expect(runCommand(commands, 'set eatSecondsMax')).toMatch(/Usage/);
+    expect(tunables.eatSecondsMax).toBe(10);
+  });
+
+  it('reset restores every setting and the speed', () => {
+    const { commands, tunables, settings } = setup();
+    runCommand(commands, 'set eatSecondsMax 99');
+    runCommand(commands, 'speed 5');
+    runCommand(commands, 'reset');
+    expect(tunables).toEqual({ eatSecondsMax: 10, seatWaitSeconds: 20 });
     expect(settings.floorTimeScale).toBe(1);
   });
 });

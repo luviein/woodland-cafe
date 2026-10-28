@@ -1,3 +1,4 @@
+import { FLOOR_CONFIG } from '../data/floorConfig';
 import { createDevCommands, runCommand } from './commands';
 import { devSettings } from './devSettings';
 
@@ -10,7 +11,9 @@ import { devSettings } from './devSettings';
  * Up/Down arrows recall previous commands. Only loaded in dev builds.
  */
 export function mountDevConsole(): void {
-  const commands = createDevCommands(devSettings);
+  // FLOOR_CONFIG is the live object the floor reads every frame, so 'set'
+  // changes take effect immediately.
+  const commands = createDevCommands(devSettings, FLOOR_CONFIG);
   const history: string[] = [];
   let historyIndex = 0;
 

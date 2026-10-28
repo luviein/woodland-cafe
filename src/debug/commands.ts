@@ -30,10 +30,24 @@ export function runCommand(commands: CommandRegistry, input: string): string {
 }
 
 /**
- * All dev commands. Settings are passed in (rather than imported) so tests
- * can use their own settings object. To add a command, add an entry here.
+ * All dev commands. Settings and config are passed in (rather than imported)
+ * so tests can use their own objects. To add a command, add an entry here.
+ *
+ * `tunables` is a live config object (e.g. FLOOR_CONFIG): `set` changes its
+ * fields in place, and since the game reads that same object every frame,
+ * changes apply immediately.
  */
-export function createDevCommands(settings: DevSettings): CommandRegistry {
+export function createDevCommands(
+  settings: DevSettings,
+  tunables: Record<string, number>,
+): CommandRegistry {
+  // Remember the starting values so `reset` can put them back.
+  const defaults = { ...tunables };
+
+  /** Finds a config key ignoring case, so "eatsecondsmax" works too. */
+  const findKey = (name: string): string | undefined =>
+    Object.keys(tunables).find((k) => k.toLowerCase() === name.toLowerCase());
+
   const commands: CommandRegistry = {
     help: {
       usage: 'help',
@@ -57,6 +71,44 @@ export function createDevCommands(settings: DevSettings): CommandRegistry {
         }
         settings.floorTimeScale = n;
         return `Floor speed set to x${n}`;
+      },
+    },
+
+    config: {
+      usage: 'config',
+      description: 'List all floor settings and their current values',
+      run: () =>
+        Object.entries(tunables)
+          .map(([key, value]) => {
+            const changed = value !== defaults[key] ? `  (file: ${defaults[key]})` : '';
+            return `${key} = ${value}${changed}`;
+          })
+          .join('\n'),
+    },
+
+    set: {
+      usage: 'set <name> <value>',
+      description: "Change a floor setting live, e.g. 'set eatSecondsMax 15'",
+      run: ([name, value]) => {
+        if (name === undefined || value === undefined) {
+          throw new Error("Usage: set <name> <value>. Type 'config' to see the names.");
+        }
+        const key = findKey(name);
+        if (!key) throw new Error(`No setting called '${name}'. Type 'config' to see the names.`);
+        const n = Number(value);
+        if (!Number.isFinite(n) || n < 0) throw new Error('Value must be a number, 0 or more');
+        tunables[key] = n;
+        return `${key} = ${n}`;
+      },
+    },
+
+    reset: {
+      usage: 'reset',
+      description: 'Put every floor setting and the speed back to normal',
+      run: () => {
+        Object.assign(tunables, defaults);
+        settings.floorTimeScale = 1;
+        return 'Floor settings and speed reset';
       },
     },
   };

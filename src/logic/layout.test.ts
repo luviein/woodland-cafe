@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
-import { isWalkable, parseLayout } from './layout';
+import { isWalkable, parseLayout, tableById } from './layout';
 
 // A tiny cafe to test with: one table with two seats.
 const SMALL = [
@@ -39,6 +39,11 @@ describe('parseLayout', () => {
     // Order comes from the digits, not from where they appear in the grid.
     const twoSpots = parseLayout(SMALL.map((r, i) => (i === 3 ? 'W2...W' : r)));
     expect(twoSpots.waitingLine).toEqual([{ x: 3, y: 1 }, { x: 1, y: 3 }]);
+  });
+
+  it('tableById finds a table, and throws on an unknown id', () => {
+    expect(tableById(layout, 'table-0').position).toEqual({ x: 2, y: 2 });
+    expect(() => tableById(layout, 'table-9')).toThrow(/table-9/);
   });
 
   it('groups seats with the table they touch', () => {

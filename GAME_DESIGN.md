@@ -299,3 +299,15 @@ The player can leave the counter **before taking an order** to clean messes, but
 - Data files for **ingredients, recipes, modifiers, upgrades and dialogue** are set up **in their final shape**, with **placeholder entries for purchasable items**.
 - **Order generation and comparison are pure functions with Vitest unit tests.**
 - Nothing from later milestones (no modifiers in live orders, patience, Leaves, floor scene, world map, shop, etc.).
+
+### Milestone 2 scope: Cafe Floor (as built)
+
+- The cafe floor is drawn from a **text-grid layout** (`src/data/cafeLayout.ts`), validated on load.
+- **Click/tap-to-walk** player with A* pathfinding.
+- Customers **walk in, stop at the counter** (a timed stand-in for ordering), **sit, eat, and leave a mess on their own seat**.
+- A **waiting line for seats** (first come, first served) with a **seat-wait timer**; customers who wait too long **leave upset**.
+- **Cleaning:** tap a table to wipe every mess on it (time per mess), with a progress bar.
+- Floor tuning values live in `src/data/floorConfig.ts`, and can be changed live with the dev console (`config`, `set`, `reset`).
+- **Temporary in this milestone** (replaced in milestone 3):
+  - Ordering is a short timer, and only one customer orders at a time.
+  - The prep station is reached with a temporary button, and switching scenes resets the floor.

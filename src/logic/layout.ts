@@ -66,6 +66,13 @@ export function pointKey(p: Point): string {
   return `${p.x},${p.y}`;
 }
 
+/** Looks up a table by id. Throws on an unknown id: that's always a bug. */
+export function tableById(layout: Layout, id: string): Table {
+  const table = layout.tables.find((t) => t.id === id);
+  if (!table) throw new Error(`No table with id '${id}'`);
+  return table;
+}
+
 /** Floor and door tiles can be walked on; everything else blocks. */
 export function isWalkable(layout: Layout, p: Point): boolean {
   const tile = layout.tiles[p.y]?.[p.x];
