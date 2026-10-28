@@ -41,6 +41,9 @@ export class PrepScene extends Phaser.Scene {
   private dishView!: DishView;
   private serveButton!: Button;
   private resetButton!: Button;
+  private recipesButton!: Button;
+  /** Ingredient bins, in hotkey order: binButtons[0] is key 1. */
+  private binButtons: Button[] = [];
 
   constructor() {
     super('PrepScene');
@@ -51,6 +54,7 @@ export class PrepScene extends Phaser.Scene {
     // scene object if the scene is restarted, and initialisers run only once.
     this.dish = [];
     this.busy = false;
+    this.binButtons = [];
 
     // Phaser draws objects in the order they're added, so the build order
     // here is the layering: wall, customer, counter (hides the customer's
@@ -68,13 +72,16 @@ export class PrepScene extends Phaser.Scene {
     this.resetButton = new Button(this, 544, 308, 112, 36, 'Reset', COLORS.reset, () =>
       this.resetDish(),
     );
+    // Shortcut hint, so PC players can discover the keys (bins show their own numbers).
+    this.add.text(544, 332, 'Enter: serve  Bksp: reset', TEXT.label).setOrigin(0.5, 0);
 
     // Created after the prep UI so it draws on top of it.
     this.recipeBook = new RecipeBook(this);
-    new Button(this, 576, 28, 104, 32, 'Recipes', COLORS.book, () =>
+    this.recipesButton = new Button(this, 568, 28, 128, 32, 'Recipes (R)', COLORS.book, () =>
       this.recipeBook.open(availableRecipes(OWNED)),
     );
 
+    this.setupKeyboard();
     this.nextOrder();
   }
 
@@ -133,13 +140,55 @@ export class PrepScene extends Phaser.Scene {
 
     OWNED.ingredients.forEach((id, i) => {
       const x = startX + i * spacing;
-      // The number on the bin is its keyboard shortcut (wired up in step 5).
-      new Button(this, x, y, size, size, String(i + 1), INGREDIENTS[id].color, () =>
+      // The number on the bin is its keyboard shortcut.
+      const bin = new Button(this, x, y, size, size, String(i + 1), INGREDIENTS[id].color, () =>
         this.addIngredient(id),
       );
+      this.binButtons.push(bin);
       this.add
         .text(x, y + size / 2 + 6, INGREDIENTS[id].name, TEXT.label)
         .setOrigin(0.5, 0);
+    });
+  }
+
+  /**
+   * Optional PC shortcuts. Every key "presses" an on-screen button rather
+   * than calling game logic directly, so keys and clicks can never behave
+   * differently (a disabled button ignores its key too).
+   */
+  private setupKeyboard(): void {
+    // keyboard is null when the game runs without a keyboard plugin (some
+    // touch-only setups), hence the optional chaining.
+    this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, (event: KeyboardEvent) => {
+      if (event.repeat) return; // holding a key down shouldn't spam layers
+
+      // Book controls work whether or not the book is open.
+      if (event.key === 'r' || event.key === 'R') {
+        if (this.recipeBook.isOpen()) this.recipeBook.close();
+        else this.recipesButton.press();
+        return;
+      }
+      if (event.key === 'Escape') {
+        this.recipeBook.close();
+        return;
+      }
+
+      // While the book is open it covers the counter, so the counter's keys
+      // are ignored, just like clicks on it are.
+      if (this.recipeBook.isOpen()) return;
+
+      // event.key is the character typed, so both the top number row and
+      // the numpad give '1', '2', ...
+      const binIndex = Number(event.key) - 1;
+      if (Number.isInteger(binIndex) && binIndex >= 0 && binIndex < this.binButtons.length) {
+        this.binButtons[binIndex].press();
+      } else if (event.key === 'Enter') {
+        this.serveButton.press();
+      } else if (event.key === 'Backspace') {
+        // Stop the browser treating Backspace as "go back" in older browsers.
+        event.preventDefault();
+        this.resetButton.press();
+      }
     });
   }
 

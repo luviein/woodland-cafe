@@ -12,7 +12,7 @@ import { uniqueIngredients } from './dish';
 import { pickOne, type Rng } from './random';
 import type { Order, Score } from './types';
 
-export type SpeechStyle = 'direct' | 'hint';
+type SpeechStyle = 'direct' | 'hint';
 
 /**
  * Picks one line in the wanted style. Hint lists aren't filled in until

@@ -256,9 +256,10 @@ The player can leave the counter **before taking an order** to clean messes, but
 - **Touch-friendly**, so mobile is possible later.
 - **All interactions work with mouse clicks and with touch.** No hover-only actions.
 - **Optional PC keyboard shortcuts**, e.g.:
-  - Number keys: add ingredients
+  - Number keys: add ingredients (each bin shows its number)
   - Enter: serve
   - Backspace: reset
+  - R: open/close the Recipe Book; Esc: close it
 - **Display:** a fixed base resolution of **640×360** (40×22.5 tiles; scales by whole numbers to 1280×720, 1920×1080 and 2560×1440) with Phaser's Scale Manager (`FIT` mode, centered), using integer scaling where possible, so the game fits any window size and pixels stay crisp.
 - **Later milestone:** package as a downloadable desktop app (Tauri or Electron).
 

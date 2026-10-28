@@ -24,7 +24,7 @@ export class Button extends Phaser.GameObjects.Container {
     height: number,
     text: string,
     color: number,
-    onClick: () => void,
+    private readonly onClick: () => void,
   ) {
     super(scene, x, y);
     this.color = color;
@@ -44,20 +44,23 @@ export class Button extends Phaser.GameObjects.Container {
     this.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
       const wasPressed = this.pressed;
       this.setPressed(false);
-      if (this.enabled && wasPressed) onClick();
+      if (this.enabled && wasPressed) this.onClick();
     });
 
     scene.add.existing(this);
   }
 
   /**
-   * Run the button's action as if it were clicked (for keyboard shortcuts),
-   * with a short pressed flash so the player sees what happened.
+   * Activate the button as if it were clicked (used by keyboard shortcuts),
+   * with a short pressed flash so the player sees which button the key hit.
+   * Going through the button means a key obeys the same rules as a click:
+   * if the button is disabled, its shortcut does nothing too.
    */
-  flash(): void {
+  press(): void {
     if (!this.enabled) return;
     this.setPressed(true);
     this.scene.time.delayedCall(80, () => this.setPressed(false));
+    this.onClick();
   }
 
   setEnabled(enabled: boolean): this {
@@ -65,10 +68,6 @@ export class Button extends Phaser.GameObjects.Container {
     this.bg.setFillStyle(enabled ? this.color : COLORS.disabled);
     if (!enabled) this.setPressed(false);
     return this;
-  }
-
-  isEnabled(): boolean {
-    return this.enabled;
   }
 
   private setPressed(pressed: boolean): void {

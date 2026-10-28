@@ -23,7 +23,7 @@ export const COLORS = {
 } as const;
 
 /** Phaser text colours are CSS strings, not numbers like shape colours. */
-export const css = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
+const css = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
 
 const FONT = 'monospace';
 
