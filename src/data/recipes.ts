@@ -1,4 +1,4 @@
-import type { IngredientCounts } from './ingredients';
+import type { IngredientId } from './ingredients';
 
 // A recipe only appears in orders once the player owns every ingredient it
 // uses; that rule lives in logic/orders.ts, so there's no "locked" flag here.
@@ -11,44 +11,45 @@ export type RecipeTag = 'sandwich';
 
 export interface RecipeDef {
   name: string;
-  ingredients: IngredientCounts;
+  /**
+   * Layers from the BOTTOM of the plate to the TOP. Order matters for
+   * scoring: a Jam Sandwich is bread > jam > bread, not bread > bread > jam.
+   * Repeats are just listed twice (Extra Jammy Bread has two jam layers).
+   */
+  layers: readonly IngredientId[];
   tags: readonly RecipeTag[];
 }
 
 export const RECIPES = {
   // Starter recipes
-  plainBread: { name: 'Plain Bread', ingredients: { bread: 1 }, tags: [] },
-  jamBread: { name: 'Jam Bread', ingredients: { bread: 1, jam: 1 }, tags: [] },
-  extraJammyBread: { name: 'Extra Jammy Bread', ingredients: { bread: 1, jam: 2 }, tags: [] },
-  mushroomBread: { name: 'Mushroom Bread', ingredients: { bread: 1, mushroom: 1 }, tags: [] },
+  plainBread: { name: 'Plain Bread', layers: ['bread'], tags: [] },
+  jamBread: { name: 'Jam Bread', layers: ['bread', 'jam'], tags: [] },
+  extraJammyBread: { name: 'Extra Jammy Bread', layers: ['bread', 'jam', 'jam'], tags: [] },
+  mushroomBread: { name: 'Mushroom Bread', layers: ['bread', 'mushroom'], tags: [] },
   doubleMushroomBread: {
     name: 'Double Mushroom Bread',
-    ingredients: { bread: 1, mushroom: 2 },
+    layers: ['bread', 'mushroom', 'mushroom'],
     tags: [],
   },
   mushroomSandwich: {
     name: 'Mushroom Sandwich',
-    ingredients: { bread: 2, mushroom: 1 },
+    layers: ['bread', 'mushroom', 'bread'],
     tags: ['sandwich'],
   },
-  jamSandwich: { name: 'Jam Sandwich', ingredients: { bread: 2, jam: 1 }, tags: ['sandwich'] },
+  jamSandwich: { name: 'Jam Sandwich', layers: ['bread', 'jam', 'bread'], tags: ['sandwich'] },
 
   // Unlocked by purchasable ingredients
-  tomatoBread: { name: 'Tomato Bread', ingredients: { bread: 1, tomato: 1 }, tags: [] },
-  tunaSandwich: { name: 'Tuna Sandwich', ingredients: { bread: 2, tuna: 1 }, tags: ['sandwich'] },
+  tomatoBread: { name: 'Tomato Bread', layers: ['bread', 'tomato'], tags: [] },
+  tunaSandwich: { name: 'Tuna Sandwich', layers: ['bread', 'tuna', 'bread'], tags: ['sandwich'] },
   tunaTomatoSandwich: {
     name: 'Tuna Tomato Sandwich',
-    ingredients: { bread: 2, tuna: 1, tomato: 1 },
+    layers: ['bread', 'tuna', 'tomato', 'bread'],
     tags: ['sandwich'],
   },
-  spicyTunaBread: {
-    name: 'Spicy Tuna Bread',
-    ingredients: { bread: 1, tuna: 1, chilli: 1 },
-    tags: [],
-  },
+  spicyTunaBread: { name: 'Spicy Tuna Bread', layers: ['bread', 'tuna', 'chilli'], tags: [] },
   spicyMushroomBread: {
     name: 'Spicy Mushroom Bread',
-    ingredients: { bread: 1, mushroom: 1, chilli: 1 },
+    layers: ['bread', 'mushroom', 'chilli'],
     tags: [],
   },
 } satisfies Record<string, RecipeDef>;

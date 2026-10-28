@@ -15,7 +15,7 @@ export type RecipeFilter =
   | { kind: 'hasTag'; tag: RecipeTag };
 
 export interface ModifierDef {
-  /** Short label shown on the order ticket. */
+  /** Display name. */
   name: string;
   unlockedBy: UpgradeId;
   appliesTo: RecipeFilter;

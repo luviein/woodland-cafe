@@ -27,9 +27,6 @@ export const INGREDIENTS = {
 
 export type IngredientId = keyof typeof INGREDIENTS;
 
-/** How many of each ingredient; missing keys mean zero. */
-export type IngredientCounts = Partial<Record<IngredientId, number>>;
-
 // Object.keys() is typed as string[] (TS can't prove an object has no extra
 // keys at runtime), so we cast back to our known ids.
 export const INGREDIENT_IDS = Object.keys(INGREDIENTS) as IngredientId[];

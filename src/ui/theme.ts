@@ -17,6 +17,7 @@ export const COLORS = {
   customerDark: 0x6e4a2f,
   serve: 0x6f9e5a,
   reset: 0xb0705a,
+  book: 0x5a7a9c,
   disabled: 0x8a817a,
   perfect: 0x6f9e5a,
   close: 0xd9a93f,

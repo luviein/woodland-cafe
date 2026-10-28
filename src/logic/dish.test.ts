@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { toCounts } from './dish';
+import { uniqueIngredients } from './dish';
 
-describe('toCounts', () => {
-  it('counts each ingredient regardless of the order added', () => {
-    expect(toCounts(['bread', 'jam', 'bread'])).toEqual({ bread: 2, jam: 1 });
+describe('uniqueIngredients', () => {
+  it('lists each ingredient once, in first-seen order', () => {
+    expect(uniqueIngredients(['bread', 'jam', 'bread'])).toEqual(['bread', 'jam']);
   });
 
-  it('is empty for an empty dish', () => {
-    expect(toCounts([])).toEqual({});
+  it('is empty for no layers', () => {
+    expect(uniqueIngredients([])).toEqual([]);
   });
 });

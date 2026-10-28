@@ -1,4 +1,4 @@
-import type { IngredientCounts } from '../data/ingredients';
+import type { IngredientId } from '../data/ingredients';
 import type { ModifierId } from '../data/modifiers';
 import type { RecipeId } from '../data/recipes';
 
@@ -11,19 +11,19 @@ export interface Order {
 }
 
 /**
- * One plate of food: which ingredients are on it and which modifiers were
+ * One plate of food: its layers (bottom to top) and which modifiers were
  * applied. Used both for what the order expects and what the player made,
  * so the two can be compared like-for-like.
  */
 export interface Plate {
-  ingredients: IngredientCounts;
+  layers: readonly IngredientId[];
   modifiers: readonly ModifierId[];
 }
 
 export type Score = 'perfect' | 'close' | 'wrong';
 
 export interface ScoreResult {
-  /** Based on ingredients only. */
+  /** Based on layers only. */
   score: Score;
   /**
    * Requested modifiers the dish doesn't have. Kept separate from `score`

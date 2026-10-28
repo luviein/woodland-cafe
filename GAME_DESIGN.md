@@ -33,13 +33,21 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
 ### 2.2 Prep Scene (close-up)
 
 - After the player takes an order at the counter, they go to a close-up prep screen (similar in feel to *Good Coffee, Great Coffee*).
-- The customer's order appears as a **speech bubble** (see §3.5 Dialogue) plus an **order ticket**.
+- The customer's order appears **only as a speech bubble** (see §3.5 Dialogue). There is **no order ticket**: recipes are not shown with the order.
+- A **Recipe Book** button sits at the **top right**. If the player can't remember a recipe, they open the book and look it up.
+  - The book lists **only unlocked recipes** (ones the player can currently make), with their layer order. New recipes appear in it as ingredients are bought.
+  - Looking things up costs time: once patience exists (milestone 3), it **keeps dropping while the book is open**.
 - An order is a **recipe plus zero or more modifiers** (see §3).
-- The player assembles the dish and serves it.
+- The player builds the dish **layer by layer, bottom to top**, and serves it.
+- **Layer order matters.** A Jam Sandwich must be bread > jam > bread.
 - The dish is scored on accuracy: **perfect / close / wrong**.
-  - **Perfect:** the dish's ingredients exactly match the order.
-  - **Close:** off by exactly one item (one missing, one extra, or one swapped).
-  - **Wrong:** anything else. An **empty dish is always wrong**.
+  - **Perfect:** every layer matches the recipe, in the right order.
+  - **Close:** exactly **one mistake**:
+    - one layer missing (bread > jam)
+    - one layer extra (bread > jam > jam > bread)
+    - one layer replaced (bread > mushroom > bread)
+    - two neighbouring layers swapped (bread > bread > jam)
+  - **Wrong:** two or more mistakes. An **empty dish is always wrong**.
   - Modifiers are checked separately (see §4 "Missing modifiers").
 
 ---
@@ -61,29 +69,29 @@ All of these are **data-driven**, each in its **own data file**.
 
 ### 3.2 Recipes
 
-Each recipe lists its required ingredients. A recipe **only appears in orders once the player owns all of its ingredients**.
+Each recipe is an **ordered list of layers, bottom to top**. A recipe **only appears in orders once the player owns all of its ingredients**.
 
 **Starter recipes**
 
-| Recipe                | Ingredients              |
-| --------------------- | ------------------------ |
-| Plain Bread           | bread ×1                 |
-| Jam Bread             | bread ×1, jam ×1         |
-| Extra Jammy Bread     | bread ×1, jam ×2         |
-| Mushroom Bread        | bread ×1, mushroom ×1    |
-| Double Mushroom Bread | bread ×1, mushroom ×2    |
-| Mushroom Sandwich     | bread ×2, mushroom ×1    |
-| Jam Sandwich          | bread ×2, jam ×1         |
+| Recipe                | Layers (bottom > top)     |
+| --------------------- | ------------------------- |
+| Plain Bread           | bread                     |
+| Jam Bread             | bread > jam               |
+| Extra Jammy Bread     | bread > jam > jam         |
+| Mushroom Bread        | bread > mushroom          |
+| Double Mushroom Bread | bread > mushroom > mushroom |
+| Mushroom Sandwich     | bread > mushroom > bread  |
+| Jam Sandwich          | bread > jam > bread       |
 
 **Recipes unlocked by purchasable ingredients**
 
-| Recipe               | Ingredients                      |
+| Recipe               | Layers (bottom > top)            |
 | -------------------- | -------------------------------- |
-| Tomato Bread         | bread ×1, tomato ×1              |
-| Tuna Sandwich        | bread ×2, tuna ×1                |
-| Tuna Tomato Sandwich | bread ×2, tuna ×1, tomato ×1     |
-| Spicy Tuna Bread     | bread ×1, tuna ×1, chilli ×1     |
-| Spicy Mushroom Bread | bread ×1, mushroom ×1, chilli ×1 |
+| Tomato Bread         | bread > tomato                   |
+| Tuna Sandwich        | bread > tuna > bread             |
+| Tuna Tomato Sandwich | bread > tuna > tomato > bread    |
+| Spicy Tuna Bread     | bread > tuna > chilli            |
+| Spicy Mushroom Bread | bread > mushroom > chilli        |
 
 ### 3.3 Modifiers
 
@@ -127,7 +135,7 @@ Each recipe lists its required ingredients. A recipe **only appears in orders on
   - "Give it a kick!"
 - When an order is generated, the customer's **speech bubble is built from matching lines** (for the recipe, its ingredients, and any modifiers).
 - The **ratio of hint to direct lines is a config value**, so difficulty can ramp up over days.
-- The **order ticket is still shown** for now. Later, hint-only orders may hide it.
+- There is **no order ticket**. The speech bubble is the only clue, plus the Recipe Book for looking up layers. Hint lines therefore make orders genuinely harder to decode.
 
 ---
 
@@ -261,8 +269,10 @@ The player can leave the counter **before taking an order** to clean messes, but
 ### Milestone 1 scope: Prep Station
 
 - Uses the **starter ingredients** (Bread, Mushroom, Jam) and **starter recipes**.
-- A random **order** is generated from the recipes the player can make. It's shown as a **direct dialogue line in a speech bubble** alongside the **order ticket**.
-- Click/tap ingredients to add them; show the **current dish**; **Serve** and **Reset** buttons.
+- A random **order** is generated from the recipes the player can make. It's shown only as a **direct dialogue line in a speech bubble** (no order ticket).
+- A **Recipe Book** button (top right) opens a list of unlocked recipes and their layers.
+- Click/tap ingredients to add them as layers, bottom to top; show the **current dish** as a stack; **Serve** and **Reset** buttons.
+- **Layer order** is part of scoring.
 - Score the dish against the order (**perfect / close / wrong**), then show the next order.
 - Data files for **ingredients, recipes, modifiers, upgrades and dialogue** are set up **in their final shape**, with **placeholder entries for purchasable items**.
 - **Order generation and comparison are pure functions with Vitest unit tests.**

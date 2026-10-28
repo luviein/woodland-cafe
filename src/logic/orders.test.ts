@@ -122,8 +122,8 @@ describe('generateOrder', () => {
 });
 
 describe('expectedPlate', () => {
-  it("uses the recipe's ingredients and the order's modifiers", () => {
+  it("uses the recipe's layers and the order's modifiers", () => {
     const plate = expectedPlate({ recipeId: 'jamBread', modifiers: ['toasted'], quantity: 1 });
-    expect(plate).toEqual({ ingredients: RECIPES.jamBread.ingredients, modifiers: ['toasted'] });
+    expect(plate).toEqual({ layers: RECIPES.jamBread.layers, modifiers: ['toasted'] });
   });
 });

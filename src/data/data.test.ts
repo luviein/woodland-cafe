@@ -22,20 +22,31 @@ describe('ingredients', () => {
 });
 
 describe('recipes', () => {
-  it('every recipe uses whole, positive counts', () => {
+  it('every recipe has at least one layer', () => {
     for (const id of RECIPE_IDS) {
-      const counts = Object.values(RECIPES[id].ingredients);
-      expect(counts.length, id).toBeGreaterThan(0);
-      for (const n of counts) expect(Number.isInteger(n) && n > 0, id).toBe(true);
+      expect(RECIPES[id].layers.length, id).toBeGreaterThan(0);
     }
   });
 
-  it('"sandwich" tag matches recipes made with two slices of bread', () => {
+  it('every recipe starts with bread on the bottom', () => {
     for (const id of RECIPE_IDS) {
-      const recipe = RECIPES[id];
-      const isSandwich = (recipe.tags as readonly string[]).includes('sandwich');
-      expect(isSandwich, id).toBe((recipe.ingredients as { bread?: number }).bread === 2);
+      expect(RECIPES[id].layers[0], id).toBe('bread');
     }
+  });
+
+  it('"sandwich" tag matches recipes with bread on the bottom and top', () => {
+    for (const id of RECIPE_IDS) {
+      const { layers, tags } = RECIPES[id];
+      const isSandwich = (tags as readonly string[]).includes('sandwich');
+      const breadBothEnds = layers.length >= 3 && layers.at(-1) === 'bread';
+      expect(isSandwich, id).toBe(breadBothEnds);
+    }
+  });
+
+  it('no two recipes share the same layers', () => {
+    // Otherwise a dish could be "perfect" for two different orders.
+    const keys = RECIPE_IDS.map((id) => RECIPES[id].layers.join('>'));
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
 

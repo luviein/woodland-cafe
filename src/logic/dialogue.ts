@@ -5,9 +5,9 @@ import {
   RECIPE_LINES,
   type DialogueLines,
 } from '../data/dialogue';
-import type { IngredientId } from '../data/ingredients';
 import { ORDER_CONFIG, type OrderConfig } from '../data/orderConfig';
 import { RECIPES } from '../data/recipes';
+import { uniqueIngredients } from './dish';
 import { pickOne, type Rng } from './random';
 import type { Order } from './types';
 
@@ -36,7 +36,7 @@ function recipeLines(order: Order, style: SpeechStyle, rng: Rng): string[] {
     return [pickLine(lines, style, rng)];
   }
 
-  const ingredientIds = Object.keys(RECIPES[order.recipeId].ingredients) as IngredientId[];
+  const ingredientIds = uniqueIngredients(RECIPES[order.recipeId].layers);
   const allHaveHints = ingredientIds.every((id) => INGREDIENT_LINES[id].hint.length > 0);
   if (!allHaveHints) {
     return [pickLine(lines, 'direct', rng)];

@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { buildSpeech } from '../logic/dialogue';
-import { toCounts } from '../logic/dish';
-import { expectedPlate, generateOrder, type Owned } from '../logic/orders';
+
+import { availableRecipes, expectedPlate, generateOrder, type Owned } from '../logic/orders';
 import { scoreDish } from '../logic/scoreDish';
 import type { Order } from '../logic/types';
 import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
-import { OrderTicket } from '../ui/OrderTicket';
+import { RecipeBook } from '../ui/RecipeBook';
 import { ResultBanner } from '../ui/ResultBanner';
 import { SpeechBubble } from '../ui/SpeechBubble';
 import { COLORS, TEXT } from '../ui/theme';
@@ -17,8 +17,8 @@ import { COLORS, TEXT } from '../ui/theme';
 // Later this will be read from that state instead.
 const OWNED: Owned = { ingredients: STARTER_INGREDIENTS, upgrades: [] };
 
-/** Keeps the plate readable; no recipe needs more than 4 items. */
-const MAX_DISH_ITEMS = 8;
+/** Keeps the stack on screen; no recipe needs more than 4 layers. */
+const MAX_DISH_LAYERS = 6;
 /** How long the result banner stays up before the next order. */
 const NEXT_ORDER_DELAY_MS = 1400;
 
@@ -33,13 +33,13 @@ const COUNTER_TOP_Y = 140;
  */
 export class PrepScene extends Phaser.Scene {
   private order!: Order;
-  /** Items in the order they were added. */
+  /** Layers, bottom first. */
   private dish: IngredientId[] = [];
   /** True while the result banner is up; input is ignored. */
   private busy = false;
 
   private bubble!: SpeechBubble;
-  private ticket!: OrderTicket;
+  private recipeBook!: RecipeBook;
   private dishView!: DishView;
   private serveButton!: Button;
   private resetButton!: Button;
@@ -62,14 +62,20 @@ export class PrepScene extends Phaser.Scene {
     this.drawCustomer(64, COUNTER_TOP_Y - 30);
     this.drawCounter();
 
-    this.bubble = new SpeechBubble(this, 112, 24, 304, 88);
-    this.ticket = new OrderTicket(this, 448, 16, 176, 200);
-    this.dishView = new DishView(this, 240, 214);
+    // No order ticket: the speech bubble is the only clue (see GAME_DESIGN.md).
+    this.bubble = new SpeechBubble(this, 112, 24, 392, 88);
+    this.dishView = new DishView(this, 320, 214);
 
     this.createIngredientBins();
     this.serveButton = new Button(this, 544, 260, 112, 36, 'Serve', COLORS.serve, () => this.serve());
     this.resetButton = new Button(this, 544, 308, 112, 36, 'Reset', COLORS.reset, () =>
       this.resetDish(),
+    );
+
+    // Created after the prep UI so it draws on top; the banner goes above it.
+    this.recipeBook = new RecipeBook(this);
+    new Button(this, 576, 28, 104, 32, 'Recipes', COLORS.book, () =>
+      this.recipeBook.open(availableRecipes(OWNED)),
     );
 
     this.banner = new ResultBanner(this);
@@ -80,14 +86,13 @@ export class PrepScene extends Phaser.Scene {
   private nextOrder(): void {
     this.order = generateOrder(OWNED);
     this.bubble.setLines(buildSpeech(this.order));
-    this.ticket.setOrder(this.order);
     this.banner.hide();
     this.busy = false;
     this.resetDish();
   }
 
   private addIngredient(id: IngredientId): void {
-    if (this.busy || this.dish.length >= MAX_DISH_ITEMS) return;
+    if (this.busy || this.dish.length >= MAX_DISH_LAYERS) return;
     this.dish.push(id);
     this.refreshDish();
   }
@@ -104,7 +109,7 @@ export class PrepScene extends Phaser.Scene {
     // No modifier tools exist yet (Toaster arrives in milestone 6), so the
     // player's plate never has modifiers. Starter orders never ask for any.
     const result = scoreDish(expectedPlate(this.order), {
-      ingredients: toCounts(this.dish),
+      layers: this.dish,
       modifiers: [],
     });
 
@@ -116,7 +121,7 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private refreshDish(): void {
-    this.dishView.setItems(this.dish);
+    this.dishView.setLayers(this.dish);
     // Serving an empty plate would always score "wrong", so disable it to
     // prevent accidental misclicks rather than punish them.
     const hasItems = this.dish.length > 0;

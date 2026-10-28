@@ -16,14 +16,10 @@ export interface Owned {
   upgrades: readonly UpgradeId[];
 }
 
-function recipeIngredientIds(recipe: RecipeDef): IngredientId[] {
-  return Object.keys(recipe.ingredients) as IngredientId[];
-}
-
 /** Recipes whose ingredients are all owned. */
 export function availableRecipes(owned: Owned): RecipeId[] {
   return RECIPE_IDS.filter((id) =>
-    recipeIngredientIds(RECIPES[id]).every((ing) => owned.ingredients.includes(ing)),
+    RECIPES[id].layers.every((ing) => owned.ingredients.includes(ing)),
   );
 }
 
@@ -32,7 +28,7 @@ export function recipeMatchesFilter(recipe: RecipeDef, filter: RecipeFilter): bo
     case 'any':
       return true;
     case 'hasIngredient':
-      return recipeIngredientIds(recipe).some((ing) => filter.ingredients.includes(ing));
+      return recipe.layers.some((ing) => filter.ingredients.includes(ing));
     case 'hasTag':
       return recipe.tags.includes(filter.tag);
   }
@@ -83,5 +79,5 @@ export function generateOrder(
 
 /** What one correct plate for this order looks like, for scoreDish(). */
 export function expectedPlate(order: Order): Plate {
-  return { ingredients: RECIPES[order.recipeId].ingredients, modifiers: order.modifiers };
+  return { layers: RECIPES[order.recipeId].layers, modifiers: order.modifiers };
 }
