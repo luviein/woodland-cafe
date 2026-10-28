@@ -66,6 +66,12 @@ export const INGREDIENT_LINES: Record<IngredientId, DialogueLines> = {
   tomato: { direct: ['With tomato, please.'], hint: [] },
 };
 
+/** Said before the order when it's a double order (Serving Tray). Placeholder (milestone 6). */
+export const DOUBLE_ORDER_LINES: DialogueLines = {
+  direct: ['Two of these, please!', 'Make that two, please!'],
+  hint: [],
+};
+
 export const MODIFIER_LINES: Record<ModifierId, DialogueLines> = {
   toasted: {
     direct: ['Make it toasty, please! My paws are freezing.', 'Toasted, please!'],
