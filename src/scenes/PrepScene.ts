@@ -81,6 +81,9 @@ export class PrepScene extends Phaser.Scene {
       this.recipeBook.open(availableRecipes(OWNED)),
     );
 
+    // TEMPORARY (milestone 3 returns to the floor automatically after serving).
+    new Button(this, 56, 16, 96, 24, '< Floor', COLORS.book, () => this.scene.start('FloorScene'));
+
     this.setupKeyboard();
     this.nextOrder();
   }

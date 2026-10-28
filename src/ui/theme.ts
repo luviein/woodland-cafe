@@ -19,6 +19,17 @@ export const COLORS = {
   reset: 0xb0705a,
   book: 0x5a7a9c,
   disabled: 0x8a817a,
+  // Cafe floor tiles
+  floorA: 0xc9a77c,
+  floorB: 0xbf9c70,
+  wallTile: 0x5c4339,
+  doorTile: 0x8fb573,
+  counterTop: 0x7a5236,
+  tableTop: 0x9c6b45,
+  seatTile: 0x6e4a2f,
+  orderSpot: 0xe0c48f,
+  player: 0x5a7a9c,
+  apron: 0xf4e9d8,
   overlay: 0x000000,
 } as const;
 

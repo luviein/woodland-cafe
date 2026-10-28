@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from './config/display';
 import { enableIntegerScaling } from './integerScale';
+import { FloorScene } from './scenes/FloorScene';
 import { PrepScene } from './scenes/PrepScene';
 
 const game = new Phaser.Game({
@@ -15,7 +16,8 @@ const game = new Phaser.Game({
     width: BASE_WIDTH,
     height: BASE_HEIGHT,
   },
-  scene: [PrepScene],
+  // The first scene in the list starts automatically.
+  scene: [FloorScene, PrepScene],
 });
 
 // The Scale Manager's parent size is only known once the game has booted.
