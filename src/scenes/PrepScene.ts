@@ -1,69 +1,172 @@
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
+import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
+import { INGREDIENTS, STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
+import { buildSpeech } from '../logic/dialogue';
+import { toCounts } from '../logic/dish';
+import { expectedPlate, generateOrder, type Owned } from '../logic/orders';
+import { scoreDish } from '../logic/scoreDish';
+import type { Order } from '../logic/types';
+import { Button } from '../ui/Button';
+import { DishView } from '../ui/DishView';
+import { OrderTicket } from '../ui/OrderTicket';
+import { ResultBanner } from '../ui/ResultBanner';
+import { SpeechBubble } from '../ui/SpeechBubble';
+import { COLORS, TEXT } from '../ui/theme';
+
+// Until the central game state exists, the player owns only the starters.
+// Later this will be read from that state instead.
+const OWNED: Owned = { ingredients: STARTER_INGREDIENTS, upgrades: [] };
+
+/** Keeps the plate readable; no recipe needs more than 4 items. */
+const MAX_DISH_ITEMS = 8;
+/** How long the result banner stays up before the next order. */
+const NEXT_ORDER_DELAY_MS = 1400;
+
+const COUNTER_TOP_Y = 140;
 
 /**
- * STEP 1 PLACEHOLDER: proves the scaffold works (crisp pixels, scaling,
- * click/touch input). The real prep station replaces this in a later step.
+ * Close-up prep station: read the order, add ingredients, serve, get scored.
+ *
+ * This class only wires things together: game rules live in logic/ (pure,
+ * tested) and drawing lives in ui/. That split keeps the scene short and
+ * means rules can change without touching layout, and vice versa.
  */
 export class PrepScene extends Phaser.Scene {
+  private order!: Order;
+  /** Items in the order they were added. */
+  private dish: IngredientId[] = [];
+  /** True while the result banner is up; input is ignored. */
+  private busy = false;
+
+  private bubble!: SpeechBubble;
+  private ticket!: OrderTicket;
+  private dishView!: DishView;
+  private serveButton!: Button;
+  private resetButton!: Button;
+  private banner!: ResultBanner;
+
   constructor() {
     super('PrepScene');
   }
 
   create(): void {
-    this.drawTileGrid();
+    // Reset state here, not only in field initialisers: Phaser reuses the same
+    // scene object if the scene is restarted, and initialisers run only once.
+    this.dish = [];
+    this.busy = false;
 
-    this.add.text(TILE_SIZE, TILE_SIZE, 'Woodland Cafe: scaffold check', {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#f4e9d8',
-    });
+    // Phaser draws objects in the order they're added, so the build order
+    // here is the layering: wall, customer, counter (hides the customer's
+    // lower body), then all UI on top.
+    this.drawWall();
+    this.drawCustomer(64, COUNTER_TOP_Y - 30);
+    this.drawCounter();
 
-    const scaleText = this.add.text(TILE_SIZE, TILE_SIZE * 2.5, '', {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#c9b79c',
-    });
-    const showScale = (): void => {
-      const factor = this.scale.displaySize.width / BASE_WIDTH;
-      // Show 2 decimals so a non-integer scale (e.g. 1.37) is easy to spot.
-      scaleText.setText(`scale: x${factor.toFixed(2)}`);
-    };
-    this.scale.on(Phaser.Scale.Events.RESIZE, showScale);
-    showScale();
+    this.bubble = new SpeechBubble(this, 112, 24, 304, 88);
+    this.ticket = new OrderTicket(this, 448, 16, 176, 200);
+    this.dishView = new DishView(this, 240, 214);
 
-    // One 3x3-tile square that changes colour when clicked or tapped.
-    const colors = [0xd9734e, 0x8fb573, 0xe0b84c, 0x7a9cc6];
-    let colorIndex = 0;
-    const box = this.add
-      .rectangle(BASE_WIDTH / 2, BASE_HEIGHT / 2, TILE_SIZE * 3, TILE_SIZE * 3, colors[0])
-      .setInteractive({ useHandCursor: true });
+    this.createIngredientBins();
+    this.serveButton = new Button(this, 544, 260, 112, 36, 'Serve', COLORS.serve, () => this.serve());
+    this.resetButton = new Button(this, 544, 308, 112, 36, 'Reset', COLORS.reset, () =>
+      this.resetDish(),
+    );
 
-    // 'pointerup' (not 'pointerdown' or hover) is the same for mouse and
-    // touch, and lets the player cancel by sliding off before releasing.
-    box.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
-      colorIndex = (colorIndex + 1) % colors.length;
-      box.setFillStyle(colors[colorIndex]);
-    });
+    this.banner = new ResultBanner(this);
 
-    this.add
-      .text(BASE_WIDTH / 2, BASE_HEIGHT / 2 + TILE_SIZE * 3, 'click / tap me', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#f4e9d8',
-      })
-      .setOrigin(0.5, 0);
+    this.nextOrder();
   }
 
-  /** Faint 16x16 grid so you can see tiles stay square and sharp when scaled. */
-  private drawTileGrid(): void {
-    const grid = this.add.graphics();
-    grid.lineStyle(1, 0x3a312b);
-    for (let x = 0; x <= BASE_WIDTH; x += TILE_SIZE) {
-      grid.lineBetween(x + 0.5, 0, x + 0.5, BASE_HEIGHT);
-    }
-    for (let y = 0; y <= BASE_HEIGHT; y += TILE_SIZE) {
-      grid.lineBetween(0, y + 0.5, BASE_WIDTH, y + 0.5);
-    }
+  private nextOrder(): void {
+    this.order = generateOrder(OWNED);
+    this.bubble.setLines(buildSpeech(this.order));
+    this.ticket.setOrder(this.order);
+    this.banner.hide();
+    this.busy = false;
+    this.resetDish();
+  }
+
+  private addIngredient(id: IngredientId): void {
+    if (this.busy || this.dish.length >= MAX_DISH_ITEMS) return;
+    this.dish.push(id);
+    this.refreshDish();
+  }
+
+  private resetDish(): void {
+    if (this.busy) return;
+    this.dish = [];
+    this.refreshDish();
+  }
+
+  private serve(): void {
+    if (this.busy || this.dish.length === 0) return;
+
+    // No modifier tools exist yet (Toaster arrives in milestone 6), so the
+    // player's plate never has modifiers. Starter orders never ask for any.
+    const result = scoreDish(expectedPlate(this.order), {
+      ingredients: toCounts(this.dish),
+      modifiers: [],
+    });
+
+    this.busy = true;
+    this.serveButton.setEnabled(false);
+    this.resetButton.setEnabled(false);
+    this.banner.show(result.score);
+    this.time.delayedCall(NEXT_ORDER_DELAY_MS, () => this.nextOrder());
+  }
+
+  private refreshDish(): void {
+    this.dishView.setItems(this.dish);
+    // Serving an empty plate would always score "wrong", so disable it to
+    // prevent accidental misclicks rather than punish them.
+    const hasItems = this.dish.length > 0;
+    this.serveButton.setEnabled(hasItems);
+    this.resetButton.setEnabled(hasItems);
+  }
+
+  /** One square button per owned ingredient along the bottom of the counter. */
+  private createIngredientBins(): void {
+    const size = 48;
+    const spacing = 72;
+    const startX = 64;
+    const y = 300;
+
+    OWNED.ingredients.forEach((id, i) => {
+      const x = startX + i * spacing;
+      // The number on the bin is its keyboard shortcut (wired up in step 5).
+      new Button(this, x, y, size, size, String(i + 1), INGREDIENTS[id].color, () =>
+        this.addIngredient(id),
+      );
+      this.add
+        .text(x, y + size / 2 + 6, INGREDIENTS[id].name, TEXT.label)
+        .setOrigin(0.5, 0);
+    });
+  }
+
+  private drawWall(): void {
+    this.add.rectangle(0, 0, BASE_WIDTH, COUNTER_TOP_Y, COLORS.wall).setOrigin(0);
+  }
+
+  /** Everything below COUNTER_TOP_Y, with a darker edge along the top. */
+  private drawCounter(): void {
+    this.add
+      .rectangle(0, COUNTER_TOP_Y, BASE_WIDTH, BASE_HEIGHT - COUNTER_TOP_Y, COLORS.counter)
+      .setOrigin(0);
+    this.add.rectangle(0, COUNTER_TOP_Y, BASE_WIDTH, 4, COLORS.counterEdge).setOrigin(0);
+  }
+
+  /** Placeholder woodland customer peeking over the counter. (x, y) = body centre. */
+  private drawCustomer(x: number, y: number): void {
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.customerDark);
+    // Ears
+    g.fillTriangle(x - 20, y - 22, x - 8, y - 22, x - 16, y - 40);
+    g.fillTriangle(x + 8, y - 22, x + 20, y - 22, x + 16, y - 40);
+    g.fillStyle(COLORS.customer);
+    g.fillRoundedRect(x - 24, y - 28, 48, 64, 12);
+    // Eyes
+    g.fillStyle(COLORS.ink);
+    g.fillRect(x - 12, y - 12, 4, 4);
+    g.fillRect(x + 8, y - 12, 4, 4);
   }
 }
