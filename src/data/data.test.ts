@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { acceptedOrderings } from '../logic/acceptedOrderings';
 import { recipeMatchesFilter } from '../logic/orders';
+import { SCORING_CONFIG } from './scoring';
 import { INGREDIENT_LINES, MODIFIER_LINES, RECIPE_LINES } from './dialogue';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
@@ -43,10 +45,17 @@ describe('recipes', () => {
     }
   });
 
-  it('no two recipes share the same layers', () => {
-    // Otherwise a dish could be "perfect" for two different orders.
-    const keys = RECIPE_IDS.map((id) => RECIPES[id].layers.join('>'));
-    expect(new Set(keys).size).toBe(keys.length);
+  it('no dish is perfect for two different recipes', () => {
+    // Fillings can be in any order, so compare every accepted ordering, not
+    // just the listed one: bread > chilli > tuna would clash with Spicy Tuna Bread.
+    const owner = new Map<string, string>();
+    for (const id of RECIPE_IDS) {
+      for (const layers of acceptedOrderings(RECIPES[id].layers, SCORING_CONFIG.fixedIngredients)) {
+        const key = layers.join('>');
+        expect(owner.get(key), `${id} clashes with ${owner.get(key)}`).toBeUndefined();
+        owner.set(key, id);
+      }
+    }
   });
 });
 

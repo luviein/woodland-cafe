@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { IngredientId } from '../data/ingredients';
 import type { ModifierId } from '../data/modifiers';
+import { SCORING_CONFIG } from '../data/scoring';
 import { scoreDish } from './scoreDish';
 import type { Plate } from './types';
 
@@ -39,8 +40,8 @@ describe('scoreDish: layers', () => {
     expect(score(['bread', 'bread', 'jam', 'jam'])).toBe('wrong');
   });
 
-  it('order matters: the right ingredients scrambled is wrong', () => {
-    // Same four ingredients as the recipe, but needing several fixes.
+  it('bread out of place counts as a mistake', () => {
+    // Same four ingredients as the recipe, but bread isn't at the ends.
     const tunaTomato = plate(['bread', 'tuna', 'tomato', 'bread']);
     expect(scoreDish(tunaTomato, plate(['tomato', 'bread', 'bread', 'tuna'])).score).toBe('wrong');
   });
@@ -51,8 +52,40 @@ describe('scoreDish: layers', () => {
   });
 
   it('respects a custom close tolerance', () => {
-    expect(scoreDish(jamSandwich, plate(['bread', 'bread', 'jam']), 0).score).toBe('wrong');
-    expect(scoreDish(jamSandwich, plate(['jam', 'jam']), 2).score).toBe('close');
+    const strict = { ...SCORING_CONFIG, closeTolerance: 0 };
+    const lenient = { ...SCORING_CONFIG, closeTolerance: 2 };
+    expect(scoreDish(jamSandwich, plate(['bread', 'bread', 'jam']), strict).score).toBe('wrong');
+    expect(scoreDish(jamSandwich, plate(['jam', 'jam']), lenient).score).toBe('close');
+  });
+});
+
+describe('scoreDish: filling order', () => {
+  const tunaTomato = plate(['bread', 'tuna', 'tomato', 'bread']);
+  const spicyTuna = plate(['bread', 'tuna', 'chilli']);
+
+  it('sandwich fillings between the breads can be in any order', () => {
+    expect(scoreDish(tunaTomato, plate(['bread', 'tuna', 'tomato', 'bread'])).score).toBe('perfect');
+    expect(scoreDish(tunaTomato, plate(['bread', 'tomato', 'tuna', 'bread'])).score).toBe('perfect');
+  });
+
+  it('open bread toppings can be in any order', () => {
+    expect(scoreDish(spicyTuna, plate(['bread', 'chilli', 'tuna'])).score).toBe('perfect');
+  });
+
+  it('judges mistakes against the closest accepted ordering', () => {
+    // Fillings swapped AND top bread missing: only the missing bread counts.
+    expect(scoreDish(tunaTomato, plate(['bread', 'tomato', 'tuna'])).score).toBe('close');
+  });
+
+  it('bread must stay fixed when fillings are free', () => {
+    // Bread moved from the bottom to the middle: not just a filling swap.
+    expect(scoreDish(spicyTuna, plate(['tuna', 'bread', 'chilli'])).score).toBe('close');
+    expect(scoreDish(spicyTuna, plate(['tuna', 'chilli', 'bread'])).score).toBe('wrong');
+  });
+
+  it('with no fixed ingredients, every layer can go anywhere', () => {
+    const anyOrder = { ...SCORING_CONFIG, fixedIngredients: [] };
+    expect(scoreDish(spicyTuna, plate(['chilli', 'tuna', 'bread']), anyOrder).score).toBe('perfect');
   });
 });
 

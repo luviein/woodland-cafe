@@ -1,9 +1,11 @@
-import { SCORING_CONFIG } from '../data/scoring';
+import { SCORING_CONFIG, type ScoringConfig } from '../data/scoring';
+import { acceptedOrderings } from './acceptedOrderings';
 import { layerDistance } from './layerDistance';
 import type { Plate, ScoreResult } from './types';
 
 /**
  * Compares what the player made against what was ordered, layer by layer.
+ * Bread must be in the right places; fillings between can be in any order.
  *
  * Pure function: no Phaser, no global state, same inputs -> same output.
  * That's what makes it easy to unit test, and reusable later by employees
@@ -12,7 +14,7 @@ import type { Plate, ScoreResult } from './types';
 export function scoreDish(
   expected: Plate,
   actual: Plate,
-  closeTolerance: number = SCORING_CONFIG.closeTolerance,
+  config: ScoringConfig = SCORING_CONFIG,
 ): ScoreResult {
   const missingModifiers = expected.modifiers.filter((m) => !actual.modifiers.includes(m));
 
@@ -22,8 +24,16 @@ export function scoreDish(
     return { score: 'wrong', missingModifiers };
   }
 
-  const mistakes = layerDistance(expected.layers, actual.layers);
+  // Compare against every acceptable ordering and keep the best match, so
+  // the player is judged against the version of the recipe they were
+  // closest to making.
+  const mistakes = Math.min(
+    ...acceptedOrderings(expected.layers, config.fixedIngredients).map((layers) =>
+      layerDistance(layers, actual.layers),
+    ),
+  );
+
   if (mistakes === 0) return { score: 'perfect', missingModifiers };
-  if (mistakes <= closeTolerance) return { score: 'close', missingModifiers };
+  if (mistakes <= config.closeTolerance) return { score: 'close', missingModifiers };
   return { score: 'wrong', missingModifiers };
 }

@@ -44,7 +44,7 @@ export class RecipeBook extends Phaser.GameObjects.Container {
     const top = -PANEL_HEIGHT / 2 + 12;
     const title = scene.add.text(left, top, 'Recipe Book', TEXT.heading);
     const note = scene.add
-      .text(PANEL_WIDTH / 2 - 16, top + 2, 'layers: bottom > top', TEXT.body)
+      .text(PANEL_WIDTH / 2 - 16, top + 2, 'bottom > top, fillings any order', TEXT.body)
       .setOrigin(1, 0);
 
     this.rows = scene.add.container(left, top + 32);

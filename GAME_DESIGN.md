@@ -39,9 +39,12 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   - Looking things up costs time: once patience exists (milestone 3), it **keeps dropping while the book is open**.
 - An order is a **recipe plus zero or more modifiers** (see §3).
 - The player builds the dish **layer by layer, bottom to top**, and serves it.
-- **Layer order matters.** A Jam Sandwich must be bread > jam > bread.
+- **Bread placement matters; filling order doesn't.**
+  - Bread layers must be where the recipe puts them: at the bottom, and also on top for sandwiches. A Jam Sandwich must be bread > jam > bread.
+  - The layers **between** breads (or above the bottom bread, for open breads) can go in **any order**. Tuna Tomato Sandwich accepts bread > tuna > tomato > bread **and** bread > tomato > tuna > bread. Spicy Tuna Bread accepts bread > tuna > chilli **and** bread > chilli > tuna.
+  - Which ingredients are "fixed in place" (currently just bread) is a config value.
 - The dish is scored on accuracy: **perfect / close / wrong**.
-  - **Perfect:** every layer matches the recipe, in the right order.
+  - **Perfect:** every layer matches the recipe, with bread in the right places (fillings in any order).
   - **Close:** exactly **one mistake**:
     - one layer missing (bread > jam)
     - one layer extra (bread > jam > jam > bread)
@@ -272,7 +275,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - A random **order** is generated from the recipes the player can make. It's shown only as a **direct dialogue line in a speech bubble** (no order ticket).
 - A **Recipe Book** button (top right) opens a list of unlocked recipes and their layers.
 - Click/tap ingredients to add them as layers, bottom to top; show the **current dish** as a stack; **Serve** and **Reset** buttons.
-- **Layer order** is part of scoring.
+- **Bread placement** is part of scoring; fillings between breads can be in any order.
 - Score the dish against the order (**perfect / close / wrong**), then show the next order.
 - Data files for **ingredients, recipes, modifiers, upgrades and dialogue** are set up **in their final shape**, with **placeholder entries for purchasable items**.
 - **Order generation and comparison are pure functions with Vitest unit tests.**
