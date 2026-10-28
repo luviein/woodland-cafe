@@ -144,6 +144,12 @@ Each recipe lists its required ingredients. A recipe **only appears in orders on
 
 - Patience rate, thresholds, and tip amounts live in a **data/config file** so they're easy to tune.
 
+### Missing modifiers
+
+- If the recipe's ingredients are right but a requested **modifier is missing** (e.g. the order was "toasted" but the bread wasn't toasted), the tip is **multiplied by 0.2** (the customer receives 20% of the tip they would otherwise get).
+- If the **whole order is wrong**, the result is **wrong**, regardless of modifiers.
+- The 0.2 multiplier lives in the **config file** with the other tip values.
+
 ### Key tradeoff
 
 The player can leave the counter **before taking an order** to clean messes, but the whole queue keeps losing patience meanwhile. Clean tables mean more seating; an unattended queue means lost tips and lost customers.
