@@ -37,6 +37,10 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
 - An order is a **recipe plus zero or more modifiers** (see §3).
 - The player assembles the dish and serves it.
 - The dish is scored on accuracy: **perfect / close / wrong**.
+  - **Perfect:** the dish's ingredients exactly match the order.
+  - **Close:** off by exactly one item (one missing, one extra, or one swapped).
+  - **Wrong:** anything else. An **empty dish is always wrong**.
+  - Modifiers are checked separately (see §4 "Missing modifiers").
 
 ---
 
@@ -96,12 +100,12 @@ Each recipe lists its required ingredients. A recipe **only appears in orders on
 | Upgrade          | Unlocks                                      | Applies to                    |
 | ---------------- | -------------------------------------------- | ----------------------------- |
 | Toaster          | "toasted" modifier                           | Bread recipes                 |
-| Butter Churn     | "buttered" modifier                          | *TBD*                         |
-| Cutting Board    | "cut in half" modifier                       | *TBD*                         |
+| Butter Churn     | "buttered" modifier                          | Any recipe                    |
+| Cutting Board    | "cut in half" modifier                       | Any recipe                    |
 | Grill Pan        | "grilled" modifier                           | Mushroom / tomato / tuna recipes |
 | Sandwich Press   | "pressed" modifier                           | Sandwich recipes              |
-| Seasoning Shaker | "seasoned" modifier                          | *TBD*                         |
-| Wrapping Paper   | "to go" modifier                             | *TBD*                         |
+| Seasoning Shaker | "seasoned" modifier                          | Any recipe                    |
+| Wrapping Paper   | "to go" modifier                             | Any recipe                    |
 | Serving Tray     | **Double orders** (×2 of the same order)     | Any order                     |
 
 - The **Toaster is the first fully built upgrade**. The rest only need **placeholder data entries** for now.
@@ -147,8 +151,11 @@ Each recipe lists its required ingredients. A recipe **only appears in orders on
 ### Missing modifiers
 
 - If the recipe's ingredients are right but a requested **modifier is missing** (e.g. the order was "toasted" but the bread wasn't toasted), the tip is **multiplied by 0.2** (the customer receives 20% of the tip they would otherwise get).
-- If the **whole order is wrong**, the result is **wrong**, regardless of modifiers.
-- The 0.2 multiplier lives in the **config file** with the other tip values.
+- The 0.2 penalty is applied **once**, however many modifiers are missing.
+- **Extra modifiers** the customer didn't ask for carry **no penalty**.
+- If the **whole order is wrong**, the result is **wrong**, regardless of modifiers. A wrong order **pays nothing** (no payment, no tip), like an unhappy customer.
+- A **close** order gets a **reduced tip (0.5×)**.
+- The 0.2 and 0.5 multipliers live in the **config file** with the other tip values.
 
 ### Key tradeoff
 
@@ -232,7 +239,7 @@ The player can leave the counter **before taking an order** to clean messes, but
   - Number keys: add ingredients
   - Enter: serve
   - Backspace: reset
-- **Display:** a fixed base resolution with Phaser's Scale Manager (`FIT` mode, centered), using integer scaling where possible, so the game fits any window size and pixels stay crisp.
+- **Display:** a fixed base resolution of **640×360** (40×22.5 tiles; scales by whole numbers to 1280×720, 1920×1080 and 2560×1440) with Phaser's Scale Manager (`FIT` mode, centered), using integer scaling where possible, so the game fits any window size and pixels stay crisp.
 - **Later milestone:** package as a downloadable desktop app (Tauri or Electron).
 
 ---
