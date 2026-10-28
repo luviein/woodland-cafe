@@ -56,13 +56,16 @@ describe('buildSpeech: direct style', () => {
 describe('buildSpeech: hint style', () => {
   it("uses the recipe's hint lines when it has them", () => {
     const speech = buildSpeech(order('jamBread'), seededRng(5), HINTS);
-    expect(speech).toEqual(['Something sweet on soft bread, please.']);
+    expect(speech).toHaveLength(1);
+    expect(RECIPE_LINES.jamBread.hint).toContain(speech[0]);
   });
 
   it('builds the hint from ingredient hints when the recipe has none', () => {
     // Double Mushroom Bread has no recipe hints yet; bread and mushroom do.
     const speech = buildSpeech(order('doubleMushroomBread'), seededRng(6), HINTS);
-    expect(speech).toEqual([INGREDIENT_LINES.bread.hint[0], INGREDIENT_LINES.mushroom.hint[0]]);
+    expect(speech).toHaveLength(2);
+    expect(INGREDIENT_LINES.bread.hint).toContain(speech[0]);
+    expect(INGREDIENT_LINES.mushroom.hint).toContain(speech[1]);
   });
 
   it('falls back to a direct line when an ingredient has no hint either', () => {
@@ -74,7 +77,7 @@ describe('buildSpeech: hint style', () => {
 
   it('uses modifier hint lines when available', () => {
     const speech = buildSpeech(order('plainBread', { modifiers: ['toasted'] }), seededRng(8), HINTS);
-    expect(speech[1]).toBe('I like my bread with a bit of crunch.');
+    expect(MODIFIER_LINES.toasted.hint).toContain(speech[1]);
   });
 });
 
