@@ -4,6 +4,7 @@ import type { FloorConfig } from '../data/floorConfig';
 import { createFloorState, stepFloor, type FloorState } from './floor';
 import { parseLayout, type Layout } from './layout';
 import { seededRng } from './random';
+import { walkerPosition } from './walker';
 
 // One table, two seats, door at the bottom.
 const TINY = parseLayout([
@@ -108,6 +109,54 @@ describe('stepFloor: dirty tables', () => {
   });
 });
 
+describe('stepFloor: never walks to a dirty table', () => {
+  // A is about to finish eating at the left seat; B is stepping toward the
+  // right seat of the same table.
+  const setup = (): FloorState => ({
+    ...start(),
+    spawnTimer: 1000,
+    nextCustomerId: 3,
+    customers: [
+      {
+        id: 1,
+        walker: { tile: { x: 2, y: 3 }, path: [], progress: 0 },
+        phase: 'eating',
+        timer: 0.01,
+        seat: { tableId: 'table-0', seat: { x: 2, y: 3 } },
+      },
+      {
+        id: 2,
+        walker: { tile: { x: 4, y: 2 }, path: [{ x: 4, y: 3 }], progress: 0.3 },
+        phase: 'toSeat',
+        timer: 0,
+        seat: { tableId: 'table-0', seat: { x: 4, y: 3 } },
+      },
+    ],
+  });
+
+  it('gives up the seat and goes back to wait when the table gets messy on the way', () => {
+    const s = stepFloor(setup(), TINY, 0.05, seededRng(1), CONFIG);
+    expect(s.dirtyTables['table-0']).toBe(true); // A left a mess
+    const b = s.customers.find((c) => c.id === 2)!;
+    expect(b.phase).toBe('waitingForSeat');
+    expect(b.seat).toBeNull();
+  });
+
+  it('never steps onto the seat, and sits once the table is cleaned', () => {
+    let s = stepFloor(setup(), TINY, 0.05, seededRng(1), CONFIG);
+    s = run(s, 3, {
+      check: (st) => {
+        // Check where B actually IS on screen; after turning around, the
+        // walker's `tile` field names the seat as the tile it came "from".
+        const b = st.customers.find((c) => c.id === 2)!;
+        expect(walkerPosition(b.walker)).not.toEqual({ x: 4, y: 3 });
+      },
+    });
+    s = { ...s, dirtyTables: { 'table-0': false } };
+    s = runUntil(s, (st) => st.customers.find((c) => c.id === 2)?.phase === 'eating');
+  });
+});
+
 describe('stepFloor: rules that must always hold', () => {
   // Customers arrive every half second and eat for ages, so seats fill up.
   const busy: FloorConfig = {
@@ -121,11 +170,19 @@ describe('stepFloor: rules that must always hold', () => {
   const checkInvariants = (s: FloorState) => {
     const seats = s.customers.filter((c) => c.seat).map((c) => `${c.seat!.seat.x},${c.seat!.seat.y}`);
     expect(new Set(seats).size, 'two customers share a seat').toBe(seats.length);
-    const atCounter = s.customers.filter((c) => ['toCounter', 'ordering', 'waitingForSeat'].includes(c.phase));
-    expect(atCounter.length, 'more than one customer at the counter').toBeLessThanOrEqual(1);
+    // Several customers can be waiting for a seat (someone sent back from a
+    // table that got messy joins the one at the counter), but only one is
+    // ever coming in to order.
+    const ordering = s.customers.filter((c) => c.phase === 'toCounter' || c.phase === 'ordering');
+    expect(ordering.length, 'more than one customer ordering').toBeLessThanOrEqual(1);
+    for (const c of s.customers) {
+      if (c.phase === 'toSeat') {
+        expect(s.dirtyTables[c.seat!.tableId], `customer ${c.id} heading to a dirty table`).toBe(false);
+      }
+    }
   };
 
-  it('never puts two customers in one seat, or two at the counter', () => {
+  it('never shares a seat, never heads to a dirty table, one customer ordering at a time', () => {
     const s = run(start(), 15, { config: busy, check: checkInvariants });
     // Both seats taken, the third customer waits.
     expect(s.customers.filter((c) => c.phase === 'eating')).toHaveLength(2);

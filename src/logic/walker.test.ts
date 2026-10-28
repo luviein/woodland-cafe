@@ -45,7 +45,19 @@ describe('walkTo', () => {
     expect(w.path).toEqual([{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }]);
   });
 
-  it('mid-step, finishes the current step before following the new route', () => {
+  it('mid-step, turns around instead if the new goal is behind it', () => {
+    let w = walkTo(createWalker({ x: 1, y: 1 }), ROOM, { x: 4, y: 1 });
+    w = stepWalker(w, 0.25, 1); // a quarter of the way to (2, 1)
+    const before = walkerPosition(w);
+    w = walkTo(w, ROOM, { x: 1, y: 1 }); // changed my mind: go back
+    expect(w.tile).toEqual({ x: 2, y: 1 });
+    expect(w.path).toEqual([{ x: 1, y: 1 }]);
+    expect(walkerPosition(w)).toEqual(before); // no jump on screen
+    w = stepWalker(w, 10, 1);
+    expect(w.tile).toEqual({ x: 1, y: 1 });
+  });
+
+  it('mid-step, finishes the current step when that is shorter', () => {
     let w = walkTo(createWalker({ x: 1, y: 1 }), ROOM, { x: 4, y: 1 });
     w = stepWalker(w, 0.5, 1); // halfway to (2, 1)
     w = walkTo(w, ROOM, { x: 2, y: 3 });
