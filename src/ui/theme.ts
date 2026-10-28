@@ -30,6 +30,10 @@ export const COLORS = {
   orderSpot: 0xe0c48f,
   player: 0x5a7a9c,
   apron: 0xf4e9d8,
+  mess: 0x5b3b22,
+  messLight: 0x8a6440,
+  /** Customer fur colours; each customer gets one, picked by id. */
+  customerFur: [0x9c6b45, 0xc98a4b, 0x8a817a, 0xd9b38c, 0x6e4a2f],
   overlay: 0x000000,
 } as const;
 

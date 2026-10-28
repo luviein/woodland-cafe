@@ -2,10 +2,22 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
 import { FLOOR_CONFIG } from '../data/floorConfig';
+import { createFloorState, stepFloor, type Customer, type FloorState } from '../logic/floor';
 import { parseLayout, type Layout, type Point, type TileKind } from '../logic/layout';
 import { createWalker, isMoving, stepWalker, walkerPosition, walkTo, type Walker } from '../logic/walker';
 import { Button } from '../ui/Button';
-import { COLORS } from '../ui/theme';
+import { COLORS, TEXT } from '../ui/theme';
+
+interface CustomerSprite {
+  body: Phaser.GameObjects.Container;
+  label: Phaser.GameObjects.Text;
+}
+
+/** Little hint above a customer's head so you can tell what they're doing. */
+const PHASE_LABEL: Partial<Record<Customer['phase'], string>> = {
+  ordering: '...',
+  waitingForSeat: '?',
+};
 
 const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
   wall: COLORS.wallTile,
@@ -19,9 +31,9 @@ const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
  * Top-down cafe floor. Drawn entirely from the layout data, so editing
  * data/cafeLayout.ts changes the room without touching this file.
  *
- * Like PrepScene, this only wires things up: movement rules live in
- * logic/walker.ts and logic/pathfinding.ts; this class turns taps into
- * walkTo() calls and draws the result each frame.
+ * Like PrepScene, this only wires things up: the rules live in logic/
+ * (walker, pathfinding, floor); this class turns taps into commands and
+ * draws the current state each frame.
  */
 export class FloorScene extends Phaser.Scene {
   private layout!: Layout;
@@ -31,6 +43,12 @@ export class FloorScene extends Phaser.Scene {
   private player!: Walker;
   private playerSprite!: Phaser.GameObjects.Container;
   private destinationMarker!: Phaser.GameObjects.Rectangle;
+
+  private floor!: FloorState;
+  /** Messes and plates on tables; redrawn every frame from the floor state. */
+  private tableOverlay!: Phaser.GameObjects.Graphics;
+  /** One sprite per customer id, created and destroyed as customers come and go. */
+  private customerSprites = new Map<number, CustomerSprite>();
 
   constructor() {
     super('FloorScene');
@@ -46,6 +64,12 @@ export class FloorScene extends Phaser.Scene {
     };
 
     this.drawTiles();
+    this.tableOverlay = this.add.graphics();
+
+    this.floor = createFloorState(this.layout);
+    // Map entries point at the previous run's destroyed sprites if the scene
+    // restarts, so start with a fresh map.
+    this.customerSprites = new Map();
 
     // Small outline showing where the player is heading; hidden when idle.
     this.destinationMarker = this.add
@@ -73,7 +97,12 @@ export class FloorScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
-    this.player = stepWalker(this.player, deltaMs / 1000, FLOOR_CONFIG.playerSpeed);
+    const seconds = deltaMs / 1000;
+    this.floor = stepFloor(this.floor, this.layout, seconds);
+    this.drawTableOverlay();
+    this.syncCustomerSprites();
+
+    this.player = stepWalker(this.player, seconds, FLOOR_CONFIG.playerSpeed);
 
     const pos = walkerPosition(this.player);
     // Round to whole pixels so the sprite never sits between pixels (blurry).
@@ -140,6 +169,82 @@ export class FloorScene extends Phaser.Scene {
     g.fillStyle(COLORS.ink);
     g.fillRect(5, 4, 2, 2);
     g.fillRect(9, 4, 2, 2);
-    return this.add.container(0, 0, [g]);
+    // Depth: draw the player above customers when they overlap.
+    return this.add.container(0, 0, [g]).setDepth(10);
+  }
+
+  /** Messes on dirty tables and a plate in front of each eating customer. */
+  private drawTableOverlay(): void {
+    const g = this.tableOverlay;
+    g.clear(); // cheap: a handful of tables, redrawn from scratch each frame
+
+    for (const table of this.layout.tables) {
+      if (!this.floor.dirtyTables[table.id]) continue;
+      const { x, y } = this.tileToPixel(table.position);
+      // Placeholder crumbs-and-spill splat.
+      g.fillStyle(COLORS.mess);
+      g.fillRect(x + 3, y + 5, 7, 5);
+      g.fillRect(x + 8, y + 3, 4, 4);
+      g.fillStyle(COLORS.messLight);
+      g.fillRect(x + 10, y + 9, 3, 3);
+      g.fillRect(x + 4, y + 11, 2, 2);
+    }
+
+    for (const c of this.floor.customers) {
+      if (c.phase !== 'eating' || !c.seat) continue;
+      const table = this.layout.tables.find((t) => t.id === c.seat!.tableId)!;
+      const { x, y } = this.tileToPixel(table.position);
+      // Nudge the plate toward the customer's side of the table.
+      const dx = (c.seat.seat.x - table.position.x) * 4;
+      const dy = (c.seat.seat.y - table.position.y) * 4;
+      g.fillStyle(COLORS.plate);
+      g.fillRect(x + 5 + dx, y + 5 + dy, 6, 6);
+    }
+  }
+
+  /**
+   * Keeps one sprite per customer in the floor state: creates sprites for
+   * new arrivals, moves existing ones, destroys those who left. The floor
+   * state is the source of truth; sprites just mirror it.
+   */
+  private syncCustomerSprites(): void {
+    const present = new Set<number>();
+    for (const c of this.floor.customers) {
+      present.add(c.id);
+      let sprite = this.customerSprites.get(c.id);
+      if (!sprite) {
+        sprite = this.createCustomerSprite(c.id);
+        this.customerSprites.set(c.id, sprite);
+      }
+      const pos = walkerPosition(c.walker);
+      sprite.body.setPosition(
+        Math.round(this.origin.x + pos.x * TILE_SIZE),
+        Math.round(this.origin.y + pos.y * TILE_SIZE),
+      );
+      sprite.label.setText(PHASE_LABEL[c.phase] ?? '');
+    }
+    for (const [id, sprite] of this.customerSprites) {
+      if (!present.has(id)) {
+        sprite.body.destroy();
+        this.customerSprites.delete(id);
+      }
+    }
+  }
+
+  /** Placeholder customer: a round-eared critter, fur colour picked by id. */
+  private createCustomerSprite(id: number): CustomerSprite {
+    const fur = COLORS.customerFur[id % COLORS.customerFur.length];
+    const g = this.add.graphics();
+    g.fillStyle(fur);
+    g.fillRect(2, 0, 4, 4); // ears
+    g.fillRect(10, 0, 4, 4);
+    g.fillRect(3, 3, 10, 12); // body
+    g.fillStyle(COLORS.ink);
+    g.fillRect(5, 6, 2, 2); // eyes
+    g.fillRect(9, 6, 2, 2);
+    // Small status text above the head ("..." ordering, "?" waiting).
+    const label = this.add.text(8, -2, '', TEXT.label).setOrigin(0.5, 1);
+    const body = this.add.container(0, 0, [g, label]).setDepth(5);
+    return { body, label };
   }
 }
