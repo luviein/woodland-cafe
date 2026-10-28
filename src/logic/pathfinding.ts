@@ -1,6 +1,4 @@
-import { isWalkable, neighbours, samePoint, type Layout, type Point } from './layout';
-
-const key = (p: Point): string => `${p.x},${p.y}`;
+import { isWalkable, neighbours, pointKey, samePoint, type Layout, type Point } from './layout';
 
 /** Grid distance ignoring walls: how many steps if nothing were in the way. */
 function manhattan(a: Point, b: Point): number {
@@ -24,11 +22,11 @@ export function findPath(layout: Layout, start: Point, goal: Point): Point[] | n
 
   // cameFrom lets us walk backwards from the goal to rebuild the route.
   const cameFrom = new Map<string, Point>();
-  const stepsTo = new Map<string, number>([[key(start), 0]]);
+  const stepsTo = new Map<string, number>([[pointKey(start), 0]]);
   // Tiles found but not yet explored. A plain array is fine: cafe grids are a
   // few hundred tiles, so a priority-queue library would be overkill.
   const open: Point[] = [start];
-  const score = (p: Point): number => stepsTo.get(key(p))! + manhattan(p, goal);
+  const score = (p: Point): number => stepsTo.get(pointKey(p))! + manhattan(p, goal);
 
   while (open.length > 0) {
     // Take the most promising tile.
@@ -42,11 +40,11 @@ export function findPath(layout: Layout, start: Point, goal: Point): Point[] | n
 
     for (const next of neighbours(current)) {
       if (!isWalkable(layout, next)) continue;
-      const steps = stepsTo.get(key(current))! + 1;
+      const steps = stepsTo.get(pointKey(current))! + 1;
       // Only keep this route if it's the shortest way to `next` found so far.
-      if (steps < (stepsTo.get(key(next)) ?? Infinity)) {
-        stepsTo.set(key(next), steps);
-        cameFrom.set(key(next), current);
+      if (steps < (stepsTo.get(pointKey(next)) ?? Infinity)) {
+        stepsTo.set(pointKey(next), steps);
+        cameFrom.set(pointKey(next), current);
         if (!open.some((p) => samePoint(p, next))) open.push(next);
       }
     }
@@ -56,11 +54,11 @@ export function findPath(layout: Layout, start: Point, goal: Point): Point[] | n
 
 function rebuildPath(cameFrom: Map<string, Point>, goal: Point): Point[] {
   const path: Point[] = [goal];
-  let current = cameFrom.get(key(goal));
+  let current = cameFrom.get(pointKey(goal));
   // Stop before the start tile (it has no cameFrom entry).
-  while (current && cameFrom.has(key(current))) {
+  while (current && cameFrom.has(pointKey(current))) {
     path.unshift(current);
-    current = cameFrom.get(key(current));
+    current = cameFrom.get(pointKey(current));
   }
   return path;
 }

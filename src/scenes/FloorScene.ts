@@ -3,7 +3,14 @@ import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
 import { devSettings } from '../debug/devSettings';
 import { FLOOR_CONFIG } from '../data/floorConfig';
-import { cleanTable, createFloorState, stepFloor, type Customer, type FloorState } from '../logic/floor';
+import {
+  cleanSeats,
+  createFloorState,
+  messySeatsAt,
+  stepFloor,
+  type Customer,
+  type FloorState,
+} from '../logic/floor';
 import { parseLayout, type Layout, type Point, type TileKind } from '../logic/layout';
 import { cleaningProgress, createPlayer, stepPlayer, tapTile, type PlayerState } from '../logic/player';
 import { destination, isMoving, walkerPosition } from '../logic/walker';
@@ -83,7 +90,7 @@ export class FloorScene extends Phaser.Scene {
     this.tableOverlay = this.add.graphics();
     this.progressBar = this.add.graphics().setDepth(20);
 
-    this.floor = createFloorState(this.layout);
+    this.floor = createFloorState();
     // Map entries point at the previous run's destroyed sprites if the scene
     // restarts, so start with a fresh map.
     this.customerSprites = new Map();
@@ -117,9 +124,9 @@ export class FloorScene extends Phaser.Scene {
     const seconds = deltaMs / 1000;
 
     // Player first, so a table cleaned this frame can seat someone this frame.
-    const { player, cleanedTableId } = stepPlayer(this.player, this.floor.dirtyTables, seconds);
+    const { player, cleanedSeats } = stepPlayer(this.player, this.floor, seconds);
     this.player = player;
-    if (cleanedTableId) this.floor = cleanTable(this.floor, cleanedTableId);
+    if (cleanedSeats.length > 0) this.floor = cleanSeats(this.floor, cleanedSeats);
 
     // Dev console "speed" command scales time for the critters only; the
     // player keeps walking at normal speed.
@@ -140,7 +147,7 @@ export class FloorScene extends Phaser.Scene {
   }
 
   private onTileTapped(tile: Point): void {
-    const next = tapTile(this.player, this.layout, this.floor.dirtyTables, tile);
+    const next = tapTile(this.player, this.layout, this.floor, tile);
     if (next === this.player) return; // nothing to do there: walls, clean tables, outside the room
     this.player = next;
 
@@ -209,34 +216,48 @@ export class FloorScene extends Phaser.Scene {
     return this.add.container(0, 0, [g]).setDepth(10);
   }
 
-  /** Messes on dirty tables and a plate in front of each eating customer. */
+  /**
+   * Messes and plates, each drawn on the half of the table facing its seat.
+   * Messes are per seat, so a table can be messy on one side and in use on
+   * the other.
+   */
   private drawTableOverlay(): void {
     const g = this.tableOverlay;
     g.clear(); // cheap: a handful of tables, redrawn from scratch each frame
 
     for (const table of this.layout.tables) {
-      if (!this.floor.dirtyTables[table.id]) continue;
-      const { x, y } = this.tileToPixel(table.position);
-      // Placeholder crumbs-and-spill splat.
-      g.fillStyle(COLORS.mess);
-      g.fillRect(x + 3, y + 5, 7, 5);
-      g.fillRect(x + 8, y + 3, 4, 4);
-      g.fillStyle(COLORS.messLight);
-      g.fillRect(x + 10, y + 9, 3, 3);
-      g.fillRect(x + 4, y + 11, 2, 2);
+      for (const seat of messySeatsAt(this.floor, table)) {
+        const { x, y } = this.seatSideCenter(table.position, seat);
+        // Placeholder crumbs-and-spill splat, about 6x6 px.
+        g.fillStyle(COLORS.mess);
+        g.fillRect(x - 3, y - 2, 5, 4);
+        g.fillRect(x, y - 3, 3, 3);
+        g.fillStyle(COLORS.messLight);
+        g.fillRect(x + 1, y + 1, 2, 2);
+        g.fillRect(x - 3, y + 2, 1, 1);
+      }
     }
 
     for (const c of this.floor.customers) {
       if (c.phase !== 'eating' || !c.seat) continue;
       const table = this.layout.tables.find((t) => t.id === c.seat!.tableId)!;
-      const { x, y } = this.tileToPixel(table.position);
-      // Nudge the plate toward the customer's side of the table.
-      const dx = (c.seat.seat.x - table.position.x) * 4;
-      const dy = (c.seat.seat.y - table.position.y) * 4;
+      const { x, y } = this.seatSideCenter(table.position, c.seat.seat);
       g.fillStyle(COLORS.plate);
-      g.fillRect(x + 5 + dx, y + 5 + dy, 6, 6);
+      g.fillRect(x - 3, y - 3, 6, 6);
     }
+  }
 
+  /**
+   * Pixel centre of the half of a table tile facing a seat. E.g. a seat to
+   * the left of the table -> the middle of the table's left half.
+   */
+  private seatSideCenter(table: Point, seat: Point): Point {
+    const { x, y } = this.tileToPixel(table);
+    const quarter = TILE_SIZE / 4;
+    return {
+      x: x + TILE_SIZE / 2 + (seat.x - table.x) * quarter,
+      y: y + TILE_SIZE / 2 + (seat.y - table.y) * quarter,
+    };
   }
 
   /**

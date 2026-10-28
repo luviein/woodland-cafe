@@ -58,6 +58,14 @@ export function samePoint(a: Point, b: Point): boolean {
   return a.x === b.x && a.y === b.y;
 }
 
+/**
+ * A point as a string like "3,5". Objects can't be compared by value in a
+ * Set or Map ({x:1} !== {x:1}), but strings can, so use this as the key.
+ */
+export function pointKey(p: Point): string {
+  return `${p.x},${p.y}`;
+}
+
 /** Floor and door tiles can be walked on; everything else blocks. */
 export function isWalkable(layout: Layout, p: Point): boolean {
   const tile = layout.tiles[p.y]?.[p.x];

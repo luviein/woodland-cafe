@@ -26,10 +26,12 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   4. Find a seat
   5. Eat
   6. Leave, leaving a **mess** behind
-- **Dirty tables can't seat new customers** until the player cleans them. Customers never walk to a dirty table: if their table gets messy while they're on the way (someone else at it just left), they pick another free seat, or go back and wait.
-- **Waiting line for seats.** If no seat at a clean table is free, customers **wait in a line** (a queue):
+- **Messes are per seat.** A customer leaves a mess on **their own side** of the table. That **seat** can't be used until cleaned, but the other seats at the same table still can.
+  - Customers never walk to a messy seat. (Should a seat somehow get messy while someone is heading to it, they go back to the line.)
+- **Cleaning:** tapping a table (or any of its seats) cleans **every mess on that table at the moment of the tap**. Wiping time is per mess: one mess takes 1.5s, two take 3s (config value). A mess that appears mid-wipe needs another tap.
+- **Waiting line for seats.** If no clean seat is free, customers **wait in a line** (a queue):
   - **First come, first served:** when a seat frees up, the customer at the front of the line gets it. Newcomers join the back and can't skip ahead.
-  - A customer sent back from a table that got messy rejoins at the **front**, since they'd already been given a seat.
+  - A customer sent back from a seat that got messy rejoins at the **front**, since they'd already been given a seat.
   - Each waiting customer has a **seat-wait timer**. When it runs out, they **leave upset**, and everyone behind moves up.
   - Line spots are marked in the layout data (`1` = front, `2`, `3`, ...). The wait time is a config value.
   - *Open question (milestones 3–4):* whether an upset customer who already paid gets a refund or affects reputation.
@@ -244,6 +246,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 - Expanding the cafe layout with purchased furniture
 - Hiring employees who clean or serve automatically
+- **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
 
 ---
 

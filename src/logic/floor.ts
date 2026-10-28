@@ -1,5 +1,5 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
-import { samePoint, type Layout, type Point } from './layout';
+import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
 import {
@@ -18,7 +18,7 @@ import {
  *   toCounter      -> reached the order spot
  *   ordering       -> timer ran out (stand-in for real ordering, milestone 3)
  *   waitingForSeat -> got a seat (front of the line), or ran out of patience
- *   toSeat         -> sat down (or the table got messy: back to the line)
+ *   toSeat         -> sat down (or their seat got messy: back to the line)
  *   eating         -> timer ran out; stands up and leaves a mess
  *   leaving        -> reached the door and is removed
  */
@@ -53,8 +53,12 @@ export interface Customer {
  */
 export interface FloorState {
   customers: Customer[];
-  /** Keyed by table id. */
-  dirtyTables: Record<string, boolean>;
+  /**
+   * Seats with a mess in front of them, as pointKey() strings ("3,5").
+   * Messes are per seat: whoever ate there leaves a mess on their own side.
+   * An array (not a Set) because plain arrays save to JSON as-is.
+   */
+  messySeats: string[];
   /** Ids of customers waiting for a seat; [0] is the front of the line. */
   waitingLine: number[];
   /** Seconds until the next customer arrives. */
@@ -62,10 +66,10 @@ export interface FloorState {
   nextCustomerId: number;
 }
 
-export function createFloorState(layout: Layout, config: FloorConfig = FLOOR_CONFIG): FloorState {
+export function createFloorState(config: FloorConfig = FLOOR_CONFIG): FloorState {
   return {
     customers: [],
-    dirtyTables: Object.fromEntries(layout.tables.map((t) => [t.id, false])),
+    messySeats: [],
     waitingLine: [],
     spawnTimer: config.firstCustomerDelay,
     nextCustomerId: 1,
@@ -96,7 +100,8 @@ export function stepFloor(
   rng: Rng = Math.random,
   config: FloorConfig = FLOOR_CONFIG,
 ): FloorState {
-  const dirtyTables = { ...state.dirtyTables };
+  // A Set for quick "is this seat messy?" checks; turned back into an array at the end.
+  const messySeats = new Set(state.messySeats);
   const line = [...state.waitingLine];
   let { spawnTimer, nextCustomerId } = state;
 
@@ -156,7 +161,7 @@ export function stepFloor(
         if (c.timer > 0) break;
         // Only take a seat directly if nobody is already waiting; otherwise
         // that would be skipping the line.
-        if (line.length > 0 || !claimSeat(c, customers, layout, dirtyTables)) {
+        if (line.length > 0 || !claimSeat(c, customers, layout, messySeats)) {
           joinLine(c, 'back');
         }
         break;
@@ -166,11 +171,13 @@ export function stepFloor(
         break;
 
       case 'toSeat':
-        // Customers never go to a dirty table. If someone else at their table
-        // just left a mess, they go back to the FRONT of the line (they'd
-        // already been given a seat), and get first pick of the next one.
-        // Checked before "arrived" so they never sit at a messy table.
-        if (dirtyTables[c.seat!.tableId]) joinLine(c, 'front');
+        // Customers never go to a messy seat. A mess only appears on the seat
+        // of whoever just ate there, so in normal play this can't happen to
+        // someone already heading to a seat; it's a safety net (e.g. for dev
+        // commands or future features). If it does: back to the FRONT of the
+        // line, since they'd already been given a seat. Checked before
+        // "arrived" so they never sit down at a mess.
+        if (messySeats.has(pointKey(c.seat!.seat))) joinLine(c, 'front');
         else if (arrived) {
           c.phase = 'eating';
           c.timer = between(config.eatSecondsMin, config.eatSecondsMax, rng);
@@ -179,7 +186,7 @@ export function stepFloor(
 
       case 'eating':
         if (c.timer <= 0) {
-          dirtyTables[c.seat!.tableId] = true; // the mess is left as they stand up
+          messySeats.add(pointKey(c.seat!.seat)); // a mess on their own side of the table
           leave(c, false);
         }
         break;
@@ -193,14 +200,14 @@ export function stepFloor(
   // 4. First come, first served: seat from the front while seats are free,
   // then everyone still waiting walks to their spot in the line.
   const byId = (id: number): Customer => customers.find((c) => c.id === id)!;
-  while (line.length > 0 && claimSeat(byId(line[0]), customers, layout, dirtyTables)) {
+  while (line.length > 0 && claimSeat(byId(line[0]), customers, layout, messySeats)) {
     line.shift();
   }
   const lastSpot = layout.waitingLine.length - 1;
   line.forEach((id, i) => {
     const c = byId(id);
     // If more people are waiting than there are spots (possible when someone
-    // is sent back from a messy table), the extras crowd the last spot.
+    // is sent back from a messy seat), the extras crowd the last spot.
     const spot = layout.waitingLine[Math.min(i, lastSpot)];
     if (!samePoint(destination(c.walker), spot)) c.walker = walkTo(c.walker, layout, spot);
   });
@@ -208,7 +215,7 @@ export function stepFloor(
   // 5. Out the door.
   return {
     customers: customers.filter((c) => !walkedOut.has(c.id)),
-    dirtyTables,
+    messySeats: [...messySeats],
     waitingLine: line,
     spawnTimer,
     nextCustomerId,
@@ -216,17 +223,17 @@ export function stepFloor(
 }
 
 /**
- * Gives `c` the nearest free seat at a clean table and sends them to it.
+ * Gives `c` the nearest free, clean seat and sends them to it.
  * Returns false (and changes nothing) if there's no such seat.
  */
 function claimSeat(
   c: Customer,
   everyone: readonly Customer[],
   layout: Layout,
-  dirtyTables: Record<string, boolean>,
+  messySeats: ReadonlySet<string>,
 ): boolean {
   const others = everyone.filter((o) => o.id !== c.id);
-  const seat = findFreeSeat(layout, dirtyTables, others, routeStart(c.walker));
+  const seat = findFreeSeat(layout, messySeats, others, routeStart(c.walker));
   if (!seat) return false;
   c.seat = seat;
   c.walker = redirect(c.walker, (from) => routeToSeat(layout, from, seat.seat));
@@ -235,20 +242,21 @@ function claimSeat(
 }
 
 /**
- * A seat that's at a clean table and not claimed by anyone, closest to
- * `from`. Null if every clean seat is taken (or every table is dirty).
+ * A seat with no mess that nobody has claimed, closest to `from`. Null if
+ * every clean seat is taken. Only the seat itself matters: a mess on the
+ * other side of the same table doesn't block it.
  */
 export function findFreeSeat(
   layout: Layout,
-  dirtyTables: Record<string, boolean>,
+  messySeats: ReadonlySet<string>,
   others: readonly Customer[],
   from: Point,
 ): SeatRef | null {
   let best: SeatRef | null = null;
   let bestSteps = Infinity;
   for (const table of layout.tables) {
-    if (dirtyTables[table.id]) continue;
     for (const seat of table.seats) {
+      if (messySeats.has(pointKey(seat))) continue;
       if (others.some((o) => o.seat && samePoint(o.seat.seat, seat))) continue;
       const route = routeToSeat(layout, from, seat);
       if (route && route.length < bestSteps) {
@@ -269,7 +277,13 @@ function routeToSeat(layout: Layout, from: Point, seat: Point): Point[] | null {
   return route && [...route, seat];
 }
 
-/** The floor with one table wiped clean. Returns a new state, like stepFloor. */
-export function cleanTable(state: FloorState, tableId: string): FloorState {
-  return { ...state, dirtyTables: { ...state.dirtyTables, [tableId]: false } };
+/** The seats at `table` that currently have a mess. */
+export function messySeatsAt(state: FloorState, table: Table): Point[] {
+  return table.seats.filter((s) => state.messySeats.includes(pointKey(s)));
+}
+
+/** The floor with the given seats' messes wiped. Returns a new state, like stepFloor. */
+export function cleanSeats(state: FloorState, seats: readonly Point[]): FloorState {
+  const wiped = new Set(seats.map(pointKey));
+  return { ...state, messySeats: state.messySeats.filter((key) => !wiped.has(key)) };
 }
