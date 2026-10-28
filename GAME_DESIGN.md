@@ -28,7 +28,7 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   6. Leave, leaving a **mess** behind
 - **Dirty tables can't seat new customers** until the player cleans them.
 - The **layout is data-driven**: a tile grid defined in a data file, so the cafe can be expanded later without code changes.
-- Player movement style: *to be decided in milestone 2*.
+- **Player movement: click/tap to walk.** The player taps a tile (or a table, to clean it) and the character finds a path there around furniture. Works the same with mouse and touch, with no hover and no on-screen joystick needed.
 
 ### 2.2 Prep Scene (close-up)
 
@@ -268,7 +268,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 ## 10. Milestones
 
 1. **Prep station core loop**
-2. **Cafe floor:** customers sit, eat, and leave messes; the player cleans messes (player movement style to be decided)
+2. **Cafe floor:** customers sit, eat, and leave messes; the player cleans messes (click/tap-to-walk movement)
 3. **Connect** the counter queue, patience timers, tip thresholds, and the two scenes
 4. **Leaves currency and day cycle** (a run ends, show day summary)
 5. **World map** with Cafe, Forest (foraging + leaf pickups) and Marketplace (leaf pickups)
