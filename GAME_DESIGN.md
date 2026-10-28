@@ -33,13 +33,101 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
 ### 2.2 Prep Scene (close-up)
 
 - After the player takes an order at the counter, they go to a close-up prep screen (similar in feel to *Good Coffee, Great Coffee*).
-- An order is a **combination of ingredients** (e.g. acorn bread ×1, berry jam ×2).
+- The customer's order appears as a **speech bubble** (see §3.5 Dialogue) plus an **order ticket**.
+- An order is a **recipe plus zero or more modifiers** (see §3).
 - The player assembles the dish and serves it.
 - The dish is scored on accuracy: **perfect / close / wrong**.
 
 ---
 
-## 3. Patience & Tips
+## 3. Ingredients, Recipes, Modifiers & Dialogue
+
+All of these are **data-driven**, each in its **own data file**.
+
+### 3.1 Ingredients
+
+| Ingredient | How it's obtained |
+| ---------- | ----------------- |
+| Bread      | Starter |
+| Mushroom   | Starter |
+| Jam        | Starter |
+| Chilli     | Bought at the Marketplace with Leaves |
+| Tuna       | Bought at the Marketplace with Leaves |
+| Tomato     | Bought at the Marketplace with Leaves |
+
+### 3.2 Recipes
+
+Each recipe lists its required ingredients. A recipe **only appears in orders once the player owns all of its ingredients**.
+
+**Starter recipes**
+
+| Recipe                | Ingredients              |
+| --------------------- | ------------------------ |
+| Plain Bread           | bread ×1                 |
+| Jam Bread             | bread ×1, jam ×1         |
+| Extra Jammy Bread     | bread ×1, jam ×2         |
+| Mushroom Bread        | bread ×1, mushroom ×1    |
+| Double Mushroom Bread | bread ×1, mushroom ×2    |
+| Mushroom Sandwich     | bread ×2, mushroom ×1    |
+| Jam Sandwich          | bread ×2, jam ×1         |
+
+**Recipes unlocked by purchasable ingredients**
+
+| Recipe               | Ingredients                      |
+| -------------------- | -------------------------------- |
+| Tomato Bread         | bread ×1, tomato ×1              |
+| Tuna Sandwich        | bread ×2, tuna ×1                |
+| Tuna Tomato Sandwich | bread ×2, tuna ×1, tomato ×1     |
+| Spicy Tuna Bread     | bread ×1, tuna ×1, chilli ×1     |
+| Spicy Mushroom Bread | bread ×1, mushroom ×1, chilli ×1 |
+
+### 3.3 Modifiers
+
+- Modifiers are **separate from recipes**. There are **no** combined recipes such as "Toasted Jam Bread".
+- **Order = recipe + zero or more unlocked modifiers.**
+- A modifier has:
+  - an **id**
+  - the **upgrade that unlocks it**
+  - **which recipes it can apply to**
+  - its own **dialogue lines**
+
+### 3.4 Upgrades (equipment bought at the Marketplace)
+
+| Upgrade          | Unlocks                                      | Applies to                    |
+| ---------------- | -------------------------------------------- | ----------------------------- |
+| Toaster          | "toasted" modifier                           | Bread recipes                 |
+| Butter Churn     | "buttered" modifier                          | *TBD*                         |
+| Cutting Board    | "cut in half" modifier                       | *TBD*                         |
+| Grill Pan        | "grilled" modifier                           | Mushroom / tomato / tuna recipes |
+| Sandwich Press   | "pressed" modifier                           | Sandwich recipes              |
+| Seasoning Shaker | "seasoned" modifier                          | *TBD*                         |
+| Wrapping Paper   | "to go" modifier                             | *TBD*                         |
+| Serving Tray     | **Double orders** (×2 of the same order)     | Any order                     |
+
+- The **Toaster is the first fully built upgrade**. The rest only need **placeholder data entries** for now.
+
+### 3.5 Dialogue
+
+- Every **recipe, ingredient and modifier** has several lines a customer might say, in two styles:
+
+  | Style      | Example |
+  | ---------- | ------- |
+  | **Direct** | "One jam bread, please!" |
+  | **Hint**   | "Something sweet on soft bread, please." |
+
+- Example "toasted" lines:
+  - "Make it toasty, please! My paws are freezing."
+  - "I like my bread with a bit of crunch."
+- Example chilli lines:
+  - "Make it spicy! I want my ears to go pink."
+  - "Give it a kick!"
+- When an order is generated, the customer's **speech bubble is built from matching lines** (for the recipe, its ingredients, and any modifiers).
+- The **ratio of hint to direct lines is a config value**, so difficulty can ramp up over days.
+- The **order ticket is still shown** for now. Later, hint-only orders may hide it.
+
+---
+
+## 4. Patience & Tips
 
 - Every customer in the counter queue has a **patience timer**.
 - Patience **always counts down at one fixed rate**, no matter what the player is doing: cleaning, preparing an order, or anything else.
@@ -62,14 +150,14 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 ---
 
-## 4. Day Cycle & World Map
+## 5. Day Cycle & World Map
 
-### 4.1 Day cycle
+### 5.1 Day cycle
 
 - One cafe **run is one day**.
 - When a run ends, the game shows a **day summary**, and the player can then **exit the cafe**, which opens the world map.
 
-### 4.2 World map
+### 5.2 World map
 
 - **Style:** a single-screen, top-down pixel-art illustration of a **grassy woodland island surrounded by water**, with decorative trees.
 - Each location is a **small landmark** (building, tree grove, market stalls) with a **clickable signpost-style label** above it.
@@ -83,15 +171,15 @@ The player can leave the counter **before taking an order** to clean messes, but
   - locked / unlocked
 - Until the art milestone, the island and landmarks are **placeholder shapes**.
 
-### 4.3 Locations (initial)
+### 5.3 Locations (initial)
 
 | Location        | Purpose |
 | --------------- | ------- |
 | **Cafe**        | Return here to start the next day. |
 | **Forest**      | Grassy outdoor area. Some ingredients can be **foraged** (clicked/collected and added to the player's inventory). |
-| **Marketplace** | Grassy outdoor area with **shops** where the player spends Leaves on upgrades and furniture. |
+| **Marketplace** | Grassy outdoor area with **shops** where the player spends Leaves on ingredients, upgrades and furniture. |
 
-### 4.4 Leaf pickups
+### 5.4 Leaf pickups
 
 - In both the Forest and the Marketplace, **Leaves randomly spawn on the ground**.
 - Picking one up gives **+1 Leaf**.
@@ -99,26 +187,28 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 ---
 
-## 5. Game State
+## 6. Game State
 
 - All player state lives in **one central, serializable state object**, so it can be saved and loaded later:
   - Leaves
   - Inventory
-  - Owned furniture / upgrades
+  - **Owned ingredients**
+  - **Owned upgrades**
+  - Owned furniture
   - Cafe layout
   - Unlocked locations
 - "Serializable" means plain data only (no Phaser objects, class instances, or functions), so it can be converted to JSON and back without losing anything.
 
 ---
 
-## 6. Later Features
+## 7. Later Features
 
 - Expanding the cafe layout with purchased furniture
 - Hiring employees who clean or serve automatically
 
 ---
 
-## 7. Art Direction
+## 8. Art Direction
 
 - Pixel art with Phaser `pixelArt: true` (no texture smoothing).
 - Fixed **16×16 tile size**.
@@ -127,7 +217,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 ---
 
-## 8. Platform & Input
+## 9. Platform & Input
 
 - **Primary target:** PC in the browser (also the main testing setup).
 - **Touch-friendly**, so mobile is possible later.
@@ -141,24 +231,26 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 ---
 
-## 9. Milestones
+## 10. Milestones
 
 1. **Prep station core loop**
 2. **Cafe floor:** customers sit, eat, and leave messes; the player cleans messes (player movement style to be decided)
 3. **Connect** the counter queue, patience timers, tip thresholds, and the two scenes
 4. **Leaves currency and day cycle** (a run ends, show day summary)
 5. **World map** with Cafe, Forest (foraging + leaf pickups) and Marketplace (leaf pickups)
-6. **Marketplace shop:** buy upgrades and furniture; place furniture to expand the cafe
-7. **Employees**
-8. **Saving and loading**
-9. **Pixel art, animation, sound** (including the illustrated island map)
-10. **Desktop build** (Tauri or Electron)
+6. **Marketplace shop:** buy ingredients and upgrades (Toaster first), unlocking new recipes, modifiers and dialogue; add hint-style dialogue
+7. **Furniture and cafe expansion**
+8. **Employees**
+9. **Saving and loading**
+10. **Pixel art, animation, sound** (including the illustrated island map)
+11. **Desktop build** (Tauri or Electron)
 
 ### Milestone 1 scope: Prep Station
 
-- A random **order ticket** built from **3 to 4 ingredients** (e.g. acorn bread ×1, berry jam ×2).
+- Uses the **starter ingredients** (Bread, Mushroom, Jam) and **starter recipes**.
+- A random **order** is generated from the recipes the player can make. It's shown as a **direct dialogue line in a speech bubble** alongside the **order ticket**.
 - Click/tap ingredients to add them; show the **current dish**; **Serve** and **Reset** buttons.
 - Score the dish against the order (**perfect / close / wrong**), then show the next order.
-- Recipes and ingredients live in a **separate data file**.
-- The comparison logic is a **pure function with Vitest unit tests**.
-- Nothing from later milestones (no patience, Leaves, floor scene, world map, game state, etc.).
+- Data files for **ingredients, recipes, modifiers, upgrades and dialogue** are set up **in their final shape**, with **placeholder entries for purchasable items**.
+- **Order generation and comparison are pure functions with Vitest unit tests.**
+- Nothing from later milestones (no modifiers in live orders, patience, Leaves, floor scene, world map, shop, etc.).
