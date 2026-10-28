@@ -19,9 +19,6 @@ export const COLORS = {
   reset: 0xb0705a,
   book: 0x5a7a9c,
   disabled: 0x8a817a,
-  perfect: 0x6f9e5a,
-  close: 0xd9a93f,
-  wrong: 0xb5473a,
   overlay: 0x000000,
 } as const;
 
@@ -35,5 +32,4 @@ export const TEXT = {
   heading: { fontFamily: FONT, fontSize: '16px', color: css(COLORS.ink), fontStyle: 'bold' },
   button: { fontFamily: FONT, fontSize: '16px', color: '#ffffff', fontStyle: 'bold' },
   label: { fontFamily: FONT, fontSize: '12px', color: css(COLORS.paper) },
-  banner: { fontFamily: FONT, fontSize: '32px', color: '#ffffff', fontStyle: 'bold' },
 } satisfies Record<string, Phaser.Types.GameObjects.Text.TextStyle>;

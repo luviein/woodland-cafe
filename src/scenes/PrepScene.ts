@@ -1,15 +1,13 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
-import { buildSpeech } from '../logic/dialogue';
-
+import { buildReaction, buildSpeech } from '../logic/dialogue';
 import { availableRecipes, expectedPlate, generateOrder, type Owned } from '../logic/orders';
 import { scoreDish } from '../logic/scoreDish';
 import type { Order } from '../logic/types';
 import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
 import { RecipeBook } from '../ui/RecipeBook';
-import { ResultBanner } from '../ui/ResultBanner';
 import { SpeechBubble } from '../ui/SpeechBubble';
 import { COLORS, TEXT } from '../ui/theme';
 
@@ -19,8 +17,8 @@ const OWNED: Owned = { ingredients: STARTER_INGREDIENTS, upgrades: [] };
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
-/** How long the result banner stays up before the next order. */
-const NEXT_ORDER_DELAY_MS = 1400;
+/** How long the customer's reaction stays up (time to read it) before the next order. */
+const NEXT_ORDER_DELAY_MS = 2200;
 
 const COUNTER_TOP_Y = 140;
 
@@ -35,7 +33,7 @@ export class PrepScene extends Phaser.Scene {
   private order!: Order;
   /** Layers, bottom first. */
   private dish: IngredientId[] = [];
-  /** True while the result banner is up; input is ignored. */
+  /** True while the customer is reacting to a served dish; input is ignored. */
   private busy = false;
 
   private bubble!: SpeechBubble;
@@ -43,7 +41,6 @@ export class PrepScene extends Phaser.Scene {
   private dishView!: DishView;
   private serveButton!: Button;
   private resetButton!: Button;
-  private banner!: ResultBanner;
 
   constructor() {
     super('PrepScene');
@@ -72,13 +69,11 @@ export class PrepScene extends Phaser.Scene {
       this.resetDish(),
     );
 
-    // Created after the prep UI so it draws on top; the banner goes above it.
+    // Created after the prep UI so it draws on top of it.
     this.recipeBook = new RecipeBook(this);
     new Button(this, 576, 28, 104, 32, 'Recipes', COLORS.book, () =>
       this.recipeBook.open(availableRecipes(OWNED)),
     );
-
-    this.banner = new ResultBanner(this);
 
     this.nextOrder();
   }
@@ -86,7 +81,6 @@ export class PrepScene extends Phaser.Scene {
   private nextOrder(): void {
     this.order = generateOrder(OWNED);
     this.bubble.setLines(buildSpeech(this.order));
-    this.banner.hide();
     this.busy = false;
     this.resetDish();
   }
@@ -116,7 +110,8 @@ export class PrepScene extends Phaser.Scene {
     this.busy = true;
     this.serveButton.setEnabled(false);
     this.resetButton.setEnabled(false);
-    this.banner.show(result.score);
+    // No result pop-up: the customer's reaction is the feedback.
+    this.bubble.setLines([buildReaction(result.score)]);
     this.time.delayedCall(NEXT_ORDER_DELAY_MS, () => this.nextOrder());
   }
 

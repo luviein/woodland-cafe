@@ -1,3 +1,4 @@
+import type { Score } from '../logic/types';
 import type { IngredientId } from './ingredients';
 import type { ModifierId } from './modifiers';
 import type { RecipeId } from './recipes';
@@ -64,6 +65,34 @@ export const INGREDIENT_LINES: Record<IngredientId, DialogueLines> = {
   chilli: { direct: ['Make it spicy! I want my ears to go pink.'], hint: ['Give it a kick!'] },
   tuna: { direct: ['With tuna, please.'], hint: [] },
   tomato: { direct: ['With tomato, please.'], hint: [] },
+};
+
+/**
+ * What the customer says after being served. This is the player's only
+ * feedback (there's no result pop-up), so each mood should be easy to read.
+ */
+export const REACTION_LINES: Record<Score, readonly string[]> = {
+  // Happy
+  perfect: [
+    "Oh, it's perfect! Thank you!",
+    'Just how I like it!',
+    'Mmm! My tail is wagging already.',
+    'You must be the best cook in the woods!',
+  ],
+  // Indifferent
+  close: [
+    "Hmm... it'll do, I suppose.",
+    'Not quite what I asked for, but okay.',
+    'Close enough. I guess.',
+    "Well... I'll eat it.",
+  ],
+  // Angry
+  wrong: [
+    "This isn't what I ordered!",
+    'Hmph! My whiskers are twitching.',
+    'What is this?! I asked for something else!',
+    "I'm not paying for this!",
+  ],
 };
 
 /** Said before the order when it's a double order (Serving Tray). Placeholder (milestone 6). */

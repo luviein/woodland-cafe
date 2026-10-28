@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { DOUBLE_ORDER_LINES, INGREDIENT_LINES, MODIFIER_LINES, RECIPE_LINES } from '../data/dialogue';
+import {
+  DOUBLE_ORDER_LINES,
+  INGREDIENT_LINES,
+  MODIFIER_LINES,
+  REACTION_LINES,
+  RECIPE_LINES,
+} from '../data/dialogue';
 import { ORDER_CONFIG, type OrderConfig } from '../data/orderConfig';
 import { RECIPE_IDS } from '../data/recipes';
-import { buildSpeech } from './dialogue';
+import { buildReaction, buildSpeech } from './dialogue';
 import { seededRng } from './random';
 import type { Order } from './types';
 
@@ -94,5 +100,20 @@ describe('buildSpeech: hint ratio', () => {
     // 50% +/- 5%: loose enough to never flake, tight enough to catch a bug.
     expect(hints / runs).toBeGreaterThan(0.45);
     expect(hints / runs).toBeLessThan(0.55);
+  });
+});
+
+describe('buildReaction', () => {
+  it('picks a line matching the score', () => {
+    const rng = seededRng(11);
+    for (const score of ['perfect', 'close', 'wrong'] as const) {
+      expect(REACTION_LINES[score]).toContain(buildReaction(score, rng));
+    }
+  });
+
+  it('happy, indifferent and angry lines never overlap', () => {
+    // Reactions are the only feedback, so one line must not mean two moods.
+    const all = [...REACTION_LINES.perfect, ...REACTION_LINES.close, ...REACTION_LINES.wrong];
+    expect(new Set(all).size).toBe(all.length);
   });
 });

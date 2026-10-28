@@ -2,6 +2,7 @@ import {
   DOUBLE_ORDER_LINES,
   INGREDIENT_LINES,
   MODIFIER_LINES,
+  REACTION_LINES,
   RECIPE_LINES,
   type DialogueLines,
 } from '../data/dialogue';
@@ -9,7 +10,7 @@ import { ORDER_CONFIG, type OrderConfig } from '../data/orderConfig';
 import { RECIPES } from '../data/recipes';
 import { uniqueIngredients } from './dish';
 import { pickOne, type Rng } from './random';
-import type { Order } from './types';
+import type { Order, Score } from './types';
 
 export type SpeechStyle = 'direct' | 'hint';
 
@@ -71,4 +72,9 @@ export function buildSpeech(
     speech.push(pickLine(MODIFIER_LINES[mod], rollStyle(), rng));
   }
   return speech;
+}
+
+/** What the customer says after being served, based on how the dish scored. */
+export function buildReaction(score: Score, rng: Rng = Math.random): string {
+  return pickOne(REACTION_LINES[score], rng);
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { acceptedOrderings } from '../logic/acceptedOrderings';
 import { recipeMatchesFilter } from '../logic/orders';
 import { SCORING_CONFIG } from './scoring';
-import { INGREDIENT_LINES, MODIFIER_LINES, RECIPE_LINES } from './dialogue';
+import { INGREDIENT_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from './dialogue';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
 import { RECIPE_IDS, RECIPES } from './recipes';
@@ -80,6 +80,13 @@ describe('dialogue', () => {
     const all = [RECIPE_LINES, INGREDIENT_LINES, MODIFIER_LINES].flatMap((group) =>
       Object.values(group).flatMap((l) => [...l.direct, ...l.hint]),
     );
+    all.push(...Object.values(REACTION_LINES).flat());
     for (const line of all) expect(line.trim()).not.toBe('');
+  });
+
+  it('every score has reaction lines', () => {
+    for (const [score, lines] of Object.entries(REACTION_LINES)) {
+      expect(lines.length, score).toBeGreaterThan(0);
+    }
   });
 });

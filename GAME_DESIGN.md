@@ -52,6 +52,15 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
     - two neighbouring layers swapped (bread > bread > jam)
   - **Wrong:** two or more mistakes. An **empty dish is always wrong**.
   - Modifiers are checked separately (see §4 "Missing modifiers").
+- **No result pop-up.** After serving, the customer **reacts in their speech bubble**, and that's how the player learns how they did:
+
+  | Score   | Reaction    | Example |
+  | ------- | ----------- | ------- |
+  | Perfect | Happy       | "Just how I like it!" |
+  | Close   | Indifferent | "Hmm... it'll do, I suppose." |
+  | Wrong   | Angry       | "This isn't what I ordered!" |
+
+  Reaction lines are data-driven (dialogue data file), several per score.
 
 ---
 
@@ -276,7 +285,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - A **Recipe Book** button (top right) opens a list of unlocked recipes and their layers.
 - Click/tap ingredients to add them as layers, bottom to top; show the **current dish** as a stack; **Serve** and **Reset** buttons.
 - **Bread placement** is part of scoring; fillings between breads can be in any order.
-- Score the dish against the order (**perfect / close / wrong**), then show the next order.
+- Score the dish against the order (**perfect / close / wrong**); the customer **reacts in the speech bubble** (happy / indifferent / angry), then the next order appears.
 - Data files for **ingredients, recipes, modifiers, upgrades and dialogue** are set up **in their final shape**, with **placeholder entries for purchasable items**.
 - **Order generation and comparison are pure functions with Vitest unit tests.**
 - Nothing from later milestones (no modifiers in live orders, patience, Leaves, floor scene, world map, shop, etc.).
