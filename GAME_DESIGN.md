@@ -26,7 +26,13 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   4. Find a seat
   5. Eat
   6. Leave, leaving a **mess** behind
-- **Dirty tables can't seat new customers** until the player cleans them. Customers never walk to a dirty table: if their table gets messy while they're on the way (someone else at it just left), they pick another free seat, or go back to the counter and wait.
+- **Dirty tables can't seat new customers** until the player cleans them. Customers never walk to a dirty table: if their table gets messy while they're on the way (someone else at it just left), they pick another free seat, or go back and wait.
+- **Waiting line for seats.** If no seat at a clean table is free, customers **wait in a line** (a queue):
+  - **First come, first served:** when a seat frees up, the customer at the front of the line gets it. Newcomers join the back and can't skip ahead.
+  - A customer sent back from a table that got messy rejoins at the **front**, since they'd already been given a seat.
+  - Each waiting customer has a **seat-wait timer**. When it runs out, they **leave upset**, and everyone behind moves up.
+  - Line spots are marked in the layout data (`1` = front, `2`, `3`, ...). The wait time is a config value.
+  - *Open question (milestones 3–4):* whether an upset customer who already paid gets a refund or affects reputation.
 - The **layout is data-driven**: a tile grid defined in a data file, so the cafe can be expanded later without code changes.
 - **Player movement: click/tap to walk.** The player taps a tile (or a table, to clean it) and the character finds a path there around furniture. Works the same with mouse and touch, with no hover and no on-screen joystick needed.
 

@@ -24,6 +24,8 @@ export interface Layout {
   tables: Table[];
   door: Point;
   orderSpot: Point;
+  /** Where customers stand while waiting for a seat; [0] is the front of the line. */
+  waitingLine: Point[];
   playerStart: Point;
 }
 
@@ -37,6 +39,7 @@ const CHAR_TO_TILE: Record<string, TileKind> = {
   S: 'seat',
   P: 'floor',
   O: 'floor',
+  // Digits 1-9 are waiting-line spots, also floor (handled in parseLayout).
 };
 
 const NEIGHBOURS: readonly Point[] = [
@@ -76,6 +79,8 @@ export function parseLayout(rows: readonly string[]): Layout {
   const doors: Point[] = [];
   const orderSpots: Point[] = [];
   const playerStarts: Point[] = [];
+  /** Line spots by their digit, e.g. lineSpots.get(1) = front of the line. */
+  const lineSpots = new Map<number, Point>();
 
   rows.forEach((row, y) => {
     if (row.length !== width) {
@@ -83,7 +88,7 @@ export function parseLayout(rows: readonly string[]): Layout {
     }
     tiles.push(
       [...row].map((char, x) => {
-        const tile = CHAR_TO_TILE[char];
+        const tile = isLineDigit(char) ? 'floor' : CHAR_TO_TILE[char];
         if (!tile) throw new Error(`Unknown layout character '${char}' at (${x}, ${y})`);
         const p = { x, y };
         if (char === 'T') tablePositions.push(p);
@@ -91,6 +96,11 @@ export function parseLayout(rows: readonly string[]): Layout {
         if (char === 'D') doors.push(p);
         if (char === 'O') orderSpots.push(p);
         if (char === 'P') playerStarts.push(p);
+        if (isLineDigit(char)) {
+          const n = Number(char);
+          if (lineSpots.has(n)) throw new Error(`Waiting line spot ${n} appears twice`);
+          lineSpots.set(n, p);
+        }
         return tile;
       }),
     );
@@ -131,5 +141,22 @@ export function parseLayout(rows: readonly string[]): Layout {
     door: exactlyOne(doors, 'door (D)'),
     orderSpot: exactlyOne(orderSpots, 'order spot (O)'),
     playerStart: exactlyOne(playerStarts, 'player start (P)'),
+    waitingLine: orderedLine(lineSpots),
   };
+}
+
+function isLineDigit(char: string): boolean {
+  return char >= '1' && char <= '9';
+}
+
+/** Line spots in order 1, 2, 3... Must start at 1 with no gaps. */
+function orderedLine(spots: Map<number, Point>): Point[] {
+  if (spots.size === 0) throw new Error('Layout needs a waiting line (spots 1, 2, 3...)');
+  const line: Point[] = [];
+  for (let n = 1; n <= spots.size; n++) {
+    const spot = spots.get(n);
+    if (!spot) throw new Error(`Waiting line has a gap: spot ${n} is missing`);
+    line.push(spot);
+  }
+  return line;
 }

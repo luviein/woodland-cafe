@@ -5,7 +5,7 @@ import { isWalkable, parseLayout } from './layout';
 // A tiny cafe to test with: one table with two seats.
 const SMALL = [
   'WWWWWW', //
-  'WP..CW',
+  'WP.1CW',
   'WSTSOW',
   'W....W',
   'WWDWWW',
@@ -31,6 +31,14 @@ describe('parseLayout', () => {
     expect(layout.playerStart).toEqual({ x: 1, y: 1 });
     expect(layout.orderSpot).toEqual({ x: 4, y: 2 });
     expect(layout.door).toEqual({ x: 2, y: 4 });
+  });
+
+  it('reads waiting-line digits as floor, in line order', () => {
+    expect(layout.tiles[1][3]).toBe('floor');
+    expect(layout.waitingLine).toEqual([{ x: 3, y: 1 }]);
+    // Order comes from the digits, not from where they appear in the grid.
+    const twoSpots = parseLayout(SMALL.map((r, i) => (i === 3 ? 'W2...W' : r)));
+    expect(twoSpots.waitingLine).toEqual([{ x: 3, y: 1 }, { x: 1, y: 3 }]);
   });
 
   it('groups seats with the table they touch', () => {
@@ -75,6 +83,15 @@ describe('parseLayout errors', () => {
 
   it('rejects a table with no seats', () => {
     expect(() => parseLayout(withRow(3, 'W...TW'))).toThrow(/no seats/);
+  });
+
+  it('rejects a missing waiting line', () => {
+    expect(() => parseLayout(withRow(1, 'WP..CW'))).toThrow(/waiting line/);
+  });
+
+  it('rejects a gap or a duplicate in the waiting line', () => {
+    expect(() => parseLayout(withRow(3, 'W3...W'))).toThrow(/spot 2 is missing/);
+    expect(() => parseLayout(withRow(3, 'W1...W'))).toThrow(/appears twice/);
   });
 });
 

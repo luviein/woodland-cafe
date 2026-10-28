@@ -4,7 +4,7 @@ import { createWalker, isMoving, stepWalker, walkerPosition, walkTo } from './wa
 
 const ROOM = parseLayout([
   'WWWWWW', //
-  'WP...W',
+  'WP..1W',
   'WSTO.W',
   'W....W',
   'WWDWWW',

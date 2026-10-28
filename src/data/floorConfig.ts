@@ -14,6 +14,8 @@ export interface FloorConfig {
   orderSeconds: number;
   eatSecondsMin: number;
   eatSecondsMax: number;
+  /** How long a customer waits in line for a seat before leaving upset. */
+  seatWaitSeconds: number;
 }
 
 export const FLOOR_CONFIG: FloorConfig = {
@@ -25,4 +27,5 @@ export const FLOOR_CONFIG: FloorConfig = {
   orderSeconds: 1.5,
   eatSecondsMin: 6,
   eatSecondsMax: 10,
+  seatWaitSeconds: 20,
 };

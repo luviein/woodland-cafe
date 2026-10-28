@@ -22,6 +22,11 @@ export function isMoving(walker: Walker): boolean {
   return walker.path.length > 0;
 }
 
+/** Where the walker will end up: the last tile of its path, or where it stands. */
+export function destination(walker: Walker): Point {
+  return walker.path.at(-1) ?? walker.tile;
+}
+
 /**
  * Moves the walker along its path. `seconds` is time since the last frame,
  * so speed is the same at 30fps or 144fps. Returns a NEW walker rather than

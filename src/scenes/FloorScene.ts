@@ -13,11 +13,23 @@ interface CustomerSprite {
   label: Phaser.GameObjects.Text;
 }
 
-/** Little hint above a customer's head so you can tell what they're doing. */
-const PHASE_LABEL: Partial<Record<Customer['phase'], string>> = {
-  ordering: '...',
-  waitingForSeat: '?',
-};
+/**
+ * Little hint above a customer's head so you can tell what they're doing:
+ * "..." ordering, "?" waiting for a seat, "?!" running out of patience,
+ * "!!" leaving upset.
+ */
+function statusLabel(c: Customer): string {
+  switch (c.phase) {
+    case 'ordering':
+      return '...';
+    case 'waitingForSeat':
+      return c.timer < FLOOR_CONFIG.seatWaitSeconds / 3 ? '?!' : '?';
+    case 'leaving':
+      return c.upset ? '!!' : '';
+    default:
+      return '';
+  }
+}
 
 const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
   wall: COLORS.wallTile,
@@ -154,6 +166,12 @@ export class FloorScene extends Phaser.Scene {
     const spot = this.tileToPixel(this.layout.orderSpot);
     g.fillStyle(COLORS.orderSpot);
     g.fillRect(spot.x + 3, spot.y + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+
+    // Small dots where the waiting line forms.
+    for (const linePoint of this.layout.waitingLine) {
+      const p = this.tileToPixel(linePoint);
+      g.fillRect(p.x + 6, p.y + 6, 4, 4);
+    }
   }
 
   /**
@@ -221,7 +239,7 @@ export class FloorScene extends Phaser.Scene {
         Math.round(this.origin.x + pos.x * TILE_SIZE),
         Math.round(this.origin.y + pos.y * TILE_SIZE),
       );
-      sprite.label.setText(PHASE_LABEL[c.phase] ?? '');
+      sprite.label.setText(statusLabel(c));
     }
     for (const [id, sprite] of this.customerSprites) {
       if (!present.has(id)) {

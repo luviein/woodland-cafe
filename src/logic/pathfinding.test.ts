@@ -7,7 +7,7 @@ import { findPath } from './pathfinding';
 const ROOM = parseLayout([
   'WWWWWWW', //
   'WP.W.OW',
-  'W..W..W',
+  'W..W.1W',
   'W.....W',
   'WWDWWSW',
   'WWWWWTW',
@@ -50,7 +50,7 @@ describe('findPath', () => {
   it('returns null when the goal is walkable but sealed off', () => {
     const sealed = parseLayout([
       'WWWWWW', //
-      'WP.W.W',
+      'WP1W.W',
       'WSTW.W',
       'WODWWW',
     ]);
