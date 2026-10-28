@@ -16,7 +16,7 @@ export interface FloorConfig {
   eatSecondsMax: number;
   /** How long a customer waits in line for a seat before leaving upset. */
   seatWaitSeconds: number;
-  /** How long the player takes to wipe a dirty table, once standing next to it. */
+  /** Seconds to wipe ONE mess, once standing next to the table (two messes take twice as long). */
   cleanSeconds: number;
 }
 
