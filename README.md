@@ -10,12 +10,20 @@ See [GAME_DESIGN.md](GAME_DESIGN.md) for the full design and milestone list.
 ```sh
 npm install      # once
 npm run dev      # start the game at http://localhost:5173 (reloads on save)
-npm test         # run unit tests once
+npm test         # run unit tests once (does NOT type-check)
+npm run typecheck   # type-check everything, tests included
 npm run test:watch  # re-run tests on every save
 npm run build    # type-check + production build into dist/
 ```
 
 Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
+
+## Controls (cafe floor)
+
+| Action              | Mouse / touch |
+| ------------------- | ------------- |
+| Walk                | Tap a floor tile |
+| Clean a messy table | Tap the table (or one of its seats); tap elsewhere to cancel |
 
 ## Controls (prep station)
 

@@ -1,6 +1,6 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
-import { isWalkable, neighbours, samePoint, type Layout, type Point } from './layout';
-import { findPath } from './pathfinding';
+import { samePoint, type Layout, type Point } from './layout';
+import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
 import {
   createWalker,
@@ -265,11 +265,11 @@ export function findFreeSeat(
  * walk to the best floor tile next to the seat, then step onto it.
  */
 function routeToSeat(layout: Layout, from: Point, seat: Point): Point[] | null {
-  let best: Point[] | null = null;
-  for (const n of neighbours(seat)) {
-    if (!isWalkable(layout, n)) continue;
-    const route = findPath(layout, from, n);
-    if (route && (!best || route.length < best.length)) best = route;
-  }
-  return best && [...best, seat];
+  const route = findPathNextTo(layout, from, seat);
+  return route && [...route, seat];
+}
+
+/** The floor with one table wiped clean. Returns a new state, like stepFloor. */
+export function cleanTable(state: FloorState, tableId: string): FloorState {
+  return { ...state, dirtyTables: { ...state.dirtyTables, [tableId]: false } };
 }

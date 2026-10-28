@@ -16,6 +16,8 @@ export interface FloorConfig {
   eatSecondsMax: number;
   /** How long a customer waits in line for a seat before leaving upset. */
   seatWaitSeconds: number;
+  /** How long the player takes to wipe a dirty table, once standing next to it. */
+  cleanSeconds: number;
 }
 
 export const FLOOR_CONFIG: FloorConfig = {
@@ -28,4 +30,5 @@ export const FLOOR_CONFIG: FloorConfig = {
   eatSecondsMin: 6,
   eatSecondsMax: 10,
   seatWaitSeconds: 20,
+  cleanSeconds: 1.5,
 };

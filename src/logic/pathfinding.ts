@@ -64,3 +64,18 @@ function rebuildPath(cameFrom: Map<string, Point>, goal: Point): Point[] {
   }
   return path;
 }
+
+/**
+ * Shortest route to any walkable tile touching `target` (a table, a seat):
+ * you can't stand ON furniture, only next to it. [] if already next to it,
+ * null if no side of it can be reached.
+ */
+export function findPathNextTo(layout: Layout, start: Point, target: Point): Point[] | null {
+  let best: Point[] | null = null;
+  for (const n of neighbours(target)) {
+    if (!isWalkable(layout, n)) continue;
+    const route = findPath(layout, start, n);
+    if (route && (!best || route.length < best.length)) best = route;
+  }
+  return best;
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
 import type { FloorConfig } from '../data/floorConfig';
-import { createFloorState, stepFloor, type Customer, type FloorState } from './floor';
+import { cleanTable, createFloorState, stepFloor, type Customer, type FloorState } from './floor';
 import { parseLayout, type Layout } from './layout';
 import { seededRng } from './random';
 import { destination, walkerPosition } from './walker';
@@ -32,6 +32,7 @@ const CONFIG: FloorConfig = {
   eatSecondsMin: 2,
   eatSecondsMax: 2,
   seatWaitSeconds: 5,
+  cleanSeconds: 1,
 };
 
 interface RunOptions {
@@ -236,6 +237,21 @@ describe('stepFloor: never walks to a dirty table', () => {
     });
     s = { ...s, dirtyTables: { 'table-0': false } }; // cleaning comes in step 4
     runUntil(s, phaseOf(2, 'eating'));
+  });
+});
+
+describe('cleanTable', () => {
+  it('makes one table clean without changing the state it was given', () => {
+    const dirty = allDirty();
+    const cleaned = cleanTable(dirty, 'table-0');
+    expect(cleaned.dirtyTables['table-0']).toBe(false);
+    expect(dirty.dirtyTables['table-0']).toBe(true);
+  });
+
+  it('lets the front of the line sit down', () => {
+    let s = runUntil(allDirty(), phaseOf(1, 'waitingForSeat'));
+    s = cleanTable(s, 'table-0');
+    runUntil(s, phaseOf(1, 'eating'));
   });
 });
 
