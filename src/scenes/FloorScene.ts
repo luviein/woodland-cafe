@@ -61,6 +61,8 @@ export class FloorScene extends Phaser.Scene {
   private floor!: FloorState;
   /** Messes and plates on tables; redrawn every frame from the floor state. */
   private tableOverlay!: Phaser.GameObjects.Graphics;
+  /** Drawn above all characters (depth 20) so nobody can cover it. */
+  private progressBar!: Phaser.GameObjects.Graphics;
   /** One sprite per customer id, created and destroyed as customers come and go. */
   private customerSprites = new Map<number, CustomerSprite>();
 
@@ -79,6 +81,7 @@ export class FloorScene extends Phaser.Scene {
 
     this.drawTiles();
     this.tableOverlay = this.add.graphics();
+    this.progressBar = this.add.graphics().setDepth(20);
 
     this.floor = createFloorState(this.layout);
     // Map entries point at the previous run's destroyed sprites if the scene
@@ -122,6 +125,7 @@ export class FloorScene extends Phaser.Scene {
     // player keeps walking at normal speed.
     this.floor = stepFloor(this.floor, this.layout, seconds * devSettings.floorTimeScale);
     this.drawTableOverlay();
+    this.drawProgressBar();
     this.syncCustomerSprites();
 
     const pos = walkerPosition(this.player.walker);
@@ -233,18 +237,27 @@ export class FloorScene extends Phaser.Scene {
       g.fillRect(x + 5 + dx, y + 5 + dy, 6, 6);
     }
 
-    // Progress bar above the table being wiped.
+  }
+
+  /**
+   * Progress bar above the table being wiped. On its own Graphics layer at
+   * a high depth: the table overlay sits under the characters, and the
+   * player often stands right where the bar goes (cleaning from above).
+   */
+  private drawProgressBar(): void {
+    const g = this.progressBar;
+    g.clear();
     const progress = cleaningProgress(this.player);
-    if (progress !== null && this.player.cleaning) {
-      const table = this.layout.tables.find((t) => t.id === this.player.cleaning!.tableId)!;
-      const { x, y } = this.tileToPixel(table.position);
-      const barWidth = TILE_SIZE - 2;
-      g.fillStyle(COLORS.ink);
-      g.fillRect(x + 1, y - 5, barWidth, 4);
-      g.fillStyle(COLORS.serve);
-      // Math.floor: whole-pixel widths keep the bar crisp as it fills.
-      g.fillRect(x + 2, y - 4, Math.floor((barWidth - 2) * progress), 2);
-    }
+    if (progress === null || !this.player.cleaning) return;
+
+    const table = this.layout.tables.find((t) => t.id === this.player.cleaning!.tableId)!;
+    const { x, y } = this.tileToPixel(table.position);
+    const barWidth = TILE_SIZE - 2;
+    g.fillStyle(COLORS.ink);
+    g.fillRect(x + 1, y - 5, barWidth, 4);
+    g.fillStyle(COLORS.serve);
+    // Math.floor: whole-pixel widths keep the bar crisp as it fills.
+    g.fillRect(x + 2, y - 4, Math.floor((barWidth - 2) * progress), 2);
   }
 
   /**
