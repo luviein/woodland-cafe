@@ -15,28 +15,36 @@ import { parseLayout, tableById, type Layout, type Point, type TileKind } from '
 import { cleaningProgress, createPlayer, stepPlayer, tapTile, type PlayerState } from '../logic/player';
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { Button } from '../ui/Button';
-import { COLORS, TEXT } from '../ui/theme';
+import { COLORS, TEXT, css } from '../ui/theme';
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;
+  /**
+   * Kept OUT of the body container, on its own higher layer: inside the
+   * container it shared the body's depth, so other customers drawn later
+   * (e.g. the rest of the waiting line) could cover it.
+   */
   label: Phaser.GameObjects.Text;
 }
 
 /**
- * Little hint above a customer's head so you can tell what they're doing:
- * "..." ordering, "?" waiting for a seat, "?!" running out of patience,
- * "!!" leaving upset.
+ * Little hint above a customer's head so you can tell what they're doing,
+ * coloured by mood: "..." ordering, "?" waiting for a seat, "?!" running out
+ * of patience (orange), "!!" leaving upset (red).
  */
-function statusLabel(c: Customer): string {
+function statusLabel(c: Customer): { text: string; color: number } {
+  const calm = COLORS.statusCalm;
   switch (c.phase) {
     case 'ordering':
-      return '...';
+      return { text: '...', color: calm };
     case 'waitingForSeat':
-      return c.timer < FLOOR_CONFIG.seatWaitSeconds / 3 ? '?!' : '?';
+      return c.timer < FLOOR_CONFIG.seatWaitSeconds / 3
+        ? { text: '?!', color: COLORS.statusImpatient }
+        : { text: '?', color: calm };
     case 'leaving':
-      return c.upset ? '!!' : '';
+      return c.upset ? { text: '!!', color: COLORS.statusUpset } : { text: '', color: calm };
     default:
-      return '';
+      return { text: '', color: calm };
   }
 }
 
@@ -305,11 +313,19 @@ export class FloorScene extends Phaser.Scene {
       }
       const pos = this.walkerToPixel(c.walker);
       sprite.body.setPosition(pos.x, pos.y);
-      sprite.label.setText(statusLabel(c));
+      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 2);
+
+      // Changing a Phaser Text's colour redraws its texture, so only touch
+      // it when the status actually changes, not every frame.
+      const status = statusLabel(c);
+      if (sprite.label.text !== status.text) {
+        sprite.label.setText(status.text).setColor(css(status.color));
+      }
     }
     for (const [id, sprite] of this.customerSprites) {
       if (!present.has(id)) {
         sprite.body.destroy();
+        sprite.label.destroy(); // not inside the body container, so destroy it separately
         this.customerSprites.delete(id);
       }
     }
@@ -326,9 +342,14 @@ export class FloorScene extends Phaser.Scene {
     g.fillStyle(COLORS.ink);
     g.fillRect(5, 6, 2, 2); // eyes
     g.fillRect(9, 6, 2, 2);
-    // Small status text above the head; see statusLabel().
-    const label = this.add.text(8, -2, '', TEXT.label).setOrigin(0.5, 1);
-    const body = this.add.container(0, 0, [g, label]).setDepth(5);
+    const body = this.add.container(0, 0, [g]).setDepth(5);
+    // Status text above the head (see statusLabel), on a layer above every
+    // character (depth 15: over the player at 10, under the progress bar at
+    // 20), with a dark outline so it reads on any floor colour.
+    const label = this.add
+      .text(0, 0, '', { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
+      .setOrigin(0.5, 1)
+      .setDepth(15);
     return { body, label };
   }
 }
