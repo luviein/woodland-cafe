@@ -8,7 +8,8 @@
 //   C  counter            O  order spot: where customers stand at the counter
 //   T  table              S  seat (must touch exactly one table)
 //   P  player start (floor)
-//   1-9  waiting line for seats (floor): 1 = front of the line, then 2, 3...
+//   1-9  counter queue (floor): where customers wait BEHIND the order spot O.
+//        1 is next in line, then 2, 3... (whoever is at O is being served)
 //
 // Text rows are used instead of JSON arrays because you can SEE the room
 // while editing it. Every row must be the same width.

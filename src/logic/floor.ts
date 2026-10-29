@@ -15,20 +15,14 @@ import {
 
 /**
  * Where a customer is in their visit. Each phase ends on a clear event:
- *   toCounter      -> reached the order spot
- *   ordering       -> timer ran out (stand-in for real ordering, milestone 3)
- *   waitingForSeat -> got a seat (front of the line), or ran out of patience
- *   toSeat         -> sat down (or their seat got messy: back to the line)
- *   eating         -> timer ran out; stands up and leaves a mess
- *   leaving        -> reached the door and is removed
+ *   queued   -> their order is taken (front of the queue, and a clean seat
+ *               is free), or patience runs out
+ *   ordered  -> served (the stand-in timer runs out), or patience runs out
+ *   toSeat   -> sat down
+ *   eating   -> timer ran out; stands up and leaves a mess
+ *   leaving  -> reached the door and is removed
  */
-export type CustomerPhase =
-  | 'toCounter'
-  | 'ordering'
-  | 'waitingForSeat'
-  | 'toSeat'
-  | 'eating'
-  | 'leaving';
+export type CustomerPhase = 'queued' | 'ordered' | 'toSeat' | 'eating' | 'leaving';
 
 export interface SeatRef {
   tableId: string;
@@ -39,11 +33,16 @@ export interface Customer {
   id: number;
   walker: Walker;
   phase: CustomerPhase;
-  /** Seconds left in a timed phase (ordering, waitingForSeat, eating). */
+  /** Seconds left in a timed phase (ordered stand-in, eating). */
   timer: number;
-  /** The seat this customer has claimed, from heading to it until leaving it. */
+  /**
+   * Seconds of patience left. Counts down at a fixed rate while queued and
+   * ordered (even while the order is being made); stops once served.
+   */
+  patience: number;
+  /** The seat this customer has reserved, from ordering until leaving it. */
   seat: SeatRef | null;
-  /** True if they gave up waiting and are leaving unhappy. */
+  /** True if they ran out of patience and are leaving unhappy. */
   upset: boolean;
 }
 
@@ -59,8 +58,12 @@ export interface FloorState {
    * An array (not a Set) because plain arrays save to JSON as-is.
    */
   messySeats: string[];
-  /** Ids of customers waiting for a seat; [0] is the front of the line. */
-  waitingLine: number[];
+  /**
+   * Customer ids in the counter queue, front first. queue[0] stands at the
+   * order spot (and stays there until served); the rest stand on the queue
+   * spots behind.
+   */
+  queue: number[];
   /** Seconds until the next customer arrives. */
   spawnTimer: number;
   nextCustomerId: number;
@@ -70,10 +73,20 @@ export function createFloorState(config: FloorConfig = FLOOR_CONFIG): FloorState
   return {
     customers: [],
     messySeats: [],
-    waitingLine: [],
+    queue: [],
     spawnTimer: config.firstCustomerDelay,
     nextCustomerId: 1,
   };
+}
+
+/** How many customers the counter queue holds: the order spot plus the spots behind. */
+export function queueCapacity(layout: Layout): number {
+  return 1 + layout.queueSpots.length;
+}
+
+/** Where the customer at position `i` in the queue stands. */
+function queuePosition(layout: Layout, i: number): Point {
+  return i === 0 ? layout.orderSpot : layout.queueSpots[i - 1];
 }
 
 const between = (min: number, max: number, rng: Rng): number => min + rng() * (max - min);
@@ -82,16 +95,14 @@ const between = (min: number, max: number, rng: Rng): number => min + rng() * (m
  * Advances the floor by `seconds`. Returns a NEW state; the old one is left
  * untouched (same reasons as stepWalker: easy to test, no shared-object bugs).
  *
- * Works in passes, because the waiting line needs to see everyone at once:
- *   1. move everyone and count down their timers
- *   2. maybe let a new customer in
- *   3. each customer reacts to their own situation (arrived? timer done?)
- *   4. seat people from the front of the line, then shuffle the line up
- *   5. drop customers who walked out the door
- *
- * Simplification for this milestone: a new customer only comes in when nobody
- * else is ordering, so only one person is ever at the order spot.
- * Milestone 3 replaces this with a proper counter queue.
+ * Works in passes, because the queue needs to see everyone at once:
+ *   1. move everyone and count down their timers and patience
+ *   2. maybe let a new customer in (if the queue has room)
+ *   3. each customer reacts to their own situation (patience out? served?)
+ *   4. the front of the queue orders if a clean seat is free (STAND-IN:
+ *      automatic for now; milestone 3 step 2 makes the player take it)
+ *   5. everyone still queued walks to their spot
+ *   6. drop customers who walked out the door
  */
 export function stepFloor(
   state: FloorState,
@@ -100,49 +111,46 @@ export function stepFloor(
   rng: Rng = Math.random,
   config: FloorConfig = FLOOR_CONFIG,
 ): FloorState {
-  // A Set for quick "is this seat messy?" checks; turned back into an array at the end.
   const messySeats = new Set(state.messySeats);
-  const line = [...state.waitingLine];
+  const queue = [...state.queue];
   let { spawnTimer, nextCustomerId } = state;
 
   // 1. Fresh copies we're free to change; the input state stays untouched.
-  const customers: Customer[] = state.customers.map((c) => ({
-    ...c,
-    walker: stepWalker(c.walker, seconds, config.customerSpeed),
-    timer: c.timer - seconds,
-  }));
+  const customers: Customer[] = state.customers.map((c) => {
+    const waiting = c.phase === 'queued' || c.phase === 'ordered';
+    return {
+      ...c,
+      walker: stepWalker(c.walker, seconds, config.customerSpeed),
+      timer: c.timer - seconds,
+      // Fixed rate, whatever else is going on; only while waiting to be served.
+      patience: waiting ? c.patience - seconds : c.patience,
+    };
+  });
 
-  // 2. Maybe a new customer walks in: only if nobody is ordering and there's
-  // room in the line for them if no seat is free.
+  // 2. A new customer walks in if it's time and the queue has room.
   spawnTimer -= seconds;
-  const someoneOrdering = customers.some((c) => c.phase === 'toCounter' || c.phase === 'ordering');
-  if (spawnTimer <= 0 && !someoneOrdering && line.length < layout.waitingLine.length) {
+  if (spawnTimer <= 0 && queue.length < queueCapacity(layout)) {
+    const id = nextCustomerId++;
     customers.push({
-      id: nextCustomerId++,
-      walker: walkTo(createWalker(layout.door), layout, layout.orderSpot),
-      phase: 'toCounter',
+      id,
+      walker: createWalker(layout.door), // pass 5 sends them to their queue spot
+      phase: 'queued',
       timer: 0,
+      patience: config.patienceSeconds,
       seat: null,
       upset: false,
     });
+    queue.push(id);
     spawnTimer = between(config.spawnIntervalMin, config.spawnIntervalMax, rng);
   }
 
-  const joinLine = (c: Customer, where: 'front' | 'back'): void => {
-    c.phase = 'waitingForSeat';
-    c.seat = null;
-    c.timer = config.seatWaitSeconds;
-    if (where === 'front') line.unshift(c.id);
-    else line.push(c.id);
-  };
-
   const leave = (c: Customer, upset: boolean): void => {
     c.phase = 'leaving';
-    c.seat = null;
+    c.seat = null; // frees a reserved seat too
     c.upset = upset;
     c.walker = walkTo(c.walker, layout, layout.door);
-    const inLine = line.indexOf(c.id);
-    if (inLine >= 0) line.splice(inLine, 1);
+    const inQueue = queue.indexOf(c.id);
+    if (inQueue >= 0) queue.splice(inQueue, 1);
   };
 
   // 3. Each customer reacts to their own situation.
@@ -150,35 +158,27 @@ export function stepFloor(
   for (const c of customers) {
     const arrived = !isMoving(c.walker);
     switch (c.phase) {
-      case 'toCounter':
-        if (arrived) {
-          c.phase = 'ordering';
-          c.timer = config.orderSeconds;
+      case 'queued':
+      case 'ordered':
+        if (c.patience <= 0) {
+          leave(c, true); // waited too long: leaves unhappy, doesn't pay
+        } else if (c.phase === 'ordered' && c.timer <= 0) {
+          // Served (STAND-IN timer; step 3 replaces it with the prep station).
+          // Patience stops here, and they head to the seat reserved for them.
+          queue.splice(queue.indexOf(c.id), 1);
+          c.phase = 'toSeat';
+          c.walker = redirect(c.walker, (from) => routeToSeat(layout, from, c.seat!.seat));
         }
-        break;
-
-      case 'ordering':
-        if (c.timer > 0) break;
-        // Only take a seat directly if nobody is already waiting; otherwise
-        // that would be skipping the line.
-        if (line.length > 0 || !claimSeat(c, customers, layout, messySeats)) {
-          joinLine(c, 'back');
-        }
-        break;
-
-      case 'waitingForSeat':
-        if (c.timer <= 0) leave(c, true); // waited too long
         break;
 
       case 'toSeat':
-        // Customers never go to a messy seat. A mess only appears on the seat
-        // of whoever just ate there, so in normal play this can't happen to
-        // someone already heading to a seat; it's a safety net (e.g. for dev
-        // commands or future features). If it does: back to the FRONT of the
-        // line, since they'd already been given a seat. Checked before
-        // "arrived" so they never sit down at a mess.
-        if (messySeats.has(pointKey(c.seat!.seat))) joinLine(c, 'front');
-        else if (arrived) {
+        // Safety net: a mess only appears on the seat of whoever just ate
+        // there, so a reserved seat can't normally get messy. If it ever does
+        // (dev commands, future features), move to another free seat, or
+        // leave rather than sit at a mess.
+        if (messySeats.has(pointKey(c.seat!.seat))) {
+          if (!claimSeat(c, customers, layout, messySeats)) leave(c, false);
+        } else if (arrived) {
           c.phase = 'eating';
           c.timer = between(config.eatSecondsMin, config.eatSecondsMax, rng);
         }
@@ -197,26 +197,39 @@ export function stepFloor(
     }
   }
 
-  // 4. First come, first served: seat from the front while seats are free,
-  // then everyone still waiting walks to their spot in the line.
+  // 4. STAND-IN for taking orders: the front customer orders automatically
+  // once standing at the order spot, if a clean seat is free. Ordering
+  // reserves that seat, so the next customer can't take it.
   const byId = (id: number): Customer => customers.find((c) => c.id === id)!;
-  while (line.length > 0 && claimSeat(byId(line[0]), customers, layout, messySeats)) {
-    line.shift();
+  const front = queue.length > 0 ? byId(queue[0]) : null;
+  const frontReady =
+    front?.phase === 'queued' &&
+    !isMoving(front.walker) &&
+    samePoint(front.walker.tile, layout.orderSpot);
+  if (front && frontReady) {
+    const seat = findFreeSeat(layout, messySeats, customers, layout.orderSpot);
+    if (seat) {
+      front.seat = seat;
+      front.phase = 'ordered';
+      front.timer = config.orderSeconds;
+    }
   }
-  const lastSpot = layout.waitingLine.length - 1;
-  line.forEach((id, i) => {
+
+  // 5. Everyone in the queue walks to their spot. When someone leaves or is
+  // served, the people behind them move up.
+  queue.forEach((id, i) => {
     const c = byId(id);
-    // If more people are waiting than there are spots (possible when someone
-    // is sent back from a messy seat), the extras crowd the last spot.
-    const spot = layout.waitingLine[Math.min(i, lastSpot)];
+    // More people than spots can't normally happen (arrivals stop when the
+    // queue is full), but just in case, extras crowd the last spot.
+    const spot = queuePosition(layout, Math.min(i, queueCapacity(layout) - 1));
     if (!samePoint(destination(c.walker), spot)) c.walker = walkTo(c.walker, layout, spot);
   });
 
-  // 5. Out the door.
+  // 6. Out the door.
   return {
     customers: customers.filter((c) => !walkedOut.has(c.id)),
     messySeats: [...messySeats],
-    waitingLine: line,
+    queue,
     spawnTimer,
     nextCustomerId,
   };
@@ -237,12 +250,11 @@ function claimSeat(
   if (!seat) return false;
   c.seat = seat;
   c.walker = redirect(c.walker, (from) => routeToSeat(layout, from, seat.seat));
-  c.phase = 'toSeat';
   return true;
 }
 
 /**
- * A seat with no mess that nobody has claimed, closest to `from`. Null if
+ * A seat with no mess that nobody has reserved, closest to `from`. Null if
  * every clean seat is taken. Only the seat itself matters: a mess on the
  * other side of the same table doesn't block it.
  */
@@ -266,6 +278,11 @@ export function findFreeSeat(
     }
   }
   return best;
+}
+
+/** True if at least one clean seat is free, i.e. the front customer could order. */
+export function hasFreeSeat(state: FloorState, layout: Layout): boolean {
+  return findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot) !== null;
 }
 
 /**

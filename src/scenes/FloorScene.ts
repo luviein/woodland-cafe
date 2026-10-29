@@ -6,6 +6,7 @@ import { devSettings } from '../debug/devSettings';
 import {
   cleanSeats,
   createFloorState,
+  hasFreeSeat,
   messySeatsAt,
   stepFloor,
   type Customer,
@@ -22,30 +23,31 @@ interface CustomerSprite {
   /**
    * Kept OUT of the body container, on its own higher layer: inside the
    * container it shared the body's depth, so other customers drawn later
-   * (e.g. the rest of the waiting line) could cover it.
+   * (e.g. the rest of the queue) could cover it.
    */
   label: Phaser.GameObjects.Text;
 }
 
 /**
- * Little hint above a customer's head so you can tell what they're doing,
- * coloured by mood: "..." ordering, "?" waiting for a seat, "?!" running out
- * of patience (orange), "!!" leaving upset (red).
+ * Little hint above a customer's head:
+ *   "?"   front of the queue but no clean seat is free (go clean a table!)
+ *   "..." their order is being made
+ *   "!!"  leaving upset (ran out of patience), in red
+ * How patient they are shows as a bar instead (drawPatienceBars).
  */
-function statusLabel(c: Customer): { text: string; color: number } {
+function statusLabel(c: Customer, blockedAtFront: boolean): { text: string; color: number } {
   const calm = COLORS.statusCalm;
-  switch (c.phase) {
-    case 'ordering':
-      return { text: '...', color: calm };
-    case 'waitingForSeat':
-      return c.timer < FLOOR_CONFIG.seatWaitSeconds / 3
-        ? { text: '?!', color: COLORS.statusImpatient }
-        : { text: '?', color: calm };
-    case 'leaving':
-      return c.upset ? { text: '!!', color: COLORS.statusUpset } : { text: '', color: calm };
-    default:
-      return { text: '', color: calm };
-  }
+  if (blockedAtFront) return { text: '?', color: COLORS.statusImpatient };
+  if (c.phase === 'ordered') return { text: '...', color: calm };
+  if (c.phase === 'leaving' && c.upset) return { text: '!!', color: COLORS.statusUpset };
+  return { text: '', color: calm };
+}
+
+/** Patience bar colour: green while patient, orange past half, red in the last quarter. */
+function patienceColor(fraction: number): number {
+  if (fraction > 0.5) return COLORS.serve;
+  if (fraction > 0.25) return COLORS.statusImpatient;
+  return COLORS.statusUpset;
 }
 
 const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
@@ -78,6 +80,8 @@ export class FloorScene extends Phaser.Scene {
   private tableOverlay!: Phaser.GameObjects.Graphics;
   /** Drawn above all characters (depth 20) so nobody can cover it. */
   private progressBar!: Phaser.GameObjects.Graphics;
+  /** Patience bars over waiting customers, above all characters (depth 15). */
+  private patienceBars!: Phaser.GameObjects.Graphics;
   /** One sprite per customer id, created and destroyed as customers come and go. */
   private customerSprites = new Map<number, CustomerSprite>();
 
@@ -97,6 +101,7 @@ export class FloorScene extends Phaser.Scene {
     this.drawTiles();
     this.tableOverlay = this.add.graphics();
     this.progressBar = this.add.graphics().setDepth(20);
+    this.patienceBars = this.add.graphics().setDepth(15);
 
     this.floor = createFloorState();
     // Map entries point at the previous run's destroyed sprites if the scene
@@ -142,6 +147,7 @@ export class FloorScene extends Phaser.Scene {
     this.drawTableOverlay();
     this.drawProgressBar();
     this.syncCustomerSprites();
+    this.drawPatienceBars();
 
     const pos = this.walkerToPixel(this.player.walker);
     this.playerSprite.setPosition(pos.x, pos.y);
@@ -208,8 +214,8 @@ export class FloorScene extends Phaser.Scene {
     g.fillStyle(COLORS.orderSpot);
     g.fillRect(spot.x + 3, spot.y + 3, TILE_SIZE - 6, TILE_SIZE - 6);
 
-    // Small dots where the waiting line forms.
-    for (const linePoint of this.layout.waitingLine) {
+    // Small dots where the counter queue forms.
+    for (const linePoint of this.layout.queueSpots) {
       const p = this.tileToPixel(linePoint);
       g.fillRect(p.x + 6, p.y + 6, 4, 4);
     }
@@ -298,11 +304,39 @@ export class FloorScene extends Phaser.Scene {
   }
 
   /**
+   * A small bar over each customer still waiting to be served, draining as
+   * their patience runs out. On its own layer above the characters.
+   */
+  private drawPatienceBars(): void {
+    const g = this.patienceBars;
+    g.clear();
+    const width = TILE_SIZE - 4;
+    for (const c of this.floor.customers) {
+      if (c.phase !== 'queued' && c.phase !== 'ordered') continue;
+      // Clamp: if `set patienceSeconds` lowers the max mid-game, don't overflow.
+      const fraction = Phaser.Math.Clamp(c.patience / FLOOR_CONFIG.patienceSeconds, 0, 1);
+      const { x, y } = this.walkerToPixel(c.walker);
+      g.fillStyle(COLORS.ink);
+      g.fillRect(x + 2, y - 4, width, 3);
+      g.fillStyle(patienceColor(fraction));
+      // Math.ceil so a nearly-empty bar still shows one pixel until it hits 0.
+      g.fillRect(x + 3, y - 3, Math.ceil((width - 2) * fraction), 1);
+    }
+  }
+
+  /**
    * Keeps one sprite per customer in the floor state: creates sprites for
    * new arrivals, moves existing ones, destroys those who left. The floor
    * state is the source of truth; sprites just mirror it.
    */
   private syncCustomerSprites(): void {
+    // The front customer is "blocked" if they're standing at the counter,
+    // ready to order, but no clean seat is free.
+    const front = this.floor.customers.find((c) => c.id === this.floor.queue[0]);
+    const frontWaiting =
+      front?.phase === 'queued' && !isMoving(front.walker) && !hasFreeSeat(this.floor, this.layout);
+    const blockedId = frontWaiting ? front.id : null;
+
     const present = new Set<number>();
     for (const c of this.floor.customers) {
       present.add(c.id);
@@ -313,11 +347,12 @@ export class FloorScene extends Phaser.Scene {
       }
       const pos = this.walkerToPixel(c.walker);
       sprite.body.setPosition(pos.x, pos.y);
-      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 2);
+      // Above the patience bar, which sits just over the head.
+      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 5);
 
       // Changing a Phaser Text's colour redraws its texture, so only touch
       // it when the status actually changes, not every frame.
-      const status = statusLabel(c);
+      const status = statusLabel(c, c.id === blockedId);
       if (sprite.label.text !== status.text) {
         sprite.label.setText(status.text).setColor(css(status.color));
       }

@@ -33,12 +33,12 @@ describe('parseLayout', () => {
     expect(layout.door).toEqual({ x: 2, y: 4 });
   });
 
-  it('reads waiting-line digits as floor, in line order', () => {
+  it('reads counter queue digits as floor, in line order', () => {
     expect(layout.tiles[1][3]).toBe('floor');
-    expect(layout.waitingLine).toEqual([{ x: 3, y: 1 }]);
+    expect(layout.queueSpots).toEqual([{ x: 3, y: 1 }]);
     // Order comes from the digits, not from where they appear in the grid.
     const twoSpots = parseLayout(SMALL.map((r, i) => (i === 3 ? 'W2...W' : r)));
-    expect(twoSpots.waitingLine).toEqual([{ x: 3, y: 1 }, { x: 1, y: 3 }]);
+    expect(twoSpots.queueSpots).toEqual([{ x: 3, y: 1 }, { x: 1, y: 3 }]);
   });
 
   it('tableById finds a table, and throws on an unknown id', () => {
@@ -90,11 +90,11 @@ describe('parseLayout errors', () => {
     expect(() => parseLayout(withRow(3, 'W...TW'))).toThrow(/no seats/);
   });
 
-  it('rejects a missing waiting line', () => {
-    expect(() => parseLayout(withRow(1, 'WP..CW'))).toThrow(/waiting line/);
+  it('rejects a missing counter queue', () => {
+    expect(() => parseLayout(withRow(1, 'WP..CW'))).toThrow(/counter queue/);
   });
 
-  it('rejects a gap or a duplicate in the waiting line', () => {
+  it('rejects a gap or a duplicate in the counter queue', () => {
     expect(() => parseLayout(withRow(3, 'W3...W'))).toThrow(/spot 2 is missing/);
     expect(() => parseLayout(withRow(3, 'W1...W'))).toThrow(/appears twice/);
   });

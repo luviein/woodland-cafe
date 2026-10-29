@@ -15,14 +15,18 @@ export type FloorConfig = {
   spawnIntervalMin: number;
   spawnIntervalMax: number;
   /**
-   * How long a customer stands at the counter. A stand-in for ordering:
-   * milestone 3 replaces it with the real queue and the prep station.
+   * STAND-IN until the prep station is connected (milestone 3, step 3): how
+   * long an order "takes to make" once taken, before the customer is served.
    */
   orderSeconds: number;
   eatSecondsMin: number;
   eatSecondsMax: number;
-  /** How long a customer waits in line for a seat before leaving upset. */
-  seatWaitSeconds: number;
+  /**
+   * Full patience, in seconds: how long a customer will wait from joining the
+   * counter queue until served. Counts down at a fixed rate the whole time,
+   * even while their order is being made. At 0 they leave upset, unpaid.
+   */
+  patienceSeconds: number;
   /** Seconds to wipe ONE mess, once standing next to the table (two messes take twice as long). */
   cleanSeconds: number;
 };
@@ -36,6 +40,6 @@ export const FLOOR_CONFIG: FloorConfig = {
   orderSeconds: 1.5,
   eatSecondsMin: 6,
   eatSecondsMax: 10,
-  seatWaitSeconds: 20,
+  patienceSeconds: 45,
   cleanSeconds: 1.5,
 };

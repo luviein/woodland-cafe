@@ -4,7 +4,7 @@ import type { DevSettings } from './devSettings';
 
 const setup = () => {
   const settings: DevSettings = { floorTimeScale: 1 };
-  const tunables: Record<string, number> = { eatSecondsMax: 10, seatWaitSeconds: 20 };
+  const tunables: Record<string, number> = { eatSecondsMax: 10, patienceSeconds: 20 };
   return { settings, tunables, commands: createDevCommands(settings, tunables) };
 };
 
@@ -62,7 +62,7 @@ describe('speed', () => {
 describe('config / set / reset', () => {
   it('config lists every setting with its value', () => {
     const { commands } = setup();
-    expect(runCommand(commands, 'config')).toBe('eatSecondsMax = 10\nseatWaitSeconds = 20');
+    expect(runCommand(commands, 'config')).toBe('eatSecondsMax = 10\npatienceSeconds = 20');
   });
 
   it('set changes the live config object, ignoring name case', () => {
@@ -73,8 +73,8 @@ describe('config / set / reset', () => {
 
   it('config marks changed values with the value from the file', () => {
     const { commands } = setup();
-    runCommand(commands, 'set seatWaitSeconds 30');
-    expect(runCommand(commands, 'config')).toContain('seatWaitSeconds = 30  (file: 20)');
+    runCommand(commands, 'set patienceSeconds 30');
+    expect(runCommand(commands, 'config')).toContain('patienceSeconds = 30  (file: 20)');
   });
 
   it('set rejects unknown names, bad values and missing arguments', () => {
@@ -91,7 +91,7 @@ describe('config / set / reset', () => {
     runCommand(commands, 'set eatSecondsMax 99');
     runCommand(commands, 'speed 5');
     runCommand(commands, 'reset');
-    expect(tunables).toEqual({ eatSecondsMax: 10, seatWaitSeconds: 20 });
+    expect(tunables).toEqual({ eatSecondsMax: 10, patienceSeconds: 20 });
     expect(settings.floorTimeScale).toBe(1);
   });
 });
