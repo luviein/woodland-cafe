@@ -62,8 +62,8 @@ describe('the real cafe layout is fully reachable', () => {
   const cafe = parseLayout(CAFE_LAYOUT);
 
   it('the player can reach the door and the order spot', () => {
-    expect(findPath(cafe, cafe.playerStart, cafe.door)).not.toBeNull();
-    expect(findPath(cafe, cafe.playerStart, cafe.orderSpot)).not.toBeNull();
+    expect(findPath(cafe, cafe.counterSpot, cafe.door)).not.toBeNull();
+    expect(findPath(cafe, cafe.counterSpot, cafe.orderSpot)).not.toBeNull();
   });
 
   it('every seat and table has a walkable tile next to it that the door can reach', () => {

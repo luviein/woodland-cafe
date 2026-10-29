@@ -23,6 +23,7 @@ Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 | Action              | Mouse / touch |
 | ------------------- | ------------- |
 | Walk                | Tap a floor tile |
+| Take an order       | Tap the customer at the counter (marked "!"); you walk behind the counter and take it. "?" = no clean seat yet |
 | Clean a messy table | Tap the table (or one of its seats); tap elsewhere to cancel |
 
 ## Controls (prep station)

@@ -26,7 +26,8 @@ export interface Layout {
   orderSpot: Point;
   /** Counter queue spots BEHIND the order spot: [0] is next in line after whoever is at O. */
   queueSpots: Point[];
-  playerStart: Point;
+  /** Where the player stands behind the counter to take orders (P); also where they start. */
+  counterSpot: Point;
 }
 
 // 'P' and 'O' are floor tiles that also mark a special position.
@@ -93,7 +94,7 @@ export function parseLayout(rows: readonly string[]): Layout {
   const seatPositions: Point[] = [];
   const doors: Point[] = [];
   const orderSpots: Point[] = [];
-  const playerStarts: Point[] = [];
+  const counterSpots: Point[] = [];
   /** Line spots by their digit, e.g. lineSpots.get(1) = front of the line. */
   const lineSpots = new Map<number, Point>();
 
@@ -110,7 +111,7 @@ export function parseLayout(rows: readonly string[]): Layout {
         if (char === 'S') seatPositions.push(p);
         if (char === 'D') doors.push(p);
         if (char === 'O') orderSpots.push(p);
-        if (char === 'P') playerStarts.push(p);
+        if (char === 'P') counterSpots.push(p);
         if (isLineDigit(char)) {
           const n = Number(char);
           if (lineSpots.has(n)) throw new Error(`Counter queue spot ${n} appears twice`);
@@ -155,7 +156,7 @@ export function parseLayout(rows: readonly string[]): Layout {
     tables,
     door: exactlyOne(doors, 'door (D)'),
     orderSpot: exactlyOne(orderSpots, 'order spot (O)'),
-    playerStart: exactlyOne(playerStarts, 'player start (P)'),
+    counterSpot: exactlyOne(counterSpots, 'counter spot (P)'),
     queueSpots: orderedLine(lineSpots),
   };
 }

@@ -28,6 +28,7 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   6. Leave, leaving a **mess** behind
 - **One line: the counter queue.** Customers wait at the counter, first come, first served. Line spots are marked in the layout data (`1` = front, `2`, `3`, ...).
   - **No free seat, no order.** The front customer can only order if a clean, unreserved seat is free. Taking their order reserves it. E.g. 2 customers waiting, 1 clean seat: the 1st orders and reserves it; the 2nd keeps waiting, even before the 1st reaches the table.
+  - **Taking an order:** the player taps the front customer and walks to the counter spot (`P`, behind the counter across from the order spot `O`); the order is taken on arrival. With no clean seat, a "No clean seats!" message appears and the player must tap again after cleaning.
   - So messy tables **block the queue**, and the whole queue keeps losing patience while the player cleans. That's the key tradeoff.
   - Because a seat is guaranteed before ordering, there's never any waiting for a seat after being served, so no one leaves unhappy after paying.
 - **Messes are per seat.** A customer leaves a mess on **their own side** of the table. That **seat** can't be used until cleaned, but the other seats at the same table still can.

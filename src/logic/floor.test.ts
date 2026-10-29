@@ -4,10 +4,12 @@ import type { FloorConfig } from '../data/floorConfig';
 import {
   cleanSeats,
   createFloorState,
+  customerAtCounter,
   hasFreeSeat,
   messySeatsAt,
   queueCapacity,
   stepFloor,
+  takeOrder,
   type Customer,
   type FloorState,
 } from './floor';
@@ -52,15 +54,27 @@ interface RunOptions {
   layout?: Layout;
   config?: FloorConfig;
   check?: (s: FloorState) => void;
+  /**
+   * Take the front customer's order the moment it's possible, like a player
+   * who never looks away from the counter. On by default so the tests can
+   * follow whole visits; switch off to test what customers do on their own.
+   */
+  autoOrder?: boolean;
+}
+
+/** One simulation frame, plus the attentive "player" if autoOrder is on. */
+function frame(state: FloorState, rng: () => number, opts: RunOptions): FloorState {
+  const { layout = TINY, config = CONFIG, autoOrder = true } = opts;
+  state = stepFloor(state, layout, 0.05, rng, config);
+  return autoOrder ? takeOrder(state, layout, config).floor : state;
 }
 
 /** Runs the simulation in small frames, calling `check` after each one. */
 function run(state: FloorState, seconds: number, opts: RunOptions = {}): FloorState {
-  const { layout = TINY, config = CONFIG, check } = opts;
   const rng = seededRng(1);
   for (let t = 0; t < seconds; t += 0.05) {
-    state = stepFloor(state, layout, 0.05, rng, config);
-    check?.(state);
+    state = frame(state, rng, opts);
+    opts.check?.(state);
   }
   return state;
 }
@@ -75,10 +89,10 @@ function runUntil(
   done: (s: FloorState) => boolean,
   opts: RunOptions & { maxSeconds?: number } = {},
 ): FloorState {
-  const { layout = TINY, config = CONFIG, maxSeconds = 30 } = opts;
+  const { maxSeconds = 30 } = opts;
   const rng = seededRng(1);
   for (let t = 0; t < maxSeconds; t += 0.05) {
-    state = stepFloor(state, layout, 0.05, rng, config);
+    state = frame(state, rng, opts);
     if (done(state)) return state;
   }
   throw new Error(`runUntil: condition not met within ${maxSeconds}s`);
@@ -218,37 +232,62 @@ describe('stepFloor: counter queue', () => {
     expect(hasFreeSeat(s, TINY)).toBe(false);
   });
 
-  it("a reserved seat isn't free: the next customer waits even before the first reaches it", () => {
+  it('nobody orders by themselves: the front customer waits at the counter for the player', () => {
+    const s = run(start(), 3, { autoOrder: false });
+    expect(find(s, 1)!.walker.tile).toEqual(TINY.orderSpot);
+    expect(find(s, 1)!.phase).toBe('queued');
+    expect(customerAtCounter(s, TINY)?.id).toBe(1);
+  });
+});
+
+describe('takeOrder', () => {
+  const atCounter = (): FloorState => scene([customer(1, TINY.orderSpot, {})], [1]);
+
+  it('the front customer orders and reserves the nearest clean seat', () => {
+    const { floor, result } = takeOrder(atCounter(), TINY, CONFIG);
+    expect(result).toBe('ordered');
+    expect(find(floor, 1)!.phase).toBe('ordered');
+    expect(find(floor, 1)!.timer).toBe(CONFIG.orderSeconds);
+    expect(TINY.tables[0].seats).toContainEqual(find(floor, 1)!.seat?.seat);
+  });
+
+  it('no clean seat: nothing changes, and says why', () => {
+    const messy = { ...atCounter(), messySeats: [LEFT, RIGHT] };
+    const { floor, result } = takeOrder(messy, TINY, CONFIG);
+    expect(result).toBe('noSeat');
+    expect(floor).toBe(messy);
+  });
+
+  it('works as soon as a seat is cleaned', () => {
+    const s = cleanSeats({ ...atCounter(), messySeats: [LEFT, RIGHT] }, [LEFT_SEAT]);
+    expect(find(takeOrder(s, TINY, CONFIG).floor, 1)!.seat?.seat).toEqual(LEFT_SEAT);
+  });
+
+  it("a reserved seat isn't free: the next customer can't order even before the first reaches it", () => {
     // Customer 1 has been served and is walking to the only clean seat.
     // Customer 2 is at the front of the queue.
-    const s = step(
-      scene([headingTo(1, RIGHT_SEAT), customer(2, TINY.orderSpot, {})], [2], [LEFT]),
-    );
-    expect(find(s, 2)!.phase).toBe('queued');
-    expect(find(s, 2)!.seat).toBeNull();
+    const s = scene([headingTo(1, RIGHT_SEAT), customer(2, TINY.orderSpot, {})], [2], [LEFT]);
+    expect(takeOrder(s, TINY, CONFIG).result).toBe('noSeat');
   });
 
-  it('the front customer orders as soon as a seat is cleaned', () => {
-    let s = run(allMessy(), 2);
-    s = cleanSeats(s, [LEFT_SEAT]);
-    s = step(s);
-    expect(find(s, 1)!.phase).toBe('ordered');
-    expect(find(s, 1)!.seat?.seat).toEqual(LEFT_SEAT);
+  it('nobody at the order spot yet: notReady, even with someone further back', () => {
+    // Customer 1 (the front) is still walking to the order spot; customer 2 waits behind.
+    const walking = customer(1, { x: 4, y: 4 }, { walker: { tile: { x: 4, y: 4 }, path: [{ x: 5, y: 4 }], progress: 0 } });
+    const s = scene([walking, customer(2, SPOT_1, {})], [1, 2]);
+    expect(takeOrder(s, TINY, CONFIG).result).toBe('notReady');
+    expect(takeOrder(scene([]), TINY, CONFIG).result).toBe('notReady');
   });
 
-  it('only the front customer can order', () => {
-    // Customer 2 is behind, with a free seat available; customer 1 is still
-    // walking to the order spot.
-    const s = step(
-      scene(
-        [
-          customer(1, { x: 4, y: 4 }, { walker: { tile: { x: 4, y: 4 }, path: [{ x: 5, y: 4 }], progress: 0 } }),
-          customer(2, SPOT_1, {}),
-        ],
-        [1, 2],
-      ),
-    );
-    expect(find(s, 2)!.phase).toBe('queued');
+  it("can't order twice", () => {
+    const once = takeOrder(atCounter(), TINY, CONFIG).floor;
+    expect(takeOrder(once, TINY, CONFIG).result).toBe('notReady');
+  });
+
+  it('does not change the state it was given', () => {
+    const before = atCounter();
+    const snapshot = structuredClone(before);
+    takeOrder(before, TINY, CONFIG);
+    expect(before).toEqual(snapshot);
   });
 });
 

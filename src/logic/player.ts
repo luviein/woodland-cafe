@@ -1,5 +1,5 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
-import { messySeatsAt, type FloorState } from './floor';
+import { messySeatsAt, takeOrder, type FloorState, type TakeOrderResult } from './floor';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
 import { findPathNextTo } from './pathfinding';
 import { createWalker, isMoving, redirect, stepWalker, walkTo, type Walker } from './walker';
@@ -21,11 +21,14 @@ export interface CleaningTask {
 /** The player on the cafe floor, as plain data (like FloorState). */
 export interface PlayerState {
   walker: Walker;
+  /** At most one job at a time: cleaning OR taking an order (or neither). */
   cleaning: CleaningTask | null;
+  /** Heading to (or waiting at) the counter spot to take the front customer's order. */
+  takingOrder: boolean;
 }
 
 export function createPlayer(layout: Layout): PlayerState {
-  return { walker: createWalker(layout.playerStart), cleaning: null };
+  return { walker: createWalker(layout.counterSpot), cleaning: null, takingOrder: false };
 }
 
 /**
@@ -42,9 +45,11 @@ export function tableAt(layout: Layout, tile: Point): Table | null {
 
 /**
  * What a tap means for the player:
+ *   - the order spot while someone is queuing (i.e. tapping the front
+ *     customer): walk behind the counter and take their order
  *   - a table with any mess (or one of its seats): walk next to it and wipe
  *     every mess on it right now (1 mess = cleanSeconds, 2 = twice that)
- *   - anywhere walkable: walk there (and stop any cleaning)
+ *   - anywhere walkable: walk there (and drop any job)
  *   - anything else (walls, clean tables...): ignored
  * Returns the same object if nothing changes, so callers can tell.
  */
@@ -55,6 +60,14 @@ export function tapTile(
   tile: Point,
   config: FloorConfig = FLOOR_CONFIG,
 ): PlayerState {
+  // Orders are taken from behind the counter, never from the customer's
+  // side, so the player always walks to the counter spot first.
+  if (samePoint(tile, layout.orderSpot) && floor.queue.length > 0) {
+    const walker = walkTo(player.walker, layout, layout.counterSpot);
+    if (walker === player.walker) return player; // can't reach the counter
+    return { walker, cleaning: null, takingOrder: true };
+  }
+
   const table = tableAt(layout, tile);
   const messes = table ? messySeatsAt(floor, table) : [];
   if (table && messes.length > 0) {
@@ -66,13 +79,14 @@ export function tapTile(
     return {
       walker,
       cleaning: { tableId: table.id, seats: messes, secondsLeft: totalSeconds, totalSeconds },
+      takingOrder: false,
     };
   }
 
   const walker = walkTo(player.walker, layout, tile);
   if (walker === player.walker) return player; // not somewhere you can walk
-  // Walking off somewhere else drops the cleaning job: that's how you cancel.
-  return { walker, cleaning: null };
+  // Walking off somewhere else drops the current job: that's how you cancel.
+  return { walker, cleaning: null, takingOrder: false };
 }
 
 /**
@@ -98,11 +112,38 @@ export function stepPlayer(
   if (cleaning && !isMoving(walker)) {
     const secondsLeft = cleaning.secondsLeft - seconds;
     if (secondsLeft <= 0) {
-      return { player: { walker, cleaning: null }, cleanedSeats: cleaning.seats };
+      return { player: { ...player, walker, cleaning: null }, cleanedSeats: cleaning.seats };
     }
     cleaning = { ...cleaning, secondsLeft };
   }
-  return { player: { walker, cleaning }, cleanedSeats: [] };
+  return { player: { ...player, walker, cleaning }, cleanedSeats: [] };
+}
+
+/**
+ * Once the player is standing at the counter spot with an order to take,
+ * takes it. Returns what happened (null = nothing this frame):
+ *   - the front customer is still walking up (or still being served):
+ *     keep waiting (null)
+ *   - 'ordered' or 'noSeat': the job is done either way; tap again to retry
+ *   - the queue emptied (they gave up): the job is dropped (null)
+ * Unlike stepPlayer, this does return a new floor: taking an order is the
+ * floor's rule (takeOrder), the player just decides WHEN it happens.
+ */
+export function takeOrderAtCounter(
+  player: PlayerState,
+  floor: FloorState,
+  layout: Layout,
+  config: FloorConfig = FLOOR_CONFIG,
+): { player: PlayerState; floor: FloorState; result: TakeOrderResult | null } {
+  const unchanged = { player, floor, result: null };
+  if (!player.takingOrder || isMoving(player.walker)) return unchanged;
+
+  const done = { ...player, takingOrder: false };
+  if (floor.queue.length === 0) return { ...unchanged, player: done };
+
+  const taken = takeOrder(floor, layout, config);
+  if (taken.result === 'notReady') return unchanged;
+  return { player: done, floor: taken.floor, result: taken.result };
 }
 
 /** 0..1 for the progress bar; null when not actively wiping. */

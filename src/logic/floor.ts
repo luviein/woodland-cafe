@@ -15,8 +15,8 @@ import {
 
 /**
  * Where a customer is in their visit. Each phase ends on a clear event:
- *   queued   -> their order is taken (front of the queue, and a clean seat
- *               is free), or patience runs out
+ *   queued   -> the player takes their order (takeOrder: front of the
+ *               queue, and a clean seat is free), or patience runs out
  *   ordered  -> served (the stand-in timer runs out), or patience runs out
  *   toSeat   -> sat down
  *   eating   -> timer ran out; stands up and leaves a mess
@@ -99,10 +99,9 @@ const between = (min: number, max: number, rng: Rng): number => min + rng() * (m
  *   1. move everyone and count down their timers and patience
  *   2. maybe let a new customer in (if the queue has room)
  *   3. each customer reacts to their own situation (patience out? served?)
- *   4. the front of the queue orders if a clean seat is free (STAND-IN:
- *      automatic for now; milestone 3 step 2 makes the player take it)
- *   5. everyone still queued walks to their spot
- *   6. drop customers who walked out the door
+ *   4. everyone still queued walks to their spot
+ *   5. drop customers who walked out the door
+ * Orders aren't taken here: that's the player's action, see takeOrder().
  */
 export function stepFloor(
   state: FloorState,
@@ -197,26 +196,9 @@ export function stepFloor(
     }
   }
 
-  // 4. STAND-IN for taking orders: the front customer orders automatically
-  // once standing at the order spot, if a clean seat is free. Ordering
-  // reserves that seat, so the next customer can't take it.
-  const byId = (id: number): Customer => customers.find((c) => c.id === id)!;
-  const front = queue.length > 0 ? byId(queue[0]) : null;
-  const frontReady =
-    front?.phase === 'queued' &&
-    !isMoving(front.walker) &&
-    samePoint(front.walker.tile, layout.orderSpot);
-  if (front && frontReady) {
-    const seat = findFreeSeat(layout, messySeats, customers, layout.orderSpot);
-    if (seat) {
-      front.seat = seat;
-      front.phase = 'ordered';
-      front.timer = config.orderSeconds;
-    }
-  }
-
-  // 5. Everyone in the queue walks to their spot. When someone leaves or is
+  // 4. Everyone in the queue walks to their spot. When someone leaves or is
   // served, the people behind them move up.
+  const byId = (id: number): Customer => customers.find((c) => c.id === id)!;
   queue.forEach((id, i) => {
     const c = byId(id);
     // More people than spots can't normally happen (arrivals stop when the
@@ -225,13 +207,56 @@ export function stepFloor(
     if (!samePoint(destination(c.walker), spot)) c.walker = walkTo(c.walker, layout, spot);
   });
 
-  // 6. Out the door.
+  // 5. Out the door.
   return {
     customers: customers.filter((c) => !walkedOut.has(c.id)),
     messySeats: [...messySeats],
     queue,
     spawnTimer,
     nextCustomerId,
+  };
+}
+
+/**
+ * The front customer, if they're standing at the order spot ready to order.
+ * Null while the queue is empty or the front is still walking up.
+ */
+export function customerAtCounter(state: FloorState, layout: Layout): Customer | null {
+  const front = state.customers.find((c) => c.id === state.queue[0]);
+  const ready =
+    front?.phase === 'queued' && !isMoving(front.walker) && samePoint(front.walker.tile, layout.orderSpot);
+  return ready ? front : null;
+}
+
+/**
+ *   ordered  - the front customer ordered and reserved a seat
+ *   noSeat   - they're ready, but every clean seat is taken: go clean a table
+ *   notReady - nobody is standing at the order spot (yet)
+ */
+export type TakeOrderResult = 'ordered' | 'noSeat' | 'notReady';
+
+/**
+ * The player takes the front customer's order. Ordering reserves the nearest
+ * free clean seat, so the next customer can't take it. The floor module
+ * doesn't check where the PLAYER is: that's player.ts's job, which keeps this
+ * rule usable by employees later too.
+ */
+export function takeOrder(
+  state: FloorState,
+  layout: Layout,
+  config: FloorConfig = FLOOR_CONFIG,
+): { floor: FloorState; result: TakeOrderResult } {
+  const front = customerAtCounter(state, layout);
+  if (!front) return { floor: state, result: 'notReady' };
+  const seat = findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot);
+  if (!seat) return { floor: state, result: 'noSeat' };
+
+  // STAND-IN: orderSeconds is how long the order takes; step 3 replaces it
+  // with the prep station.
+  const ordered: Customer = { ...front, seat, phase: 'ordered', timer: config.orderSeconds };
+  return {
+    floor: { ...state, customers: state.customers.map((c) => (c.id === front.id ? ordered : c)) },
+    result: 'ordered',
   };
 }
 

@@ -28,7 +28,7 @@ describe('parseLayout', () => {
   });
 
   it('finds the special positions', () => {
-    expect(layout.playerStart).toEqual({ x: 1, y: 1 });
+    expect(layout.counterSpot).toEqual({ x: 1, y: 1 });
     expect(layout.orderSpot).toEqual({ x: 4, y: 2 });
     expect(layout.door).toEqual({ x: 2, y: 4 });
   });

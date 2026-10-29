@@ -6,6 +6,7 @@ import { devSettings } from '../debug/devSettings';
 import {
   cleanSeats,
   createFloorState,
+  customerAtCounter,
   hasFreeSeat,
   messySeatsAt,
   stepFloor,
@@ -13,7 +14,14 @@ import {
   type FloorState,
 } from '../logic/floor';
 import { parseLayout, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
-import { cleaningProgress, createPlayer, stepPlayer, tapTile, type PlayerState } from '../logic/player';
+import {
+  cleaningProgress,
+  createPlayer,
+  stepPlayer,
+  takeOrderAtCounter,
+  tapTile,
+  type PlayerState,
+} from '../logic/player';
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT, css } from '../ui/theme';
@@ -28,16 +36,21 @@ interface CustomerSprite {
   label: Phaser.GameObjects.Text;
 }
 
+/** How the customer at the counter is doing, for their label. */
+type CounterStatus = 'readyToOrder' | 'noSeat' | null;
+
 /**
  * Little hint above a customer's head:
- *   "?"   front of the queue but no clean seat is free (go clean a table!)
+ *   "!"   at the counter, ready to order (tap them!)
+ *   "?"   at the counter but no clean seat is free (go clean a table!)
  *   "..." their order is being made
  *   "!!"  leaving upset (ran out of patience), in red
  * How patient they are shows as a bar instead (drawPatienceBars).
  */
-function statusLabel(c: Customer, blockedAtFront: boolean): { text: string; color: number } {
+function statusLabel(c: Customer, counter: CounterStatus): { text: string; color: number } {
   const calm = COLORS.statusCalm;
-  if (blockedAtFront) return { text: '?', color: COLORS.statusImpatient };
+  if (counter === 'readyToOrder') return { text: '!', color: calm };
+  if (counter === 'noSeat') return { text: '?', color: COLORS.statusImpatient };
   if (c.phase === 'ordered') return { text: '...', color: calm };
   if (c.phase === 'leaving' && c.upset) return { text: '!!', color: COLORS.statusUpset };
   return { text: '', color: calm };
@@ -144,6 +157,14 @@ export class FloorScene extends Phaser.Scene {
     // Dev console "speed" command scales time for the critters only; the
     // player keeps walking at normal speed.
     this.floor = stepFloor(this.floor, this.layout, seconds * devSettings.floorTimeScale);
+
+    // After the floor step, so a customer who just reached the order spot
+    // can be served this frame.
+    const taken = takeOrderAtCounter(this.player, this.floor, this.layout);
+    this.player = taken.player;
+    this.floor = taken.floor;
+    if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');
+
     this.drawTableOverlay();
     this.drawProgressBar();
     this.syncCustomerSprites();
@@ -154,6 +175,26 @@ export class FloorScene extends Phaser.Scene {
     if (!isMoving(this.player.walker) && !this.player.cleaning) {
       this.destinationMarker.setVisible(false);
     }
+  }
+
+  /**
+   * A short message that drifts up from a tile and fades out, e.g. "No clean
+   * seats!". A tween animates it, then it destroys itself: no bookkeeping.
+   */
+  private showFloatingText(tile: Point, message: string): void {
+    const { x, y } = this.tileToPixel(tile);
+    const text = this.add
+      .text(x + TILE_SIZE / 2, y - 8, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
+      .setOrigin(0.5, 1)
+      .setDepth(25);
+    this.tweens.add({
+      targets: text,
+      y: text.y - 12,
+      alpha: 0,
+      delay: 600, // readable for a moment before it fades
+      duration: 900,
+      onComplete: () => text.destroy(),
+    });
   }
 
   private onTileTapped(tile: Point): void {
@@ -330,12 +371,8 @@ export class FloorScene extends Phaser.Scene {
    * state is the source of truth; sprites just mirror it.
    */
   private syncCustomerSprites(): void {
-    // The front customer is "blocked" if they're standing at the counter,
-    // ready to order, but no clean seat is free.
-    const front = this.floor.customers.find((c) => c.id === this.floor.queue[0]);
-    const frontWaiting =
-      front?.phase === 'queued' && !isMoving(front.walker) && !hasFreeSeat(this.floor, this.layout);
-    const blockedId = frontWaiting ? front.id : null;
+    const atCounter = customerAtCounter(this.floor, this.layout);
+    const counterStatus: CounterStatus = hasFreeSeat(this.floor, this.layout) ? 'readyToOrder' : 'noSeat';
 
     const present = new Set<number>();
     for (const c of this.floor.customers) {
@@ -352,7 +389,7 @@ export class FloorScene extends Phaser.Scene {
 
       // Changing a Phaser Text's colour redraws its texture, so only touch
       // it when the status actually changes, not every frame.
-      const status = statusLabel(c, c.id === blockedId);
+      const status = statusLabel(c, c === atCounter ? counterStatus : null);
       if (sprite.label.text !== status.text) {
         sprite.label.setText(status.text).setColor(css(status.color));
       }

@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import type { FloorConfig } from '../data/floorConfig';
 import { FLOOR_CONFIG } from '../data/floorConfig';
-import { cleanSeats, createFloorState, type FloorState } from './floor';
+import { cleanSeats, createFloorState, type Customer, type FloorState } from './floor';
 import { neighbours, parseLayout, pointKey, samePoint, type Point } from './layout';
-import { cleaningProgress, createPlayer, stepPlayer, tableAt, tapTile, type PlayerState } from './player';
-import { destination } from './walker';
+import {
+  cleaningProgress,
+  createPlayer,
+  stepPlayer,
+  tableAt,
+  takeOrderAtCounter,
+  tapTile,
+  type PlayerState,
+} from './player';
+import { destination, isMoving } from './walker';
 
-// One table at (2,3) with seats (1,3) and (3,3). Player starts at (1,1).
+// One table at (2,3) with seats (1,3) and (3,3). The player starts at the
+// counter spot P (1,1); customers order at O (4,2).
 const ROOM = parseLayout([
   'WWWWWWW', //
   'WP...1W',
@@ -139,7 +148,11 @@ describe('stepPlayer: cleaning', () => {
   });
 
   it('starts wiping right away when already next to the table', () => {
-    const nextTo: PlayerState = { walker: { tile: { x: 2, y: 2 }, path: [], progress: 0 }, cleaning: null };
+    const nextTo: PlayerState = {
+      walker: { tile: { x: 2, y: 2 }, path: [], progress: 0 },
+      cleaning: null,
+      takingOrder: false,
+    };
     const p = tapTile(nextTo, ROOM, ONE_MESS, TABLE, CONFIG);
     expect(p.walker.path).toEqual([]);
     expect(run(p, ONE_MESS, 1.1).cleaned).toEqual([[RIGHT_SEAT]]);
@@ -155,5 +168,104 @@ describe('stepPlayer: cleaning', () => {
   it('reports each job only once', () => {
     const p = tapTile(createPlayer(ROOM), ROOM, ONE_MESS, TABLE, CONFIG);
     expect(run(p, ONE_MESS, 10).cleaned).toHaveLength(1);
+  });
+});
+
+describe('taking orders', () => {
+  /** A customer standing still on `tile`, waiting in the queue. */
+  const queued = (id: number, tile: Point, path: Point[] = []): Customer => ({
+    id,
+    walker: { tile, path, progress: 0 },
+    phase: 'queued',
+    timer: 0,
+    patience: 100,
+    seat: null,
+    upset: false,
+  });
+  /** A floor with customer 1 standing at the order spot, plus any messes. */
+  const waitingAtCounter = (...messy: Point[]): FloorState => ({
+    ...floorWith(...messy),
+    customers: [queued(1, ROOM.orderSpot)],
+    queue: [1],
+  });
+  const awayFromCounter: PlayerState = {
+    walker: { tile: { x: 5, y: 4 }, path: [], progress: 0 },
+    cleaning: null,
+    takingOrder: false,
+  };
+
+  /** Steps the player, taking the order once there, like the scene does. */
+  function serve(player: PlayerState, floor: FloorState, seconds: number) {
+    const results: string[] = [];
+    for (let t = 0; t < seconds; t += 0.05) {
+      player = stepPlayer(player, floor, 0.05, CONFIG).player;
+      const taken = takeOrderAtCounter(player, floor, ROOM, CONFIG);
+      ({ player, floor } = taken);
+      if (taken.result) results.push(taken.result);
+    }
+    return { player, floor, results };
+  }
+
+  it('tapping the front customer sends the player behind the counter', () => {
+    const p = tapTile(awayFromCounter, ROOM, waitingAtCounter(), ROOM.orderSpot, CONFIG);
+    expect(destination(p.walker)).toEqual(ROOM.counterSpot);
+    expect(p.takingOrder).toBe(true);
+  });
+
+  it('...which drops a cleaning job', () => {
+    const cleaning = tapTile(awayFromCounter, ROOM, waitingAtCounter(RIGHT_SEAT), TABLE, CONFIG);
+    const p = tapTile(cleaning, ROOM, waitingAtCounter(RIGHT_SEAT), ROOM.orderSpot, CONFIG);
+    expect(p.cleaning).toBeNull();
+    expect(p.takingOrder).toBe(true);
+  });
+
+  it('with nobody queuing, the order spot is just floor', () => {
+    const p = tapTile(awayFromCounter, ROOM, CLEAN, ROOM.orderSpot, CONFIG);
+    expect(destination(p.walker)).toEqual(ROOM.orderSpot);
+    expect(p.takingOrder).toBe(false);
+  });
+
+  it('takes the order once the player reaches the counter, not before', () => {
+    const p = tapTile(awayFromCounter, ROOM, waitingAtCounter(), ROOM.orderSpot, CONFIG);
+    expect(takeOrderAtCounter(p, waitingAtCounter(), ROOM, CONFIG).result).toBeNull(); // still walking
+    const { player, floor, results } = serve(p, waitingAtCounter(), 3);
+    expect(results).toEqual(['ordered']); // exactly once
+    expect(floor.customers[0].phase).toBe('ordered');
+    expect(player.takingOrder).toBe(false);
+    expect(isMoving(player.walker)).toBe(false);
+  });
+
+  it('no clean seat: says so once and ends the job (tap again to retry)', () => {
+    const messy = waitingAtCounter(LEFT_SEAT, RIGHT_SEAT);
+    const p = tapTile(awayFromCounter, ROOM, messy, ROOM.orderSpot, CONFIG);
+    const { player, floor, results } = serve(p, messy, 3);
+    expect(results).toEqual(['noSeat']);
+    expect(floor.customers[0].phase).toBe('queued');
+    expect(player.takingOrder).toBe(false);
+  });
+
+  it('waits at the counter while the front customer is still walking up', () => {
+    const walkingUp: FloorState = {
+      ...CLEAN,
+      customers: [queued(1, { x: 4, y: 3 }, [ROOM.orderSpot])],
+      queue: [1],
+    };
+    const p = tapTile(awayFromCounter, ROOM, walkingUp, ROOM.orderSpot, CONFIG);
+    const { player, results } = serve(p, walkingUp, 3);
+    // The floor isn't stepped here, so the customer never arrives.
+    expect(results).toEqual([]);
+    expect(player.takingOrder).toBe(true);
+  });
+
+  it('drops the job if the queue empties (they gave up)', () => {
+    const p = tapTile(awayFromCounter, ROOM, waitingAtCounter(), ROOM.orderSpot, CONFIG);
+    const { player, results } = serve(p, CLEAN, 3);
+    expect(results).toEqual([]);
+    expect(player.takingOrder).toBe(false);
+  });
+
+  it('walking somewhere else cancels it', () => {
+    const p = tapTile(awayFromCounter, ROOM, waitingAtCounter(), ROOM.orderSpot, CONFIG);
+    expect(tapTile(p, ROOM, waitingAtCounter(), { x: 5, y: 4 }, CONFIG).takingOrder).toBe(false);
   });
 });
