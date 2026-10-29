@@ -20,21 +20,19 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
 
 - A **counter** with a **customer queue**, plus **tables and seats** laid out on a tile grid.
 - Customer lifecycle:
-  1. Wait in line at the counter
-  2. Order
-  3. Get served
-  4. Find a seat
+  1. Wait in line at the counter (patience counting down)
+  2. Order, **only once a clean seat is free**; ordering **reserves** that seat
+  3. Get served and **pay** (patience stops)
+  4. Walk to their reserved seat
   5. Eat
   6. Leave, leaving a **mess** behind
+- **One line: the counter queue.** Customers wait at the counter, first come, first served. Line spots are marked in the layout data (`1` = front, `2`, `3`, ...).
+  - **No free seat, no order.** The front customer can only order if a clean, unreserved seat is free. Taking their order reserves it. E.g. 2 customers waiting, 1 clean seat: the 1st orders and reserves it; the 2nd keeps waiting, even before the 1st reaches the table.
+  - So messy tables **block the queue**, and the whole queue keeps losing patience while the player cleans. That's the key tradeoff.
+  - Because a seat is guaranteed before ordering, there's never any waiting for a seat after being served, so no one leaves unhappy after paying.
 - **Messes are per seat.** A customer leaves a mess on **their own side** of the table. That **seat** can't be used until cleaned, but the other seats at the same table still can.
-  - Customers never walk to a messy seat. (Should a seat somehow get messy while someone is heading to it, they go back to the line.)
+  - Customers never walk to a messy seat.
 - **Cleaning:** tapping a table (or any of its seats) cleans **every mess on that table at the moment of the tap**. Wiping time is per mess: one mess takes 1.5s, two take 3s (config value). A mess that appears mid-wipe needs another tap.
-- **Waiting line for seats.** If no clean seat is free, customers **wait in a line** (a queue):
-  - **First come, first served:** when a seat frees up, the customer at the front of the line gets it. Newcomers join the back and can't skip ahead.
-  - A customer sent back from a seat that got messy rejoins at the **front**, since they'd already been given a seat.
-  - Each waiting customer has a **seat-wait timer**. When it runs out, they **leave upset**, and everyone behind moves up.
-  - Line spots are marked in the layout data (`1` = front, `2`, `3`, ...). The wait time is a config value.
-  - *Open question (milestones 3–4):* whether an upset customer who already paid gets a refund or affects reputation.
 - The **layout is data-driven**: a tile grid defined in a data file, so the cafe can be expanded later without code changes.
 - **Player movement: click/tap to walk.** The player taps a tile (or a table, to clean it) and the character finds a path there around furniture. Works the same with mouse and touch, with no hover and no on-screen joystick needed.
 
@@ -165,6 +163,8 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 - Patience **always counts down at one fixed rate**, no matter what the player is doing: cleaning, preparing an order, or anything else.
 - Patience **keeps dropping at the same rate after the order is taken**, while the player prepares it.
 - If patience hits **0 before the order is served**, the customer leaves the queue and the cafe unhappy and **doesn't pay**.
+- **Patience stops once the order is served.** The customer **pays when served** (price + tip), then goes to the seat reserved for them.
+- A **wrong** dish: the customer **leaves right away**, angry, without paying or eating (so no mess). Their reserved seat is freed.
 - When an order is served, the **tip (in Leaves) is based on remaining patience**, using thresholds:
 
   | Patience left | Tip          |
