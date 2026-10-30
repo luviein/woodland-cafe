@@ -178,6 +178,7 @@ describe('taking orders', () => {
     walker: { tile, path, progress: 0 },
     phase: 'queued',
     timer: 0,
+    order: null,
     patience: 100,
     seat: null,
     upset: false,
@@ -199,7 +200,7 @@ describe('taking orders', () => {
     const results: string[] = [];
     for (let t = 0; t < seconds; t += 0.05) {
       player = stepPlayer(player, floor, 0.05, CONFIG).player;
-      const taken = takeOrderAtCounter(player, floor, ROOM, CONFIG);
+      const taken = takeOrderAtCounter(player, floor, ROOM);
       ({ player, floor } = taken);
       if (taken.result) results.push(taken.result);
     }
@@ -227,7 +228,7 @@ describe('taking orders', () => {
 
   it('takes the order once the player reaches the counter, not before', () => {
     const p = tapTile(awayFromCounter, ROOM, waitingAtCounter(), ROOM.orderSpot, CONFIG);
-    expect(takeOrderAtCounter(p, waitingAtCounter(), ROOM, CONFIG).result).toBeNull(); // still walking
+    expect(takeOrderAtCounter(p, waitingAtCounter(), ROOM).result).toBeNull(); // still walking
     const { player, floor, results } = serve(p, waitingAtCounter(), 3);
     expect(results).toEqual(['ordered']); // exactly once
     expect(floor.customers[0].phase).toBe('ordered');

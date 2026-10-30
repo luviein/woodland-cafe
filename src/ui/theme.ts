@@ -41,6 +41,16 @@ export const COLORS = {
   overlay: 0x000000,
 } as const;
 
+/**
+ * Patience bar colour (floor and prep station): green while patient, orange
+ * past half, red in the last quarter. `fraction` is patience left, 0..1.
+ */
+export function patienceColor(fraction: number): number {
+  if (fraction > 0.5) return COLORS.serve;
+  if (fraction > 0.25) return COLORS.statusImpatient;
+  return COLORS.statusUpset;
+}
+
 /** Phaser text colours are CSS strings, not numbers like shape colours. */
 export const css = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
 

@@ -1,44 +1,63 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { INGREDIENTS, STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
-import { buildReaction, buildSpeech } from '../logic/dialogue';
-import { availableRecipes, expectedPlate, generateOrder, type Owned } from '../logic/orders';
+import { INGREDIENTS, type IngredientId } from '../data/ingredients';
+import { buildGaveUp, buildReaction, buildSpeech } from '../logic/dialogue';
+import { availableRecipes, expectedPlate, STARTER_OWNED } from '../logic/orders';
 import { scoreDish } from '../logic/scoreDish';
-import type { Order } from '../logic/types';
+import type { Order, ScoreResult } from '../logic/types';
 import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
 import { RecipeBook } from '../ui/RecipeBook';
 import { SpeechBubble } from '../ui/SpeechBubble';
-import { COLORS, TEXT } from '../ui/theme';
-
-// Until the central game state exists, the player owns only the starters.
-// Later this will be read from that state instead.
-const OWNED: Owned = { ingredients: STARTER_INGREDIENTS, upgrades: [] };
+import { COLORS, TEXT, patienceColor } from '../ui/theme';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
-/** How long the customer's reaction stays up (time to read it) before the next order. */
-const NEXT_ORDER_DELAY_MS = 2200;
+/** How long the customer's last words stay up (time to read them) before prep closes. */
+const CLOSE_DELAY_MS = 2200;
 
 const COUNTER_TOP_Y = 140;
 
 /**
- * Close-up prep station: read the order, add ingredients, serve, get scored.
+ * What the floor hands the prep station when the player takes an order.
+ * Callbacks instead of the prep scene reaching into the floor: the floor owns
+ * customers, prep just cooks and reports back.
+ */
+export interface PrepRequest {
+  order: Order;
+  /** So the customer behind the counter looks like the one on the floor. */
+  fur: number;
+  /** Patience left, 0..1, read every frame for the bar. The floor keeps it ticking. */
+  patience: () => number;
+  /** Called once, when the player serves. */
+  onServe: (result: ScoreResult) => void;
+  /** Called when the prep station has closed and the floor is back. */
+  onClose: () => void;
+}
+
+/**
+ * Close-up prep station: read the order, add ingredients, serve.
+ *
+ * Runs as an OVERLAY on top of FloorScene (scene.launch, not scene.start):
+ * the floor keeps running underneath, so the queue's patience keeps dropping
+ * while the player cooks or reads the recipe book. Opened for one order;
+ * closes itself after the customer reacts.
  *
  * This class only wires things together: game rules live in logic/ (pure,
  * tested) and drawing lives in ui/. That split keeps the scene short and
  * means rules can change without touching layout, and vice versa.
  */
 export class PrepScene extends Phaser.Scene {
-  private order!: Order;
+  private request!: PrepRequest;
   /** Layers, bottom first. */
   private dish: IngredientId[] = [];
-  /** True while the customer is reacting to a served dish; input is ignored. */
+  /** True once the customer is reacting (served, or gave up); input is ignored. */
   private busy = false;
 
   private bubble!: SpeechBubble;
   private recipeBook!: RecipeBook;
   private dishView!: DishView;
+  private patienceBar!: Phaser.GameObjects.Graphics;
   private serveButton!: Button;
   private resetButton!: Button;
   private recipesButton!: Button;
@@ -49,22 +68,30 @@ export class PrepScene extends Phaser.Scene {
     super('PrepScene');
   }
 
+  /** Phaser calls init() with the data passed to scene.launch(), before create(). */
+  init(request: PrepRequest): void {
+    this.request = request;
+  }
+
   create(): void {
-    // Reset state here, not only in field initialisers: Phaser reuses the same
-    // scene object if the scene is restarted, and initialisers run only once.
+    // Reset state here, not only in field initialisers: Phaser reuses the
+    // same scene object every time prep opens, and initialisers run only once.
     this.dish = [];
     this.busy = false;
     this.binButtons = [];
 
     // Phaser draws objects in the order they're added, so the build order
     // here is the layering: wall, customer, counter (hides the customer's
-    // lower body), then all UI on top.
+    // lower body), then all UI on top. The wall and counter are opaque and
+    // cover the whole screen, hiding the floor underneath.
     this.drawWall();
     this.drawCustomer(64, COUNTER_TOP_Y - 30);
     this.drawCounter();
+    this.patienceBar = this.add.graphics();
 
     // No order ticket: the speech bubble is the only clue (see GAME_DESIGN.md).
     this.bubble = new SpeechBubble(this, 112, 24, 392, 88);
+    this.bubble.setLines(buildSpeech(this.request.order));
     this.dishView = new DishView(this, 320, 214);
 
     this.createIngredientBins();
@@ -78,21 +105,24 @@ export class PrepScene extends Phaser.Scene {
     // Created after the prep UI so it draws on top of it.
     this.recipeBook = new RecipeBook(this);
     this.recipesButton = new Button(this, 568, 28, 128, 32, 'Recipes (R)', COLORS.book, () =>
-      this.recipeBook.open(availableRecipes(OWNED)),
+      this.recipeBook.open(availableRecipes(STARTER_OWNED)),
     );
 
-    // TEMPORARY (milestone 3 returns to the floor automatically after serving).
-    new Button(this, 56, 16, 96, 24, '< Floor', COLORS.book, () => this.scene.start('FloorScene'));
-
     this.setupKeyboard();
-    this.nextOrder();
+    this.refreshDish();
   }
 
-  private nextOrder(): void {
-    this.order = generateOrder(OWNED);
-    this.bubble.setLines(buildSpeech(this.order));
-    this.busy = false;
-    this.resetDish();
+  update(): void {
+    this.drawPatienceBar();
+  }
+
+  /**
+   * The customer ran out of patience mid-cook (the floor tells us). They say
+   * so, and prep closes without serving: nothing to score, nobody to pay.
+   */
+  customerGaveUp(): void {
+    if (this.busy) return;
+    this.finish(buildGaveUp());
   }
 
   private addIngredient(id: IngredientId): void {
@@ -112,26 +142,54 @@ export class PrepScene extends Phaser.Scene {
 
     // No modifier tools exist yet (Toaster arrives in milestone 6), so the
     // player's plate never has modifiers. Starter orders never ask for any.
-    const result = scoreDish(expectedPlate(this.order), {
+    const result = scoreDish(expectedPlate(this.request.order), {
       layers: this.dish,
       modifiers: [],
     });
+    this.request.onServe(result);
+    // No result pop-up: the customer's reaction is the feedback.
+    this.finish(buildReaction(result.score));
+  }
 
+  /** Shows the customer's last words, locks the counter, then closes. */
+  private finish(line: string): void {
     this.busy = true;
     this.serveButton.setEnabled(false);
     this.resetButton.setEnabled(false);
-    // No result pop-up: the customer's reaction is the feedback.
-    this.bubble.setLines([buildReaction(result.score)]);
-    this.time.delayedCall(NEXT_ORDER_DELAY_MS, () => this.nextOrder());
+    this.recipeBook.close();
+    this.bubble.setLines([line]);
+    this.time.delayedCall(CLOSE_DELAY_MS, () => {
+      // stop() shuts this scene down (its timers, objects and input
+      // listeners go with it); the floor underneath was running all along.
+      this.scene.stop();
+      this.request.onClose();
+    });
   }
 
   private refreshDish(): void {
     this.dishView.setLayers(this.dish);
     // Serving an empty plate would always score "wrong", so disable it to
     // prevent accidental misclicks rather than punish them.
-    const hasItems = this.dish.length > 0;
+    const hasItems = this.dish.length > 0 && !this.busy;
     this.serveButton.setEnabled(hasItems);
     this.resetButton.setEnabled(hasItems);
+  }
+
+  /**
+   * The customer's patience, on the counter under them. Patience stops once
+   * served, so after serving the bar simply freezes.
+   */
+  private drawPatienceBar(): void {
+    const g = this.patienceBar;
+    g.clear();
+    const fraction = Phaser.Math.Clamp(this.request.patience(), 0, 1);
+    const x = 24;
+    const y = COUNTER_TOP_Y + 12;
+    const width = 80;
+    g.fillStyle(COLORS.ink);
+    g.fillRect(x, y, width, 8);
+    g.fillStyle(patienceColor(fraction));
+    g.fillRect(x + 2, y + 2, Math.ceil((width - 4) * fraction), 4);
   }
 
   /** One square button per owned ingredient along the bottom of the counter. */
@@ -141,7 +199,7 @@ export class PrepScene extends Phaser.Scene {
     const startX = 64;
     const y = 300;
 
-    OWNED.ingredients.forEach((id, i) => {
+    STARTER_OWNED.ingredients.forEach((id, i) => {
       const x = startX + i * spacing;
       // The number on the bin is its keyboard shortcut.
       const bin = new Button(this, x, y, size, size, String(i + 1), INGREDIENTS[id].color, () =>
@@ -160,9 +218,7 @@ export class PrepScene extends Phaser.Scene {
    * differently (a disabled button ignores its key too).
    */
   private setupKeyboard(): void {
-    // keyboard is null when the game runs without a keyboard plugin (some
-    // touch-only setups), hence the optional chaining.
-    this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, (event: KeyboardEvent) => {
+    const onKey = (event: KeyboardEvent) => {
       if (event.repeat) return; // holding a key down shouldn't spam layers
 
       // Book controls work whether or not the book is open.
@@ -192,6 +248,14 @@ export class PrepScene extends Phaser.Scene {
         event.preventDefault();
         this.resetButton.press();
       }
+    };
+    // keyboard is null when the game runs without a keyboard plugin (some
+    // touch-only setups), hence the optional chaining.
+    this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
+    // Prep opens and closes many times; remove the listener on close
+    // explicitly so old ones can never pile up and fire twice.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
     });
   }
 
@@ -210,11 +274,10 @@ export class PrepScene extends Phaser.Scene {
   /** Placeholder woodland customer peeking over the counter. (x, y) = body centre. */
   private drawCustomer(x: number, y: number): void {
     const g = this.add.graphics();
-    g.fillStyle(COLORS.customerDark);
+    g.fillStyle(this.request.fur);
     // Ears
     g.fillTriangle(x - 20, y - 22, x - 8, y - 22, x - 16, y - 40);
     g.fillTriangle(x + 8, y - 22, x + 20, y - 22, x + 16, y - 40);
-    g.fillStyle(COLORS.customer);
     g.fillRoundedRect(x - 24, y - 28, 48, 64, 12);
     // Eyes
     g.fillStyle(COLORS.ink);

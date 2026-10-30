@@ -1,5 +1,6 @@
 import {
   DOUBLE_ORDER_LINES,
+  GAVE_UP_LINES,
   INGREDIENT_LINES,
   MODIFIER_LINES,
   REACTION_LINES,
@@ -72,6 +73,11 @@ export function buildSpeech(
     speech.push(pickLine(MODIFIER_LINES[mod], rollStyle(), rng));
   }
   return speech;
+}
+
+/** What a customer says when they give up waiting for their order. */
+export function buildGaveUp(rng: Rng = Math.random): string {
+  return pickOne(GAVE_UP_LINES, rng);
 }
 
 /** What the customer says after being served, based on how the dish scored. */

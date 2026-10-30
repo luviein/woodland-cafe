@@ -1,7 +1,9 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
 import { messySeatsAt, takeOrder, type FloorState, type TakeOrderResult } from './floor';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
+import { STARTER_OWNED, type Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
+import type { Rng } from './random';
 import { createWalker, isMoving, redirect, stepWalker, walkTo, type Walker } from './walker';
 
 /** A table the player has been sent to clean. */
@@ -133,7 +135,8 @@ export function takeOrderAtCounter(
   player: PlayerState,
   floor: FloorState,
   layout: Layout,
-  config: FloorConfig = FLOOR_CONFIG,
+  owned: Owned = STARTER_OWNED,
+  rng: Rng = Math.random,
 ): { player: PlayerState; floor: FloorState; result: TakeOrderResult | null } {
   const unchanged = { player, floor, result: null };
   if (!player.takingOrder || isMoving(player.walker)) return unchanged;
@@ -141,7 +144,7 @@ export function takeOrderAtCounter(
   const done = { ...player, takingOrder: false };
   if (floor.queue.length === 0) return { ...unchanged, player: done };
 
-  const taken = takeOrder(floor, layout, config);
+  const taken = takeOrder(floor, layout, owned, rng);
   if (taken.result === 'notReady') return unchanged;
   return { player: done, floor: taken.floor, result: taken.result };
 }

@@ -1,7 +1,9 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
+import { generateOrder, STARTER_OWNED, type Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
+import type { Order, Score } from './types';
 import {
   createWalker,
   destination,
@@ -17,7 +19,7 @@ import {
  * Where a customer is in their visit. Each phase ends on a clear event:
  *   queued   -> the player takes their order (takeOrder: front of the
  *               queue, and a clean seat is free), or patience runs out
- *   ordered  -> served (the stand-in timer runs out), or patience runs out
+ *   ordered  -> served at the prep station (serveCustomer), or patience runs out
  *   toSeat   -> sat down
  *   eating   -> timer ran out; stands up and leaves a mess
  *   leaving  -> reached the door and is removed
@@ -33,8 +35,10 @@ export interface Customer {
   id: number;
   walker: Walker;
   phase: CustomerPhase;
-  /** Seconds left in a timed phase (ordered stand-in, eating). */
+  /** Seconds left in a timed phase (only eating, for now). */
   timer: number;
+  /** What they asked for; set when the player takes their order. */
+  order: Order | null;
   /**
    * Seconds of patience left. Counts down at a fixed rate while queued and
    * ordered (even while the order is being made); stops once served.
@@ -135,6 +139,7 @@ export function stepFloor(
       walker: createWalker(layout.door), // pass 5 sends them to their queue spot
       phase: 'queued',
       timer: 0,
+      order: null,
       patience: config.patienceSeconds,
       seat: null,
       upset: false,
@@ -159,15 +164,8 @@ export function stepFloor(
     switch (c.phase) {
       case 'queued':
       case 'ordered':
-        if (c.patience <= 0) {
-          leave(c, true); // waited too long: leaves unhappy, doesn't pay
-        } else if (c.phase === 'ordered' && c.timer <= 0) {
-          // Served (STAND-IN timer; step 3 replaces it with the prep station).
-          // Patience stops here, and they head to the seat reserved for them.
-          queue.splice(queue.indexOf(c.id), 1);
-          c.phase = 'toSeat';
-          c.walker = redirect(c.walker, (from) => routeToSeat(layout, from, c.seat!.seat));
-        }
+        // Being served is the player's action (serveCustomer), not a timer.
+        if (c.patience <= 0) leave(c, true); // waited too long: leaves unhappy, doesn't pay
         break;
 
       case 'toSeat':
@@ -236,28 +234,50 @@ export function customerAtCounter(state: FloorState, layout: Layout): Customer |
 export type TakeOrderResult = 'ordered' | 'noSeat' | 'notReady';
 
 /**
- * The player takes the front customer's order. Ordering reserves the nearest
- * free clean seat, so the next customer can't take it. The floor module
- * doesn't check where the PLAYER is: that's player.ts's job, which keeps this
- * rule usable by employees later too.
+ * The player takes the front customer's order: they pick a dish (from what
+ * the player owns) and reserve the nearest free clean seat, so the next
+ * customer can't take it. The floor module doesn't check where the PLAYER is:
+ * that's player.ts's job, which keeps this rule usable by employees later too.
  */
 export function takeOrder(
   state: FloorState,
   layout: Layout,
-  config: FloorConfig = FLOOR_CONFIG,
+  owned: Owned = STARTER_OWNED,
+  rng: Rng = Math.random,
 ): { floor: FloorState; result: TakeOrderResult } {
   const front = customerAtCounter(state, layout);
   if (!front) return { floor: state, result: 'notReady' };
   const seat = findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot);
   if (!seat) return { floor: state, result: 'noSeat' };
 
-  // STAND-IN: orderSeconds is how long the order takes; step 3 replaces it
-  // with the prep station.
-  const ordered: Customer = { ...front, seat, phase: 'ordered', timer: config.orderSeconds };
-  return {
-    floor: { ...state, customers: state.customers.map((c) => (c.id === front.id ? ordered : c)) },
-    result: 'ordered',
-  };
+  const ordered: Customer = { ...front, seat, phase: 'ordered', order: generateOrder(owned, rng) };
+  return { floor: replaceCustomer(state, ordered), result: 'ordered' };
+}
+
+/**
+ * The customer who ordered gets their dish, scored at the prep station.
+ * Patience stops here either way.
+ *   perfect / close: they head to the seat reserved for them
+ *   wrong:           they leave straight away, angry (no pay, no eating),
+ *                    which frees their seat
+ * Does nothing if they're no longer waiting for food (e.g. gave up a moment
+ * ago), so a late serve can't bring someone back.
+ */
+export function serveCustomer(state: FloorState, layout: Layout, customerId: number, score: Score): FloorState {
+  const c = state.customers.find((o) => o.id === customerId);
+  if (c?.phase !== 'ordered') return state;
+
+  const served: Customer =
+    score === 'wrong'
+      ? { ...c, phase: 'leaving', seat: null, upset: true, walker: walkTo(c.walker, layout, layout.door) }
+      : { ...c, phase: 'toSeat', walker: redirect(c.walker, (from) => routeToSeat(layout, from, c.seat!.seat)) };
+  // Out of the queue: the next customer moves up to the order spot on the next step.
+  return { ...replaceCustomer(state, served), queue: state.queue.filter((id) => id !== customerId) };
+}
+
+/** `state` with the customer of the same id swapped for `c`. */
+function replaceCustomer(state: FloorState, c: Customer): FloorState {
+  return { ...state, customers: state.customers.map((o) => (o.id === c.id ? c : o)) };
 }
 
 /**

@@ -8,12 +8,14 @@ import {
   hasFreeSeat,
   messySeatsAt,
   queueCapacity,
+  serveCustomer,
   stepFloor,
   takeOrder,
   type Customer,
   type FloorState,
 } from './floor';
 import { parseLayout, pointKey, type Layout, type Point } from './layout';
+import { availableRecipes, STARTER_OWNED } from './orders';
 import { seededRng } from './random';
 import { destination, walkerPosition } from './walker';
 
@@ -41,7 +43,6 @@ const CONFIG: FloorConfig = {
   firstCustomerDelay: 0.5,
   spawnIntervalMin: 1000,
   spawnIntervalMax: 1000,
-  orderSeconds: 1,
   eatSecondsMin: 2,
   eatSecondsMax: 2,
   patienceSeconds: 10,
@@ -60,13 +61,24 @@ interface RunOptions {
    * follow whole visits; switch off to test what customers do on their own.
    */
   autoOrder?: boolean;
+  /**
+   * Serve a perfect dish one frame after the order is taken (so tests can
+   * still see the 'ordered' phase). On by default; off = the cook never
+   * finishes.
+   */
+  autoServe?: boolean;
 }
 
-/** One simulation frame, plus the attentive "player" if autoOrder is on. */
+/** One simulation frame, plus the attentive "player" if autoOrder/autoServe are on. */
 function frame(state: FloorState, rng: () => number, opts: RunOptions): FloorState {
-  const { layout = TINY, config = CONFIG, autoOrder = true } = opts;
+  const { layout = TINY, config = CONFIG, autoOrder = true, autoServe = true } = opts;
   state = stepFloor(state, layout, 0.05, rng, config);
-  return autoOrder ? takeOrder(state, layout, config).floor : state;
+  if (autoServe) {
+    for (const c of state.customers) {
+      if (c.phase === 'ordered') state = serveCustomer(state, layout, c.id, 'perfect');
+    }
+  }
+  return autoOrder ? takeOrder(state, layout, STARTER_OWNED, rng).floor : state;
 }
 
 /** Runs the simulation in small frames, calling `check` after each one. */
@@ -112,6 +124,7 @@ const customer = (id: number, tile: Point, extra: Partial<Customer>): Customer =
   walker: { tile, path: [], progress: 0 },
   phase: 'queued',
   timer: 0,
+  order: null,
   patience: 100,
   seat: null,
   upset: false,
@@ -203,8 +216,7 @@ describe('stepFloor: patience', () => {
   });
 
   it('at zero after ordering, they leave upset and their reserved seat is freed', () => {
-    const tooSlow: FloorConfig = { ...CONFIG, orderSeconds: 100 };
-    const s = runUntil(start(), phaseOf(1, 'leaving'), { config: tooSlow });
+    const s = runUntil(start(), phaseOf(1, 'leaving'), { autoServe: false });
     expect(find(s, 1)!.upset).toBe(true);
     expect(find(s, 1)!.seat).toBeNull();
     expect(hasFreeSeat(s, TINY)).toBe(true);
@@ -244,49 +256,106 @@ describe('takeOrder', () => {
   const atCounter = (): FloorState => scene([customer(1, TINY.orderSpot, {})], [1]);
 
   it('the front customer orders and reserves the nearest clean seat', () => {
-    const { floor, result } = takeOrder(atCounter(), TINY, CONFIG);
+    const { floor, result } = takeOrder(atCounter(), TINY);
     expect(result).toBe('ordered');
     expect(find(floor, 1)!.phase).toBe('ordered');
-    expect(find(floor, 1)!.timer).toBe(CONFIG.orderSeconds);
+    expect(availableRecipes(STARTER_OWNED)).toContain(find(floor, 1)!.order?.recipeId);
     expect(TINY.tables[0].seats).toContainEqual(find(floor, 1)!.seat?.seat);
   });
 
   it('no clean seat: nothing changes, and says why', () => {
     const messy = { ...atCounter(), messySeats: [LEFT, RIGHT] };
-    const { floor, result } = takeOrder(messy, TINY, CONFIG);
+    const { floor, result } = takeOrder(messy, TINY);
     expect(result).toBe('noSeat');
     expect(floor).toBe(messy);
   });
 
   it('works as soon as a seat is cleaned', () => {
     const s = cleanSeats({ ...atCounter(), messySeats: [LEFT, RIGHT] }, [LEFT_SEAT]);
-    expect(find(takeOrder(s, TINY, CONFIG).floor, 1)!.seat?.seat).toEqual(LEFT_SEAT);
+    expect(find(takeOrder(s, TINY).floor, 1)!.seat?.seat).toEqual(LEFT_SEAT);
   });
 
   it("a reserved seat isn't free: the next customer can't order even before the first reaches it", () => {
     // Customer 1 has been served and is walking to the only clean seat.
     // Customer 2 is at the front of the queue.
     const s = scene([headingTo(1, RIGHT_SEAT), customer(2, TINY.orderSpot, {})], [2], [LEFT]);
-    expect(takeOrder(s, TINY, CONFIG).result).toBe('noSeat');
+    expect(takeOrder(s, TINY).result).toBe('noSeat');
   });
 
   it('nobody at the order spot yet: notReady, even with someone further back', () => {
     // Customer 1 (the front) is still walking to the order spot; customer 2 waits behind.
     const walking = customer(1, { x: 4, y: 4 }, { walker: { tile: { x: 4, y: 4 }, path: [{ x: 5, y: 4 }], progress: 0 } });
     const s = scene([walking, customer(2, SPOT_1, {})], [1, 2]);
-    expect(takeOrder(s, TINY, CONFIG).result).toBe('notReady');
-    expect(takeOrder(scene([]), TINY, CONFIG).result).toBe('notReady');
+    expect(takeOrder(s, TINY).result).toBe('notReady');
+    expect(takeOrder(scene([]), TINY).result).toBe('notReady');
   });
 
   it("can't order twice", () => {
-    const once = takeOrder(atCounter(), TINY, CONFIG).floor;
-    expect(takeOrder(once, TINY, CONFIG).result).toBe('notReady');
+    const once = takeOrder(atCounter(), TINY).floor;
+    expect(takeOrder(once, TINY).result).toBe('notReady');
   });
 
   it('does not change the state it was given', () => {
     const before = atCounter();
     const snapshot = structuredClone(before);
-    takeOrder(before, TINY, CONFIG);
+    takeOrder(before, TINY);
+    expect(before).toEqual(snapshot);
+  });
+});
+
+describe('serveCustomer', () => {
+  /** Customer 1 has ordered (right seat reserved); customer 2 queues behind. */
+  const ordered = (): FloorState =>
+    scene(
+      [
+        customer(1, TINY.orderSpot, {
+          phase: 'ordered',
+          order: { recipeId: 'plainBread', modifiers: [], quantity: 1 },
+          seat: { tableId: 'table-0', seat: RIGHT_SEAT },
+        }),
+        customer(2, SPOT_1, {}),
+      ],
+      [1, 2],
+    );
+
+  it.each(['perfect', 'close'] as const)('%s: heads to their reserved seat and leaves the queue', (score) => {
+    const s = serveCustomer(ordered(), TINY, 1, score);
+    expect(find(s, 1)!.phase).toBe('toSeat');
+    expect(destination(find(s, 1)!.walker)).toEqual(RIGHT_SEAT);
+    expect(s.queue).toEqual([2]);
+  });
+
+  it('wrong: leaves straight away, angry, and frees the seat', () => {
+    const s = serveCustomer(ordered(), TINY, 1, 'wrong');
+    const c = find(s, 1)!;
+    expect(c.phase).toBe('leaving');
+    expect(c.upset).toBe(true);
+    expect(c.seat).toBeNull();
+    expect(destination(c.walker)).toEqual(TINY.door);
+    expect(s.queue).toEqual([2]);
+    expect(hasFreeSeat(s, TINY)).toBe(true);
+  });
+
+  it('the next customer moves up to the order spot', () => {
+    const s = step(serveCustomer(ordered(), TINY, 1, 'perfect'));
+    expect(destination(find(s, 2)!.walker)).toEqual(TINY.orderSpot);
+  });
+
+  it('patience stops once served', () => {
+    const served = serveCustomer(ordered(), TINY, 1, 'perfect');
+    expect(find(step(served), 1)!.patience).toBe(find(served, 1)!.patience);
+  });
+
+  it('does nothing for someone who is no longer waiting for food', () => {
+    const notOrdered = ordered();
+    expect(serveCustomer(notOrdered, TINY, 2, 'perfect')).toBe(notOrdered); // hasn't ordered
+    expect(serveCustomer(notOrdered, TINY, 99, 'perfect')).toBe(notOrdered); // already gone
+  });
+
+  it('does not change the state it was given', () => {
+    const before = ordered();
+    const snapshot = structuredClone(before);
+    serveCustomer(before, TINY, 1, 'wrong');
     expect(before).toEqual(snapshot);
   });
 });
@@ -356,6 +425,7 @@ describe('stepFloor: rules that must always hold', () => {
     for (const c of s.customers.filter((c) => c.phase === 'ordered')) {
       expect(s.queue[0], `customer ${c.id} ordered but isn't at the front`).toBe(c.id);
       expect(c.seat, `customer ${c.id} ordered without a seat`).not.toBeNull();
+      expect(c.order, `customer ${c.id} ordered nothing`).not.toBeNull();
     }
 
     for (const c of s.customers.filter((c) => c.phase === 'toSeat')) {

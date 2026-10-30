@@ -95,6 +95,16 @@ export const REACTION_LINES: Record<Score, readonly string[]> = {
   ],
 };
 
+/**
+ * Said when a customer runs out of patience while their order is still being
+ * made: the prep station closes on this line.
+ */
+export const GAVE_UP_LINES: readonly string[] = [
+  "I can't wait any longer! I'm off.",
+  'Too slow! Never mind, then.',
+  "Forget it, I'll find breakfast elsewhere!",
+];
+
 /** Said before the order when it's a double order (Serving Tray). Placeholder (milestone 6). */
 export const DOUBLE_ORDER_LINES: DialogueLines = {
   direct: ['Two of these, please!', 'Make that two, please!'],

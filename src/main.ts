@@ -16,7 +16,8 @@ const game = new Phaser.Game({
     width: BASE_WIDTH,
     height: BASE_HEIGHT,
   },
-  // The first scene in the list starts automatically.
+  // The first scene in the list starts automatically. PrepScene is launched
+  // by the floor as an overlay when an order is taken; later scenes draw on top.
   scene: [FloorScene, PrepScene],
 });
 

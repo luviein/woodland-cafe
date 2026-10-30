@@ -14,11 +14,6 @@ export type FloorConfig = {
   /** A new customer arrives a random time in this range after the last one. */
   spawnIntervalMin: number;
   spawnIntervalMax: number;
-  /**
-   * STAND-IN until the prep station is connected (milestone 3, step 3): how
-   * long an order "takes to make" once taken, before the customer is served.
-   */
-  orderSeconds: number;
   eatSecondsMin: number;
   eatSecondsMax: number;
   /**
@@ -37,7 +32,6 @@ export const FLOOR_CONFIG: FloorConfig = {
   firstCustomerDelay: 1,
   spawnIntervalMin: 4,
   spawnIntervalMax: 8,
-  orderSeconds: 1.5,
   eatSecondsMin: 6,
   eatSecondsMax: 10,
   patienceSeconds: 45,

@@ -28,6 +28,10 @@ Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 
 ## Controls (prep station)
 
+Opens on top of the floor when you take an order, and closes after the
+customer reacts. The floor keeps running underneath, so patience keeps dropping
+while you cook. A wrong dish sends the customer away angry.
+
 | Action              | Mouse / touch        | Keyboard        |
 | ------------------- | -------------------- | --------------- |
 | Add a layer         | Tap an ingredient bin | `1` `2` `3`    |

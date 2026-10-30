@@ -9,6 +9,7 @@ import {
   customerAtCounter,
   hasFreeSeat,
   messySeatsAt,
+  serveCustomer,
   stepFloor,
   type Customer,
   type FloorState,
@@ -23,8 +24,8 @@ import {
   type PlayerState,
 } from '../logic/player';
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
-import { Button } from '../ui/Button';
-import { COLORS, TEXT, css } from '../ui/theme';
+import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
+import type { PrepRequest, PrepScene } from './PrepScene';
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;
@@ -56,12 +57,8 @@ function statusLabel(c: Customer, counter: CounterStatus): { text: string; color
   return { text: '', color: calm };
 }
 
-/** Patience bar colour: green while patient, orange past half, red in the last quarter. */
-function patienceColor(fraction: number): number {
-  if (fraction > 0.5) return COLORS.serve;
-  if (fraction > 0.25) return COLORS.statusImpatient;
-  return COLORS.statusUpset;
-}
+/** Each customer's fur colour, picked by id, so they look the same on the floor and at prep. */
+const furColor = (id: number): number => COLORS.customerFur[id % COLORS.customerFur.length];
 
 const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
   wall: COLORS.wallTile,
@@ -98,6 +95,14 @@ export class FloorScene extends Phaser.Scene {
   /** One sprite per customer id, created and destroyed as customers come and go. */
   private customerSprites = new Map<number, CustomerSprite>();
 
+  /** True while the prep station is on screen (taps on the floor are ignored). */
+  private prepOpen = false;
+  /**
+   * The customer whose order is being cooked, until served or they give up.
+   * Cleared on serve, while prep stays open a moment longer for their reaction.
+   */
+  private prepCustomerId: number | null = null;
+
   constructor() {
     super('FloorScene');
   }
@@ -120,6 +125,8 @@ export class FloorScene extends Phaser.Scene {
     // Map entries point at the previous run's destroyed sprites if the scene
     // restarts, so start with a fresh map.
     this.customerSprites = new Map();
+    this.prepOpen = false;
+    this.prepCustomerId = null;
 
     // Small outline showing where the player is heading; hidden when idle.
     this.destinationMarker = this.add
@@ -137,13 +144,12 @@ export class FloorScene extends Phaser.Scene {
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
         // Taps on a button are the button's business, not a walk command.
-        if (over.length > 0) return;
+        // The prep overlay covers the floor, so its taps aren't floor taps
+        // either: this scene still hears them, since both scenes run at once.
+        if (over.length > 0 || this.prepOpen) return;
         this.onTileTapped(this.pixelToTile(pointer.worldX, pointer.worldY));
       },
     );
-
-    // TEMPORARY (milestone 3 replaces this with walking up to the counter).
-    new Button(this, 64, 20, 112, 28, 'Prep >', COLORS.book, () => this.scene.start('PrepScene'));
   }
 
   update(_time: number, deltaMs: number): void {
@@ -164,6 +170,13 @@ export class FloorScene extends Phaser.Scene {
     this.player = taken.player;
     this.floor = taken.floor;
     if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');
+    if (taken.result === 'ordered') this.openPrep(this.floor.queue[0]);
+
+    // Ran out of patience while their order was cooking? Prep closes on them.
+    if (this.prepCustomerId !== null && this.customer(this.prepCustomerId)?.phase !== 'ordered') {
+      this.prepCustomerId = null;
+      (this.scene.get('PrepScene') as PrepScene).customerGaveUp();
+    }
 
     this.drawTableOverlay();
     this.drawProgressBar();
@@ -195,6 +208,37 @@ export class FloorScene extends Phaser.Scene {
       duration: 900,
       onComplete: () => text.destroy(),
     });
+  }
+
+  private customer(id: number): Customer | undefined {
+    return this.floor.customers.find((c) => c.id === id);
+  }
+
+  /**
+   * Opens the prep station on top of the floor for this customer's order.
+   * launch() (not start()) runs it alongside this scene, so the floor keeps
+   * going: patience drops and others keep eating while the player cooks.
+   */
+  private openPrep(customerId: number): void {
+    const order = this.customer(customerId)?.order;
+    if (!order) return;
+    this.prepOpen = true;
+    this.prepCustomerId = customerId;
+    this.destinationMarker.setVisible(false);
+
+    const request: PrepRequest = {
+      order,
+      fur: furColor(customerId),
+      patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
+      onServe: (result) => {
+        this.floor = serveCustomer(this.floor, this.layout, customerId, result.score);
+        this.prepCustomerId = null;
+      },
+      onClose: () => {
+        this.prepOpen = false;
+      },
+    };
+    this.scene.launch('PrepScene', request);
   }
 
   private onTileTapped(tile: Point): void {
@@ -405,9 +449,8 @@ export class FloorScene extends Phaser.Scene {
 
   /** Placeholder customer: a round-eared critter, fur colour picked by id. */
   private createCustomerSprite(id: number): CustomerSprite {
-    const fur = COLORS.customerFur[id % COLORS.customerFur.length];
     const g = this.add.graphics();
-    g.fillStyle(fur);
+    g.fillStyle(furColor(id));
     g.fillRect(2, 0, 4, 4); // ears
     g.fillRect(10, 0, 4, 4);
     g.fillRect(3, 3, 10, 12); // body

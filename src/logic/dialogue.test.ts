@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DOUBLE_ORDER_LINES,
+  GAVE_UP_LINES,
   INGREDIENT_LINES,
   MODIFIER_LINES,
   REACTION_LINES,
@@ -8,7 +9,7 @@ import {
 } from '../data/dialogue';
 import { ORDER_CONFIG, type OrderConfig } from '../data/orderConfig';
 import { RECIPE_IDS } from '../data/recipes';
-import { buildReaction, buildSpeech } from './dialogue';
+import { buildGaveUp, buildReaction, buildSpeech } from './dialogue';
 import { seededRng } from './random';
 import type { Order } from './types';
 
@@ -115,5 +116,13 @@ describe('buildReaction', () => {
     // Reactions are the only feedback, so one line must not mean two moods.
     const all = [...REACTION_LINES.perfect, ...REACTION_LINES.close, ...REACTION_LINES.wrong];
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+describe('buildGaveUp', () => {
+  it('picks a gave-up line, never a normal reaction', () => {
+    const line = buildGaveUp(seededRng(3));
+    expect(GAVE_UP_LINES).toContain(line);
+    expect(Object.values(REACTION_LINES).flat()).not.toContain(line);
   });
 });
