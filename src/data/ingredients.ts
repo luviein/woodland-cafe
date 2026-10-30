@@ -12,17 +12,28 @@ export interface IngredientDef {
   color: number;
   /** Owned from the very first day. */
   starter: boolean;
-  /** Marketplace price in Leaves; null = not sold. Placeholder until milestone 6. */
-  price: number | null;
+  /**
+   * One-time Marketplace price in Leaves to start using it (its recipes then
+   * appear in orders); null = starter, never sold. Placeholder until milestone 6.
+   */
+  unlockPrice: number | null;
+  /**
+   * Price of ONE unit of stock, in Leaves (GAME_DESIGN.md §3.6). Rush
+   * deliveries cost a multiple of it (stockConfig.ts), and dish prices are
+   * set to cover it.
+   */
+  unitPrice: number;
+  /** Stock on a new game. */
+  startingStock: number;
 }
 
 export const INGREDIENTS = {
-  bread: { name: 'Bread', color: 0xd9a25f, starter: true, price: null },
-  mushroom: { name: 'Mushroom', color: 0xa68a7b, starter: true, price: null },
-  jam: { name: 'Jam', color: 0xb5384f, starter: true, price: null },
-  chilli: { name: 'Chilli', color: 0xe0502f, starter: false, price: 15 },
-  tuna: { name: 'Tuna', color: 0x7f9bb3, starter: false, price: 20 },
-  tomato: { name: 'Tomato', color: 0xd94a3a, starter: false, price: 10 },
+  bread: { name: 'Bread', color: 0xd9a25f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 12 },
+  mushroom: { name: 'Mushroom', color: 0xa68a7b, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 6 },
+  jam: { name: 'Jam', color: 0xb5384f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 6 },
+  chilli: { name: 'Chilli', color: 0xe0502f, starter: false, unlockPrice: 15, unitPrice: 2, startingStock: 0 },
+  tuna: { name: 'Tuna', color: 0x7f9bb3, starter: false, unlockPrice: 20, unitPrice: 3, startingStock: 0 },
+  tomato: { name: 'Tomato', color: 0xd94a3a, starter: false, unlockPrice: 10, unitPrice: 2, startingStock: 0 },
 } satisfies Record<string, IngredientDef>;
 
 export type IngredientId = keyof typeof INGREDIENTS;

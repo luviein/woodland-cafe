@@ -4,6 +4,7 @@ import { pointKey, samePoint, type Layout, type Point, type Table } from './layo
 import type { Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
+import type { Pantry } from './stock';
 import { createWalker, isMoving, redirect, stepWalker, walkTo, type Walker } from './walker';
 
 /** A table the player has been sent to clean. */
@@ -126,7 +127,7 @@ export function stepPlayer(
  * takes it. Returns what happened (null = nothing this frame):
  *   - the front customer is still walking up (or still being served):
  *     keep waiting (null)
- *   - 'ordered' or 'noSeat': the job is done either way; tap again to retry
+ *   - 'ordered', 'noSeat' or 'outOfStock': the job is done either way; tap again to retry
  *   - the queue emptied (they gave up): the job is dropped (null)
  * Unlike stepPlayer, this does return a new floor: taking an order is the
  * floor's rule (takeOrder), the player just decides WHEN it happens.
@@ -135,7 +136,7 @@ export function takeOrderAtCounter(
   player: PlayerState,
   floor: FloorState,
   layout: Layout,
-  owned: Owned,
+  game: Owned & Pantry,
   rng: Rng = Math.random,
 ): { player: PlayerState; floor: FloorState; result: TakeOrderResult | null } {
   const unchanged = { player, floor, result: null };
@@ -144,7 +145,7 @@ export function takeOrderAtCounter(
   const done = { ...player, takingOrder: false };
   if (floor.queue.length === 0) return { ...unchanged, player: done };
 
-  const taken = takeOrder(floor, layout, owned, rng);
+  const taken = takeOrder(floor, layout, game, rng);
   if (taken.result === 'notReady') return unchanged;
   return { player: done, floor: taken.floor, result: taken.result };
 }

@@ -4,8 +4,14 @@ import { createNewGame, earnLeaves, startNextDay } from './gameState';
 import { availableRecipes } from './orders';
 
 describe('createNewGame', () => {
-  it('starts on day 1 with no Leaves, the starter ingredients and no upgrades', () => {
-    expect(createNewGame()).toEqual({ day: 1, leaves: 0, ingredients: STARTER_INGREDIENTS, upgrades: [] });
+  it('starts on day 1 with no Leaves, the starter ingredients and their stock, and no upgrades', () => {
+    expect(createNewGame()).toEqual({
+      day: 1,
+      leaves: 0,
+      ingredients: STARTER_INGREDIENTS,
+      upgrades: [],
+      stock: { bread: 12, mushroom: 6, jam: 6, chilli: 0, tuna: 0, tomato: 0 },
+    });
   });
 
   it('can be used directly to work out what can be ordered', () => {

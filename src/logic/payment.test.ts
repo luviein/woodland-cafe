@@ -17,17 +17,18 @@ const CONFIG: TipConfig = {
 };
 // Price 5, so the full tip is 5.
 const ORDER: Order = { recipeId: 'tunaTomatoSandwich', modifiers: [], quantity: 1 };
-const PRICE = RECIPE_PRICES.tunaTomatoSandwich;
+const PRICES = { ...RECIPE_PRICES, tunaTomatoSandwich: 5 };
+const PRICE = 5;
 
 const perfect: ScoreResult = { score: 'perfect', missingModifiers: [] };
 const close: ScoreResult = { score: 'close', missingModifiers: [] };
 const pay = (result: ScoreResult, patience: number, order = ORDER) =>
-  computePayment(order, result, patience, CONFIG);
+  computePayment(order, result, patience, CONFIG, PRICES);
 
 describe('computePayment', () => {
   it('uses the recipe price', () => {
-    expect(PRICE).toBe(5);
     expect(pay(perfect, 0).price).toBe(5);
+    expect(computePayment(ORDER, perfect, 0, CONFIG).price).toBe(RECIPE_PRICES.tunaTomatoSandwich);
   });
 
   it.each([

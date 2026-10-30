@@ -1,4 +1,5 @@
 import { RECIPE_PRICES } from '../data/prices';
+import type { RecipeId } from '../data/recipes';
 import { TIP_CONFIG, type TipConfig } from '../data/tipConfig';
 import type { Order, ScoreResult } from './types';
 
@@ -24,16 +25,18 @@ const NOTHING: Payment = { price: 0, tip: 0, total: 0 };
  * where the Leaves go.
  *
  * @param patienceLeft 0..1, the customer's patience when served
+ * @param prices dish prices; tests pass their own so they don't break when prices are retuned
  */
 export function computePayment(
   order: Order,
   result: ScoreResult,
   patienceLeft: number,
   config: TipConfig = TIP_CONFIG,
+  prices: Record<RecipeId, number> = RECIPE_PRICES,
 ): Payment {
   if (result.score === 'wrong') return NOTHING;
 
-  const price = RECIPE_PRICES[order.recipeId] * order.quantity;
+  const price = prices[order.recipeId] * order.quantity;
   const tier = config.tiers.find((t) => patienceLeft > t.above);
   let tip = price * config.fullTipShare * (tier?.share ?? 0);
   if (result.score === 'close') tip *= config.closeMultiplier;

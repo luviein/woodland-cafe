@@ -7,6 +7,7 @@ import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients'
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
 import { RECIPE_PRICES } from './prices';
 import { RECIPE_IDS, RECIPES } from './recipes';
+import { STOCK_CONFIG } from './stockConfig';
 import { TIP_CONFIG } from './tipConfig';
 
 // TypeScript already checks that ids line up. These tests catch the mistakes
@@ -18,9 +19,22 @@ describe('ingredients', () => {
     expect(STARTER_INGREDIENTS).toEqual(['bread', 'mushroom', 'jam']);
   });
 
-  it('purchasable ingredients have a price', () => {
+  it('purchasable ingredients have an unlock price', () => {
     for (const id of INGREDIENT_IDS) {
-      if (!INGREDIENTS[id].starter) expect(INGREDIENTS[id].price, id).toBeGreaterThan(0);
+      if (!INGREDIENTS[id].starter) expect(INGREDIENTS[id].unlockPrice, id).toBeGreaterThan(0);
+    }
+  });
+
+  it('every ingredient has a whole, positive unit price', () => {
+    for (const id of INGREDIENT_IDS) {
+      expect(Number.isInteger(INGREDIENTS[id].unitPrice), id).toBe(true);
+      expect(INGREDIENTS[id].unitPrice, id).toBeGreaterThan(0);
+    }
+  });
+
+  it('only starters come with stock', () => {
+    for (const id of INGREDIENT_IDS) {
+      if (!INGREDIENTS[id].starter) expect(INGREDIENTS[id].startingStock, id).toBe(0);
     }
   });
 });
@@ -98,6 +112,16 @@ describe('prices and tips', () => {
     for (const id of RECIPE_IDS) {
       expect(Number.isInteger(RECIPE_PRICES[id]), id).toBe(true);
       expect(RECIPE_PRICES[id], id).toBeGreaterThan(0);
+    }
+  });
+
+  it('every right dish earns something, even with every layer rush-bought', () => {
+    for (const id of RECIPE_IDS) {
+      const rushCost = RECIPES[id].layers.reduce(
+        (sum, layer) => sum + INGREDIENTS[layer].unitPrice * STOCK_CONFIG.rushPriceMultiplier,
+        0,
+      );
+      expect(RECIPE_PRICES[id], id).toBeGreaterThan(rushCost);
     }
   });
 

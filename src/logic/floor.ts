@@ -3,6 +3,7 @@ import { pointKey, samePoint, type Layout, type Point, type Table } from './layo
 import { generateOrder, type Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
+import { canMakeOrder, type Pantry } from './stock';
 import type { Order, Score } from './types';
 import {
   createWalker,
@@ -51,7 +52,7 @@ export interface Customer {
   patience: number;
   /** The seat this customer has reserved, from ordering until leaving it. */
   seat: SeatRef | null;
-  /** True if they ran out of patience and are leaving unhappy. */
+  /** True if they're leaving unhappy: out of patience, a wrong dish, or their dish ran out. */
   upset: boolean;
 }
 
@@ -248,18 +249,22 @@ export function customerAtCounter(state: FloorState, layout: Layout): Customer |
  *   noSeat   - they're ready, but every clean seat is taken: go clean a table
  *   notReady - nobody is standing at the order spot (yet)
  */
-export type TakeOrderResult = 'ordered' | 'noSeat' | 'notReady';
+export type TakeOrderResult = 'ordered' | 'noSeat' | 'outOfStock' | 'notReady';
 
 /**
  * The player takes the front customer's order: they pick a dish (from what
  * the player owns) and reserve the nearest free clean seat, so the next
  * customer can't take it. The floor module doesn't check where the PLAYER is:
  * that's player.ts's job, which keeps this rule usable by employees later too.
+ *
+ * If their dish can't be made (not enough stock, and not enough Leaves to
+ * rush-buy the rest), they leave upset instead, unpaid (GAME_DESIGN.md §3.6).
+ * The seat is checked first: with nowhere to sit, nobody orders at all.
  */
 export function takeOrder(
   state: FloorState,
   layout: Layout,
-  owned: Owned,
+  game: Owned & Pantry,
   rng: Rng = Math.random,
 ): { floor: FloorState; result: TakeOrderResult } {
   const front = customerAtCounter(state, layout);
@@ -267,7 +272,22 @@ export function takeOrder(
   const seat = findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot);
   if (!seat) return { floor: state, result: 'noSeat' };
 
-  const ordered: Customer = { ...front, seat, phase: 'ordered', order: generateOrder(owned, rng) };
+  const order = generateOrder(game, rng);
+  if (!canMakeOrder(game, order)) {
+    // They keep the order, so the scene can say what ran out.
+    const left: Customer = {
+      ...front,
+      order,
+      phase: 'leaving',
+      upset: true,
+      walker: walkTo(front.walker, layout, layout.door),
+    };
+    return {
+      floor: { ...replaceCustomer(state, left), queue: state.queue.filter((id) => id !== front.id) },
+      result: 'outOfStock',
+    };
+  }
+  const ordered: Customer = { ...front, seat, phase: 'ordered', order };
   return { floor: replaceCustomer(state, ordered), result: 'ordered' };
 }
 

@@ -341,6 +341,25 @@ describe('takeOrder', () => {
     expect(takeOrder(scene([]), TINY, OWNED).result).toBe('notReady');
   });
 
+  // Every starter recipe has bread, so no bread and no Leaves means no dish.
+  const noBread = { ...OWNED, stock: { ...OWNED.stock, bread: 0 }, leaves: 0 };
+
+  it("dish can't be made: they leave upset, out of the queue, without a seat", () => {
+    const { floor, result } = takeOrder(atCounter(), TINY, noBread);
+    expect(result).toBe('outOfStock');
+    const c = find(floor, 1)!;
+    expect(c).toMatchObject({ phase: 'leaving', upset: true, seat: null });
+    expect(c.order).not.toBeNull(); // kept, so the scene can say what ran out
+    expect(destination(c.walker)).toEqual(TINY.door);
+    expect(floor.queue).toEqual([]);
+    // Not counted as giving up: they were already leaving before the next step.
+    expect(countGaveUp(floor, stepFloor(floor, TINY, 0.05))).toBe(0);
+  });
+
+  it('out of stock but enough Leaves for a rush delivery: they order as usual', () => {
+    expect(takeOrder(atCounter(), TINY, { ...noBread, leaves: 100 }).result).toBe('ordered');
+  });
+
   it("can't order twice", () => {
     const once = takeOrder(atCounter(), TINY, OWNED).floor;
     expect(takeOrder(once, TINY, OWNED).result).toBe('notReady');
