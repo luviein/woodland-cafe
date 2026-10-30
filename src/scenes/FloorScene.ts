@@ -9,6 +9,7 @@ import {
   customerAtCounter,
   hasFreeSeat,
   messySeatsAt,
+  releaseCustomer,
   serveCustomer,
   stepFloor,
   type Customer,
@@ -231,11 +232,15 @@ export class FloorScene extends Phaser.Scene {
       fur: furColor(customerId),
       patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
       onServe: (result) => {
-        this.floor = serveCustomer(this.floor, this.layout, customerId, result.score);
+        // Patience stops now, but they wait at the counter while reacting.
+        this.floor = serveCustomer(this.floor, customerId, result.score);
         this.prepCustomerId = null;
       },
       onClose: () => {
         this.prepOpen = false;
+        // Only now do they walk off (to their seat, or out if it was wrong),
+        // so the player sees them go. No-op if they gave up instead.
+        this.floor = releaseCustomer(this.floor, this.layout, customerId);
       },
     };
     this.scene.launch('PrepScene', request);

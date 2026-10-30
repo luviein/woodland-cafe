@@ -8,6 +8,7 @@ import {
   hasFreeSeat,
   messySeatsAt,
   queueCapacity,
+  releaseCustomer,
   serveCustomer,
   stepFloor,
   takeOrder,
@@ -17,6 +18,7 @@ import {
 import { parseLayout, pointKey, type Layout, type Point } from './layout';
 import { availableRecipes, STARTER_OWNED } from './orders';
 import { seededRng } from './random';
+import type { Score } from './types';
 import { destination, walkerPosition } from './walker';
 
 // One table with seats at (2,3) and (4,3). Order spot O at (4,2); counter
@@ -62,9 +64,10 @@ interface RunOptions {
    */
   autoOrder?: boolean;
   /**
-   * Serve a perfect dish one frame after the order is taken (so tests can
-   * still see the 'ordered' phase). On by default; off = the cook never
-   * finishes.
+   * Serve a perfect dish one frame after the order is taken, and release
+   * the customer the frame after that (like the prep screen closing), so
+   * tests can still see the 'ordered' and 'served' phases. On by default;
+   * off = the cook never finishes.
    */
   autoServe?: boolean;
 }
@@ -75,7 +78,8 @@ function frame(state: FloorState, rng: () => number, opts: RunOptions): FloorSta
   state = stepFloor(state, layout, 0.05, rng, config);
   if (autoServe) {
     for (const c of state.customers) {
-      if (c.phase === 'ordered') state = serveCustomer(state, layout, c.id, 'perfect');
+      if (c.phase === 'served') state = releaseCustomer(state, layout, c.id);
+      if (c.phase === 'ordered') state = serveCustomer(state, c.id, 'perfect');
     }
   }
   return autoOrder ? takeOrder(state, layout, STARTER_OWNED, rng).floor : state;
@@ -125,6 +129,7 @@ const customer = (id: number, tile: Point, extra: Partial<Customer>): Customer =
   phase: 'queued',
   timer: 0,
   order: null,
+  score: null,
   patience: 100,
   seat: null,
   upset: false,
@@ -303,7 +308,7 @@ describe('takeOrder', () => {
   });
 });
 
-describe('serveCustomer', () => {
+describe('serveCustomer / releaseCustomer', () => {
   /** Customer 1 has ordered (right seat reserved); customer 2 queues behind. */
   const ordered = (): FloorState =>
     scene(
@@ -317,16 +322,33 @@ describe('serveCustomer', () => {
       ],
       [1, 2],
     );
+  const servedAndReleased = (score: Score): FloorState =>
+    releaseCustomer(serveCustomer(ordered(), 1, score), TINY, 1);
 
-  it.each(['perfect', 'close'] as const)('%s: heads to their reserved seat and leaves the queue', (score) => {
-    const s = serveCustomer(ordered(), TINY, 1, score);
+  it('served: stays at the counter, first in the queue, with the score noted', () => {
+    const s = run(serveCustomer(ordered(), 1, 'perfect'), 2, { autoServe: false, autoOrder: false });
+    const c = find(s, 1)!;
+    expect(c.phase).toBe('served');
+    expect(c.score).toBe('perfect');
+    expect(c.walker.tile).toEqual(TINY.orderSpot);
+    expect(s.queue).toEqual([1, 2]);
+  });
+
+  it('patience stops once served, even while they wait to be released', () => {
+    const served = serveCustomer(ordered(), 1, 'perfect');
+    const later = run(served, 2, { autoServe: false, autoOrder: false });
+    expect(find(later, 1)!.patience).toBe(find(served, 1)!.patience);
+  });
+
+  it.each(['perfect', 'close'] as const)('%s, once released: heads to their reserved seat and leaves the queue', (score) => {
+    const s = servedAndReleased(score);
     expect(find(s, 1)!.phase).toBe('toSeat');
     expect(destination(find(s, 1)!.walker)).toEqual(RIGHT_SEAT);
     expect(s.queue).toEqual([2]);
   });
 
-  it('wrong: leaves straight away, angry, and frees the seat', () => {
-    const s = serveCustomer(ordered(), TINY, 1, 'wrong');
+  it('wrong, once released: leaves angry and frees the seat', () => {
+    const s = servedAndReleased('wrong');
     const c = find(s, 1)!;
     expect(c.phase).toBe('leaving');
     expect(c.upset).toBe(true);
@@ -336,27 +358,31 @@ describe('serveCustomer', () => {
     expect(hasFreeSeat(s, TINY)).toBe(true);
   });
 
-  it('the next customer moves up to the order spot', () => {
-    const s = step(serveCustomer(ordered(), TINY, 1, 'perfect'));
+  it('the next customer moves up to the order spot after the release', () => {
+    const s = step(servedAndReleased('perfect'));
     expect(destination(find(s, 2)!.walker)).toEqual(TINY.orderSpot);
   });
 
-  it('patience stops once served', () => {
-    const served = serveCustomer(ordered(), TINY, 1, 'perfect');
-    expect(find(step(served), 1)!.patience).toBe(find(served, 1)!.patience);
+  it('serve does nothing for someone who is not waiting for food', () => {
+    const s = ordered();
+    expect(serveCustomer(s, 2, 'perfect')).toBe(s); // hasn't ordered
+    expect(serveCustomer(s, 99, 'perfect')).toBe(s); // already gone
   });
 
-  it('does nothing for someone who is no longer waiting for food', () => {
-    const notOrdered = ordered();
-    expect(serveCustomer(notOrdered, TINY, 2, 'perfect')).toBe(notOrdered); // hasn't ordered
-    expect(serveCustomer(notOrdered, TINY, 99, 'perfect')).toBe(notOrdered); // already gone
+  it('release does nothing unless they were served (e.g. they gave up)', () => {
+    const s = ordered();
+    expect(releaseCustomer(s, TINY, 1)).toBe(s);
+    expect(releaseCustomer(s, TINY, 99)).toBe(s);
   });
 
-  it('does not change the state it was given', () => {
+  it('neither changes the state it was given', () => {
     const before = ordered();
     const snapshot = structuredClone(before);
-    serveCustomer(before, TINY, 1, 'wrong');
+    const served = serveCustomer(before, 1, 'wrong');
+    const servedSnapshot = structuredClone(served);
+    releaseCustomer(served, TINY, 1);
     expect(before).toEqual(snapshot);
+    expect(served).toEqual(servedSnapshot);
   });
 });
 
@@ -417,12 +443,13 @@ describe('stepFloor: rules that must always hold', () => {
     expect(new Set(seats).size, 'two customers share a seat').toBe(seats.length);
 
     // The queue and the customers' phases must agree exactly.
-    const waiting = s.customers.filter((c) => c.phase === 'queued' || c.phase === 'ordered');
+    const atCounter = ['queued', 'ordered', 'served'];
+    const waiting = s.customers.filter((c) => atCounter.includes(c.phase));
     expect([...s.queue].sort(), 'queue out of sync').toEqual(waiting.map((c) => c.id).sort());
     expect(s.queue.length).toBeLessThanOrEqual(queueCapacity(layout));
 
-    // Only the front of the queue can have ordered.
-    for (const c of s.customers.filter((c) => c.phase === 'ordered')) {
+    // Only the front of the queue can have ordered (or be served, waiting to go).
+    for (const c of s.customers.filter((c) => c.phase === 'ordered' || c.phase === 'served')) {
       expect(s.queue[0], `customer ${c.id} ordered but isn't at the front`).toBe(c.id);
       expect(c.seat, `customer ${c.id} ordered without a seat`).not.toBeNull();
       expect(c.order, `customer ${c.id} ordered nothing`).not.toBeNull();

@@ -179,6 +179,7 @@ describe('taking orders', () => {
     phase: 'queued',
     timer: 0,
     order: null,
+    score: null,
     patience: 100,
     seat: null,
     upset: false,

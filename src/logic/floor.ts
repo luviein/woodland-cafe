@@ -20,11 +20,14 @@ import {
  *   queued   -> the player takes their order (takeOrder: front of the
  *               queue, and a clean seat is free), or patience runs out
  *   ordered  -> served at the prep station (serveCustomer), or patience runs out
+ *   served   -> released (releaseCustomer) once the prep screen closes: they
+ *               stay at the counter while reacting, so they don't walk off
+ *               while the player is still looking at the prep station
  *   toSeat   -> sat down
  *   eating   -> timer ran out; stands up and leaves a mess
  *   leaving  -> reached the door and is removed
  */
-export type CustomerPhase = 'queued' | 'ordered' | 'toSeat' | 'eating' | 'leaving';
+export type CustomerPhase = 'queued' | 'ordered' | 'served' | 'toSeat' | 'eating' | 'leaving';
 
 export interface SeatRef {
   tableId: string;
@@ -39,6 +42,8 @@ export interface Customer {
   timer: number;
   /** What they asked for; set when the player takes their order. */
   order: Order | null;
+  /** How their dish scored; set when served. Decides where they go on release. */
+  score: Score | null;
   /**
    * Seconds of patience left. Counts down at a fixed rate while queued and
    * ordered (even while the order is being made); stops once served.
@@ -140,6 +145,7 @@ export function stepFloor(
       phase: 'queued',
       timer: 0,
       order: null,
+      score: null,
       patience: config.patienceSeconds,
       seat: null,
       upset: false,
@@ -167,6 +173,9 @@ export function stepFloor(
         // Being served is the player's action (serveCustomer), not a timer.
         if (c.patience <= 0) leave(c, true); // waited too long: leaves unhappy, doesn't pay
         break;
+
+      case 'served':
+        break; // food in hand, patience stopped: waits at the counter until released
 
       case 'toSeat':
         // Safety net: a mess only appears on the seat of whoever just ate
@@ -256,23 +265,35 @@ export function takeOrder(
 
 /**
  * The customer who ordered gets their dish, scored at the prep station.
- * Patience stops here either way.
- *   perfect / close: they head to the seat reserved for them
- *   wrong:           they leave straight away, angry (no pay, no eating),
- *                    which frees their seat
+ * Patience stops here, but they stay at the counter (still first in the
+ * queue) until releaseCustomer(), so nobody walks off while the player is
+ * still reading their reaction.
  * Does nothing if they're no longer waiting for food (e.g. gave up a moment
  * ago), so a late serve can't bring someone back.
  */
-export function serveCustomer(state: FloorState, layout: Layout, customerId: number, score: Score): FloorState {
+export function serveCustomer(state: FloorState, customerId: number, score: Score): FloorState {
   const c = state.customers.find((o) => o.id === customerId);
   if (c?.phase !== 'ordered') return state;
+  return replaceCustomer(state, { ...c, phase: 'served', score });
+}
 
-  const served: Customer =
-    score === 'wrong'
+/**
+ * A served customer moves on, based on how their dish scored:
+ *   perfect / close: they head to the seat reserved for them
+ *   wrong:           they leave, angry (no pay, no eating), freeing their seat
+ * Either way they leave the queue, and the next customer moves up.
+ * Does nothing unless they're 'served'.
+ */
+export function releaseCustomer(state: FloorState, layout: Layout, customerId: number): FloorState {
+  const c = state.customers.find((o) => o.id === customerId);
+  if (c?.phase !== 'served') return state;
+
+  const released: Customer =
+    c.score === 'wrong'
       ? { ...c, phase: 'leaving', seat: null, upset: true, walker: walkTo(c.walker, layout, layout.door) }
       : { ...c, phase: 'toSeat', walker: redirect(c.walker, (from) => routeToSeat(layout, from, c.seat!.seat)) };
   // Out of the queue: the next customer moves up to the order spot on the next step.
-  return { ...replaceCustomer(state, served), queue: state.queue.filter((id) => id !== customerId) };
+  return { ...replaceCustomer(state, released), queue: state.queue.filter((id) => id !== customerId) };
 }
 
 /** `state` with the customer of the same id swapped for `c`. */
