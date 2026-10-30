@@ -27,6 +27,7 @@ import {
 } from '../logic/player';
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
+import { getGameState } from './gameStore';
 import type { PrepRequest, PrepScene } from './PrepScene';
 
 interface CustomerSprite {
@@ -196,7 +197,7 @@ export class FloorScene extends Phaser.Scene {
 
     // After the floor step, so a customer who just reached the order spot
     // can be served this frame.
-    const taken = takeOrderAtCounter(this.player, this.floor, this.layout);
+    const taken = takeOrderAtCounter(this.player, this.floor, this.layout, getGameState(this));
     this.player = taken.player;
     this.floor = taken.floor;
     if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');

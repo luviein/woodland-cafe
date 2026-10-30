@@ -3,7 +3,7 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { devActions } from '../debug/devActions';
 import { buildGaveUp, buildReaction, buildSpeech } from '../logic/dialogue';
-import { availableRecipes, expectedPlate, STARTER_OWNED } from '../logic/orders';
+import { availableRecipes, expectedPlate } from '../logic/orders';
 import { computePayment, type Payment } from '../logic/payment';
 import { scoreDish } from '../logic/scoreDish';
 import type { Order, ScoreResult } from '../logic/types';
@@ -12,6 +12,7 @@ import { DishView } from '../ui/DishView';
 import { RecipeBook } from '../ui/RecipeBook';
 import { SpeechBubble } from '../ui/SpeechBubble';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
+import { getGameState } from './gameStore';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
@@ -107,7 +108,7 @@ export class PrepScene extends Phaser.Scene {
     // Created after the prep UI so it draws on top of it.
     this.recipeBook = new RecipeBook(this);
     this.recipesButton = new Button(this, 568, 28, 128, 32, 'Recipes (R)', COLORS.book, () =>
-      this.recipeBook.open(availableRecipes(STARTER_OWNED)),
+      this.recipeBook.open(availableRecipes(getGameState(this))),
     );
 
     this.setupKeyboard();
@@ -234,7 +235,7 @@ export class PrepScene extends Phaser.Scene {
     const startX = 64;
     const y = 300;
 
-    STARTER_OWNED.ingredients.forEach((id, i) => {
+    getGameState(this).ingredients.forEach((id, i) => {
       const x = startX + i * spacing;
       // The number on the bin is its keyboard shortcut.
       const bin = new Button(this, x, y, size, size, String(i + 1), INGREDIENTS[id].color, () =>

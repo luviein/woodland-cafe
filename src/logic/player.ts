@@ -1,7 +1,7 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
 import { messySeatsAt, takeOrder, type FloorState, type TakeOrderResult } from './floor';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
-import { STARTER_OWNED, type Owned } from './orders';
+import type { Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
 import { createWalker, isMoving, redirect, stepWalker, walkTo, type Walker } from './walker';
@@ -135,7 +135,7 @@ export function takeOrderAtCounter(
   player: PlayerState,
   floor: FloorState,
   layout: Layout,
-  owned: Owned = STARTER_OWNED,
+  owned: Owned,
   rng: Rng = Math.random,
 ): { player: PlayerState; floor: FloorState; result: TakeOrderResult | null } {
   const unchanged = { player, floor, result: null };

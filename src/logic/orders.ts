@@ -1,4 +1,4 @@
-import { STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
+import type { IngredientId } from '../data/ingredients';
 import { MODIFIERS, MODIFIER_IDS, type ModifierId, type RecipeFilter } from '../data/modifiers';
 import { ORDER_CONFIG, type OrderConfig } from '../data/orderConfig';
 import { RECIPES, RECIPE_IDS, type RecipeDef, type RecipeId } from '../data/recipes';
@@ -7,20 +7,14 @@ import { pickOne, shuffled, type Rng } from './random';
 import type { Order, Plate } from './types';
 
 /**
- * The parts of player state that decide what can be ordered. Passed in rather
- * than read from a global, so these functions stay pure and the central game
- * state (later milestones) can be plugged in without changing them.
+ * The parts of player state that decide what can be ordered. A GameState
+ * fits this as-is. Passed in rather than read from a global, so these
+ * functions stay pure and easy to test.
  */
 export interface Owned {
   ingredients: readonly IngredientId[];
   upgrades: readonly UpgradeId[];
 }
-
-/**
- * Until the central game state exists (milestone 4), the player owns only the
- * starter ingredients and no upgrades. Later this is read from that state.
- */
-export const STARTER_OWNED: Owned = { ingredients: STARTER_INGREDIENTS, upgrades: [] };
 
 /** Recipes whose ingredients are all owned. */
 export function availableRecipes(owned: Owned): RecipeId[] {

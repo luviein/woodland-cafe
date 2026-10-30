@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FloorConfig } from '../data/floorConfig';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { cleanSeats, createFloorState, type Customer, type FloorState } from './floor';
+import { createNewGame } from './gameState';
 import { neighbours, parseLayout, pointKey, samePoint, type Point } from './layout';
 import {
   cleaningProgress,
@@ -201,7 +202,7 @@ describe('taking orders', () => {
     const results: string[] = [];
     for (let t = 0; t < seconds; t += 0.05) {
       player = stepPlayer(player, floor, 0.05, CONFIG).player;
-      const taken = takeOrderAtCounter(player, floor, ROOM);
+      const taken = takeOrderAtCounter(player, floor, ROOM, createNewGame());
       ({ player, floor } = taken);
       if (taken.result) results.push(taken.result);
     }
@@ -229,7 +230,7 @@ describe('taking orders', () => {
 
   it('takes the order once the player reaches the counter, not before', () => {
     const p = tapTile(awayFromCounter, ROOM, waitingAtCounter(), ROOM.orderSpot, CONFIG);
-    expect(takeOrderAtCounter(p, waitingAtCounter(), ROOM).result).toBeNull(); // still walking
+    expect(takeOrderAtCounter(p, waitingAtCounter(), ROOM, createNewGame()).result).toBeNull(); // still walking
     const { player, floor, results } = serve(p, waitingAtCounter(), 3);
     expect(results).toEqual(['ordered']); // exactly once
     expect(floor.customers[0].phase).toBe('ordered');

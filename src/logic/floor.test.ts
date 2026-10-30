@@ -16,7 +16,8 @@ import {
   type FloorState,
 } from './floor';
 import { parseLayout, pointKey, type Layout, type Point } from './layout';
-import { availableRecipes, STARTER_OWNED } from './orders';
+import { createNewGame } from './gameState';
+import { availableRecipes } from './orders';
 import { seededRng } from './random';
 import type { Score } from './types';
 import { destination, walkerPosition } from './walker';
@@ -36,6 +37,8 @@ const RIGHT_SEAT = { x: 4, y: 3 };
 const LEFT = pointKey(LEFT_SEAT);
 const RIGHT = pointKey(RIGHT_SEAT);
 const [SPOT_1] = TINY.queueSpots;
+/** What the player owns: a brand-new game's starters. */
+const OWNED = createNewGame();
 
 // Fast and predictable: fixed timings, and only one arrival unless a test
 // asks for more.
@@ -82,7 +85,7 @@ function frame(state: FloorState, rng: () => number, opts: RunOptions): FloorSta
       if (c.phase === 'ordered') state = serveCustomer(state, c.id, 'perfect');
     }
   }
-  return autoOrder ? takeOrder(state, layout, STARTER_OWNED, rng).floor : state;
+  return autoOrder ? takeOrder(state, layout, OWNED, rng).floor : state;
 }
 
 /** Runs the simulation in small frames, calling `check` after each one. */
@@ -261,49 +264,49 @@ describe('takeOrder', () => {
   const atCounter = (): FloorState => scene([customer(1, TINY.orderSpot, {})], [1]);
 
   it('the front customer orders and reserves the nearest clean seat', () => {
-    const { floor, result } = takeOrder(atCounter(), TINY);
+    const { floor, result } = takeOrder(atCounter(), TINY, OWNED);
     expect(result).toBe('ordered');
     expect(find(floor, 1)!.phase).toBe('ordered');
-    expect(availableRecipes(STARTER_OWNED)).toContain(find(floor, 1)!.order?.recipeId);
+    expect(availableRecipes(OWNED)).toContain(find(floor, 1)!.order?.recipeId);
     expect(TINY.tables[0].seats).toContainEqual(find(floor, 1)!.seat?.seat);
   });
 
   it('no clean seat: nothing changes, and says why', () => {
     const messy = { ...atCounter(), messySeats: [LEFT, RIGHT] };
-    const { floor, result } = takeOrder(messy, TINY);
+    const { floor, result } = takeOrder(messy, TINY, OWNED);
     expect(result).toBe('noSeat');
     expect(floor).toBe(messy);
   });
 
   it('works as soon as a seat is cleaned', () => {
     const s = cleanSeats({ ...atCounter(), messySeats: [LEFT, RIGHT] }, [LEFT_SEAT]);
-    expect(find(takeOrder(s, TINY).floor, 1)!.seat?.seat).toEqual(LEFT_SEAT);
+    expect(find(takeOrder(s, TINY, OWNED).floor, 1)!.seat?.seat).toEqual(LEFT_SEAT);
   });
 
   it("a reserved seat isn't free: the next customer can't order even before the first reaches it", () => {
     // Customer 1 has been served and is walking to the only clean seat.
     // Customer 2 is at the front of the queue.
     const s = scene([headingTo(1, RIGHT_SEAT), customer(2, TINY.orderSpot, {})], [2], [LEFT]);
-    expect(takeOrder(s, TINY).result).toBe('noSeat');
+    expect(takeOrder(s, TINY, OWNED).result).toBe('noSeat');
   });
 
   it('nobody at the order spot yet: notReady, even with someone further back', () => {
     // Customer 1 (the front) is still walking to the order spot; customer 2 waits behind.
     const walking = customer(1, { x: 4, y: 4 }, { walker: { tile: { x: 4, y: 4 }, path: [{ x: 5, y: 4 }], progress: 0 } });
     const s = scene([walking, customer(2, SPOT_1, {})], [1, 2]);
-    expect(takeOrder(s, TINY).result).toBe('notReady');
-    expect(takeOrder(scene([]), TINY).result).toBe('notReady');
+    expect(takeOrder(s, TINY, OWNED).result).toBe('notReady');
+    expect(takeOrder(scene([]), TINY, OWNED).result).toBe('notReady');
   });
 
   it("can't order twice", () => {
-    const once = takeOrder(atCounter(), TINY).floor;
-    expect(takeOrder(once, TINY).result).toBe('notReady');
+    const once = takeOrder(atCounter(), TINY, OWNED).floor;
+    expect(takeOrder(once, TINY, OWNED).result).toBe('notReady');
   });
 
   it('does not change the state it was given', () => {
     const before = atCounter();
     const snapshot = structuredClone(before);
-    takeOrder(before, TINY);
+    takeOrder(before, TINY, OWNED);
     expect(before).toEqual(snapshot);
   });
 });

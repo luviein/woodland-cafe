@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from './config/display';
 import { enableIntegerScaling } from './integerScale';
 import { FloorScene } from './scenes/FloorScene';
+import { initGameState } from './scenes/gameStore';
 import { PrepScene } from './scenes/PrepScene';
 
 const game = new Phaser.Game({
@@ -20,6 +21,10 @@ const game = new Phaser.Game({
   // by the floor as an overlay when an order is taken; later scenes draw on top.
   scene: [FloorScene, PrepScene],
 });
+
+// The registry exists as soon as the game is constructed, before any
+// scene's create() runs, so the state is ready for every scene.
+initGameState(game);
 
 // The Scale Manager's parent size is only known once the game has booted.
 game.events.once(Phaser.Core.Events.READY, () => enableIntegerScaling(game));

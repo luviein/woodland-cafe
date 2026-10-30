@@ -1,6 +1,6 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
-import { generateOrder, STARTER_OWNED, type Owned } from './orders';
+import { generateOrder, type Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
 import type { Order, Score } from './types';
@@ -251,7 +251,7 @@ export type TakeOrderResult = 'ordered' | 'noSeat' | 'notReady';
 export function takeOrder(
   state: FloorState,
   layout: Layout,
-  owned: Owned = STARTER_OWNED,
+  owned: Owned,
   rng: Rng = Math.random,
 ): { floor: FloorState; result: TakeOrderResult } {
   const front = customerAtCounter(state, layout);
