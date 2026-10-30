@@ -193,6 +193,18 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'leaves 1.5')).toMatch(/Usage/);
   });
 
+  it('goto accepts the map and every place, and nothing else', () => {
+    const went: string[] = [];
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      goto: (place) => went.push(place),
+    });
+    expect(runCommand(commands, 'goto Forest')).toBe('Went to forest');
+    runCommand(commands, 'goto map');
+    expect(runCommand(commands, 'goto moon')).toMatch(/Usage: goto <map\|cafe\|forest\|marketplace>/);
+    expect(went).toEqual(['forest', 'map']);
+  });
+
   it('say so when the scene they need is not running', () => {
     const { commands } = setup(); // no actions registered
     expect(runCommand(commands, 'serve')).toMatch(/prep station is open/);
@@ -200,7 +212,8 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'clean')).toMatch(/cafe floor/);
     expect(runCommand(commands, 'time')).toMatch(/cafe floor/);
     expect(runCommand(commands, 'endday')).toMatch(/cafe floor/);
-    expect(runCommand(commands, 'stock')).toMatch(/cafe floor/);
-    expect(runCommand(commands, 'leaves 3')).toMatch(/cafe floor/);
+    expect(runCommand(commands, 'stock')).toMatch(/not running/);
+    expect(runCommand(commands, 'leaves 3')).toMatch(/not running/);
+    expect(runCommand(commands, 'goto map')).toMatch(/not running/);
   });
 });

@@ -366,3 +366,14 @@ The player can leave the counter **before taking an order** to clean messes, but
 - **Prep closing:** the customer's reaction stays up for 1.2s, and any tap or key after the first 0.3s skips it (the earlier 2.2s felt too long after every order).
 - **Dev console:** `time` and `endday` were added, and `config` / `set` / `reset` now cover the day settings too, e.g. `set dayLengthSeconds 30`.
 - **Not yet:** the world map and "Exit cafe" (milestone 5). Changing `dayLengthSeconds` mid-day makes the clock jump, since the time already elapsed stays the same.
+
+### Milestone 5 scope: Stock & World Map (as built)
+
+- **Ingredient stock** (§3.6): stock in the game state (30 of each starter to begin), used on serve, rush deliveries at 2x the unit price, "Out" bins, customers leaving when their dish can't be made, and the stock/rush/net lines and "Ingredients used" column in the day summary. Dish prices were raised to 2 x ingredient cost + 2.
+- **World map** (§5.2): placeholder island, landmarks, dotted paths, signposts (current place in green, a lock for locked places). "Exit cafe" on the day summary opens it; the Cafe asks "Start Day N at the cafe?" before a new day starts.
+- **Outdoor places:** one OutdoorScene for the Forest and Marketplace, built from `data/outdoorAreas.ts`. Tap to walk in a straight line; depth sorting by y, so the player walks behind trees and stalls. A Map button goes back.
+- **Leaf pickups** (§5.4): random leaves, kept clear of trees, stalls and forage spots; daily cap of 15.
+- **Foraging** (§5.5): 4 mushroom patches and 2 berry bushes in the Forest, once a day each.
+- **Tuning on the way:** cleaning 0.5s per mess, patience 50s.
+- **Dev console:** `stock`, `leaves` and `goto <map|cafe|forest|marketplace>` work anywhere; `config` / `set` also cover the stock, leaf and forage settings.
+- **Not yet:** obstacles outdoors (the player walks through trees and stalls), Marketplace shops (milestone 6), farming and the tutorial (later features).

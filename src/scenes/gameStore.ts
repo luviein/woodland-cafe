@@ -14,12 +14,18 @@ export function initGameState(game: Phaser.Game): void {
   game.registry.set(KEY, createNewGame());
 }
 
-export function getGameState(scene: Phaser.Scene): GameState {
-  return scene.registry.get(KEY) as GameState;
+/**
+ * Anything with the game's registry: a scene, or the Game itself (the dev
+ * console uses that, so its commands work whichever scene is running).
+ */
+type HasRegistry = { registry: Phaser.Data.DataManager };
+
+export function getGameState(owner: HasRegistry): GameState {
+  return owner.registry.get(KEY) as GameState;
 }
 
-export function setGameState(scene: Phaser.Scene, state: GameState): void {
-  scene.registry.set(KEY, state);
+export function setGameState(owner: HasRegistry, state: GameState): void {
+  owner.registry.set(KEY, state);
 }
 
 /**

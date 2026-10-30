@@ -196,12 +196,10 @@ export class FloorScene extends Phaser.Scene {
     devActions.endDay = () => {
       this.day = { ...this.day, elapsed: Math.max(this.day.elapsed, DAY_CONFIG.dayLengthSeconds) };
     };
-    devActions.game = { get: () => getGameState(this), set: (state) => setGameState(this, state) };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.setMessy = null;
       devActions.dayTime = null;
       devActions.endDay = null;
-      devActions.game = null;
     });
   }
 

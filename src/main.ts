@@ -38,5 +38,5 @@ game.events.once(Phaser.Core.Events.READY, () => enableIntegerScaling(game));
 // `npm run dev`, and the dynamic import() means production builds don't
 // even include the console's code.
 if (import.meta.env.DEV) {
-  void import('./debug/DevConsole').then((m) => m.mountDevConsole());
+  void import('./debug/DevConsole').then((m) => m.mountDevConsole(game));
 }

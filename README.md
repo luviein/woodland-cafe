@@ -78,8 +78,9 @@ It isn't included in production builds.
 | `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |
 | `mess`      | Mess up every free seat, to test the "no clean seats" case |
 | `clean`     | Wipe every mess on the floor |
-| `stock [ingredient n]` | Show ingredient stock, or set one, e.g. `stock jam 0` |
-| `leaves <n>` | Set the wallet, e.g. `leaves 0` |
+| `goto <map|cafe|forest|marketplace>` | Jump straight there from anywhere. `goto cafe` opens the same day (no new day starts) |
+| `stock [ingredient n]` | Show ingredient stock, or set one, e.g. `stock jam 0` (works anywhere) |
+| `leaves <n>` | Set the wallet, e.g. `leaves 0` (works anywhere) |
 | `time`      | Show the day number and the cafe clock |
 | `endday`    | Jump to closing time (customers inside can still be served) |
 

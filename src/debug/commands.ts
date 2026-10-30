@@ -1,4 +1,5 @@
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
+import { LOCATION_IDS } from '../data/locations';
 import type { GameState } from '../logic/gameState';
 import type { Score } from '../logic/types';
 import { noDevActions, type DevActions } from './devActions';
@@ -66,7 +67,7 @@ export function createDevCommands(
   };
 
   const game = (): { get: () => GameState; set: (state: GameState) => void } => {
-    if (!actions.game) throw new Error('Only works on the cafe floor');
+    if (!actions.game) throw new Error('The game is not running yet');
     return actions.game;
   };
   /** A whole number, 0 or more, or a usage error. */
@@ -196,6 +197,19 @@ export function createDevCommands(
         const n = count(value, 'leaves <n>');
         game().set({ ...game().get(), leaves: n });
         return `Wallet = ${n}`;
+      },
+    },
+
+    goto: {
+      usage: `goto <map|${LOCATION_IDS.join('|')}>`,
+      description: 'Jump straight there. goto cafe opens the SAME day (no new day starts)',
+      run: ([value]) => {
+        const places = ['map', ...LOCATION_IDS] as const;
+        const place = places.find((p) => p === value?.toLowerCase());
+        if (!place) throw new Error(`Usage: goto <${places.join('|')}>`);
+        if (!actions.goto) throw new Error('The game is not running yet');
+        actions.goto(place);
+        return `Went to ${place}`;
       },
     },
 

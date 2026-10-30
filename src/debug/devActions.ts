@@ -1,3 +1,4 @@
+import type { LocationId } from '../data/locations';
 import type { GameState } from '../logic/gameState';
 import type { Score } from '../logic/types';
 
@@ -17,13 +18,15 @@ export interface DevActions {
   dayTime: (() => string) | null;
   /** Floor running: jump to closing time. */
   endDay: (() => void) | null;
-  /** Floor running: read and replace the central game state (for `stock`, `leaves`). */
+  /** Any time: read and replace the central game state (for `stock`, `leaves`). */
   game: { get: () => GameState; set: (state: GameState) => void } | null;
+  /** Any time: stop whatever is running and open a place, or the world map. */
+  goto: ((place: LocationId | 'map') => void) | null;
 }
 
 /** Nothing registered: every scene-specific command says "not available". */
 export function noDevActions(): DevActions {
-  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null };
+  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null };
 }
 
 export const devActions: DevActions = noDevActions();

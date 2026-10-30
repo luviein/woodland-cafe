@@ -1,8 +1,12 @@
+import type Phaser from 'phaser';
 import { DAY_CONFIG } from '../data/dayConfig';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { FORAGE_CONFIG } from '../data/forageSpots';
 import { LEAF_CONFIG } from '../data/leafConfig';
+import { LOCATIONS } from '../data/locations';
 import { STOCK_CONFIG } from '../data/stockConfig';
+import { getGameState, setGameState } from '../scenes/gameStore';
+import type { LocationRequest, WorldMapRequest } from '../scenes/WorldMapScene';
 import { createDevCommands, runCommand } from './commands';
 import { devActions } from './devActions';
 import { devSettings } from './devSettings';
@@ -15,7 +19,21 @@ import { devSettings } from './devSettings';
  * Open/close with the ` (backtick) key or the ">_" button (bottom-left).
  * Up/Down arrows recall previous commands. Only loaded in dev builds.
  */
-export function mountDevConsole(): void {
+export function mountDevConsole(game: Phaser.Game): void {
+  // Game-wide commands, registered once (scene-specific ones are registered
+  // by their scene while it runs).
+  devActions.game = { get: () => getGameState(game), set: (state) => setGameState(game, state) };
+  devActions.goto = (place) => {
+    // Overlays included (prep, summary): a clean jump, like a fresh visit.
+    for (const scene of game.scene.getScenes(true)) game.scene.stop(scene.scene.key);
+    if (place === 'map') {
+      const request: WorldMapRequest = { current: 'cafe' };
+      game.scene.start('WorldMapScene', request);
+    } else {
+      const request: LocationRequest = { location: place };
+      game.scene.start(LOCATIONS[place].scene!, request);
+    }
+  };
   // These are the live objects the game reads every frame, so 'set' changes
   // take effect immediately.
   const commands = createDevCommands(devSettings, [FLOOR_CONFIG, DAY_CONFIG, STOCK_CONFIG, LEAF_CONFIG, FORAGE_CONFIG], devActions);
