@@ -199,7 +199,10 @@ The player can leave the counter **before taking an order** to clean messes, but
 ### 5.1 Day cycle
 
 - One cafe **run is one day**.
-- When a run ends, the game shows a **day summary**, and the player can then **exit the cafe**, which opens the world map.
+- **Day clock:** a day runs from **8:00 to 17:00** in game time, which takes **3 real minutes** (config value). The clock is shown on the floor and at the prep station (it keeps ticking while cooking).
+- **Closing time:** at 17:00 the doors close and **no new customers arrive**. Customers already inside stay: the queue can still be served, and patience keeps dropping as usual. The day is **over once the last customer has left**.
+- When a run ends, the game shows a **day summary**: customers served (perfect / close / wrong), customers who gave up, Leaves earned (prices and tips), and the wallet total. The player can then **exit the cafe**, which opens the world map. (Until the world map exists, milestone 5, the summary has a **"Start next day"** button instead.)
+- **Each day starts fresh:** clean floor, empty queue. Leaves and everything owned carry over.
 
 ### 5.2 World map
 
