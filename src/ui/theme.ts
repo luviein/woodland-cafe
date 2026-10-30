@@ -50,6 +50,9 @@ export const COLORS = {
   signpost: 0x9c6b45,
   /** The signpost of the place the player is at. */
   signpostHere: 0x6f9e5a,
+  // Leaf pickups: autumn orange, so they stand out on the grass.
+  leaf: 0xe08a3a,
+  leafVein: 0x9c5a24,
 } as const;
 
 /**

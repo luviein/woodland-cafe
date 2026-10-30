@@ -20,6 +20,11 @@ export function seededRng(seed: number): Rng {
   };
 }
 
+/** A number in [min, max). */
+export function between(min: number, max: number, rng: Rng): number {
+  return min + rng() * (max - min);
+}
+
 export function pickOne<T>(items: readonly T[], rng: Rng): T {
   if (items.length === 0) {
     throw new Error('pickOne: cannot pick from an empty list');

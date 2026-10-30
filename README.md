@@ -39,6 +39,7 @@ over.
 | ------------------- | ------------- |
 | Go somewhere        | Tap its signpost on the map (the green one is where you are) |
 | Walk (Forest, Marketplace) | Tap anywhere |
+| Pick up a Leaf      | Walk over it (+1 🍃). New ones keep appearing |
 | Back to the map     | Map button (top-right) |
 
 ## Controls (prep station)
@@ -70,7 +71,7 @@ It isn't included in production builds.
 | ----------- | ------------ |
 | `help`      | List all commands |
 | `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
-| `config`    | List every floor, day and stock setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`) and its current value; changed ones show the file's value too |
+| `config`    | List every floor, day, stock and leaf setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`, `leafConfig.ts`) and its current value; changed ones show the file's value too |
 | `set <name> <value>` | Change a setting live, e.g. `set eatSecondsMax 15` or `set dayLengthSeconds 30` |
 | `reset`     | Put all settings and the speed back to normal |
 | `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |

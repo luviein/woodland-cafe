@@ -30,6 +30,14 @@ export function drawTree(g: Phaser.GameObjects.Graphics, x: number, y: number, s
   g.fillStyle(COLORS.treeLeaf).fillCircle(x, y - 4 * size, 10 * size);
 }
 
+/** A Leaf lying on the ground (the currency): a small pointed oval with a vein. Centred on (0, 0). */
+export function drawLeaf(g: Phaser.GameObjects.Graphics): void {
+  g.fillStyle(COLORS.leaf).fillEllipse(0, 0, 10, 6);
+  g.fillTriangle(4, -2, 4, 2, 7, 0); // pointed tip
+  g.fillStyle(COLORS.leafVein).fillRect(-5, 0, 10, 1);
+  g.fillRect(-7, 0, 2, 1); // stem
+}
+
 /** A market stall with a striped awning; (x, y) is the top-middle of the counter. */
 export function drawStall(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
   g.fillStyle(COLORS.counter).fillRect(x - 16, y, 32, STALL_HEIGHT);

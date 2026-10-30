@@ -2,7 +2,7 @@ import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
 import { generateOrder, type Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
-import type { Rng } from './random';
+import { between, type Rng } from './random';
 import { canMakeOrder, type Pantry } from './stock';
 import type { Order, Score } from './types';
 import {
@@ -104,8 +104,6 @@ export function queueCapacity(layout: Layout): number {
 function queuePosition(layout: Layout, i: number): Point {
   return i === 0 ? layout.orderSpot : layout.queueSpots[i - 1];
 }
-
-const between = (min: number, max: number, rng: Rng): number => min + rng() * (max - min);
 
 /**
  * Advances the floor by `seconds`. Returns a NEW state; the old one is left
