@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { LOCATIONS } from '../data/locations';
 import { chooseLocation, dotsAlong } from './worldMap';
 
 describe('chooseLocation', () => {
-  it('the cafe can be entered', () => {
+  it('every place can be entered for now', () => {
     expect(chooseLocation('cafe')).toBe('enter');
+    expect(chooseLocation('forest')).toBe('enter');
+    expect(chooseLocation('marketplace')).toBe('enter');
   });
 
-  it('places without a scene yet are not built', () => {
-    expect(chooseLocation('forest')).toBe('notBuilt');
+  it('locked and not-yet-built places say so', () => {
+    const custom = { ...LOCATIONS.forest, locked: true };
+    expect(chooseLocation('forest', { ...LOCATIONS, forest: custom })).toBe('locked');
+    expect(chooseLocation('forest', { ...LOCATIONS, forest: { ...custom, locked: false, scene: null } })).toBe('notBuilt');
   });
 });
 

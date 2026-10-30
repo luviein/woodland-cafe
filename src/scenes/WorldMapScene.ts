@@ -6,8 +6,14 @@ import type { Point } from '../logic/layout';
 import { chooseLocation, dotsAlong } from '../logic/worldMap';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT, css } from '../ui/theme';
+import { drawStall, drawTree } from '../ui/sprites';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
+
+/** What a location's scene is started with. */
+export interface LocationRequest {
+  location: LocationId;
+}
 
 /** What opens the map: which place the player is leaving from (highlighted). */
 export interface WorldMapRequest {
@@ -46,7 +52,8 @@ export class WorldMapScene extends Phaser.Scene {
   create(): void {
     this.drawIsland();
     this.drawPaths();
-    for (const point of TREES) this.drawTree(point.x, point.y, 1);
+    const trees = this.add.graphics();
+    for (const point of TREES) drawTree(trees, point.x, point.y);
     for (const id of LOCATION_IDS) {
       this.drawLandmark(id);
       this.createSignpost(id);
@@ -71,8 +78,10 @@ export class WorldMapScene extends Phaser.Scene {
 
     // Going back to the cafe opens it for the next day (GAME_DESIGN.md §5.3).
     if (id === 'cafe') setGameState(this, startNextDay(getGameState(this)));
-    // start() stops this scene and starts the other one fresh.
-    this.scene.start(LOCATIONS[id].scene!);
+    // start() stops this scene and starts the other one fresh. The place id
+    // goes along, so one scene (OutdoorScene) can serve several places.
+    const request: LocationRequest = { location: id };
+    this.scene.start(LOCATIONS[id].scene!, request);
   }
 
   /** Water, a sandy shore, then grass on top. */
@@ -113,25 +122,14 @@ export class WorldMapScene extends Phaser.Scene {
         break;
       case 'forest':
         for (const [dx, dy, size] of [[-30, 4, 1.2], [0, -10, 1.4], [28, 6, 1.2], [-12, 18, 1], [14, 20, 1]]) {
-          this.drawTree(x + dx, y + dy, size);
+          drawTree(g, x + dx, y + dy, size);
         }
         break;
       case 'marketplace':
-        // Two stalls with awnings.
-        for (const dx of [-22, 22]) {
-          g.fillStyle(COLORS.counter).fillRect(x + dx - 16, y, 32, 16);
-          g.fillStyle(COLORS.awning).fillRect(x + dx - 18, y - 10, 36, 10);
-          g.fillStyle(COLORS.roof);
-          for (let s = 0; s < 36; s += 12) g.fillRect(x + dx - 18 + s, y - 10, 6, 10);
-        }
+        drawStall(g, x - 22, y);
+        drawStall(g, x + 22, y);
         break;
     }
-  }
-
-  private drawTree(x: number, y: number, size: number): void {
-    const g = this.add.graphics();
-    g.fillStyle(COLORS.treeTrunk).fillRect(x - 2 * size, y, 4 * size, 8 * size);
-    g.fillStyle(COLORS.treeLeaf).fillCircle(x, y - 4 * size, 10 * size);
   }
 
   /** The clickable signpost: a post and a board, green for where the player is. */

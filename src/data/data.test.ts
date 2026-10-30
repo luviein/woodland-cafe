@@ -5,6 +5,7 @@ import { SCORING_CONFIG } from './scoring';
 import { GAVE_UP_LINES, INGREDIENT_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from './dialogue';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS } from './locations';
+import { OUTDOOR_AREAS, OUTDOOR_ENTRY, isOutdoor } from './outdoorAreas';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
 import { RECIPE_PRICES } from './prices';
@@ -141,6 +142,20 @@ describe('locations', () => {
     for (const id of LOCATION_IDS) {
       const { x, y } = LOCATIONS[id].position;
       expect(x > 0 && x < BASE_WIDTH && y > 0 && y < BASE_HEIGHT, id).toBe(true);
+    }
+  });
+
+  it('outdoor places open the outdoor scene, which has their scenery', () => {
+    for (const id of LOCATION_IDS) {
+      if (LOCATIONS[id].scene === 'OutdoorScene') expect(isOutdoor(id), id).toBe(true);
+    }
+  });
+
+  it('outdoor scenery and the entry point are inside the screen', () => {
+    for (const area of Object.values(OUTDOOR_AREAS)) {
+      for (const { x, y } of [...area.trees, ...area.stalls, OUTDOOR_ENTRY]) {
+        expect(x > 0 && x < BASE_WIDTH && y > 0 && y < BASE_HEIGHT).toBe(true);
+      }
     }
   });
 

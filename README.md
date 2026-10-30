@@ -31,7 +31,15 @@ Leaves). At 17:00 the doors close: nobody new comes in, but whoever is inside
 can still be served. Once the last customer leaves, the day summary shows what
 happened; **Exit cafe** (or `Enter`) opens the world map. Tap the **Cafe**
 signpost there to start the next day on a fresh floor. Leaves and stock carry
-over. (Forest and Marketplace say "Coming soon" for now.)
+over.
+
+## Controls (world map, Forest, Marketplace)
+
+| Action              | Mouse / touch |
+| ------------------- | ------------- |
+| Go somewhere        | Tap its signpost on the map (the green one is where you are) |
+| Walk (Forest, Marketplace) | Tap anywhere |
+| Back to the map     | Map button (top-right) |
 
 ## Controls (prep station)
 
@@ -95,7 +103,8 @@ src/
   ui/                reusable drawing pieces (buttons, bubble, plate, book,
                      wallet, clock)
   scenes/            Phaser scenes that wire logic and ui together: Floor,
-                     Prep and DaySummary (both overlays on the floor), and
+                     Prep and DaySummary (both overlays on the floor),
+                     WorldMap, Outdoor (Forest and Marketplace), and
                      gameStore (shares the game state between scenes)
   debug/             dev console and its commands (dev builds only)
 ```

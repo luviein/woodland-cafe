@@ -35,6 +35,7 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
+import { createPlayerSprite } from '../ui/sprites';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
@@ -160,7 +161,7 @@ export class FloorScene extends Phaser.Scene {
       .setVisible(false);
 
     this.player = createPlayer(this.layout);
-    this.playerSprite = this.createPlayerSprite();
+    this.playerSprite = createPlayerSprite(this);
 
     // Listen on the whole scene, not on each tile: one handler converts the
     // tap position to a tile. 'pointerup' works the same for mouse and touch.
@@ -418,19 +419,6 @@ export class FloorScene extends Phaser.Scene {
    * Placeholder player: a blue critter with a cream apron. Drawn once inside
    * a Container at local (0, 0)-(16, 16), so moving it is just setPosition.
    */
-  private createPlayerSprite(): Phaser.GameObjects.Container {
-    const g = this.add.graphics();
-    g.fillStyle(COLORS.player);
-    g.fillRect(3, 1, 10, 14);
-    g.fillStyle(COLORS.apron);
-    g.fillRect(5, 8, 6, 6);
-    g.fillStyle(COLORS.ink);
-    g.fillRect(5, 4, 2, 2);
-    g.fillRect(9, 4, 2, 2);
-    // Depth: draw the player above customers when they overlap.
-    return this.add.container(0, 0, [g]).setDepth(10);
-  }
-
   /**
    * Messes and plates, each drawn on the half of the table facing its seat.
    * Messes are per seat, so a table can be messy on one side and in use on

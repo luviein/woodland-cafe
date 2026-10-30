@@ -16,9 +16,9 @@ export interface LocationDef {
 
 export const LOCATIONS = {
   cafe: { name: 'Cafe', position: { x: 320, y: 220 }, scene: 'FloorScene', locked: false },
-  // Forest and Marketplace get their scene in milestone 5 step 3.
-  forest: { name: 'Forest', position: { x: 168, y: 140 }, scene: null, locked: false },
-  marketplace: { name: 'Marketplace', position: { x: 476, y: 132 }, scene: null, locked: false },
+  // Both outdoor places share one scene, set up from data/outdoorAreas.ts.
+  forest: { name: 'Forest', position: { x: 168, y: 140 }, scene: 'OutdoorScene', locked: false },
+  marketplace: { name: 'Marketplace', position: { x: 476, y: 132 }, scene: 'OutdoorScene', locked: false },
 } satisfies Record<string, LocationDef>;
 
 export type LocationId = keyof typeof LOCATIONS;

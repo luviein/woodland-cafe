@@ -1,11 +1,15 @@
-import { LOCATIONS, type LocationId } from '../data/locations';
+import { LOCATIONS, type LocationDef, type LocationId } from '../data/locations';
 import type { Point } from './layout';
 
 /** What tapping a place on the map does. */
 export type MapChoice = 'enter' | 'locked' | 'notBuilt';
 
-export function chooseLocation(id: LocationId): MapChoice {
-  const location = LOCATIONS[id];
+/** `locations` can be swapped in tests, so locked places can be tested before any exist. */
+export function chooseLocation(
+  id: LocationId,
+  locations: Record<LocationId, LocationDef> = LOCATIONS,
+): MapChoice {
+  const location = locations[id];
   if (location.locked) return 'locked';
   if (location.scene === null) return 'notBuilt';
   return 'enter';

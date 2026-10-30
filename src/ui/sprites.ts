@@ -1,0 +1,34 @@
+import type Phaser from 'phaser';
+import { COLORS } from './theme';
+
+// Placeholder drawings shared by several scenes (cafe floor, world map,
+// outdoor areas), so they look the same everywhere until real art
+// (milestone 10) replaces them in one place.
+
+/** The player: a 16x16 critter in an apron. Origin is its top-left corner. */
+export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
+  const g = scene.add.graphics();
+  g.fillStyle(COLORS.player);
+  g.fillRect(3, 1, 10, 14);
+  g.fillStyle(COLORS.apron);
+  g.fillRect(5, 8, 6, 6);
+  g.fillStyle(COLORS.ink);
+  g.fillRect(5, 4, 2, 2);
+  g.fillRect(9, 4, 2, 2);
+  // Depth: draw the player above customers and scenery when they overlap.
+  return scene.add.container(0, 0, [g]).setDepth(10);
+}
+
+/** A round tree; (x, y) is the top of the trunk. `size` 1 is about 20px wide. */
+export function drawTree(g: Phaser.GameObjects.Graphics, x: number, y: number, size = 1): void {
+  g.fillStyle(COLORS.treeTrunk).fillRect(x - 2 * size, y, 4 * size, 8 * size);
+  g.fillStyle(COLORS.treeLeaf).fillCircle(x, y - 4 * size, 10 * size);
+}
+
+/** A market stall with a striped awning; (x, y) is the top-middle of the counter. */
+export function drawStall(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+  g.fillStyle(COLORS.counter).fillRect(x - 16, y, 32, 16);
+  g.fillStyle(COLORS.awning).fillRect(x - 18, y - 10, 36, 10);
+  g.fillStyle(COLORS.roof);
+  for (let s = 0; s < 36; s += 12) g.fillRect(x - 18 + s, y - 10, 6, 10);
+}
