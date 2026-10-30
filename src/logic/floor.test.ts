@@ -3,6 +3,7 @@ import { CAFE_LAYOUT } from '../data/cafeLayout';
 import type { FloorConfig } from '../data/floorConfig';
 import {
   cleanSeats,
+  countGaveUp,
   createFloorState,
   customerAtCounter,
   hasFreeSeat,
@@ -228,6 +229,35 @@ describe('stepFloor: patience', () => {
     expect(find(s, 1)!.upset).toBe(true);
     expect(find(s, 1)!.seat).toBeNull();
     expect(hasFreeSeat(s, TINY)).toBe(true);
+  });
+});
+
+describe('countGaveUp', () => {
+  it('counts customers who ran out of patience in the queue or while their order was cooking', () => {
+    const cooking = customer(1, TINY.orderSpot, {
+      phase: 'ordered',
+      patience: 0.01,
+      seat: { tableId: 'table-0', seat: LEFT_SEAT },
+    });
+    const before = scene([cooking, customer(2, SPOT_1, { patience: 0.01 })], [1, 2]);
+    expect(countGaveUp(before, step(before))).toBe(2);
+  });
+
+  it("doesn't count a wrong dish, or customers leaving after eating", () => {
+    const wrong = serveCustomer(
+      scene([customer(1, TINY.orderSpot, { phase: 'ordered', seat: { tableId: 'table-0', seat: LEFT_SEAT } })], [1]),
+      1,
+      'wrong',
+    );
+    expect(countGaveUp(wrong, releaseCustomer(wrong, TINY, 1))).toBe(0);
+    const eating = scene([eatingAt(1, RIGHT_SEAT, 0.01)]);
+    expect(countGaveUp(eating, step(eating))).toBe(0);
+  });
+
+  it('counts each customer once, on the step they give up', () => {
+    const before = scene([customer(1, SPOT_1, { patience: 0.01 })], [1]);
+    const gaveUp = step(before);
+    expect(countGaveUp(gaveUp, step(gaveUp))).toBe(0);
   });
 });
 

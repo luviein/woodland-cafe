@@ -6,6 +6,7 @@ import { devActions } from '../debug/devActions';
 import { devSettings } from '../debug/devSettings';
 import {
   cleanSeats,
+  countGaveUp,
   createFloorState,
   customerAtCounter,
   hasFreeSeat,
@@ -17,6 +18,7 @@ import {
   type FloorState,
 } from '../logic/floor';
 import { clockText, createDay, doorsOpen, stepDay, type DayState } from '../logic/day';
+import { recordGaveUp, recordServe } from '../logic/dayStats';
 import { earnLeaves } from '../logic/gameState';
 import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
@@ -197,7 +199,10 @@ export class FloorScene extends Phaser.Scene {
     this.day = stepDay(this.day, floorSeconds);
     // Closing time: the day decides, the floor just stops letting people in.
     if (this.floor.doorsOpen && !doorsOpen(this.day)) this.floor = { ...this.floor, doorsOpen: false };
+    const before = this.floor;
     this.floor = stepFloor(this.floor, this.layout, floorSeconds);
+    const gaveUp = countGaveUp(before, this.floor);
+    if (gaveUp > 0) this.day = { ...this.day, stats: recordGaveUp(this.day.stats, gaveUp) };
     this.clock.show(clockText(this.day), this.floor.doorsOpen);
 
     // After the floor step, so a customer who just reached the order spot
@@ -273,6 +278,7 @@ export class FloorScene extends Phaser.Scene {
         this.prepCustomerId = null;
         // Into the wallet (the wallet display updates itself from the state).
         setGameState(this, earnLeaves(getGameState(this), payment.total));
+        this.day = { ...this.day, stats: recordServe(this.day.stats, result.score, payment) };
       },
       onClose: () => {
         this.prepOpen = false;

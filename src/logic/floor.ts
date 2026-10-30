@@ -304,6 +304,18 @@ export function releaseCustomer(state: FloorState, layout: Layout, customerId: n
   return { ...replaceCustomer(state, released), queue: state.queue.filter((id) => id !== customerId) };
 }
 
+/**
+ * How many customers ran out of patience between two floor states (usually
+ * one stepFloor apart): they were waiting in `before` and are leaving upset
+ * in `after`. A wrong dish doesn't count: that customer was served.
+ */
+export function countGaveUp(before: FloorState, after: FloorState): number {
+  const waiting = new Set(
+    before.customers.filter((c) => c.phase === 'queued' || c.phase === 'ordered').map((c) => c.id),
+  );
+  return after.customers.filter((c) => waiting.has(c.id) && c.phase === 'leaving' && c.upset).length;
+}
+
 /** `state` with the customer of the same id swapped for `c`. */
 function replaceCustomer(state: FloorState, c: Customer): FloorState {
   return { ...state, customers: state.customers.map((o) => (o.id === c.id ? c : o)) };

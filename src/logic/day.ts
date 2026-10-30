@@ -1,4 +1,5 @@
 import { DAY_CONFIG, type DayConfig } from '../data/dayConfig';
+import { createDayStats, type DayStats } from './dayStats';
 import type { FloorState } from './floor';
 
 /**
@@ -8,14 +9,16 @@ import type { FloorState } from './floor';
 export interface DayState {
   /** Real seconds since opening (floor time, so the `speed` command speeds it up too). */
   elapsed: number;
+  /** What happened today, for the summary at the end. */
+  stats: DayStats;
 }
 
 export function createDay(): DayState {
-  return { elapsed: 0 };
+  return { elapsed: 0, stats: createDayStats() };
 }
 
 export function stepDay(day: DayState, seconds: number): DayState {
-  return { elapsed: day.elapsed + seconds };
+  return { ...day, elapsed: day.elapsed + seconds };
 }
 
 /** True until closing time; after that, no new customers come in. */
