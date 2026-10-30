@@ -76,12 +76,56 @@ export class WorldMapScene extends Phaser.Scene {
     if (choice === 'locked') return this.showFloatingText(sign, 'Locked');
     if (choice === 'notBuilt') return this.showFloatingText(sign, 'Coming soon!');
 
-    // Going back to the cafe opens it for the next day (GAME_DESIGN.md §5.3).
-    if (id === 'cafe') setGameState(this, startNextDay(getGameState(this)));
+    // The cafe starts a new day, which can't be undone: ask first.
+    if (id === 'cafe') return this.confirmNextDay();
+    this.enter(id);
+  }
+
+  private enter(id: LocationId): void {
     // start() stops this scene and starts the other one fresh. The place id
     // goes along, so one scene (OutdoorScene) can serve several places.
     const request: LocationRequest = { location: id };
     this.scene.start(LOCATIONS[id].scene!, request);
+  }
+
+  /**
+   * "Start Day N at the cafe?" with Open cafe / Not yet (Enter / Esc).
+   * Built on demand and destroyed on "Not yet"; the dim layer underneath
+   * takes taps, so the signposts can't be pressed while it's open.
+   */
+  private confirmNextDay(): void {
+    const nextDay = getGameState(this).day + 1;
+    const cx = BASE_WIDTH / 2;
+    const cy = BASE_HEIGHT / 2;
+    const width = 340;
+    const height = 130;
+    const top = cy - height / 2;
+
+    const dim = this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.5).setOrigin(0).setInteractive();
+    const panel = this.add.rectangle(cx, cy, width, height, COLORS.paper).setStrokeStyle(3, COLORS.ink);
+    const title = this.add.text(cx, top + 18, `Start Day ${nextDay} at the cafe?`, TEXT.heading).setOrigin(0.5, 0);
+    const note = this.add
+      .text(cx, top + 44, 'Forage spots grow back and new leaves fall.', TEXT.body)
+      .setOrigin(0.5, 0);
+    const open = new Button(this, cx - 70, top + height - 30, 120, 30, 'Open cafe', COLORS.serve, () => {
+      // Going back to the cafe opens it for the next day (GAME_DESIGN.md §5.3).
+      setGameState(this, startNextDay(getGameState(this)));
+      this.enter('cafe');
+    });
+    const notYet = new Button(this, cx + 70, top + height - 30, 120, 30, 'Not yet', COLORS.reset, () => close());
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      if (event.key === 'Enter') open.press();
+      // Not notYet.press(): its 80ms un-press flash would fire on a destroyed button.
+      else if (event.key === 'Escape') close();
+    };
+    const close = () => {
+      this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
+      for (const o of [dim, panel, title, note, open, notYet]) o.destroy();
+    };
+    for (const o of [dim, panel, title, note, open, notYet]) o.setDepth(100);
+    this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
   }
 
   /** Water, a sandy shore, then grass on top. */

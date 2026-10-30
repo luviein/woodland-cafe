@@ -234,7 +234,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 | Location        | Purpose |
 | --------------- | ------- |
-| **Cafe**        | Return here to start the next day. |
+| **Cafe**        | Return here to start the next day. Tapping it on the map first asks "Start Day N at the cafe?" (**Open cafe** / **Not yet**), so a new day never starts by surprise. |
 | **Forest**      | Grassy outdoor area. Some ingredients can be **foraged** (clicked/collected and added to the player's stock, §5.5). |
 | **Marketplace** | Grassy outdoor area with **shops** where the player spends Leaves on ingredients, upgrades and furniture. |
 
