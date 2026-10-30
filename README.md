@@ -29,7 +29,9 @@ Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 **A day** runs from 8:00 to 17:00 (3 real minutes; clock top-left, under the
 Leaves). At 17:00 the doors close: nobody new comes in, but whoever is inside
 can still be served. Once the last customer leaves, the day summary shows what
-happened; **Start next day** (or `Enter`) opens a fresh floor. Leaves carry over.
+happened; **Exit cafe** (or `Enter`) opens the world map. Tap the **Cafe**
+signpost there to start the next day on a fresh floor. Leaves and stock carry
+over. (Forest and Marketplace say "Coming soon" for now.)
 
 ## Controls (prep station)
 

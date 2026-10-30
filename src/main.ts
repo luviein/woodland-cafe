@@ -5,6 +5,7 @@ import { DaySummaryScene } from './scenes/DaySummaryScene';
 import { FloorScene } from './scenes/FloorScene';
 import { initGameState } from './scenes/gameStore';
 import { PrepScene } from './scenes/PrepScene';
+import { WorldMapScene } from './scenes/WorldMapScene';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO, // WebGL when available, Canvas otherwise
@@ -18,10 +19,11 @@ const game = new Phaser.Game({
     width: BASE_WIDTH,
     height: BASE_HEIGHT,
   },
-  // The first scene in the list starts automatically. The others are
-  // launched by the floor as overlays (prep when an order is taken, the
-  // summary when the day ends); later scenes in the list draw on top.
-  scene: [FloorScene, PrepScene, DaySummaryScene],
+  // The first scene in the list starts automatically. Prep and the summary
+  // are launched by the floor as overlays (when an order is taken, when the
+  // day ends); later scenes in the list draw on top. The world map replaces
+  // the floor between days.
+  scene: [FloorScene, PrepScene, DaySummaryScene, WorldMapScene],
 });
 
 // The registry exists as soon as the game is constructed, before any

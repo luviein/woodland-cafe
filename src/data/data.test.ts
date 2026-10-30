@@ -4,6 +4,8 @@ import { recipeMatchesFilter } from '../logic/orders';
 import { SCORING_CONFIG } from './scoring';
 import { GAVE_UP_LINES, INGREDIENT_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from './dialogue';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
+import { LOCATION_IDS, LOCATIONS, MAP_PATHS } from './locations';
+import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
 import { RECIPE_PRICES } from './prices';
 import { RECIPE_IDS, RECIPES } from './recipes';
@@ -130,6 +132,29 @@ describe('prices and tips', () => {
     for (let i = 1; i < tiers.length; i++) {
       expect(tiers[i].above).toBeLessThan(tiers[i - 1].above);
       expect(tiers[i].share).toBeLessThan(tiers[i - 1].share);
+    }
+  });
+});
+
+describe('locations', () => {
+  it('every landmark is on the map', () => {
+    for (const id of LOCATION_IDS) {
+      const { x, y } = LOCATIONS[id].position;
+      expect(x > 0 && x < BASE_WIDTH && y > 0 && y < BASE_HEIGHT, id).toBe(true);
+    }
+  });
+
+  it('the cafe is open and opens the cafe floor', () => {
+    expect(LOCATIONS.cafe).toMatchObject({ scene: 'FloorScene', locked: false });
+  });
+
+  it('paths join two different places, each pair once', () => {
+    const seen = new Set<string>();
+    for (const [a, b] of MAP_PATHS) {
+      expect(a).not.toBe(b);
+      const key = [a, b].sort().join('-');
+      expect(seen.has(key), key).toBe(false);
+      seen.add(key);
     }
   });
 });

@@ -37,6 +37,19 @@ export const COLORS = {
   /** Customer fur colours; each customer gets one, picked by id. */
   customerFur: [0x9c6b45, 0xc98a4b, 0x8a817a, 0xd9b38c, 0x6e4a2f],
   overlay: 0x000000,
+  // World map (placeholder shapes until the illustrated island, milestone 10)
+  water: 0x4f86a8,
+  waterLight: 0x6a9cbc,
+  sand: 0xe3cf9a,
+  grass: 0x7fae5a,
+  grassDark: 0x6a9a4a,
+  treeLeaf: 0x3f7a3a,
+  treeTrunk: 0x6e4a2f,
+  roof: 0xb0705a,
+  awning: 0xd9b38c,
+  signpost: 0x9c6b45,
+  /** The signpost of the place the player is at. */
+  signpostHere: 0x6f9e5a,
 } as const;
 
 /**

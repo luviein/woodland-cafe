@@ -213,7 +213,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - One cafe **run is one day**.
 - **Day clock:** a day runs from **8:00 to 17:00** in game time, which takes **3 real minutes** (config value). The clock is shown on the floor and at the prep station (it keeps ticking while cooking).
 - **Closing time:** at 17:00 the doors close and **no new customers arrive**. Customers already inside stay: the queue can still be served, and patience keeps dropping as usual. The day is **over once the last customer has left**.
-- When a run ends, the game shows a **day summary**: customers served (perfect / close / wrong), customers who gave up or left because an ingredient ran out, Leaves earned (prices and tips), ingredients used (from stock / rush-bought), Leaves spent on rush deliveries, the day's net, and the wallet total. The player can then **exit the cafe**, which opens the world map. (Until the world map exists, milestone 5, the summary has a **"Start next day"** button instead.)
+- When a run ends, the game shows a **day summary**: customers served (perfect / close / wrong), customers who gave up or left because an ingredient ran out, Leaves earned (prices and tips), ingredients used (from stock / rush-bought), Leaves spent on rush deliveries, the day's net, and the wallet total. The player can then **exit the cafe**, which opens the world map.
 - **Each day starts fresh:** clean floor, empty queue. Leaves and everything owned carry over.
 
 ### 5.2 World map
@@ -346,7 +346,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - **Central game state** (`logic/gameState.ts`): day number, Leaves, ingredients and upgrades as plain data (ready for saving in milestone 9). Scenes share it through the Phaser registry (`scenes/gameStore.ts`). `STARTER_OWNED` is gone; orders use what the game state owns.
 - **Wallet:** payment goes into the real Leaves total, shown on the floor and at the prep station.
 - **Day clock** (`data/dayConfig.ts`): 8:00 to 17:00 over `dayLengthSeconds` (180), in 10-minute steps. It runs on floor time, so `speed` speeds it up. At closing time arrivals stop ("Closed" in red); the day ends when the last customer has left.
-- **Day summary** overlay: served by score, gave up, Leaves earned (dishes + tips) and the wallet. "Start next day" (or `Enter`) moves to the next day and restarts the floor fresh; Leaves carry over.
+- **Day summary** overlay: served by score, gave up, Leaves earned (dishes + tips) and the wallet. It had a "Start next day" button (or `Enter`) that restarted the floor fresh, until milestone 5 replaced it with "Exit cafe" and the world map.
 - **Prep closing:** the customer's reaction stays up for 1.2s, and any tap or key after the first 0.3s skips it (the earlier 2.2s felt too long after every order).
 - **Dev console:** `time` and `endday` were added, and `config` / `set` / `reset` now cover the day settings too, e.g. `set dayLengthSeconds 30`.
 - **Not yet:** the world map and "Exit cafe" (milestone 5). Changing `dayLengthSeconds` mid-day makes the clock jump, since the time already elapsed stays the same.

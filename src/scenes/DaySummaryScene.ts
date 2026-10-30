@@ -13,14 +13,13 @@ const SECOND_COLUMN_X = 330;
 /** What the floor hands the summary when the day is over. */
 export interface DaySummaryRequest {
   stats: DayStats;
-  /** "Start next day" was pressed; the summary has already closed. */
-  onNextDay: () => void;
+  /** "Exit cafe" was pressed; the summary has already closed. */
+  onExit: () => void;
 }
 
 /**
  * End-of-day summary, shown as an overlay on top of the (empty, closed)
- * floor, like the prep station. Milestone 5 swaps "Start next day" for
- * "Exit cafe", which opens the world map.
+ * floor, like the prep station. "Exit cafe" leads to the world map.
  */
 export class DaySummaryScene extends Phaser.Scene {
   private request!: DaySummaryRequest;
@@ -52,12 +51,12 @@ export class DaySummaryScene extends Phaser.Scene {
     this.add.text(left + SECOND_COLUMN_X, top + 56, 'Ingredients used', { ...TEXT.body, fontStyle: 'bold' });
     this.add.text(left + SECOND_COLUMN_X, top + 80, ingredientLines(this.request.stats), body);
 
-    const next = new Button(this, cx, top + PANEL_HEIGHT - 32, 176, 32, 'Start next day', COLORS.serve, () =>
-      this.nextDay(),
+    const exit = new Button(this, cx, top + PANEL_HEIGHT - 32, 144, 32, 'Exit cafe', COLORS.serve, () =>
+      this.exit(),
     );
     // Enter works too, through the button like every other shortcut.
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && !event.repeat) next.press();
+      if (event.key === 'Enter' && !event.repeat) exit.press();
     };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -65,8 +64,8 @@ export class DaySummaryScene extends Phaser.Scene {
     });
   }
 
-  private nextDay(): void {
+  private exit(): void {
     this.scene.stop();
-    this.request.onNextDay();
+    this.request.onExit();
   }
 }

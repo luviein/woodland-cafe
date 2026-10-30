@@ -21,7 +21,7 @@ import {
 } from '../logic/floor';
 import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } from '../logic/day';
 import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe } from '../logic/dayStats';
-import { earnLeaves, startNextDay } from '../logic/gameState';
+import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
 import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
@@ -39,6 +39,7 @@ import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
 import type { PrepRequest, PrepScene } from './PrepScene';
+import type { WorldMapRequest } from './WorldMapScene';
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;
@@ -285,19 +286,21 @@ export class FloorScene extends Phaser.Scene {
   }
 
   /**
-   * Shows the day summary over the floor. "Start next day" moves the game
-   * state on a day and restarts this scene: create() builds a fresh floor
-   * (clean tables, empty queue, clock back to 8:00), while the wallet lives
-   * in the game state and carries over.
+   * Shows the day summary over the floor. "Exit cafe" opens the world map;
+   * picking the Cafe there moves the game state on a day and starts this
+   * scene again, whose create() builds a fresh floor (clean tables, empty
+   * queue, clock back to 8:00). Leaves and stock live in the game state and
+   * carry over.
    */
   private openSummary(): void {
     this.summaryOpen = true;
     this.destinationMarker.setVisible(false);
     const request: DaySummaryRequest = {
       stats: this.day.stats,
-      onNextDay: () => {
-        setGameState(this, startNextDay(getGameState(this)));
-        this.scene.restart();
+      onExit: () => {
+        const map: WorldMapRequest = { current: 'cafe' };
+        // start() stops this scene (the summary has already closed itself).
+        this.scene.start('WorldMapScene', map);
       },
     };
     this.scene.launch('DaySummaryScene', request);
