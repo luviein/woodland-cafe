@@ -29,6 +29,8 @@ export interface GameState {
   stock: Stock;
   /** Leaves picked up from the ground today, for the daily cap (data/leafConfig.ts). */
   leavesPickedToday: number;
+  /** Ids of forage spots gathered today; they grow back the next day (foraging.ts). */
+  foragedToday: readonly string[];
 }
 
 export function createNewGame(): GameState {
@@ -39,12 +41,16 @@ export function createNewGame(): GameState {
     upgrades: [],
     stock: startingStock(),
     leavesPickedToday: 0,
+    foragedToday: [],
   };
 }
 
-/** On to the next day. Leaves and everything owned carry over; the leaf pickup cap starts again. */
+/**
+ * On to the next day. Leaves and everything owned carry over; the leaf
+ * pickup cap starts again and forage spots grow back.
+ */
 export function startNextDay(state: GameState): GameState {
-  return { ...state, day: state.day + 1, leavesPickedToday: 0 };
+  return { ...state, day: state.day + 1, leavesPickedToday: 0, foragedToday: [] };
 }
 
 /** How many more Leaves can be picked up from the ground today (never below 0). */

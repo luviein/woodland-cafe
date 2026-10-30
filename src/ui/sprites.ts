@@ -38,6 +38,25 @@ export function drawLeaf(g: Phaser.GameObjects.Graphics): void {
   g.fillRect(-7, 0, 2, 1); // stem
 }
 
+/** A patch of mushrooms on a dirt mound; bare (just the mound) once gathered. Base centre at (0, 0). */
+export function drawMushroomPatch(g: Phaser.GameObjects.Graphics, full: boolean): void {
+  g.fillStyle(COLORS.dirt).fillEllipse(0, -2, 24, 8);
+  if (!full) return;
+  for (const [dx, h] of [[-7, 6], [0, 9], [7, 5]]) {
+    g.fillStyle(COLORS.mushroomStem).fillRect(dx - 1, -2 - h, 3, h);
+    g.fillStyle(COLORS.mushroomCap).fillEllipse(dx, -2 - h, 9, 5);
+  }
+}
+
+/** A round bush with berries; just the bush once gathered. Base centre at (0, 0). */
+export function drawBerryBush(g: Phaser.GameObjects.Graphics, full: boolean): void {
+  g.fillStyle(COLORS.bush);
+  g.fillCircle(-7, -6, 7).fillCircle(7, -6, 7).fillCircle(0, -11, 9);
+  if (!full) return;
+  g.fillStyle(COLORS.berry);
+  for (const [x, y] of [[-8, -7], [-2, -13], [4, -8], [8, -4], [1, -3], [-5, -2]]) g.fillRect(x, y, 2, 2);
+}
+
 /** A market stall with a striped awning; (x, y) is the top-middle of the counter. */
 export function drawStall(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
   g.fillStyle(COLORS.counter).fillRect(x - 16, y, 32, STALL_HEIGHT);

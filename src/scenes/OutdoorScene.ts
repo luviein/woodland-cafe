@@ -3,13 +3,34 @@ import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { LOCATIONS } from '../data/locations';
 import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type OutdoorLocationId } from '../data/outdoorAreas';
+import type { ForageSpotDef } from '../data/forageSpots';
+import { INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
 import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
+import {
+  forage,
+  gatheredToday,
+  gatheringProgress,
+  spotsAt,
+  standPoint,
+  startGathering,
+  stepGathering,
+  type Gathering,
+} from '../logic/foraging';
 import type { Point } from '../logic/layout';
 import { collectLeaves, createLeafField, stepLeafField, type LeafField, type LeafGround } from '../logic/leafPickups';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import { Button } from '../ui/Button';
-import { STALL_HEIGHT, TREE_TRUNK_HEIGHT, createPlayerSprite, drawLeaf, drawStall, drawTree } from '../ui/sprites';
+import {
+  STALL_HEIGHT,
+  TREE_TRUNK_HEIGHT,
+  createPlayerSprite,
+  drawBerryBush,
+  drawLeaf,
+  drawMushroomPatch,
+  drawStall,
+  drawTree,
+} from '../ui/sprites';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
@@ -40,6 +61,11 @@ export class OutdoorScene extends Phaser.Scene {
   private leafField!: LeafField;
   private leafGround!: LeafGround;
   private leafSprites = new Map<number, Phaser.GameObjects.Graphics>();
+  /** Forage spots here, their sprites (by spot id), and what the player is gathering. */
+  private spots: ForageSpotDef[] = [];
+  private spotSprites = new Map<string, Phaser.GameObjects.Graphics>();
+  private gathering: Gathering | null = null;
+  private progressBar!: Phaser.GameObjects.Graphics;
   /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
   private leafCount!: Phaser.GameObjects.Text;
   private bareGround!: Phaser.GameObjects.Text;
@@ -65,6 +91,8 @@ export class OutdoorScene extends Phaser.Scene {
       drawTree(this.add.graphics().setDepth(t.y + TREE_TRUNK_HEIGHT * TREE_SIZE), t.x, t.y, TREE_SIZE);
     }
     for (const s of area.stalls) drawStall(this.add.graphics().setDepth(s.y + STALL_HEIGHT), s.x, s.y);
+    this.createForageSpots();
+    this.progressBar = this.add.graphics().setDepth(HUD_DEPTH);
 
     // A fresh field each visit: leaves don't wait for you while you're away.
     this.leafGround = {
@@ -72,6 +100,7 @@ export class OutdoorScene extends Phaser.Scene {
       keepClear: [
         ...area.trees.map((t) => ({ x: t.x, y: t.y + TREE_TRUNK_HEIGHT * TREE_SIZE })),
         ...area.stalls.map((s) => ({ x: s.x, y: s.y + STALL_HEIGHT })),
+        ...this.spots.map((s) => s.position),
       ],
       clearance: LEAF_CLEARANCE,
     };
@@ -97,6 +126,7 @@ export class OutdoorScene extends Phaser.Scene {
     watchGameState(this, (state) => {
       wallet.setLeaves(state.leaves);
       this.leafCount.setText(`Leaves today: ${state.leavesPickedToday}/${LEAF_CONFIG.leavesPerDay}`);
+      this.redrawSpots();
     });
     this.add
       .text(BASE_WIDTH / 2, 10, LOCATIONS[this.location].name, {
@@ -112,9 +142,9 @@ export class OutdoorScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (over.length > 0) return; // the Map button's tap, not a walk
-        this.player = walkToward(this.player, { x: pointer.worldX, y: pointer.worldY }, OUTDOOR_WALK_AREA);
-        this.marker.setPosition(this.player.target!.x, this.player.target!.y).setVisible(true);
+        if (over.length > 0) return; // a button's or forage spot's tap, not a walk
+        this.gathering = null; // walking off cancels gathering, like cleaning on the floor
+        this.walkTo({ x: pointer.worldX, y: pointer.worldY });
       },
     );
   }
@@ -127,6 +157,14 @@ export class OutdoorScene extends Phaser.Scene {
     this.playerSprite.setDepth(y + HALF); // its feet, for the depth sorting in create()
     if (!this.player.target) this.marker.setVisible(false);
 
+    if (this.gathering) {
+      const step = stepGathering(this.gathering, this.player, deltaMs / 1000);
+      const spot = this.spots.find((s) => s.id === this.gathering!.spotId)!;
+      this.gathering = step.gathering;
+      if (step.finished) this.finishGathering(spot);
+    }
+    this.drawProgressBar();
+
     const leftToday = leavesLeftToday(getGameState(this));
     this.leafField = stepLeafField(this.leafField, deltaMs / 1000, this.leafGround, Math.random, LEAF_CONFIG, leftToday);
     const picked = collectLeaves(this.leafField, this.player.position);
@@ -138,6 +176,71 @@ export class OutdoorScene extends Phaser.Scene {
     this.syncLeafSprites();
     // Only once the last one is picked up: until then, there's still a leaf to find.
     this.bareGround.setVisible(leavesLeftToday(getGameState(this)) === 0 && this.leafField.leaves.length === 0);
+  }
+
+  private walkTo(point: Point): void {
+    this.player = walkToward(this.player, point, OUTDOOR_WALK_AREA);
+    this.marker.setPosition(this.player.target!.x, this.player.target!.y).setVisible(true);
+  }
+
+  /** A sprite and a tap area for each forage spot in this place. */
+  private createForageSpots(): void {
+    this.spots = spotsAt(this.location);
+    this.spotSprites = new Map();
+    this.gathering = null;
+    for (const spot of this.spots) {
+      const { x, y } = spot.position;
+      // Depth sorted by its base, like the trees.
+      this.spotSprites.set(spot.id, this.add.graphics({ x, y }).setDepth(y));
+      // A bit bigger than the drawing, so it's easy to tap on a phone.
+      this.add
+        .zone(x, y - 8, 32, 28)
+        .setInteractive({ useHandCursor: true })
+        .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onSpotTapped(spot));
+    }
+    this.redrawSpots();
+  }
+
+  /** Full or bare, from the game state (called whenever it changes). */
+  private redrawSpots(): void {
+    const state = getGameState(this);
+    for (const spot of this.spots) {
+      const g = this.spotSprites.get(spot.id);
+      if (!g) continue; // watchGameState fires once before the spots exist
+      g.clear();
+      const full = !gatheredToday(state, spot);
+      if (spot.kind === 'mushroomPatch') drawMushroomPatch(g, full);
+      else drawBerryBush(g, full);
+    }
+  }
+
+  private onSpotTapped(spot: ForageSpotDef): void {
+    if (gatheredToday(getGameState(this), spot)) {
+      this.showFloatingText(spot.position, 'Grows back tomorrow');
+      return;
+    }
+    this.gathering = startGathering(spot);
+    this.walkTo(standPoint(spot));
+  }
+
+  private finishGathering(spot: ForageSpotDef): void {
+    setGameState(this, forage(getGameState(this), spot));
+    this.showFloatingText(spot.position, `+${spot.amount} ${INGREDIENTS[spot.ingredient].name}`);
+  }
+
+  /** Over the spot being gathered, filling up while the player works. */
+  private drawProgressBar(): void {
+    const g = this.progressBar;
+    g.clear();
+    if (!this.gathering) return;
+    const progress = gatheringProgress(this.gathering, this.player);
+    if (progress === null) return;
+    const spot = this.spots.find((s) => s.id === this.gathering!.spotId)!;
+    const x = spot.position.x - 10;
+    const y = spot.position.y - 30;
+    g.fillStyle(COLORS.ink).fillRect(x, y, 20, 4);
+    // Math.floor: whole-pixel widths keep the bar crisp as it fills.
+    g.fillStyle(COLORS.serve).fillRect(x + 1, y + 1, Math.floor(18 * progress), 2);
   }
 
   /** One sprite per leaf on the ground: new leaves get one, picked-up ones lose theirs. */
@@ -161,7 +264,7 @@ export class OutdoorScene extends Phaser.Scene {
     }
   }
 
-  /** "+1 🍃" drifting up from where a leaf was picked up. */
+  /** A short message drifting up from a spot, e.g. "+1 🍃" where a leaf was picked up. */
   private showFloatingText(at: Point, message: string): void {
     const text = this.add
       .text(at.x, at.y - 8, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })

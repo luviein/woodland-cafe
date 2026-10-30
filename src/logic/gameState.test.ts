@@ -13,6 +13,7 @@ describe('createNewGame', () => {
       upgrades: [],
       stock: { bread: 30, mushroom: 30, jam: 30, chilli: 0, tuna: 0, tomato: 0 },
       leavesPickedToday: 0,
+      foragedToday: [],
     });
   });
 

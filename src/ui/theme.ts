@@ -50,6 +50,12 @@ export const COLORS = {
   signpost: 0x9c6b45,
   /** The signpost of the place the player is at. */
   signpostHere: 0x6f9e5a,
+  // Forage spots
+  dirt: 0x7a5a3a,
+  mushroomStem: 0xeae4da,
+  mushroomCap: 0xa0503a,
+  bush: 0x4f8a3a,
+  berry: 0xc0304a,
   // Leaf pickups: autumn orange, so they stand out on the grass.
   leaf: 0xe08a3a,
   leafVein: 0x9c5a24,

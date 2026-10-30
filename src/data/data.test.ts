@@ -5,7 +5,8 @@ import { SCORING_CONFIG } from './scoring';
 import { GAVE_UP_LINES, INGREDIENT_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from './dialogue';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS } from './locations';
-import { OUTDOOR_AREAS, OUTDOOR_ENTRY, isOutdoor } from './outdoorAreas';
+import { FORAGE_SPOTS } from './forageSpots';
+import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor } from './outdoorAreas';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
 import { RECIPE_PRICES } from './prices';
@@ -156,6 +157,17 @@ describe('locations', () => {
       for (const { x, y } of [...area.trees, ...area.stalls, OUTDOOR_ENTRY]) {
         expect(x > 0 && x < BASE_WIDTH && y > 0 && y < BASE_HEIGHT).toBe(true);
       }
+    }
+  });
+
+  it('forage spots have unique ids, a positive amount, and sit inside the walk area', () => {
+    const ids = FORAGE_SPOTS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const spot of FORAGE_SPOTS) {
+      expect(spot.amount, spot.id).toBeGreaterThan(0);
+      const { x, y } = spot.position;
+      const a = OUTDOOR_WALK_AREA;
+      expect(x >= a.x && x <= a.x + a.width && y >= a.y && y <= a.y + a.height, spot.id).toBe(true);
     }
   });
 

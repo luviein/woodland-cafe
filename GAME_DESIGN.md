@@ -235,7 +235,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 | Location        | Purpose |
 | --------------- | ------- |
 | **Cafe**        | Return here to start the next day. |
-| **Forest**      | Grassy outdoor area. Some ingredients can be **foraged** (clicked/collected and added to the player's inventory). |
+| **Forest**      | Grassy outdoor area. Some ingredients can be **foraged** (clicked/collected and added to the player's stock, §5.5). |
 | **Marketplace** | Grassy outdoor area with **shops** where the player spends Leaves on ingredients, upgrades and furniture. |
 
 ### 5.4 Leaf pickups
@@ -244,6 +244,20 @@ The player can leave the counter **before taking an order** to clean messes, but
 - Picking one up gives **+1 Leaf**.
 - **Spawn rate** and **max leaves on screen** live in a config file.
 - **Daily cap:** at most **15 Leaves a day** from the ground, counted across the Forest and the Marketplace together (config value). It resets when the next day starts. Outdoors, "Leaves today: 6/15" shows the count; at the cap no new leaves appear, and a line says the ground is bare until tomorrow. This keeps the cafe the main way to earn: leaf pickups are a bonus, not a farm. (A per-visit cap was rejected: leaving and coming straight back would get around it.)
+
+### 5.5 Foraging
+
+- The **Forest** has forage spots, a data list (place, position, ingredient, amount), so more can be added later (e.g. chilli bushes once chilli can be owned):
+
+  | Spot           | Gives       | In the Forest |
+  | -------------- | ----------- | ------------- |
+  | Mushroom patch | +2 mushroom | 4 |
+  | Berry bush (the cafe makes jam from the berries) | +2 jam | 2 |
+
+- **Gathering:** tap a spot; the player walks next to it and gathers for about 1 second (config value), with a progress bar like cleaning. Then "+2 Mushroom" floats up and it goes into **stock**. Tapping elsewhere cancels.
+- **Regrowth:** each spot can be gathered **once a day** and grows back the next day. A gathered spot looks bare (no mushrooms, no berries). Gathered spots are kept in the game state, so going to the map and back doesn't regrow them.
+- **Worth:** all six spots give 12 stock a day (about 12 Leaves at the unit price, 24 at the rush price), about the same as the daily leaf pickup cap. A bonus, not a replacement for the cafe.
+- The Marketplace has no forage spots; its shops come in milestone 6.
 
 ---
 
@@ -266,6 +280,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - Expanding the cafe layout with purchased furniture
 - Hiring employees who clean or serve automatically
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
+- **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
 - **Tutorial with a mini story** at the start of a new game. Part of the story: the player is given **30 of each starter ingredient** to open the cafe with, so they learn about ingredient stock (§3.6) from the start. Story and steps still to be designed.
 
 ---
