@@ -19,15 +19,20 @@ export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Cont
   return scene.add.container(0, 0, [g]).setDepth(10);
 }
 
+/** Height of a tree's trunk at `size` 1; its base (y + this * size) is where it stands. */
+export const TREE_TRUNK_HEIGHT = 8;
+/** Height of a stall's counter; its base (y + this) is where it stands. */
+export const STALL_HEIGHT = 16;
+
 /** A round tree; (x, y) is the top of the trunk. `size` 1 is about 20px wide. */
 export function drawTree(g: Phaser.GameObjects.Graphics, x: number, y: number, size = 1): void {
-  g.fillStyle(COLORS.treeTrunk).fillRect(x - 2 * size, y, 4 * size, 8 * size);
+  g.fillStyle(COLORS.treeTrunk).fillRect(x - 2 * size, y, 4 * size, TREE_TRUNK_HEIGHT * size);
   g.fillStyle(COLORS.treeLeaf).fillCircle(x, y - 4 * size, 10 * size);
 }
 
 /** A market stall with a striped awning; (x, y) is the top-middle of the counter. */
 export function drawStall(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
-  g.fillStyle(COLORS.counter).fillRect(x - 16, y, 32, 16);
+  g.fillStyle(COLORS.counter).fillRect(x - 16, y, 32, STALL_HEIGHT);
   g.fillStyle(COLORS.awning).fillRect(x - 18, y - 10, 36, 10);
   g.fillStyle(COLORS.roof);
   for (let s = 0; s < 36; s += 12) g.fillRect(x - 18 + s, y - 10, 6, 10);

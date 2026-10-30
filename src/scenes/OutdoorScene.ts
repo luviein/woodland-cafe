@@ -5,7 +5,7 @@ import { LOCATIONS } from '../data/locations';
 import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type OutdoorLocationId } from '../data/outdoorAreas';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import { Button } from '../ui/Button';
-import { createPlayerSprite, drawStall, drawTree } from '../ui/sprites';
+import { STALL_HEIGHT, TREE_TRUNK_HEIGHT, createPlayerSprite, drawStall, drawTree } from '../ui/sprites';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { watchGameState } from './gameStore';
@@ -13,6 +13,9 @@ import type { LocationRequest, WorldMapRequest } from './WorldMapScene';
 
 /** Half the player sprite (16x16): the mover's position is the sprite's centre. */
 const HALF = TILE_SIZE / 2;
+const TREE_SIZE = 1.4;
+/** Above all the y-sorted scenery (whose depths are at most the screen height). */
+const HUD_DEPTH = 1000;
 
 /**
  * A grassy outdoor place: Forest or Marketplace. One scene for both, set up
@@ -37,17 +40,24 @@ export class OutdoorScene extends Phaser.Scene {
   create(): void {
     const area = OUTDOOR_AREAS[this.location];
     this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS[area.ground]).setOrigin(0);
-    const scenery = this.add.graphics();
-    for (const t of area.trees) drawTree(scenery, t.x, t.y, 1.4);
-    for (const s of area.stalls) drawStall(scenery, s.x, s.y);
+    // Depth sorting by y: everything's depth is the y of its base, where it
+    // touches the ground, and higher depths draw on top. Something lower on
+    // the screen is nearer the viewer, so the player walking behind a tree
+    // (feet above its base) is hidden by it, and in front of it covers it.
+    // That needs one Graphics per tree/stall rather than one for all of them.
+    for (const t of area.trees) {
+      drawTree(this.add.graphics().setDepth(t.y + TREE_TRUNK_HEIGHT * TREE_SIZE), t.x, t.y, TREE_SIZE);
+    }
+    for (const s of area.stalls) drawStall(this.add.graphics().setDepth(s.y + STALL_HEIGHT), s.x, s.y);
 
     this.player = createMover(OUTDOOR_ENTRY);
     this.playerSprite = createPlayerSprite(this);
     // Small ring where the player is heading; hidden when standing still.
-    this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.apron).setVisible(false);
+    // Depth 1: on the ground, under everything standing on it.
+    this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.apron).setVisible(false).setDepth(1);
 
     // Top strip: wallet, place name, and the way back.
-    const wallet = new WalletDisplay(this, 8, 8);
+    const wallet = new WalletDisplay(this, 8, 8).setDepth(HUD_DEPTH);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
     this.add
       .text(BASE_WIDTH / 2, 10, LOCATIONS[this.location].name, {
@@ -56,8 +66,9 @@ export class OutdoorScene extends Phaser.Scene {
         stroke: css(COLORS.ink),
         strokeThickness: 4,
       })
-      .setOrigin(0.5, 0);
-    new Button(this, BASE_WIDTH - 48, 20, 80, 28, 'Map', COLORS.book, () => this.backToMap()).setDepth(30);
+      .setOrigin(0.5, 0)
+      .setDepth(HUD_DEPTH);
+    new Button(this, BASE_WIDTH - 48, 20, 80, 28, 'Map', COLORS.book, () => this.backToMap()).setDepth(HUD_DEPTH);
 
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
@@ -72,7 +83,9 @@ export class OutdoorScene extends Phaser.Scene {
   update(_time: number, deltaMs: number): void {
     // Same walking speed as in the cafe (tiles per second, in pixels here).
     this.player = stepMover(this.player, FLOOR_CONFIG.playerSpeed * TILE_SIZE * (deltaMs / 1000));
-    this.playerSprite.setPosition(this.player.position.x - HALF, this.player.position.y - HALF);
+    const { x, y } = this.player.position;
+    this.playerSprite.setPosition(x - HALF, y - HALF);
+    this.playerSprite.setDepth(y + HALF); // its feet, for the depth sorting in create()
     if (!this.player.target) this.marker.setVisible(false);
   }
 
