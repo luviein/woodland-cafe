@@ -75,6 +75,11 @@ export interface FloorState {
   queue: number[];
   /** Seconds until the next customer arrives. */
   spawnTimer: number;
+  /**
+   * False after closing time: nobody new comes in, but whoever is inside
+   * stays and can still be served. The day decides when (logic/day.ts).
+   */
+  doorsOpen: boolean;
   nextCustomerId: number;
 }
 
@@ -84,6 +89,7 @@ export function createFloorState(config: FloorConfig = FLOOR_CONFIG): FloorState
     messySeats: [],
     queue: [],
     spawnTimer: config.firstCustomerDelay,
+    doorsOpen: true,
     nextCustomerId: 1,
   };
 }
@@ -135,9 +141,10 @@ export function stepFloor(
     };
   });
 
-  // 2. A new customer walks in if it's time and the queue has room.
+  // 2. A new customer walks in if it's time, the doors are open and the
+  // queue has room.
   spawnTimer -= seconds;
-  if (spawnTimer <= 0 && queue.length < queueCapacity(layout)) {
+  if (state.doorsOpen && spawnTimer <= 0 && queue.length < queueCapacity(layout)) {
     const id = nextCustomerId++;
     customers.push({
       id,
@@ -220,6 +227,7 @@ export function stepFloor(
     messySeats: [...messySeats],
     queue,
     spawnTimer,
+    doorsOpen: state.doorsOpen,
     nextCustomerId,
   };
 }

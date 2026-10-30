@@ -16,6 +16,7 @@ import {
   type Customer,
   type FloorState,
 } from '../logic/floor';
+import { clockText, createDay, doorsOpen, stepDay, type DayState } from '../logic/day';
 import { earnLeaves } from '../logic/gameState';
 import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
@@ -28,6 +29,7 @@ import {
 } from '../logic/player';
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
+import { ClockDisplay } from '../ui/ClockDisplay';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
 import type { PrepRequest, PrepScene } from './PrepScene';
@@ -91,6 +93,9 @@ export class FloorScene extends Phaser.Scene {
   private destinationMarker!: Phaser.GameObjects.Rectangle;
 
   private floor!: FloorState;
+  /** Today's clock. Runs on floor time, so `speed` makes the day go faster too. */
+  private day!: DayState;
+  private clock!: ClockDisplay;
   /** Messes and plates on tables; redrawn every frame from the floor state. */
   private tableOverlay!: Phaser.GameObjects.Graphics;
   /** Drawn above all characters (depth 20) so nobody can cover it. */
@@ -132,6 +137,8 @@ export class FloorScene extends Phaser.Scene {
     this.customerSprites = new Map();
     this.prepOpen = false;
     this.prepCustomerId = null;
+    this.day = createDay();
+    this.clock = new ClockDisplay(this, 8, 34);
     const wallet = new WalletDisplay(this, 8, 8);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
 
@@ -184,9 +191,14 @@ export class FloorScene extends Phaser.Scene {
     this.player = player;
     if (cleanedSeats.length > 0) this.floor = cleanSeats(this.floor, cleanedSeats);
 
-    // Dev console "speed" command scales time for the critters only; the
-    // player keeps walking at normal speed.
-    this.floor = stepFloor(this.floor, this.layout, seconds * devSettings.floorTimeScale);
+    // Dev console "speed" command scales time for the critters and the day
+    // clock only; the player keeps walking at normal speed.
+    const floorSeconds = seconds * devSettings.floorTimeScale;
+    this.day = stepDay(this.day, floorSeconds);
+    // Closing time: the day decides, the floor just stops letting people in.
+    if (this.floor.doorsOpen && !doorsOpen(this.day)) this.floor = { ...this.floor, doorsOpen: false };
+    this.floor = stepFloor(this.floor, this.layout, floorSeconds);
+    this.clock.show(clockText(this.day), this.floor.doorsOpen);
 
     // After the floor step, so a customer who just reached the order spot
     // can be served this frame.
@@ -253,6 +265,7 @@ export class FloorScene extends Phaser.Scene {
     const request: PrepRequest = {
       order,
       fur: furColor(customerId),
+      clock: () => ({ text: clockText(this.day), open: this.floor.doorsOpen }),
       patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
       onServe: (result, payment) => {
         // Patience stops now, but they wait at the counter while reacting.

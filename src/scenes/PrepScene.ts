@@ -11,6 +11,7 @@ import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
 import { RecipeBook } from '../ui/RecipeBook';
 import { SpeechBubble } from '../ui/SpeechBubble';
+import { ClockDisplay } from '../ui/ClockDisplay';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { getGameState, watchGameState } from './gameStore';
@@ -33,6 +34,8 @@ export interface PrepRequest {
   fur: number;
   /** Patience left, 0..1, read every frame for the bar. The floor keeps it ticking. */
   patience: () => number;
+  /** The day clock, read every frame: the day keeps going while the player cooks. */
+  clock: () => { text: string; open: boolean };
   /** Called once, when the player serves, with what the customer pays. */
   onServe: (result: ScoreResult, payment: Payment) => void;
   /** Called when the prep station has closed and the floor is back. */
@@ -62,6 +65,7 @@ export class PrepScene extends Phaser.Scene {
   private recipeBook!: RecipeBook;
   private dishView!: DishView;
   private patienceBar!: Phaser.GameObjects.Graphics;
+  private clock!: ClockDisplay;
   private serveButton!: Button;
   private resetButton!: Button;
   private recipesButton!: Button;
@@ -112,8 +116,11 @@ export class PrepScene extends Phaser.Scene {
       this.recipeBook.open(availableRecipes(getGameState(this))),
     );
 
-    // Same wallet as on the floor: it ticks up the moment the customer pays.
-    const wallet = new WalletDisplay(this, 8, 8);
+    // Same wallet and clock as on the floor, but top-right, under the Recipes
+    // button: the customer peeks over the counter in the top-left. The
+    // wallet ticks up the moment the customer pays.
+    this.clock = new ClockDisplay(this, 560, 78);
+    const wallet = new WalletDisplay(this, 560, 52);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
 
     this.setupKeyboard();
@@ -130,6 +137,8 @@ export class PrepScene extends Phaser.Scene {
 
   update(): void {
     this.drawPatienceBar();
+    const { text, open } = this.request.clock();
+    this.clock.show(text, open);
   }
 
   /**

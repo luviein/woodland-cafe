@@ -231,6 +231,19 @@ describe('stepFloor: patience', () => {
   });
 });
 
+describe('stepFloor: closing time', () => {
+  it('nobody new comes in once the doors are closed', () => {
+    const s = run({ ...start(), doorsOpen: false }, 10, { config: BUSY });
+    expect(s.customers).toHaveLength(0);
+  });
+
+  it('whoever is already inside stays and can still be served', () => {
+    const inside = runUntil(start(), (st) => st.queue.length === 1);
+    const s = runUntil({ ...inside, doorsOpen: false }, phaseOf(1, 'eating'));
+    expect(s.customers.map((c) => c.id)).toEqual([1]);
+  });
+});
+
 describe('stepFloor: counter queue', () => {
   it('the next customer queues behind, on spot 1', () => {
     const s = runUntil(allMessy(), (st) => st.queue.length === 2, { config: BUSY });
