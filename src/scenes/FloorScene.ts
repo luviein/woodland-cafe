@@ -16,6 +16,7 @@ import {
   type Customer,
   type FloorState,
 } from '../logic/floor';
+import { earnLeaves } from '../logic/gameState';
 import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
   cleaningProgress,
@@ -27,7 +28,8 @@ import {
 } from '../logic/player';
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
-import { getGameState } from './gameStore';
+import { WalletDisplay } from '../ui/WalletDisplay';
+import { getGameState, setGameState, watchGameState } from './gameStore';
 import type { PrepRequest, PrepScene } from './PrepScene';
 
 interface CustomerSprite {
@@ -106,13 +108,6 @@ export class FloorScene extends Phaser.Scene {
    */
   private prepCustomerId: number | null = null;
 
-  /**
-   * TEMPORARY running total, so payments can be seen adding up. Milestone 4
-   * replaces it with the real wallet in the central game state.
-   */
-  private leavesEarned = 0;
-  private leavesText!: Phaser.GameObjects.Text;
-
   constructor() {
     super('FloorScene');
   }
@@ -137,10 +132,8 @@ export class FloorScene extends Phaser.Scene {
     this.customerSprites = new Map();
     this.prepOpen = false;
     this.prepCustomerId = null;
-    this.leavesEarned = 0;
-    this.leavesText = this.add
-      .text(8, 6, '🍃 0', { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 })
-      .setDepth(30);
+    const wallet = new WalletDisplay(this, 8, 8);
+    watchGameState(this, (state) => wallet.setLeaves(state.leaves));
 
     // Small outline showing where the player is heading; hidden when idle.
     this.destinationMarker = this.add
@@ -265,8 +258,8 @@ export class FloorScene extends Phaser.Scene {
         // Patience stops now, but they wait at the counter while reacting.
         this.floor = serveCustomer(this.floor, customerId, result.score);
         this.prepCustomerId = null;
-        this.leavesEarned += payment.total;
-        this.leavesText.setText(`🍃 ${this.leavesEarned}`);
+        // Into the wallet (the wallet display updates itself from the state).
+        setGameState(this, earnLeaves(getGameState(this), payment.total));
       },
       onClose: () => {
         this.prepOpen = false;

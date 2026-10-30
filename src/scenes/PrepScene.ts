@@ -11,8 +11,9 @@ import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
 import { RecipeBook } from '../ui/RecipeBook';
 import { SpeechBubble } from '../ui/SpeechBubble';
+import { WalletDisplay } from '../ui/WalletDisplay';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
-import { getGameState } from './gameStore';
+import { getGameState, watchGameState } from './gameStore';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
@@ -110,6 +111,10 @@ export class PrepScene extends Phaser.Scene {
     this.recipesButton = new Button(this, 568, 28, 128, 32, 'Recipes (R)', COLORS.book, () =>
       this.recipeBook.open(availableRecipes(getGameState(this))),
     );
+
+    // Same wallet as on the floor: it ticks up the moment the customer pays.
+    const wallet = new WalletDisplay(this, 8, 8);
+    watchGameState(this, (state) => wallet.setLeaves(state.leaves));
 
     this.setupKeyboard();
     this.refreshDish();
