@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDevCommands, runCommand } from './commands';
 import type { Score } from '../logic/types';
+import { createNewGame, type GameState } from '../logic/gameState';
 import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
@@ -176,6 +177,22 @@ describe('serve / mess / clean / time / endday', () => {
     expect(endDayCalls()).toBe(1);
   });
 
+  it('stock lists every ingredient and sets one', () => {
+    let state: GameState = createNewGame();
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      game: { get: () => state, set: (s) => (state = s) },
+    });
+    expect(runCommand(commands, 'stock')).toContain('bread = 12');
+    expect(runCommand(commands, 'stock JAM 0')).toBe('Jam stock = 0');
+    expect(state.stock.jam).toBe(0);
+    expect(runCommand(commands, 'stock jelly 1')).toMatch(/No ingredient called 'jelly'/);
+    expect(runCommand(commands, 'stock jam -1')).toMatch(/Usage/);
+    expect(runCommand(commands, 'leaves 7')).toBe('Wallet = 7');
+    expect(state.leaves).toBe(7);
+    expect(runCommand(commands, 'leaves 1.5')).toMatch(/Usage/);
+  });
+
   it('say so when the scene they need is not running', () => {
     const { commands } = setup(); // no actions registered
     expect(runCommand(commands, 'serve')).toMatch(/prep station is open/);
@@ -183,5 +200,7 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'clean')).toMatch(/cafe floor/);
     expect(runCommand(commands, 'time')).toMatch(/cafe floor/);
     expect(runCommand(commands, 'endday')).toMatch(/cafe floor/);
+    expect(runCommand(commands, 'stock')).toMatch(/cafe floor/);
+    expect(runCommand(commands, 'leaves 3')).toMatch(/cafe floor/);
   });
 });

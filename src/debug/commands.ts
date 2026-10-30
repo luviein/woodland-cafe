@@ -1,3 +1,5 @@
+import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
+import type { GameState } from '../logic/gameState';
 import type { Score } from '../logic/types';
 import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
@@ -61,6 +63,17 @@ export function createDevCommands(
       if (key) return { config, key };
     }
     return undefined;
+  };
+
+  const game = (): { get: () => GameState; set: (state: GameState) => void } => {
+    if (!actions.game) throw new Error('Only works on the cafe floor');
+    return actions.game;
+  };
+  /** A whole number, 0 or more, or a usage error. */
+  const count = (value: string | undefined, usage: string): number => {
+    const n = Number(value);
+    if (value === undefined || !Number.isInteger(n) || n < 0) throw new Error(`Usage: ${usage} (a whole number, 0 or more)`);
+    return n;
   };
 
   const commands: CommandRegistry = {
@@ -157,6 +170,32 @@ export function createDevCommands(
       run: () => {
         if (!actions.setMessy) throw new Error('Only works on the cafe floor');
         return `Cleaned ${actions.setMessy(false)} seat(s)`;
+      },
+    },
+
+    stock: {
+      usage: 'stock [ingredient n]',
+      description: "Show ingredient stock, or set one, e.g. 'stock jam 0'",
+      run: ([name, value]) => {
+        const state = game().get();
+        if (name === undefined) {
+          return INGREDIENT_IDS.map((id) => `${id} = ${state.stock[id]}`).join('\n');
+        }
+        const id = INGREDIENT_IDS.find((i) => i === name.toLowerCase());
+        if (!id) throw new Error(`No ingredient called '${name}'. Type 'stock' to see them.`);
+        const n = count(value, 'stock <ingredient> <n>');
+        game().set({ ...state, stock: { ...state.stock, [id]: n } });
+        return `${INGREDIENTS[id].name} stock = ${n}`;
+      },
+    },
+
+    leaves: {
+      usage: 'leaves <n>',
+      description: "Set the wallet, e.g. 'leaves 0' to test running out of money",
+      run: ([value]) => {
+        const n = count(value, 'leaves <n>');
+        game().set({ ...game().get(), leaves: n });
+        return `Wallet = ${n}`;
       },
     },
 

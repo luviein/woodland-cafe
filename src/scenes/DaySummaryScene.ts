@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { summaryLines, type DayStats } from '../logic/dayStats';
+import { ingredientLines, summaryLines, type DayStats } from '../logic/dayStats';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT } from '../ui/theme';
 import { getGameState } from './gameStore';
 
-const PANEL_WIDTH = 400;
-const PANEL_HEIGHT = 220;
+const PANEL_WIDTH = 520;
+const PANEL_HEIGHT = 290;
+/** Where the "Ingredients used" column starts, from the panel's left edge. */
+const SECOND_COLUMN_X = 330;
 
 /** What the floor hands the summary when the day is over. */
 export interface DaySummaryRequest {
@@ -41,13 +43,14 @@ export class DaySummaryScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, PANEL_WIDTH, PANEL_HEIGHT, COLORS.paper).setStrokeStyle(3, COLORS.ink);
 
     const top = cy - PANEL_HEIGHT / 2;
+    const left = cx - PANEL_WIDTH / 2;
+    const body = { ...TEXT.body, lineSpacing: 8 };
     this.add.text(cx, top + 20, `Day ${state.day} is over`, TEXT.heading).setOrigin(0.5, 0);
-    this.add
-      .text(cx - PANEL_WIDTH / 2 + 28, top + 56, summaryLines(this.request.stats, state.leaves), {
-        ...TEXT.body,
-        lineSpacing: 8,
-      })
-      .setOrigin(0, 0);
+    this.add.text(left + 24, top + 56, summaryLines(this.request.stats, state.leaves), body);
+    // Second column: there are up to one line per ingredient, too many to
+    // stack under the totals.
+    this.add.text(left + SECOND_COLUMN_X, top + 56, 'Ingredients used', { ...TEXT.body, fontStyle: 'bold' });
+    this.add.text(left + SECOND_COLUMN_X, top + 80, ingredientLines(this.request.stats), body);
 
     const next = new Button(this, cx, top + PANEL_HEIGHT - 32, 176, 32, 'Start next day', COLORS.serve, () =>
       this.nextDay(),

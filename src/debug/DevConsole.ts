@@ -1,5 +1,6 @@
 import { DAY_CONFIG } from '../data/dayConfig';
 import { FLOOR_CONFIG } from '../data/floorConfig';
+import { STOCK_CONFIG } from '../data/stockConfig';
 import { createDevCommands, runCommand } from './commands';
 import { devActions } from './devActions';
 import { devSettings } from './devSettings';
@@ -15,7 +16,7 @@ import { devSettings } from './devSettings';
 export function mountDevConsole(): void {
   // These are the live objects the game reads every frame, so 'set' changes
   // take effect immediately.
-  const commands = createDevCommands(devSettings, [FLOOR_CONFIG, DAY_CONFIG], devActions);
+  const commands = createDevCommands(devSettings, [FLOOR_CONFIG, DAY_CONFIG, STOCK_CONFIG], devActions);
   const history: string[] = [];
   let historyIndex = 0;
 

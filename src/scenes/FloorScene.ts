@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
 import { DAY_CONFIG } from '../data/dayConfig';
+import { INGREDIENTS } from '../data/ingredients';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { devActions } from '../debug/devActions';
 import { devSettings } from '../debug/devSettings';
@@ -19,8 +20,9 @@ import {
   type FloorState,
 } from '../logic/floor';
 import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } from '../logic/day';
-import { recordGaveUp, recordServe } from '../logic/dayStats';
+import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe } from '../logic/dayStats';
 import { earnLeaves, startNextDay } from '../logic/gameState';
+import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
 import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
   cleaningProgress,
@@ -192,10 +194,12 @@ export class FloorScene extends Phaser.Scene {
     devActions.endDay = () => {
       this.day = { ...this.day, elapsed: Math.max(this.day.elapsed, DAY_CONFIG.dayLengthSeconds) };
     };
+    devActions.game = { get: () => getGameState(this), set: (state) => setGameState(this, state) };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.setMessy = null;
       devActions.dayTime = null;
       devActions.endDay = null;
+      devActions.game = null;
     });
   }
 
@@ -225,10 +229,12 @@ export class FloorScene extends Phaser.Scene {
 
     // After the floor step, so a customer who just reached the order spot
     // can be served this frame.
+    const frontId = this.floor.queue[0];
     const taken = takeOrderAtCounter(this.player, this.floor, this.layout, getGameState(this));
     this.player = taken.player;
     this.floor = taken.floor;
     if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');
+    if (taken.result === 'outOfStock') this.onOutOfStock(frontId);
     if (taken.result === 'ordered') this.openPrep(this.floor.queue[0]);
 
     // Ran out of patience while their order was cooking? Prep closes on them.
@@ -267,6 +273,15 @@ export class FloorScene extends Phaser.Scene {
       duration: 900,
       onComplete: () => text.destroy(),
     });
+  }
+
+  /** Their dish couldn't be made, so they're leaving: say what ran out. */
+  private onOutOfStock(customerId: number): void {
+    this.day = { ...this.day, stats: recordOutOfStock(this.day.stats) };
+    const order = this.customer(customerId)?.order;
+    const missing = order && missingIngredient(getGameState(this), orderIngredients(order));
+    const message = missing ? `Out of ${INGREDIENTS[missing].name.toLowerCase()}!` : 'Out of stock!';
+    this.showFloatingText(this.layout.orderSpot, message);
   }
 
   /**
@@ -309,13 +324,17 @@ export class FloorScene extends Phaser.Scene {
       fur: furColor(customerId),
       clock: () => ({ text: clockText(this.day), open: this.floor.doorsOpen }),
       patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
-      onServe: (result, payment) => {
+      onServe: (result, payment, plate) => {
         // Patience stops now, but they wait at the counter while reacting.
         this.floor = serveCustomer(this.floor, customerId, result.score);
         this.prepCustomerId = null;
-        // Into the wallet (the wallet display updates itself from the state).
-        setGameState(this, earnLeaves(getGameState(this), payment.total));
-        this.day = { ...this.day, stats: recordServe(this.day.stats, result.score, payment) };
+        // Whatever is on the plate is used up, right or wrong: stock first,
+        // rush deliveries paid from the wallet. Then the customer pays in.
+        // (The wallet display updates itself from the state.)
+        const used = useIngredients(getGameState(this), plateIngredients(plate, order.quantity));
+        setGameState(this, earnLeaves(used.state, payment.total));
+        const stats = recordServe(this.day.stats, result.score, payment);
+        this.day = { ...this.day, stats: recordIngredients(stats, used.plan) };
       },
       onClose: () => {
         this.prepOpen = false;

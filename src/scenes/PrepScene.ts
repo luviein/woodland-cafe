@@ -6,6 +6,7 @@ import { buildGaveUp, buildReaction, buildSpeech } from '../logic/dialogue';
 import { availableRecipes, expectedPlate } from '../logic/orders';
 import { computePayment, type Payment } from '../logic/payment';
 import { scoreDish } from '../logic/scoreDish';
+import { binStatus, type BinStatus } from '../logic/stock';
 import type { Order, ScoreResult } from '../logic/types';
 import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
@@ -42,8 +43,11 @@ export interface PrepRequest {
   patience: () => number;
   /** The day clock, read every frame: the day keeps going while the player cooks. */
   clock: () => { text: string; open: boolean };
-  /** Called once, when the player serves, with what the customer pays. */
-  onServe: (result: ScoreResult, payment: Payment) => void;
+  /**
+   * Called once, when the player serves, with what the customer pays and
+   * the plate's layers (the floor uses them up from stock).
+   */
+  onServe: (result: ScoreResult, payment: Payment, plate: readonly IngredientId[]) => void;
   /** Called when the prep station has closed and the floor is back. */
   onClose: () => void;
 }
@@ -77,6 +81,9 @@ export class PrepScene extends Phaser.Scene {
   private recipesButton!: Button;
   /** Ingredient bins, in hotkey order: binButtons[0] is key 1. */
   private binButtons: Button[] = [];
+  /** What each bin holds, and the stock / rush-price text above it (same order). */
+  private binIds: IngredientId[] = [];
+  private binCounts: Phaser.GameObjects.Text[] = [];
 
   constructor() {
     super('PrepScene');
@@ -93,6 +100,8 @@ export class PrepScene extends Phaser.Scene {
     this.dish = [];
     this.busy = false;
     this.binButtons = [];
+    this.binIds = [];
+    this.binCounts = [];
 
     // Phaser draws objects in the order they're added, so the build order
     // here is the layering: wall, customer, counter (hides the customer's
@@ -127,14 +136,19 @@ export class PrepScene extends Phaser.Scene {
     // wallet ticks up the moment the customer pays.
     this.clock = new ClockDisplay(this, 560, 78);
     const wallet = new WalletDisplay(this, 560, 52);
-    watchGameState(this, (state) => wallet.setLeaves(state.leaves));
+    watchGameState(this, (state) => {
+      wallet.setLeaves(state.leaves);
+      this.refreshDish(); // bins depend on stock and Leaves
+    });
 
     this.setupKeyboard();
     this.refreshDish();
 
     // Dev console `serve`: skip cooking and serve as if the dish scored that.
+    // The plate counts as the recipe's layers, which the order was checked to
+    // be makeable with when it was taken.
     devActions.serve = (score) => {
-      if (!this.busy) this.deliver({ score, missingModifiers: [] });
+      if (!this.busy) this.deliver({ score, missingModifiers: [] }, expectedPlate(this.request.order).layers);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.serve = null;
@@ -157,7 +171,7 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private addIngredient(id: IngredientId): void {
-    if (this.busy || this.dish.length >= MAX_DISH_LAYERS) return;
+    if (this.busy || this.dish.length >= MAX_DISH_LAYERS || this.binStatus(id).kind === 'out') return;
     this.dish.push(id);
     this.refreshDish();
   }
@@ -177,14 +191,14 @@ export class PrepScene extends Phaser.Scene {
       layers: this.dish,
       modifiers: [],
     });
-    this.deliver(result);
+    this.deliver(result, this.dish);
   }
 
   /** Hands the scored dish over: payment, reaction, then prep closes. */
-  private deliver(result: ScoreResult): void {
+  private deliver(result: ScoreResult, plate: readonly IngredientId[]): void {
     // Pays when served, tipping by the patience left right now.
     const payment = computePayment(this.request.order, result, this.request.patience());
-    this.request.onServe(result, payment);
+    this.request.onServe(result, payment, plate);
     // No result pop-up: the customer's reaction (and their Leaves) is the feedback.
     this.finish(buildReaction(result.score));
     if (payment.total > 0) this.showPayment(payment);
@@ -210,8 +224,7 @@ export class PrepScene extends Phaser.Scene {
   /** Shows the customer's last words, locks the counter, then closes. */
   private finish(line: string): void {
     this.busy = true;
-    this.serveButton.setEnabled(false);
-    this.resetButton.setEnabled(false);
+    this.refreshDish(); // greys out every button
     this.recipeBook.close();
     this.bubble.setLines([line]);
 
@@ -242,6 +255,23 @@ export class PrepScene extends Phaser.Scene {
     const hasItems = this.dish.length > 0 && !this.busy;
     this.serveButton.setEnabled(hasItems);
     this.resetButton.setEnabled(hasItems);
+    this.refreshBins();
+  }
+
+  /** Stock (or rush price) over each bin; bins that can't be used are greyed out. */
+  private refreshBins(): void {
+    const full = this.busy || this.dish.length >= MAX_DISH_LAYERS;
+    this.binIds.forEach((id, i) => {
+      const status = this.binStatus(id);
+      this.binButtons[i].setEnabled(!full && status.kind !== 'out');
+      this.binCounts[i].setText(
+        status.kind === 'stock' ? `x${status.left}` : status.kind === 'rush' ? `🍃${status.price}` : 'Out',
+      );
+    });
+  }
+
+  private binStatus(id: IngredientId): BinStatus {
+    return binStatus(getGameState(this), this.dish, id, this.request.order.quantity);
   }
 
   /**
@@ -275,9 +305,12 @@ export class PrepScene extends Phaser.Scene {
         this.addIngredient(id),
       );
       this.binButtons.push(bin);
+      this.binIds.push(id);
       this.add
         .text(x, y + size / 2 + 6, INGREDIENTS[id].name, TEXT.label)
         .setOrigin(0.5, 0);
+      // Filled in by refreshBins(): "x5" left, "🍃2" rush price, or "Out".
+      this.binCounts.push(this.add.text(x, y - size / 2 - 4, '', TEXT.label).setOrigin(0.5, 1));
     });
   }
 

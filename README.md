@@ -44,6 +44,12 @@ while you cook. A wrong dish sends the customer away angry.
 | Clear the plate     | Reset button         | `Backspace`     |
 | Recipe Book         | Recipes button       | `R` (toggle), `Esc` (close) |
 
+**Ingredient stock:** the number over each bin is how many are left ("x5").
+At 0 it shows the rush-delivery price instead ("🍃2"), paid from your Leaves
+when you serve. "Out" means no stock and not enough Leaves: the bin is greyed
+out. Stock is used when you serve (Reset gives layers back). If a customer's
+dish can't be made at all, they leave when you take their order.
+
 ## Dev console (testing only)
 
 Under `npm run dev`, press **`` ` ``** (backtick) or click **`>_`** (bottom-left)
@@ -54,12 +60,14 @@ It isn't included in production builds.
 | ----------- | ------------ |
 | `help`      | List all commands |
 | `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
-| `config`    | List every floor and day setting (`src/data/floorConfig.ts`, `src/data/dayConfig.ts`) and its current value; changed ones show the file's value too |
+| `config`    | List every floor, day and stock setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`) and its current value; changed ones show the file's value too |
 | `set <name> <value>` | Change a setting live, e.g. `set eatSecondsMax 15` or `set dayLengthSeconds 30` |
 | `reset`     | Put all settings and the speed back to normal |
 | `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |
 | `mess`      | Mess up every free seat, to test the "no clean seats" case |
 | `clean`     | Wipe every mess on the floor |
+| `stock [ingredient n]` | Show ingredient stock, or set one, e.g. `stock jam 0` |
+| `leaves <n>` | Set the wallet, e.g. `leaves 0` |
 | `time`      | Show the day number and the cafe clock |
 | `endday`    | Jump to closing time (customers inside can still be served) |
 

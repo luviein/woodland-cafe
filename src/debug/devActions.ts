@@ -1,3 +1,4 @@
+import type { GameState } from '../logic/gameState';
 import type { Score } from '../logic/types';
 
 /**
@@ -16,11 +17,13 @@ export interface DevActions {
   dayTime: (() => string) | null;
   /** Floor running: jump to closing time. */
   endDay: (() => void) | null;
+  /** Floor running: read and replace the central game state (for `stock`, `leaves`). */
+  game: { get: () => GameState; set: (state: GameState) => void } | null;
 }
 
 /** Nothing registered: every scene-specific command says "not available". */
 export function noDevActions(): DevActions {
-  return { serve: null, setMessy: null, dayTime: null, endDay: null };
+  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null };
 }
 
 export const devActions: DevActions = noDevActions();
