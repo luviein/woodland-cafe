@@ -67,7 +67,8 @@ src/
   integerScale.ts    keeps scaling to whole numbers when the window allows
   config/display.ts  base resolution (640x360) and tile size (16)
   data/              all game content and tuning: ingredients, recipes,
-                     modifiers, upgrades, dialogue, order + scoring config
+                     modifiers, upgrades, dialogue, prices, order, scoring,
+                     tip and floor config
   logic/             pure game rules, no Phaser; each has a *.test.ts
   ui/                reusable drawing pieces (buttons, bubble, plate, book)
   scenes/            Phaser scenes that wire logic and ui together

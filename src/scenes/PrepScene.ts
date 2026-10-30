@@ -3,13 +3,14 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { buildGaveUp, buildReaction, buildSpeech } from '../logic/dialogue';
 import { availableRecipes, expectedPlate, STARTER_OWNED } from '../logic/orders';
+import { computePayment, type Payment } from '../logic/payment';
 import { scoreDish } from '../logic/scoreDish';
 import type { Order, ScoreResult } from '../logic/types';
 import { Button } from '../ui/Button';
 import { DishView } from '../ui/DishView';
 import { RecipeBook } from '../ui/RecipeBook';
 import { SpeechBubble } from '../ui/SpeechBubble';
-import { COLORS, TEXT, patienceColor } from '../ui/theme';
+import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
@@ -29,8 +30,8 @@ export interface PrepRequest {
   fur: number;
   /** Patience left, 0..1, read every frame for the bar. The floor keeps it ticking. */
   patience: () => number;
-  /** Called once, when the player serves. */
-  onServe: (result: ScoreResult) => void;
+  /** Called once, when the player serves, with what the customer pays. */
+  onServe: (result: ScoreResult, payment: Payment) => void;
   /** Called when the prep station has closed and the floor is back. */
   onClose: () => void;
 }
@@ -146,9 +147,29 @@ export class PrepScene extends Phaser.Scene {
       layers: this.dish,
       modifiers: [],
     });
-    this.request.onServe(result);
-    // No result pop-up: the customer's reaction is the feedback.
+    // Pays when served, tipping by the patience left right now.
+    const payment = computePayment(this.request.order, result, this.request.patience());
+    this.request.onServe(result, payment);
+    // No result pop-up: the customer's reaction (and their Leaves) is the feedback.
     this.finish(buildReaction(result.score));
+    if (payment.total > 0) this.showPayment(payment);
+  }
+
+  /** "+7 🍃" floating up from the customer, with the tip on a second line. */
+  private showPayment(payment: Payment): void {
+    const lines = [`+${payment.total} 🍃`];
+    if (payment.tip > 0) lines.push(`(${payment.tip} tip)`);
+    const text = this.add
+      .text(64, COUNTER_TOP_Y - 76, lines, {
+        ...TEXT.heading,
+        color: css(COLORS.paper),
+        stroke: css(COLORS.ink),
+        strokeThickness: 4,
+        align: 'center',
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(40); // over the prep UI, under the recipe book (50)
+    this.tweens.add({ targets: text, y: text.y - 16, duration: 900, ease: 'Sine.easeOut' });
   }
 
   /** Shows the customer's last words, locks the counter, then closes. */

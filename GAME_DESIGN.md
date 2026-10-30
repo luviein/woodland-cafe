@@ -177,6 +177,7 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
   | < 25%         | No tip       |
 
 - Patience rate, thresholds, and tip amounts live in a **data/config file** so they're easy to tune.
+- **As built (placeholders):** dish prices are in `data/prices.ts` (more layers cost more: 2-5 Leaves). Tip settings are in `data/tipConfig.ts`: the full tip equals the price; the patience tiers give 100% / 60% / 30% / 0% of it (a value exactly on a boundary counts as the lower tier). Close ×0.5 and missing modifier ×0.2 apply on top. The tip is rounded to whole Leaves at the end, and a double order pays for two. The payment shows as "+X 🍃" at the prep station, and a temporary total sits top-left on the floor until the wallet arrives in milestone 4.
 
 ### Missing modifiers
 

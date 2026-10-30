@@ -5,7 +5,9 @@ import { SCORING_CONFIG } from './scoring';
 import { GAVE_UP_LINES, INGREDIENT_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from './dialogue';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
+import { RECIPE_PRICES } from './prices';
 import { RECIPE_IDS, RECIPES } from './recipes';
+import { TIP_CONFIG } from './tipConfig';
 
 // TypeScript already checks that ids line up. These tests catch the mistakes
 // the compiler can't: empty lists, zero counts, rules that match nothing.
@@ -87,6 +89,23 @@ describe('dialogue', () => {
   it('every score has reaction lines', () => {
     for (const [score, lines] of Object.entries(REACTION_LINES)) {
       expect(lines.length, score).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('prices and tips', () => {
+  it('every recipe costs a positive whole number of Leaves', () => {
+    for (const id of RECIPE_IDS) {
+      expect(Number.isInteger(RECIPE_PRICES[id]), id).toBe(true);
+      expect(RECIPE_PRICES[id], id).toBeGreaterThan(0);
+    }
+  });
+
+  it('tip tiers go from most to least patient, with shrinking shares', () => {
+    const { tiers } = TIP_CONFIG;
+    for (let i = 1; i < tiers.length; i++) {
+      expect(tiers[i].above).toBeLessThan(tiers[i - 1].above);
+      expect(tiers[i].share).toBeLessThan(tiers[i - 1].share);
     }
   });
 });

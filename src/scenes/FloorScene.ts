@@ -104,6 +104,13 @@ export class FloorScene extends Phaser.Scene {
    */
   private prepCustomerId: number | null = null;
 
+  /**
+   * TEMPORARY running total, so payments can be seen adding up. Milestone 4
+   * replaces it with the real wallet in the central game state.
+   */
+  private leavesEarned = 0;
+  private leavesText!: Phaser.GameObjects.Text;
+
   constructor() {
     super('FloorScene');
   }
@@ -128,6 +135,10 @@ export class FloorScene extends Phaser.Scene {
     this.customerSprites = new Map();
     this.prepOpen = false;
     this.prepCustomerId = null;
+    this.leavesEarned = 0;
+    this.leavesText = this.add
+      .text(8, 6, '🍃 0', { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 })
+      .setDepth(30);
 
     // Small outline showing where the player is heading; hidden when idle.
     this.destinationMarker = this.add
@@ -231,10 +242,12 @@ export class FloorScene extends Phaser.Scene {
       order,
       fur: furColor(customerId),
       patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
-      onServe: (result) => {
+      onServe: (result, payment) => {
         // Patience stops now, but they wait at the counter while reacting.
         this.floor = serveCustomer(this.floor, customerId, result.score);
         this.prepCustomerId = null;
+        this.leavesEarned += payment.total;
+        this.leavesText.setText(`🍃 ${this.leavesEarned}`);
       },
       onClose: () => {
         this.prepOpen = false;
