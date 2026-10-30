@@ -157,6 +157,18 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 - The **ratio of hint to direct lines is a config value**, so difficulty can ramp up over days.
 - There is **no order ticket**. The speech bubble is the only clue, plus the Recipe Book for looking up layers. Hint lines therefore make orders genuinely harder to decode.
 
+### 3.6 Ingredient stock
+
+- **Owning vs. stock:** *owning* an ingredient (starter, or bought once at the Marketplace) means its recipes can appear in orders. **Stock** is how many of it the cafe has. Both are part of the game state.
+- **Starting stock:** 12 bread, 6 mushroom, 6 jam.
+- **Unit price** (Marketplace and the base for everything else): bread, mushroom and jam 1 Leaf; tomato and chilli 2; tuna 3. In a data file, with the one-time unlock prices.
+- **Using stock:** ingredients are used **when the dish is served**: whatever is on the plate, times the order quantity. Adding a layer only reserves it, so **Reset gives it back** for free. A **wrong dish still uses its ingredients**.
+- **Rush delivery:** a layer with no stock left is **bought automatically with Leaves**, at **2× the unit price** (config value). That makes foraging and stocking up worth it.
+- **Can't add it:** with no stock and not enough Leaves for a rush, the bin is greyed out ("Out of jam").
+- **Prep bins** show the stock left ("×5"), or the rush price at 0 ("🍃2").
+- **Out of stock = customer leaves:** when an order is taken, if the dish **can't be made** (stock plus the rush deliveries the wallet can pay for), the customer says so and **leaves upset, unpaid**. It counts in the day summary.
+- **Dish prices** cover their ingredients: **price = 2 × ingredient cost + 2** (Plain Bread 4, Jam Bread 6, three-layer starters 8, Tuna Tomato Sandwich 16). So a right dish always earns something: from stock you keep cost + 2 (plus tip); fully rush-bought, 2 (plus tip).
+
 ---
 
 ## 4. Patience & Tips
@@ -177,7 +189,7 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
   | < 25%         | No tip       |
 
 - Patience rate, thresholds, and tip amounts live in a **data/config file** so they're easy to tune.
-- **As built (placeholders):** dish prices are in `data/prices.ts` (more layers cost more: 2-5 Leaves). Tip settings are in `data/tipConfig.ts`: the full tip equals the price; the patience tiers give 100% / 60% / 30% / 0% of it (a value exactly on a boundary counts as the lower tier). Close ×0.5 and missing modifier ×0.2 apply on top. The tip is rounded to whole Leaves at the end, and a double order pays for two. The payment shows as "+X 🍃" at the prep station, and a temporary total sits top-left on the floor until the wallet arrives in milestone 4.
+- **As built (placeholders):** dish prices are in `data/prices.ts` (milestone 5 raised them to cover ingredients, see §3.6; before that, 2-5 Leaves by layer count). Tip settings are in `data/tipConfig.ts`: the full tip equals the price; the patience tiers give 100% / 60% / 30% / 0% of it (a value exactly on a boundary counts as the lower tier). Close ×0.5 and missing modifier ×0.2 apply on top. The tip is rounded to whole Leaves at the end, and a double order pays for two. The payment shows as "+X 🍃" at the prep station, and a temporary total sits top-left on the floor until the wallet arrives in milestone 4.
 
 ### Missing modifiers
 
@@ -201,7 +213,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - One cafe **run is one day**.
 - **Day clock:** a day runs from **8:00 to 17:00** in game time, which takes **3 real minutes** (config value). The clock is shown on the floor and at the prep station (it keeps ticking while cooking).
 - **Closing time:** at 17:00 the doors close and **no new customers arrive**. Customers already inside stay: the queue can still be served, and patience keeps dropping as usual. The day is **over once the last customer has left**.
-- When a run ends, the game shows a **day summary**: customers served (perfect / close / wrong), customers who gave up, Leaves earned (prices and tips), and the wallet total. The player can then **exit the cafe**, which opens the world map. (Until the world map exists, milestone 5, the summary has a **"Start next day"** button instead.)
+- When a run ends, the game shows a **day summary**: customers served (perfect / close / wrong), customers who gave up or left because an ingredient ran out, Leaves earned (prices and tips), ingredients used (from stock / rush-bought), Leaves spent on rush deliveries, the day's net, and the wallet total. The player can then **exit the cafe**, which opens the world map. (Until the world map exists, milestone 5, the summary has a **"Start next day"** button instead.)
 - **Each day starts fresh:** clean floor, empty queue. Leaves and everything owned carry over.
 
 ### 5.2 World map
@@ -238,7 +250,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 - All player state lives in **one central, serializable state object**, so it can be saved and loaded later:
   - Leaves
-  - Inventory
+  - Inventory (ingredient stock, §3.6)
   - **Owned ingredients**
   - **Owned upgrades**
   - Owned furniture
@@ -286,7 +298,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 2. **Cafe floor:** customers sit, eat, and leave messes; the player cleans messes (click/tap-to-walk movement)
 3. **Connect** the counter queue, patience timers, tip thresholds, and the two scenes
 4. **Leaves currency and day cycle** (a run ends, show day summary)
-5. **World map** with Cafe, Forest (foraging + leaf pickups) and Marketplace (leaf pickups)
+5. **Ingredient stock** (§3.6) and the **world map** with Cafe, Forest (foraging + leaf pickups) and Marketplace (leaf pickups)
 6. **Marketplace shop:** buy ingredients and upgrades (Toaster first), unlocking new recipes, modifiers and dialogue; add hint-style dialogue
 7. **Furniture and cafe expansion**
 8. **Employees**
