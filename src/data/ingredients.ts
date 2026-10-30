@@ -28,9 +28,9 @@ export interface IngredientDef {
 }
 
 export const INGREDIENTS = {
-  bread: { name: 'Bread', color: 0xd9a25f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 12 },
-  mushroom: { name: 'Mushroom', color: 0xa68a7b, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 6 },
-  jam: { name: 'Jam', color: 0xb5384f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 6 },
+  bread: { name: 'Bread', color: 0xd9a25f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
+  mushroom: { name: 'Mushroom', color: 0xa68a7b, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
+  jam: { name: 'Jam', color: 0xb5384f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
   chilli: { name: 'Chilli', color: 0xe0502f, starter: false, unlockPrice: 15, unitPrice: 2, startingStock: 0 },
   tuna: { name: 'Tuna', color: 0x7f9bb3, starter: false, unlockPrice: 20, unitPrice: 3, startingStock: 0 },
   tomato: { name: 'Tomato', color: 0xd94a3a, starter: false, unlockPrice: 10, unitPrice: 2, startingStock: 0 },

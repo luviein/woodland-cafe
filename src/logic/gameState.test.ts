@@ -10,7 +10,7 @@ describe('createNewGame', () => {
       leaves: 0,
       ingredients: STARTER_INGREDIENTS,
       upgrades: [],
-      stock: { bread: 12, mushroom: 6, jam: 6, chilli: 0, tuna: 0, tomato: 0 },
+      stock: { bread: 30, mushroom: 30, jam: 30, chilli: 0, tuna: 0, tomato: 0 },
     });
   });
 

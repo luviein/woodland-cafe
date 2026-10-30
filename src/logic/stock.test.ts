@@ -21,7 +21,7 @@ const pantry = (stock: Partial<Stock>, leaves = 0): Pantry => ({ stock: { ...NON
 
 describe('startingStock / rushPrice', () => {
   it('starts with the starter ingredients only', () => {
-    expect(startingStock()).toEqual({ bread: 12, mushroom: 6, jam: 6, chilli: 0, tuna: 0, tomato: 0 });
+    expect(startingStock()).toEqual({ bread: 30, mushroom: 30, jam: 30, chilli: 0, tuna: 0, tomato: 0 });
   });
 
   it('rush costs the unit price times the multiplier', () => {

@@ -183,7 +183,7 @@ describe('serve / mess / clean / time / endday', () => {
       ...noDevActions(),
       game: { get: () => state, set: (s) => (state = s) },
     });
-    expect(runCommand(commands, 'stock')).toContain('bread = 12');
+    expect(runCommand(commands, 'stock')).toContain('bread = 30');
     expect(runCommand(commands, 'stock JAM 0')).toBe('Jam stock = 0');
     expect(state.stock.jam).toBe(0);
     expect(runCommand(commands, 'stock jelly 1')).toMatch(/No ingredient called 'jelly'/);

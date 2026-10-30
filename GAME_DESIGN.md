@@ -34,7 +34,7 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   - Because a seat is guaranteed before ordering, there's never any waiting for a seat after being served, so no one leaves unhappy after paying.
 - **Messes are per seat.** A customer leaves a mess on **their own side** of the table. That **seat** can't be used until cleaned, but the other seats at the same table still can.
   - Customers never walk to a messy seat.
-- **Cleaning:** tapping a table (or any of its seats) cleans **every mess on that table at the moment of the tap**. Wiping time is per mess: one mess takes 1.5s, two take 3s (config value). A mess that appears mid-wipe needs another tap.
+- **Cleaning:** tapping a table (or any of its seats) cleans **every mess on that table at the moment of the tap**. Wiping time is per mess: one mess takes 0.5s, two take 1s (config value). A mess that appears mid-wipe needs another tap.
 - The **layout is data-driven**: a tile grid defined in a data file, so the cafe can be expanded later without code changes.
 - **Player movement: click/tap to walk.** The player taps a tile (or a table, to clean it) and the character finds a path there around furniture. Works the same with mouse and touch, with no hover and no on-screen joystick needed.
 
@@ -160,7 +160,7 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 ### 3.6 Ingredient stock
 
 - **Owning vs. stock:** *owning* an ingredient (starter, or bought once at the Marketplace) means its recipes can appear in orders. **Stock** is how many of it the cafe has. Both are part of the game state.
-- **Starting stock:** 12 bread, 6 mushroom, 6 jam.
+- **Starting stock:** 30 each of bread, mushroom and jam.
 - **Unit price** (Marketplace and the base for everything else): bread, mushroom and jam 1 Leaf; tomato and chilli 2; tuna 3. In a data file, with the one-time unlock prices.
 - **Using stock:** ingredients are used **when the dish is served**: whatever is on the plate, times the order quantity. Adding a layer only reserves it, so **Reset gives it back** for free. A **wrong dish still uses its ingredients**.
 - **Rush delivery:** a layer with no stock left is **bought automatically with Leaves**, at **2× the unit price** (config value). That makes foraging and stocking up worth it.
@@ -265,6 +265,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - Expanding the cafe layout with purchased furniture
 - Hiring employees who clean or serve automatically
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
+- **Tutorial with a mini story** at the start of a new game. Part of the story: the player is given **30 of each starter ingredient** to open the cafe with, so they learn about ingredient stock (§3.6) from the start. Story and steps still to be designed.
 
 ---
 
@@ -333,7 +334,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 ### Milestone 3 scope: Connected Cafe (as built)
 
 - **One counter queue** on the order spot `O` and the queue spots `1-9`; arrivals stop while it's full.
-- **Patience** (`patienceSeconds`, 45s) counts down at a fixed rate from joining the queue until served, shown as a bar over each waiting customer and at the prep station. At 0 they leave upset ("!!"), unpaid.
+- **Patience** (`patienceSeconds`, 50s since milestone 5; 45s before) counts down at a fixed rate from joining the queue until served, shown as a bar over each waiting customer and at the prep station. At 0 they leave upset ("!!"), unpaid.
 - **Taking orders:** tap the customer at the counter ("!") and the player walks to the counter spot `P`. The order is taken on arrival if a clean, unreserved seat is free (taking it reserves the seat). Otherwise "No clean seats!" appears ("?" over the customer).
 - **Prep station as an overlay** (`scene.launch`): it shows the customer's real order, and the floor keeps running underneath. Serving stops patience; the customer reacts, and **starts walking only once the prep screen closes**: to their seat, or out angry for a wrong dish. If patience runs out mid-cook, they say so and prep closes.
 - **Payment** when served: price (`data/prices.ts`) plus a patience-tier tip (`data/tipConfig.ts`), shown as "+X 🍃". (Milestone 4 put it into the real wallet.)

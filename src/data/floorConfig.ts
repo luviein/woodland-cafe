@@ -34,6 +34,6 @@ export const FLOOR_CONFIG: FloorConfig = {
   spawnIntervalMax: 8,
   eatSecondsMin: 6,
   eatSecondsMax: 10,
-  patienceSeconds: 45,
-  cleanSeconds: 1.5,
+  patienceSeconds: 50,
+  cleanSeconds: 0.5,
 };
