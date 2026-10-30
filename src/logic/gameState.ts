@@ -28,6 +28,11 @@ export function createNewGame(): GameState {
   return { day: 1, leaves: 0, ingredients: STARTER_INGREDIENTS, upgrades: [] };
 }
 
+/** On to the next day. Leaves and everything owned carry over. */
+export function startNextDay(state: GameState): GameState {
+  return { ...state, day: state.day + 1 };
+}
+
 /**
  * The state with `amount` Leaves added. Returns a new object, like the floor
  * functions, so a state handed to a scene can't change behind its back.

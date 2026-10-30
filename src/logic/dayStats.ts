@@ -38,3 +38,18 @@ export function totalServed(stats: DayStats): number {
 export function totalEarned(stats: DayStats): number {
   return stats.priceLeaves + stats.tipLeaves;
 }
+
+/**
+ * The day summary's lines, e.g. "Served: 5 (3 perfect, 1 close, 1 wrong)".
+ * Built here rather than in the scene so the wording is tested and the
+ * scene just lays the lines out.
+ */
+export function summaryLines(stats: DayStats, wallet: number): string[] {
+  const { perfect, close, wrong } = stats.served;
+  return [
+    `Served: ${totalServed(stats)} (${perfect} perfect, ${close} close, ${wrong} wrong)`,
+    `Gave up waiting: ${stats.gaveUp}`,
+    `Earned: 🍃 ${totalEarned(stats)} (${stats.priceLeaves} dishes + ${stats.tipLeaves} tips)`,
+    `Wallet: 🍃 ${wallet}`,
+  ];
+}

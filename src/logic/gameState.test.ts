@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
-import { createNewGame, earnLeaves } from './gameState';
+import { createNewGame, earnLeaves, startNextDay } from './gameState';
 import { availableRecipes } from './orders';
 
 describe('createNewGame', () => {
@@ -33,5 +33,14 @@ describe('earnLeaves', () => {
   it('rejects negative and fractional amounts', () => {
     expect(() => earnLeaves(createNewGame(), -1)).toThrow(/whole number/);
     expect(() => earnLeaves(createNewGame(), 1.5)).toThrow(/whole number/);
+  });
+});
+
+describe('startNextDay', () => {
+  it('moves to the next day and keeps the wallet and everything owned', () => {
+    const before = earnLeaves(createNewGame(), 20);
+    const after = startNextDay(before);
+    expect(after).toEqual({ ...before, day: 2 });
+    expect(before.day).toBe(1);
   });
 });

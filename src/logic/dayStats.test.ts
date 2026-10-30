@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { createDayStats, recordGaveUp, recordServe, totalEarned, totalServed } from './dayStats';
+import {
+  createDayStats,
+  recordGaveUp,
+  recordServe,
+  summaryLines,
+  totalEarned,
+  totalServed,
+} from './dayStats';
 
 const paid = (price: number, tip: number) => ({ price, tip, total: price + tip });
 const NOTHING = paid(0, 0);
@@ -35,5 +42,19 @@ describe('day stats', () => {
     recordServe(before, 'perfect', paid(3, 3));
     recordGaveUp(before);
     expect(before).toEqual(createDayStats());
+  });
+});
+
+describe('summaryLines', () => {
+  it('describes the day', () => {
+    let stats = recordServe(createDayStats(), 'perfect', paid(3, 3));
+    stats = recordServe(stats, 'wrong', NOTHING);
+    stats = recordGaveUp(stats);
+    expect(summaryLines(stats, 40)).toEqual([
+      'Served: 2 (1 perfect, 0 close, 1 wrong)',
+      'Gave up waiting: 1',
+      'Earned: 🍃 6 (3 dishes + 3 tips)',
+      'Wallet: 🍃 40',
+    ]);
   });
 });

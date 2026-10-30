@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from './config/display';
 import { enableIntegerScaling } from './integerScale';
+import { DaySummaryScene } from './scenes/DaySummaryScene';
 import { FloorScene } from './scenes/FloorScene';
 import { initGameState } from './scenes/gameStore';
 import { PrepScene } from './scenes/PrepScene';
@@ -17,9 +18,10 @@ const game = new Phaser.Game({
     width: BASE_WIDTH,
     height: BASE_HEIGHT,
   },
-  // The first scene in the list starts automatically. PrepScene is launched
-  // by the floor as an overlay when an order is taken; later scenes draw on top.
-  scene: [FloorScene, PrepScene],
+  // The first scene in the list starts automatically. The others are
+  // launched by the floor as overlays (prep when an order is taken, the
+  // summary when the day ends); later scenes in the list draw on top.
+  scene: [FloorScene, PrepScene, DaySummaryScene],
 });
 
 // The registry exists as soon as the game is constructed, before any

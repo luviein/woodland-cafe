@@ -17,9 +17,9 @@ import {
   type Customer,
   type FloorState,
 } from '../logic/floor';
-import { clockText, createDay, doorsOpen, stepDay, type DayState } from '../logic/day';
+import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } from '../logic/day';
 import { recordGaveUp, recordServe } from '../logic/dayStats';
-import { earnLeaves } from '../logic/gameState';
+import { earnLeaves, startNextDay } from '../logic/gameState';
 import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
   cleaningProgress,
@@ -34,6 +34,7 @@ import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
+import type { DaySummaryRequest } from './DaySummaryScene';
 import type { PrepRequest, PrepScene } from './PrepScene';
 
 interface CustomerSprite {
@@ -114,6 +115,8 @@ export class FloorScene extends Phaser.Scene {
    * Cleared on serve, while prep stays open a moment longer for their reaction.
    */
   private prepCustomerId: number | null = null;
+  /** True once the day is over and its summary is up. */
+  private summaryOpen = false;
 
   constructor() {
     super('FloorScene');
@@ -139,6 +142,7 @@ export class FloorScene extends Phaser.Scene {
     this.customerSprites = new Map();
     this.prepOpen = false;
     this.prepCustomerId = null;
+    this.summaryOpen = false;
     this.day = createDay();
     this.clock = new ClockDisplay(this, 8, 34);
     const wallet = new WalletDisplay(this, 8, 8);
@@ -162,7 +166,7 @@ export class FloorScene extends Phaser.Scene {
         // Taps on a button are the button's business, not a walk command.
         // The prep overlay covers the floor, so its taps aren't floor taps
         // either: this scene still hears them, since both scenes run at once.
-        if (over.length > 0 || this.prepOpen) return;
+        if (over.length > 0 || this.prepOpen || this.summaryOpen) return;
         this.onTileTapped(this.pixelToTile(pointer.worldX, pointer.worldY));
       },
     );
@@ -204,6 +208,10 @@ export class FloorScene extends Phaser.Scene {
     const gaveUp = countGaveUp(before, this.floor);
     if (gaveUp > 0) this.day = { ...this.day, stats: recordGaveUp(this.day.stats, gaveUp) };
     this.clock.show(clockText(this.day), this.floor.doorsOpen);
+
+    // Closed and empty: the day is done. (Not while prep is still showing a
+    // reaction, so the summary never pops up over it.)
+    if (!this.summaryOpen && !this.prepOpen && isDayOver(this.day, this.floor)) this.openSummary();
 
     // After the floor step, so a customer who just reached the order spot
     // can be served this frame.
@@ -249,6 +257,25 @@ export class FloorScene extends Phaser.Scene {
       duration: 900,
       onComplete: () => text.destroy(),
     });
+  }
+
+  /**
+   * Shows the day summary over the floor. "Start next day" moves the game
+   * state on a day and restarts this scene: create() builds a fresh floor
+   * (clean tables, empty queue, clock back to 8:00), while the wallet lives
+   * in the game state and carries over.
+   */
+  private openSummary(): void {
+    this.summaryOpen = true;
+    this.destinationMarker.setVisible(false);
+    const request: DaySummaryRequest = {
+      stats: this.day.stats,
+      onNextDay: () => {
+        setGameState(this, startNextDay(getGameState(this)));
+        this.scene.restart();
+      },
+    };
+    this.scene.launch('DaySummaryScene', request);
   }
 
   private customer(id: number): Customer | undefined {
