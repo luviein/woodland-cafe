@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
+import { DAY_CONFIG } from '../data/dayConfig';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { devActions } from '../debug/devActions';
 import { devSettings } from '../debug/devSettings';
@@ -184,8 +185,17 @@ export class FloorScene extends Phaser.Scene {
       this.floor = { ...this.floor, messySeats: [...new Set([...this.floor.messySeats, ...free])] };
       return this.floor.messySeats.length - before;
     };
+    // Dev console `time` / `endday`. Ending the day just moves the clock to
+    // closing time; the normal closing rules do the rest next frame.
+    devActions.dayTime = () =>
+      `Day ${getGameState(this).day}, ${clockText(this.day)} (${this.floor.doorsOpen ? 'open' : 'closed'})`;
+    devActions.endDay = () => {
+      this.day = { ...this.day, elapsed: Math.max(this.day.elapsed, DAY_CONFIG.dayLengthSeconds) };
+    };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.setMessy = null;
+      devActions.dayTime = null;
+      devActions.endDay = null;
     });
   }
 

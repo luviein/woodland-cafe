@@ -19,7 +19,13 @@ import { getGameState, watchGameState } from './gameStore';
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
 /** How long the customer's last words stay up (time to read them) before prep closes. */
-const CLOSE_DELAY_MS = 2200;
+const CLOSE_DELAY_MS = 1200;
+/**
+ * After this long, any tap or key closes prep early. The short wait stops the
+ * tap/keypress that served the dish (or a quick double-tap) from skipping the
+ * reaction before it can be seen.
+ */
+const SKIP_AFTER_MS = 300;
 
 const COUNTER_TOP_Y = 140;
 
@@ -208,11 +214,24 @@ export class PrepScene extends Phaser.Scene {
     this.resetButton.setEnabled(false);
     this.recipeBook.close();
     this.bubble.setLines([line]);
-    this.time.delayedCall(CLOSE_DELAY_MS, () => {
+
+    // Closes after the delay, or sooner on a tap/key; whichever comes first wins.
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
       // stop() shuts this scene down (its timers, objects and input
       // listeners go with it); the floor underneath was running all along.
       this.scene.stop();
       this.request.onClose();
+    };
+    this.time.delayedCall(CLOSE_DELAY_MS, close);
+    this.time.delayedCall(SKIP_AFTER_MS, () => {
+      // On pointer UP, one tick later: the floor scene hears this same
+      // pointerup, and by then it has already ignored it (prep still open).
+      // Closing straight away would turn the tap into a walk on the floor.
+      this.input.once(Phaser.Input.Events.POINTER_UP, () => this.time.delayedCall(0, close));
+      this.input.keyboard?.once(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, close);
     });
   }
 

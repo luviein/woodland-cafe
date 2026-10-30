@@ -327,3 +327,13 @@ The player can leave the counter **before taking an order** to clean messes, but
 - **Payment** when served: price (`data/prices.ts`) plus a patience-tier tip (`data/tipConfig.ts`), shown as "+X 🍃". (Milestone 4 put it into the real wallet.)
 - **Dev console:** `serve [perfect|close|wrong]`, `mess` and `clean` were added for quick testing.
 - **Not yet:** the wallet, day cycle and day summary (milestone 4). Ingredients are still the starters for everyone (`STARTER_OWNED`) until the central game state exists. Customer groups come later.
+
+### Milestone 4 scope: Leaves & Day Cycle (as built)
+
+- **Central game state** (`logic/gameState.ts`): day number, Leaves, ingredients and upgrades as plain data (ready for saving in milestone 9). Scenes share it through the Phaser registry (`scenes/gameStore.ts`). `STARTER_OWNED` is gone; orders use what the game state owns.
+- **Wallet:** payment goes into the real Leaves total, shown on the floor and at the prep station.
+- **Day clock** (`data/dayConfig.ts`): 8:00 to 17:00 over `dayLengthSeconds` (180), in 10-minute steps. It runs on floor time, so `speed` speeds it up. At closing time arrivals stop ("Closed" in red); the day ends when the last customer has left.
+- **Day summary** overlay: served by score, gave up, Leaves earned (dishes + tips) and the wallet. "Start next day" (or `Enter`) moves to the next day and restarts the floor fresh; Leaves carry over.
+- **Prep closing:** the customer's reaction stays up for 1.2s, and any tap or key after the first 0.3s skips it (the earlier 2.2s felt too long after every order).
+- **Dev console:** `time` and `endday` were added, and `config` / `set` / `reset` now cover the day settings too, e.g. `set dayLengthSeconds 30`.
+- **Not yet:** the world map and "Exit cafe" (milestone 5). Changing `dayLengthSeconds` mid-day makes the clock jump, since the time already elapsed stays the same.

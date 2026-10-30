@@ -1,3 +1,4 @@
+import { DAY_CONFIG } from '../data/dayConfig';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { createDevCommands, runCommand } from './commands';
 import { devActions } from './devActions';
@@ -12,9 +13,9 @@ import { devSettings } from './devSettings';
  * Up/Down arrows recall previous commands. Only loaded in dev builds.
  */
 export function mountDevConsole(): void {
-  // FLOOR_CONFIG is the live object the floor reads every frame, so 'set'
-  // changes take effect immediately.
-  const commands = createDevCommands(devSettings, FLOOR_CONFIG, devActions);
+  // These are the live objects the game reads every frame, so 'set' changes
+  // take effect immediately.
+  const commands = createDevCommands(devSettings, [FLOOR_CONFIG, DAY_CONFIG], devActions);
   const history: string[] = [];
   let historyIndex = 0;
 

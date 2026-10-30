@@ -12,6 +12,15 @@ export interface DevActions {
   serve: ((score: Score) => void) | null;
   /** Floor running: mess up every free seat (true) or wipe every mess (false). Returns how many changed. */
   setMessy: ((messy: boolean) => number) | null;
+  /** Floor running: describe the day clock, e.g. "Day 2, 10:40 (open)". */
+  dayTime: (() => string) | null;
+  /** Floor running: jump to closing time. */
+  endDay: (() => void) | null;
 }
 
-export const devActions: DevActions = { serve: null, setMessy: null };
+/** Nothing registered: every scene-specific command says "not available". */
+export function noDevActions(): DevActions {
+  return { serve: null, setMessy: null, dayTime: null, endDay: null };
+}
+
+export const devActions: DevActions = noDevActions();

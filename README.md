@@ -26,10 +26,15 @@ Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 | Take an order       | Tap the customer at the counter (marked "!"); you walk behind the counter and take it. "?" = no clean seat yet |
 | Clean a messy table | Tap the table (or one of its seats); tap elsewhere to cancel |
 
+**A day** runs from 8:00 to 17:00 (3 real minutes; clock top-left, under the
+Leaves). At 17:00 the doors close: nobody new comes in, but whoever is inside
+can still be served. Once the last customer leaves, the day summary shows what
+happened; **Start next day** (or `Enter`) opens a fresh floor. Leaves carry over.
+
 ## Controls (prep station)
 
-Opens on top of the floor when you take an order, and closes after the
-customer reacts. The floor keeps running underneath, so patience keeps dropping
+Opens on top of the floor when you take an order, and closes shortly after the
+customer reacts (tap or press any key to close it sooner). The floor keeps running underneath, so patience keeps dropping
 while you cook. A wrong dish sends the customer away angry.
 
 | Action              | Mouse / touch        | Keyboard        |
@@ -49,15 +54,17 @@ It isn't included in production builds.
 | ----------- | ------------ |
 | `help`      | List all commands |
 | `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
-| `config`    | List every floor setting (`src/data/floorConfig.ts`) and its current value; changed ones show the file's value too |
-| `set <name> <value>` | Change a floor setting live, e.g. `set eatSecondsMax 15` |
-| `reset`     | Put all floor settings and the speed back to normal |
+| `config`    | List every floor and day setting (`src/data/floorConfig.ts`, `src/data/dayConfig.ts`) and its current value; changed ones show the file's value too |
+| `set <name> <value>` | Change a setting live, e.g. `set eatSecondsMax 15` or `set dayLengthSeconds 30` |
+| `reset`     | Put all settings and the speed back to normal |
 | `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |
 | `mess`      | Mess up every free seat, to test the "no clean seats" case |
 | `clean`     | Wipe every mess on the floor |
+| `time`      | Show the day number and the cafe clock |
+| `endday`    | Jump to closing time (customers inside can still be served) |
 
 **Tuning workflow:** play with `set` until it feels right, check `config`, then
-copy the values you like into `src/data/floorConfig.ts`. Changes made with
+copy the values you like into `src/data/floorConfig.ts` or `src/data/dayConfig.ts`. Changes made with
 `set` are lost on reload.
 
 To add a command, add an entry in `createDevCommands` in `src/debug/commands.ts`.
@@ -71,10 +78,15 @@ src/
   config/display.ts  base resolution (640x360) and tile size (16)
   data/              all game content and tuning: ingredients, recipes,
                      modifiers, upgrades, dialogue, prices, order, scoring,
-                     tip and floor config
+                     tip, floor and day config
   logic/             pure game rules, no Phaser; each has a *.test.ts
-  ui/                reusable drawing pieces (buttons, bubble, plate, book)
-  scenes/            Phaser scenes that wire logic and ui together
+                     (e.g. gameState: day/Leaves/owned; day: clock and
+                     closing; dayStats: the summary's numbers)
+  ui/                reusable drawing pieces (buttons, bubble, plate, book,
+                     wallet, clock)
+  scenes/            Phaser scenes that wire logic and ui together: Floor,
+                     Prep and DaySummary (both overlays on the floor), and
+                     gameStore (shares the game state between scenes)
   debug/             dev console and its commands (dev builds only)
 ```
 

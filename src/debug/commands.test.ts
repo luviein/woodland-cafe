@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createDevCommands, runCommand } from './commands';
 import type { Score } from '../logic/types';
-import type { DevActions } from './devActions';
+import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
 const setup = () => {
   const settings: DevSettings = { floorTimeScale: 1 };
   const tunables: Record<string, number> = { eatSecondsMax: 10, patienceSeconds: 20 };
-  return { settings, tunables, commands: createDevCommands(settings, tunables) };
+  return { settings, tunables, commands: createDevCommands(settings, [tunables]) };
 };
 
 describe('runCommand', () => {
@@ -98,19 +98,54 @@ describe('config / set / reset', () => {
   });
 });
 
-describe('serve / mess / clean', () => {
+describe('several config objects', () => {
+  const twoConfigs = () => {
+    const floor: Record<string, number> = { eatSecondsMax: 10 };
+    const day: Record<string, number> = { dayLengthSeconds: 180 };
+    return { floor, day, commands: createDevCommands({ floorTimeScale: 1 }, [floor, day]) };
+  };
+
+  it('config lists them all and set finds the right one', () => {
+    const { floor, day, commands } = twoConfigs();
+    expect(runCommand(commands, 'config')).toBe('eatSecondsMax = 10\ndayLengthSeconds = 180');
+    runCommand(commands, 'set dayLengthSeconds 60');
+    expect(day.dayLengthSeconds).toBe(60);
+    expect(floor).toEqual({ eatSecondsMax: 10 });
+  });
+
+  it('reset restores every one of them', () => {
+    const { floor, day, commands } = twoConfigs();
+    runCommand(commands, 'set eatSecondsMax 1');
+    runCommand(commands, 'set dayLengthSeconds 1');
+    runCommand(commands, 'reset');
+    expect(floor).toEqual({ eatSecondsMax: 10 });
+    expect(day).toEqual({ dayLengthSeconds: 180 });
+  });
+
+  it('refuses a setting name used in two configs', () => {
+    expect(() => createDevCommands({ floorTimeScale: 1 }, [{ a: 1 }, { a: 2 }])).toThrow(/'a' is in more than one/);
+  });
+});
+
+describe('serve / mess / clean / time / endday', () => {
   const withActions = () => {
     const served: Score[] = [];
     const messyCalls: boolean[] = [];
+    let endDayCalls = 0;
     const actions: DevActions = {
+      ...noDevActions(),
       serve: (score) => served.push(score),
       setMessy: (messy) => {
         messyCalls.push(messy);
         return 3;
       },
+      dayTime: () => 'Day 2, 9:40 (open)',
+      endDay: () => {
+        endDayCalls++;
+      },
     };
-    const commands = createDevCommands({ floorTimeScale: 1 }, {}, actions);
-    return { commands, served, messyCalls };
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], actions);
+    return { commands, served, messyCalls, endDayCalls: () => endDayCalls };
   };
 
   it('serve defaults to perfect and accepts any score', () => {
@@ -134,10 +169,19 @@ describe('serve / mess / clean', () => {
     expect(messyCalls).toEqual([true, false]);
   });
 
+  it('time shows the clock and endday jumps to closing', () => {
+    const { commands, endDayCalls } = withActions();
+    expect(runCommand(commands, 'time')).toBe('Day 2, 9:40 (open)');
+    expect(runCommand(commands, 'endday')).toMatch(/Doors closed/);
+    expect(endDayCalls()).toBe(1);
+  });
+
   it('say so when the scene they need is not running', () => {
     const { commands } = setup(); // no actions registered
     expect(runCommand(commands, 'serve')).toMatch(/prep station is open/);
     expect(runCommand(commands, 'mess')).toMatch(/cafe floor/);
     expect(runCommand(commands, 'clean')).toMatch(/cafe floor/);
+    expect(runCommand(commands, 'time')).toMatch(/cafe floor/);
+    expect(runCommand(commands, 'endday')).toMatch(/cafe floor/);
   });
 });

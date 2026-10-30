@@ -1,5 +1,5 @@
 import type { Score } from '../logic/types';
-import type { DevActions } from './devActions';
+import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
 const SCORES: readonly Score[] = ['perfect', 'close', 'wrong'];
@@ -37,21 +37,31 @@ export function runCommand(commands: CommandRegistry, input: string): string {
  * All dev commands. Settings and config are passed in (rather than imported)
  * so tests can use their own objects. To add a command, add an entry here.
  *
- * `tunables` is a live config object (e.g. FLOOR_CONFIG): `set` changes its
- * fields in place, and since the game reads that same object every frame,
- * changes apply immediately.
+ * `configs` are live config objects (e.g. FLOOR_CONFIG, DAY_CONFIG): `set`
+ * changes their fields in place, and since the game reads those same objects
+ * every frame, changes apply immediately. Setting names must be unique across
+ * them, so `set <name>` never has to ask which one you meant.
  */
 export function createDevCommands(
   settings: DevSettings,
-  tunables: Record<string, number>,
-  actions: DevActions = { serve: null, setMessy: null },
+  configs: Record<string, number>[],
+  actions: DevActions = noDevActions(),
 ): CommandRegistry {
-  // Remember the starting values so `reset` can put them back.
-  const defaults = { ...tunables };
+  const names = configs.flatMap((c) => Object.keys(c));
+  const duplicate = names.find((n, i) => names.indexOf(n) !== i);
+  if (duplicate) throw new Error(`Setting '${duplicate}' is in more than one config`);
 
-  /** Finds a config key ignoring case, so "eatsecondsmax" works too. */
-  const findKey = (name: string): string | undefined =>
-    Object.keys(tunables).find((k) => k.toLowerCase() === name.toLowerCase());
+  // Remember the starting values so `reset` can put them back.
+  const defaults = configs.map((c) => ({ ...c }));
+
+  /** Finds the config holding a setting, ignoring case, so "eatsecondsmax" works too. */
+  const find = (name: string): { config: Record<string, number>; key: string } | undefined => {
+    for (const config of configs) {
+      const key = Object.keys(config).find((k) => k.toLowerCase() === name.toLowerCase());
+      if (key) return { config, key };
+    }
+    return undefined;
+  };
 
   const commands: CommandRegistry = {
     help: {
@@ -81,37 +91,40 @@ export function createDevCommands(
 
     config: {
       usage: 'config',
-      description: 'List all floor settings and their current values',
+      description: 'List all floor and day settings and their current values',
       run: () =>
-        Object.entries(tunables)
-          .map(([key, value]) => {
-            const changed = value !== defaults[key] ? `  (file: ${defaults[key]})` : '';
-            return `${key} = ${value}${changed}`;
-          })
+        configs
+          .flatMap((config, i) =>
+            Object.entries(config).map(([key, value]) => {
+              const file = defaults[i][key];
+              const changed = value !== file ? `  (file: ${file})` : '';
+              return `${key} = ${value}${changed}`;
+            }),
+          )
           .join('\n'),
     },
 
     set: {
       usage: 'set <name> <value>',
-      description: "Change a floor setting live, e.g. 'set eatSecondsMax 15'",
+      description: "Change a floor or day setting live, e.g. 'set eatSecondsMax 15'",
       run: ([name, value]) => {
         if (name === undefined || value === undefined) {
           throw new Error("Usage: set <name> <value>. Type 'config' to see the names.");
         }
-        const key = findKey(name);
-        if (!key) throw new Error(`No setting called '${name}'. Type 'config' to see the names.`);
+        const found = find(name);
+        if (!found) throw new Error(`No setting called '${name}'. Type 'config' to see the names.`);
         const n = Number(value);
         if (!Number.isFinite(n) || n < 0) throw new Error('Value must be a number, 0 or more');
-        tunables[key] = n;
-        return `${key} = ${n}`;
+        found.config[found.key] = n;
+        return `${found.key} = ${n}`;
       },
     },
 
     reset: {
       usage: 'reset',
-      description: 'Put every floor setting and the speed back to normal',
+      description: 'Put every floor and day setting and the speed back to normal',
       run: () => {
-        Object.assign(tunables, defaults);
+        configs.forEach((config, i) => Object.assign(config, defaults[i]));
         settings.floorTimeScale = 1;
         return 'Floor settings and speed reset';
       },
@@ -144,6 +157,25 @@ export function createDevCommands(
       run: () => {
         if (!actions.setMessy) throw new Error('Only works on the cafe floor');
         return `Cleaned ${actions.setMessy(false)} seat(s)`;
+      },
+    },
+
+    time: {
+      usage: 'time',
+      description: 'Show the day number and the cafe clock',
+      run: () => {
+        if (!actions.dayTime) throw new Error('Only works on the cafe floor');
+        return actions.dayTime();
+      },
+    },
+
+    endday: {
+      usage: 'endday',
+      description: 'Jump to closing time (customers inside can still be served)',
+      run: () => {
+        if (!actions.endDay) throw new Error('Only works on the cafe floor');
+        actions.endDay();
+        return 'Doors closed. The day ends when the last customer leaves.';
       },
     },
   };
