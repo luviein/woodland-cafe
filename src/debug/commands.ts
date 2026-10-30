@@ -1,4 +1,8 @@
+import type { Score } from '../logic/types';
+import type { DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
+
+const SCORES: readonly Score[] = ['perfect', 'close', 'wrong'];
 
 /**
  * A dev console command. `run` gets the words typed after the command name
@@ -40,6 +44,7 @@ export function runCommand(commands: CommandRegistry, input: string): string {
 export function createDevCommands(
   settings: DevSettings,
   tunables: Record<string, number>,
+  actions: DevActions = { serve: null, setMessy: null },
 ): CommandRegistry {
   // Remember the starting values so `reset` can put them back.
   const defaults = { ...tunables };
@@ -109,6 +114,36 @@ export function createDevCommands(
         Object.assign(tunables, defaults);
         settings.floorTimeScale = 1;
         return 'Floor settings and speed reset';
+      },
+    },
+
+    serve: {
+      usage: 'serve [perfect|close|wrong]',
+      description: 'At the prep station: serve the order as if it scored that (default perfect)',
+      run: ([value = 'perfect']) => {
+        const score = SCORES.find((s) => s === value.toLowerCase());
+        if (!score) throw new Error('Usage: serve [perfect|close|wrong]');
+        if (!actions.serve) throw new Error('Only works while the prep station is open');
+        actions.serve(score);
+        return `Served (${score})`;
+      },
+    },
+
+    mess: {
+      usage: 'mess',
+      description: 'Mess up every free seat (to test "no clean seats")',
+      run: () => {
+        if (!actions.setMessy) throw new Error('Only works on the cafe floor');
+        return `Messed up ${actions.setMessy(true)} seat(s)`;
+      },
+    },
+
+    clean: {
+      usage: 'clean',
+      description: 'Wipe every mess on the floor',
+      run: () => {
+        if (!actions.setMessy) throw new Error('Only works on the cafe floor');
+        return `Cleaned ${actions.setMessy(false)} seat(s)`;
       },
     },
   };

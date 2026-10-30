@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
+import { devActions } from '../debug/devActions';
 import { buildGaveUp, buildReaction, buildSpeech } from '../logic/dialogue';
 import { availableRecipes, expectedPlate, STARTER_OWNED } from '../logic/orders';
 import { computePayment, type Payment } from '../logic/payment';
@@ -111,6 +112,14 @@ export class PrepScene extends Phaser.Scene {
 
     this.setupKeyboard();
     this.refreshDish();
+
+    // Dev console `serve`: skip cooking and serve as if the dish scored that.
+    devActions.serve = (score) => {
+      if (!this.busy) this.deliver({ score, missingModifiers: [] });
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      devActions.serve = null;
+    });
   }
 
   update(): void {
@@ -147,6 +156,11 @@ export class PrepScene extends Phaser.Scene {
       layers: this.dish,
       modifiers: [],
     });
+    this.deliver(result);
+  }
+
+  /** Hands the scored dish over: payment, reaction, then prep closes. */
+  private deliver(result: ScoreResult): void {
     // Pays when served, tipping by the patience left right now.
     const payment = computePayment(this.request.order, result, this.request.patience());
     this.request.onServe(result, payment);

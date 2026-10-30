@@ -314,3 +314,13 @@ The player can leave the counter **before taking an order** to clean messes, but
 - **Temporary in this milestone** (replaced in milestone 3):
   - Ordering is a short timer, and only one customer orders at a time.
   - The prep station is reached with a temporary button, and switching scenes resets the floor.
+
+### Milestone 3 scope: Connected Cafe (as built)
+
+- **One counter queue** on the order spot `O` and the queue spots `1-9`; arrivals stop while it's full.
+- **Patience** (`patienceSeconds`, 45s) counts down at a fixed rate from joining the queue until served, shown as a bar over each waiting customer and at the prep station. At 0 they leave upset ("!!"), unpaid.
+- **Taking orders:** tap the customer at the counter ("!") and the player walks to the counter spot `P`. The order is taken on arrival if a clean, unreserved seat is free (taking it reserves the seat). Otherwise "No clean seats!" appears ("?" over the customer).
+- **Prep station as an overlay** (`scene.launch`): it shows the customer's real order, and the floor keeps running underneath. Serving stops patience; the customer reacts, and **starts walking only once the prep screen closes**: to their seat, or out angry for a wrong dish. If patience runs out mid-cook, they say so and prep closes.
+- **Payment** when served: price (`data/prices.ts`) plus a patience-tier tip (`data/tipConfig.ts`), shown as "+X 🍃". A temporary 🍃 total sits top-left on the floor until the wallet (milestone 4).
+- **Dev console:** `serve [perfect|close|wrong]`, `mess` and `clean` were added for quick testing.
+- **Not yet:** the wallet, day cycle and day summary (milestone 4). Ingredients are still the starters for everyone (`STARTER_OWNED`) until the central game state exists. Customer groups come later.

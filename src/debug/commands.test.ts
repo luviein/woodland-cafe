@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDevCommands, runCommand } from './commands';
+import type { Score } from '../logic/types';
+import type { DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
 const setup = () => {
@@ -93,5 +95,49 @@ describe('config / set / reset', () => {
     runCommand(commands, 'reset');
     expect(tunables).toEqual({ eatSecondsMax: 10, patienceSeconds: 20 });
     expect(settings.floorTimeScale).toBe(1);
+  });
+});
+
+describe('serve / mess / clean', () => {
+  const withActions = () => {
+    const served: Score[] = [];
+    const messyCalls: boolean[] = [];
+    const actions: DevActions = {
+      serve: (score) => served.push(score),
+      setMessy: (messy) => {
+        messyCalls.push(messy);
+        return 3;
+      },
+    };
+    const commands = createDevCommands({ floorTimeScale: 1 }, {}, actions);
+    return { commands, served, messyCalls };
+  };
+
+  it('serve defaults to perfect and accepts any score', () => {
+    const { commands, served } = withActions();
+    expect(runCommand(commands, 'serve')).toBe('Served (perfect)');
+    runCommand(commands, 'serve CLOSE');
+    runCommand(commands, 'serve wrong');
+    expect(served).toEqual(['perfect', 'close', 'wrong']);
+  });
+
+  it('serve rejects anything else', () => {
+    const { commands, served } = withActions();
+    expect(runCommand(commands, 'serve great')).toMatch(/Usage/);
+    expect(served).toEqual([]);
+  });
+
+  it('mess and clean report how many seats changed', () => {
+    const { commands, messyCalls } = withActions();
+    expect(runCommand(commands, 'mess')).toBe('Messed up 3 seat(s)');
+    expect(runCommand(commands, 'clean')).toBe('Cleaned 3 seat(s)');
+    expect(messyCalls).toEqual([true, false]);
+  });
+
+  it('say so when the scene they need is not running', () => {
+    const { commands } = setup(); // no actions registered
+    expect(runCommand(commands, 'serve')).toMatch(/prep station is open/);
+    expect(runCommand(commands, 'mess')).toMatch(/cafe floor/);
+    expect(runCommand(commands, 'clean')).toMatch(/cafe floor/);
   });
 });

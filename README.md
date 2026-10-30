@@ -52,6 +52,9 @@ It isn't included in production builds.
 | `config`    | List every floor setting (`src/data/floorConfig.ts`) and its current value; changed ones show the file's value too |
 | `set <name> <value>` | Change a floor setting live, e.g. `set eatSecondsMax 15` |
 | `reset`     | Put all floor settings and the speed back to normal |
+| `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |
+| `mess`      | Mess up every free seat, to test the "no clean seats" case |
+| `clean`     | Wipe every mess on the floor |
 
 **Tuning workflow:** play with `set` until it feels right, check `config`, then
 copy the values you like into `src/data/floorConfig.ts`. Changes made with

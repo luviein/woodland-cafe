@@ -13,8 +13,6 @@ export const COLORS = {
   ink: 0x3b2a20,
   plate: 0xeae4da,
   plateEdge: 0xb8ad9e,
-  customer: 0x9c6b45,
-  customerDark: 0x6e4a2f,
   serve: 0x6f9e5a,
   reset: 0xb0705a,
   book: 0x5a7a9c,

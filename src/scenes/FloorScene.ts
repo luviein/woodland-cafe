@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CAFE_LAYOUT } from '../data/cafeLayout';
 import { FLOOR_CONFIG } from '../data/floorConfig';
+import { devActions } from '../debug/devActions';
 import { devSettings } from '../debug/devSettings';
 import {
   cleanSeats,
@@ -15,7 +16,7 @@ import {
   type Customer,
   type FloorState,
 } from '../logic/floor';
-import { parseLayout, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
+import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
   cleaningProgress,
   createPlayer,
@@ -162,6 +163,23 @@ export class FloorScene extends Phaser.Scene {
         this.onTileTapped(this.pixelToTile(pointer.worldX, pointer.worldY));
       },
     );
+
+    // Dev console `mess` / `clean`. Only FREE seats get messy: a reserved or
+    // occupied seat with a mess would be a state normal play can't reach.
+    devActions.setMessy = (messy) => {
+      const before = this.floor.messySeats.length;
+      if (!messy) {
+        this.floor = { ...this.floor, messySeats: [] };
+        return before;
+      }
+      const taken = new Set(this.floor.customers.flatMap((c) => (c.seat ? [pointKey(c.seat.seat)] : [])));
+      const free = this.layout.tables.flatMap((t) => t.seats).map(pointKey).filter((k) => !taken.has(k));
+      this.floor = { ...this.floor, messySeats: [...new Set([...this.floor.messySeats, ...free])] };
+      return this.floor.messySeats.length - before;
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      devActions.setMessy = null;
+    });
   }
 
   update(_time: number, deltaMs: number): void {
