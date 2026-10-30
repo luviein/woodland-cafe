@@ -44,10 +44,19 @@ function addLeaf(field: LeafField, ground: LeafGround, rng: Rng): LeafField {
   return { ...field, leaves: [...field.leaves, leaf], nextId: field.nextId + 1 };
 }
 
-/** A fresh place on arrival: a few leaves already down, the next one on its way. */
-export function createLeafField(ground: LeafGround, rng: Rng, config: LeafConfig = LEAF_CONFIG): LeafField {
+/**
+ * A fresh place on arrival: a few leaves already down, the next one on its way.
+ * `leftToday` is how many more the player may pick up today (the daily cap):
+ * no more than that are ever put down.
+ */
+export function createLeafField(
+  ground: LeafGround,
+  rng: Rng,
+  config: LeafConfig = LEAF_CONFIG,
+  leftToday = Infinity,
+): LeafField {
   let field: LeafField = { leaves: [], spawnTimer: 0, nextId: 1 };
-  const count = Math.min(config.leavesOnArrival, config.maxLeavesOnGround);
+  const count = Math.min(config.leavesOnArrival, config.maxLeavesOnGround, leftToday);
   for (let i = 0; i < count; i++) field = addLeaf(field, ground, rng);
   return { ...field, spawnTimer: between(config.leafSpawnSecondsMin, config.leafSpawnSecondsMax, rng) };
 }
@@ -56,6 +65,9 @@ export function createLeafField(ground: LeafGround, rng: Rng, config: LeafConfig
  * Time passes: a new leaf appears whenever the timer runs out. While the
  * ground is full the timer waits at 0, so a leaf appears as soon as one is
  * picked up.
+ *
+ * Leaves already on the ground count against `leftToday` (the daily cap), so
+ * the player can never pick up more than the cap allows.
  */
 export function stepLeafField(
   field: LeafField,
@@ -63,10 +75,12 @@ export function stepLeafField(
   ground: LeafGround,
   rng: Rng,
   config: LeafConfig = LEAF_CONFIG,
+  leftToday = Infinity,
 ): LeafField {
   const spawnTimer = field.spawnTimer - seconds;
   if (spawnTimer > 0) return { ...field, spawnTimer };
-  if (field.leaves.length >= config.maxLeavesOnGround) return { ...field, spawnTimer: 0 };
+  const room = Math.min(config.maxLeavesOnGround, leftToday);
+  if (field.leaves.length >= room) return { ...field, spawnTimer: 0 };
   const next = between(config.leafSpawnSecondsMin, config.leafSpawnSecondsMax, rng);
   return { ...addLeaf(field, ground, rng), spawnTimer: next };
 }

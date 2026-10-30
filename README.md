@@ -39,7 +39,7 @@ over.
 | ------------------- | ------------- |
 | Go somewhere        | Tap its signpost on the map (the green one is where you are) |
 | Walk (Forest, Marketplace) | Tap anywhere |
-| Pick up a Leaf      | Walk over it (+1 🍃). New ones keep appearing |
+| Pick up a Leaf      | Walk over it (+1 🍃). New ones keep appearing, up to 15 a day (Forest and Marketplace together) |
 | Back to the map     | Map button (top-right) |
 
 ## Controls (prep station)

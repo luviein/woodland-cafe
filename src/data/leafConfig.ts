@@ -14,6 +14,8 @@ export type LeafConfig = {
   leavesOnArrival: number;
   /** How close (pixels, centre to centre) the player has to get to pick one up. */
   leafPickupRadius: number;
+  /** Most Leaves the player can pick up in a day, Forest and Marketplace together. */
+  leavesPerDay: number;
 };
 
 export const LEAF_CONFIG: LeafConfig = {
@@ -22,4 +24,5 @@ export const LEAF_CONFIG: LeafConfig = {
   maxLeavesOnGround: 5,
   leavesOnArrival: 1,
   leafPickupRadius: 12,
+  leavesPerDay: 15,
 };

@@ -243,6 +243,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 - In both the Forest and the Marketplace, **Leaves randomly spawn on the ground**.
 - Picking one up gives **+1 Leaf**.
 - **Spawn rate** and **max leaves on screen** live in a config file.
+- **Daily cap:** at most **15 Leaves a day** from the ground, counted across the Forest and the Marketplace together (config value). It resets when the next day starts. Outdoors, "Leaves today: 6/15" shows the count; at the cap no new leaves appear, and a line says the ground is bare until tomorrow. This keeps the cafe the main way to earn: leaf pickups are a bonus, not a farm. (A per-visit cap was rejected: leaving and coming straight back would get around it.)
 
 ---
 

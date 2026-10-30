@@ -1,4 +1,5 @@
 import { STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
+import { LEAF_CONFIG, type LeafConfig } from '../data/leafConfig';
 import type { UpgradeId } from '../data/upgrades';
 import { startingStock, type Stock } from './stock';
 
@@ -26,15 +27,34 @@ export interface GameState {
   upgrades: readonly UpgradeId[];
   /** How many of each ingredient are in stock (rules in stock.ts). */
   stock: Stock;
+  /** Leaves picked up from the ground today, for the daily cap (data/leafConfig.ts). */
+  leavesPickedToday: number;
 }
 
 export function createNewGame(): GameState {
-  return { day: 1, leaves: 0, ingredients: STARTER_INGREDIENTS, upgrades: [], stock: startingStock() };
+  return {
+    day: 1,
+    leaves: 0,
+    ingredients: STARTER_INGREDIENTS,
+    upgrades: [],
+    stock: startingStock(),
+    leavesPickedToday: 0,
+  };
 }
 
-/** On to the next day. Leaves and everything owned carry over. */
+/** On to the next day. Leaves and everything owned carry over; the leaf pickup cap starts again. */
 export function startNextDay(state: GameState): GameState {
-  return { ...state, day: state.day + 1 };
+  return { ...state, day: state.day + 1, leavesPickedToday: 0 };
+}
+
+/** How many more Leaves can be picked up from the ground today (never below 0). */
+export function leavesLeftToday(state: GameState, config: LeafConfig = LEAF_CONFIG): number {
+  return Math.max(0, config.leavesPerDay - state.leavesPickedToday);
+}
+
+/** `count` Leaves picked up from the ground: into the wallet, and towards today's cap. */
+export function pickUpLeaves(state: GameState, count: number): GameState {
+  return { ...earnLeaves(state, count), leavesPickedToday: state.leavesPickedToday + count };
 }
 
 /**

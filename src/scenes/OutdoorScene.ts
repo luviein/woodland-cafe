@@ -3,7 +3,8 @@ import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { LOCATIONS } from '../data/locations';
 import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type OutdoorLocationId } from '../data/outdoorAreas';
-import { earnLeaves } from '../logic/gameState';
+import { LEAF_CONFIG } from '../data/leafConfig';
+import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
 import type { Point } from '../logic/layout';
 import { collectLeaves, createLeafField, stepLeafField, type LeafField, type LeafGround } from '../logic/leafPickups';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
@@ -39,6 +40,9 @@ export class OutdoorScene extends Phaser.Scene {
   private leafField!: LeafField;
   private leafGround!: LeafGround;
   private leafSprites = new Map<number, Phaser.GameObjects.Graphics>();
+  /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
+  private leafCount!: Phaser.GameObjects.Text;
+  private bareGround!: Phaser.GameObjects.Text;
 
   constructor() {
     super('OutdoorScene');
@@ -71,7 +75,7 @@ export class OutdoorScene extends Phaser.Scene {
       ],
       clearance: LEAF_CLEARANCE,
     };
-    this.leafField = createLeafField(this.leafGround, Math.random);
+    this.leafField = createLeafField(this.leafGround, Math.random, LEAF_CONFIG, leavesLeftToday(getGameState(this)));
     // Map entries would point at destroyed sprites from the last visit.
     this.leafSprites = new Map();
 
@@ -83,7 +87,17 @@ export class OutdoorScene extends Phaser.Scene {
 
     // Top strip: wallet, place name, and the way back.
     const wallet = new WalletDisplay(this, 8, 8).setDepth(HUD_DEPTH);
-    watchGameState(this, (state) => wallet.setLeaves(state.leaves));
+    const hudText = { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 };
+    this.leafCount = this.add.text(8, 34, '', hudText).setDepth(HUD_DEPTH);
+    this.bareGround = this.add
+      .text(BASE_WIDTH / 2, BASE_HEIGHT - 10, 'The ground is bare. Come back tomorrow!', hudText)
+      .setOrigin(0.5, 1)
+      .setDepth(HUD_DEPTH)
+      .setVisible(false);
+    watchGameState(this, (state) => {
+      wallet.setLeaves(state.leaves);
+      this.leafCount.setText(`Leaves today: ${state.leavesPickedToday}/${LEAF_CONFIG.leavesPerDay}`);
+    });
     this.add
       .text(BASE_WIDTH / 2, 10, LOCATIONS[this.location].name, {
         ...TEXT.heading,
@@ -113,14 +127,17 @@ export class OutdoorScene extends Phaser.Scene {
     this.playerSprite.setDepth(y + HALF); // its feet, for the depth sorting in create()
     if (!this.player.target) this.marker.setVisible(false);
 
-    this.leafField = stepLeafField(this.leafField, deltaMs / 1000, this.leafGround, Math.random);
+    const leftToday = leavesLeftToday(getGameState(this));
+    this.leafField = stepLeafField(this.leafField, deltaMs / 1000, this.leafGround, Math.random, LEAF_CONFIG, leftToday);
     const picked = collectLeaves(this.leafField, this.player.position);
     this.leafField = picked.field;
     if (picked.collected.length > 0) {
-      setGameState(this, earnLeaves(getGameState(this), picked.collected.length));
+      setGameState(this, pickUpLeaves(getGameState(this), picked.collected.length));
       for (const leaf of picked.collected) this.showFloatingText(leaf.position, '+1 🍃');
     }
     this.syncLeafSprites();
+    // Only once the last one is picked up: until then, there's still a leaf to find.
+    this.bareGround.setVisible(leavesLeftToday(getGameState(this)) === 0 && this.leafField.leaves.length === 0);
   }
 
   /** One sprite per leaf on the ground: new leaves get one, picked-up ones lose theirs. */

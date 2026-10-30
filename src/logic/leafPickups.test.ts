@@ -9,6 +9,7 @@ const CONFIG: LeafConfig = {
   maxLeavesOnGround: 3,
   leavesOnArrival: 2,
   leafPickupRadius: 10,
+  leavesPerDay: 15,
 };
 const GROUND: LeafGround = { area: { x: 0, y: 0, width: 100, height: 100 }, keepClear: [], clearance: 0 };
 const field = (positions: [number, number][], spawnTimer = 2): LeafField => ({
@@ -53,6 +54,20 @@ describe('stepLeafField', () => {
     expect(full.spawnTimer).toBe(0);
     const picked = { ...full, leaves: full.leaves.slice(1) };
     expect(stepLeafField(picked, 0.01, GROUND, rng, CONFIG).leaves).toHaveLength(3);
+  });
+});
+
+describe('the daily cap', () => {
+  it('no more leaves on arrival than are left today', () => {
+    expect(createLeafField(GROUND, seededRng(1), CONFIG, 1).leaves).toHaveLength(1);
+    expect(createLeafField(GROUND, seededRng(1), CONFIG, 0).leaves).toEqual([]);
+  });
+
+  it('leaves on the ground count against it: no new ones once they would go over', () => {
+    const rng = seededRng(4);
+    const oneDown = field([[1, 1]], 0);
+    expect(stepLeafField(oneDown, 1, GROUND, rng, CONFIG, 1).leaves).toHaveLength(1);
+    expect(stepLeafField(oneDown, 1, GROUND, rng, CONFIG, 2).leaves).toHaveLength(2);
   });
 });
 

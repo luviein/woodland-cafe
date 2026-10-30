@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
-import { createNewGame, earnLeaves, startNextDay } from './gameState';
+import { LEAF_CONFIG } from '../data/leafConfig';
+import { createNewGame, earnLeaves, leavesLeftToday, pickUpLeaves, startNextDay } from './gameState';
 import { availableRecipes } from './orders';
 
 describe('createNewGame', () => {
@@ -11,6 +12,7 @@ describe('createNewGame', () => {
       ingredients: STARTER_INGREDIENTS,
       upgrades: [],
       stock: { bread: 30, mushroom: 30, jam: 30, chilli: 0, tuna: 0, tomato: 0 },
+      leavesPickedToday: 0,
     });
   });
 
@@ -48,5 +50,24 @@ describe('startNextDay', () => {
     const after = startNextDay(before);
     expect(after).toEqual({ ...before, day: 2 });
     expect(before.day).toBe(1);
+  });
+
+  it("resets today's leaf pickups", () => {
+    expect(startNextDay(pickUpLeaves(createNewGame(), 4)).leavesPickedToday).toBe(0);
+  });
+});
+
+describe('leaf pickups and the daily cap', () => {
+  const CAP = { ...LEAF_CONFIG, leavesPerDay: 10 };
+
+  it('picked-up Leaves go into the wallet and count towards the cap', () => {
+    const state = pickUpLeaves(pickUpLeaves(createNewGame(), 3), 2);
+    expect(state.leaves).toBe(5);
+    expect(state.leavesPickedToday).toBe(5);
+    expect(leavesLeftToday(state, CAP)).toBe(5);
+  });
+
+  it('never says less than 0 left (e.g. the cap was lowered mid-day)', () => {
+    expect(leavesLeftToday(pickUpLeaves(createNewGame(), 12), CAP)).toBe(0);
   });
 });
