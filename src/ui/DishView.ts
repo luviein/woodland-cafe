@@ -5,6 +5,37 @@ import { COLORS, TEXT } from './theme';
 const LAYER_WIDTH = 112;
 const LAYER_HEIGHT = 12;
 
+/** How a layer looks: toasted bread is browner; fillings look the same. */
+function layerColor(id: IngredientId, toasted: boolean): number {
+  const color = INGREDIENTS[id].color;
+  return toasted && id === 'bread' ? Phaser.Display.Color.ValueToColor(color).darken(25).color : color;
+}
+
+/**
+ * Draws a dish's layers into `into`, bottom one at y = `bottomY`, each next
+ * one `height` higher. Shared by the plate, the toaster (a small copy on
+ * top) and the copy that follows the pointer while dragging.
+ */
+export function drawLayerStack(
+  into: Phaser.GameObjects.Container,
+  dish: readonly IngredientId[],
+  toasted: boolean,
+  width = LAYER_WIDTH,
+  height = LAYER_HEIGHT,
+  bottomY = -4,
+): void {
+  // Simple approach: throw away the old layers and redraw. A dish has at
+  // most a handful of layers, so this is cheap and avoids syncing bugs.
+  into.removeAll(true);
+  dish.forEach((id, i) => {
+    into.add(
+      into.scene.add
+        .rectangle(0, bottomY - i * height, width, height, layerColor(id, toasted))
+        .setStrokeStyle(2, COLORS.ink),
+    );
+  });
+}
+
 /**
  * The plate in the middle of the counter. Layers stack upward in the order
  * they were added (first = bottom), like building a real sandwich, with a
@@ -25,23 +56,10 @@ export class DishView extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
-  setLayers(dish: readonly IngredientId[]): void {
-    // Simple approach: throw away the old layers and redraw. A dish has at
-    // most a handful of layers, so this is cheap and avoids syncing bugs.
-    this.layers.removeAll(true);
-
-    dish.forEach((id, i) => {
-      // Layer 0 sits on the plate; each next one goes LAYER_HEIGHT higher.
-      const y = -4 - i * LAYER_HEIGHT;
-      this.layers.add(
-        this.scene.add
-          .rectangle(0, y, LAYER_WIDTH, LAYER_HEIGHT, INGREDIENTS[id].color)
-          .setStrokeStyle(2, COLORS.ink),
-      );
-    });
-
-    this.summary.setText(
-      dish.length === 0 ? 'Empty plate' : dish.map((id) => INGREDIENTS[id].name).join(' > '),
-    );
+  /** `note` replaces "Empty plate" when the plate is empty for a reason (e.g. the dish is in the toaster). */
+  setLayers(dish: readonly IngredientId[], toasted = false, note = 'Empty plate'): void {
+    drawLayerStack(this.layers, dish, toasted);
+    const names = dish.map((id) => INGREDIENTS[id].name).join(' > ');
+    this.summary.setText(dish.length === 0 ? note : toasted ? `Toasted: ${names}` : names);
   }
 }

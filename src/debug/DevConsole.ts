@@ -5,6 +5,7 @@ import { FORAGE_CONFIG } from '../data/forageSpots';
 import { LEAF_CONFIG } from '../data/leafConfig';
 import { LOCATIONS } from '../data/locations';
 import { STOCK_CONFIG } from '../data/stockConfig';
+import { TOASTER_CONFIG } from '../data/toasterConfig';
 import { getGameState, setGameState } from '../scenes/gameStore';
 import type { LocationRequest, WorldMapRequest } from '../scenes/WorldMapScene';
 import { createDevCommands, runCommand } from './commands';
@@ -36,7 +37,7 @@ export function mountDevConsole(game: Phaser.Game): void {
   };
   // These are the live objects the game reads every frame, so 'set' changes
   // take effect immediately.
-  const commands = createDevCommands(devSettings, [FLOOR_CONFIG, DAY_CONFIG, STOCK_CONFIG, LEAF_CONFIG, FORAGE_CONFIG], devActions);
+  const commands = createDevCommands(devSettings, [FLOOR_CONFIG, DAY_CONFIG, STOCK_CONFIG, LEAF_CONFIG, FORAGE_CONFIG, TOASTER_CONFIG], devActions);
   const history: string[] = [];
   let historyIndex = 0;
 

@@ -56,6 +56,7 @@ while you cook. A wrong dish sends the customer away angry.
 | Serve               | Serve button         | `Enter`         |
 | Clear the plate     | Reset button         | `Backspace`     |
 | Recipe Book         | Recipes button       | `R` (toggle), `Esc` (close) |
+| Toast the dish (once the Toaster is bought) | Drag the dish from the plate into the toaster; after ~2 s it pops up on top, toasted. Drag it back onto the plate | `T` (in, then back out) |
 
 **Ingredient stock:** the number over each bin is how many are left ("x5").
 At 0 it shows the rush-delivery price instead ("🍃2"), paid from your Leaves
@@ -73,7 +74,7 @@ It isn't included in production builds.
 | ----------- | ------------ |
 | `help`      | List all commands |
 | `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
-| `config`    | List every floor, day, stock, leaf and forage setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`, `leafConfig.ts`, `forageSpots.ts`) and its current value; changed ones show the file's value too |
+| `config`    | List every floor, day, stock, leaf, forage and toaster setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`, `leafConfig.ts`, `forageSpots.ts`, `toasterConfig.ts`) and its current value; changed ones show the file's value too |
 | `set <name> <value>` | Change a setting live, e.g. `set eatSecondsMax 15` or `set dayLengthSeconds 30` |
 | `reset`     | Put all settings and the speed back to normal |
 | `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |

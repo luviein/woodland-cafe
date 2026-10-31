@@ -56,6 +56,9 @@ export const COLORS = {
   mushroomCap: 0xa0503a,
   bush: 0x4f8a3a,
   berry: 0xc0304a,
+  // Prep station equipment
+  toaster: 0xc9cfd2,
+  toasterShade: 0x8f999e,
   // Leaf pickups: autumn orange, so they stand out on the grass.
   leaf: 0xe08a3a,
   leafVein: 0x9c5a24,

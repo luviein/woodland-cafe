@@ -7,9 +7,20 @@ import { availableRecipes, expectedPlate } from '../logic/orders';
 import { computePayment, type Payment } from '../logic/payment';
 import { scoreDish } from '../logic/scoreDish';
 import { binStatus, type BinStatus } from '../logic/stock';
+import {
+  canToast,
+  startToasting,
+  stepToasting,
+  takeFromToaster,
+  toastModifiers,
+  toastingProgress,
+  untoasted,
+  type DishToast,
+} from '../logic/toasting';
 import type { Order, ScoreResult } from '../logic/types';
 import { Button } from '../ui/Button';
-import { DishView } from '../ui/DishView';
+import { DishView, drawLayerStack } from '../ui/DishView';
+import { ToasterView } from '../ui/ToasterView';
 import { RecipeBook } from '../ui/RecipeBook';
 import { SpeechBubble } from '../ui/SpeechBubble';
 import { ClockDisplay } from '../ui/ClockDisplay';
@@ -29,6 +40,10 @@ const CLOSE_DELAY_MS = 1200;
 const SKIP_AFTER_MS = 300;
 
 const COUNTER_TOP_Y = 140;
+/** Centre of the plate; the dish is grabbed from, and dropped back onto, the area around it. */
+const PLATE_X = 320;
+const PLATE_Y = 214;
+const PLATE_AREA = new Phaser.Geom.Rectangle(PLATE_X - 88, PLATE_Y - 84, 176, 112);
 
 /**
  * What the floor hands the prep station when the player takes an order.
@@ -70,6 +85,12 @@ export class PrepScene extends Phaser.Scene {
   private dish: IngredientId[] = [];
   /** True once the customer is reacting (served, or gave up); input is ignored. */
   private busy = false;
+  /** The dish's trip through the toaster (logic/toasting.ts). */
+  private toast: DishToast = untoasted();
+  /** Only there once the Toaster has been bought. */
+  private toaster: ToasterView | null = null;
+  /** The copy of the dish following the pointer while it's dragged; null when not dragging. */
+  private dragged: Phaser.GameObjects.Container | null = null;
 
   private bubble!: SpeechBubble;
   private recipeBook!: RecipeBook;
@@ -99,6 +120,9 @@ export class PrepScene extends Phaser.Scene {
     // same scene object every time prep opens, and initialisers run only once.
     this.dish = [];
     this.busy = false;
+    this.toast = untoasted();
+    this.toaster = null;
+    this.dragged = null;
     this.binButtons = [];
     this.binIds = [];
     this.binCounts = [];
@@ -115,7 +139,8 @@ export class PrepScene extends Phaser.Scene {
     // No order ticket: the speech bubble is the only clue (see GAME_DESIGN.md).
     this.bubble = new SpeechBubble(this, 112, 24, 392, 88);
     this.bubble.setLines(buildSpeech(this.request.order));
-    this.dishView = new DishView(this, 320, 214);
+    this.dishView = new DishView(this, PLATE_X, PLATE_Y);
+    if (getGameState(this).upgrades.includes('toaster')) this.createToaster();
 
     this.createIngredientBins();
     this.serveButton = new Button(this, 544, 260, 112, 36, 'Serve', COLORS.serve, () => this.serve());
@@ -155,7 +180,15 @@ export class PrepScene extends Phaser.Scene {
     });
   }
 
-  update(): void {
+  update(_time: number, deltaMs: number): void {
+    if (this.toast.place === 'toasting' && !this.busy) {
+      this.toast = stepToasting(this.toast, deltaMs / 1000);
+      this.toaster?.setProgress(toastingProgress(this.toast));
+      if (this.toast.place === 'ready') {
+        this.toaster?.popUp(this.dish);
+        this.refreshDish();
+      }
+    }
     this.drawPatienceBar();
     const { text, open } = this.request.clock();
     this.clock.show(text, open);
@@ -177,19 +210,93 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private resetDish(): void {
-    if (this.busy) return;
+    if (this.busy || this.toast.place !== 'plate') return;
     this.dish = [];
+    this.toast = untoasted();
+    this.refreshDish();
+  }
+
+  /**
+   * The Toaster beside the plate, and the two drags (GAME_DESIGN.md §3.4
+   * "Toasting"): the dish from the plate into the toaster, and once it pops
+   * up, from the top of the toaster back onto the plate.
+   */
+  private createToaster(): void {
+    const toaster = new ToasterView(this, 456, 200);
+    this.toaster = toaster;
+    this.add.text(456, 222, 'Toaster (T)', TEXT.label).setOrigin(0.5, 0);
+
+    this.addDragSource(
+      PLATE_AREA,
+      () => canToast(this.toast, this.dish.length),
+      () => this.dishView.setLayers([], false, ''), // it's in your hand now
+      () => toaster.dropArea(),
+      () => this.putInToaster(),
+    );
+    this.addDragSource(
+      toaster.topArea(),
+      () => this.toast.place === 'ready',
+      () => toaster.showOnTop([]),
+      () => PLATE_AREA,
+      () => this.takeBackFromToaster(),
+    );
+  }
+
+  /**
+   * Lets the dish be dragged out of `area` and dropped on `target()`.
+   * Dropped anywhere else, it goes back where it came from (refreshDish
+   * redraws it there). Only starts when `canGrab()` says so.
+   */
+  private addDragSource(
+    area: Phaser.Geom.Rectangle,
+    canGrab: () => boolean,
+    onGrab: () => void,
+    target: () => Phaser.Geom.Rectangle,
+    onDrop: () => void,
+  ): void {
+    const zone = this.add
+      .zone(area.centerX, area.centerY, area.width, area.height)
+      .setInteractive({ draggable: true, useHandCursor: true });
+    zone.on(Phaser.Input.Events.GAMEOBJECT_DRAG_START, (pointer: Phaser.Input.Pointer) => {
+      if (this.busy || this.dragged || !canGrab()) return;
+      this.dragged = this.add.container(pointer.worldX, pointer.worldY).setDepth(30);
+      drawLayerStack(this.dragged, this.dish, this.toast.toasted);
+      onGrab();
+    });
+    // Phaser would move the zone itself; we move the copy instead and leave
+    // the zone where it is, ready for the next grab.
+    zone.on(Phaser.Input.Events.GAMEOBJECT_DRAG, (pointer: Phaser.Input.Pointer) => {
+      this.dragged?.setPosition(pointer.worldX, pointer.worldY);
+    });
+    zone.on(Phaser.Input.Events.GAMEOBJECT_DRAG_END, (pointer: Phaser.Input.Pointer) => {
+      if (!this.dragged) return;
+      this.dragged.destroy();
+      this.dragged = null;
+      if (!this.busy && target().contains(pointer.worldX, pointer.worldY)) onDrop();
+      else this.refreshDish();
+    });
+  }
+
+  private putInToaster(): void {
+    if (this.busy || !this.toaster || !canToast(this.toast, this.dish.length)) return;
+    this.toast = startToasting(this.toast);
+    this.toaster.startToasting();
+    this.refreshDish();
+  }
+
+  private takeBackFromToaster(): void {
+    if (this.busy || !this.toaster || this.toast.place !== 'ready') return;
+    this.toast = takeFromToaster(this.toast);
     this.refreshDish();
   }
 
   private serve(): void {
-    if (this.busy || this.dish.length === 0) return;
+    if (this.busy || this.dish.length === 0 || this.toast.place !== 'plate') return;
 
-    // No modifier tools exist yet (Toaster arrives in milestone 6), so the
-    // player's plate never has modifiers. Starter orders never ask for any.
+    // Toasted is the only modifier so far (a missing one cuts the tip, §4).
     const result = scoreDish(expectedPlate(this.request.order), {
       layers: this.dish,
-      modifiers: [],
+      modifiers: toastModifiers(this.toast),
     });
     this.deliver(result, this.dish);
   }
@@ -249,10 +356,15 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private refreshDish(): void {
-    this.dishView.setLayers(this.dish);
+    const onPlate = this.toast.place === 'plate';
+    const away = this.toast.place === 'toasting' ? 'In the toaster...' : 'Toasted! Drag it back to the plate';
+    this.dishView.setLayers(onPlate ? this.dish : [], this.toast.toasted, onPlate ? 'Empty plate' : away);
+    // On top of the toaster once it pops (also puts it back after a drag that missed the plate).
+    this.toaster?.showOnTop(this.toast.place === 'ready' ? this.dish : []);
     // Serving an empty plate would always score "wrong", so disable it to
-    // prevent accidental misclicks rather than punish them.
-    const hasItems = this.dish.length > 0 && !this.busy;
+    // prevent accidental misclicks rather than punish them. Same while the
+    // dish is in the toaster: there's nothing on the plate.
+    const hasItems = onPlate && this.dish.length > 0 && !this.busy;
     this.serveButton.setEnabled(hasItems);
     this.resetButton.setEnabled(hasItems);
     this.refreshBins();
@@ -260,7 +372,7 @@ export class PrepScene extends Phaser.Scene {
 
   /** Stock (or rush price) over each bin; bins that can't be used are greyed out. */
   private refreshBins(): void {
-    const full = this.busy || this.dish.length >= MAX_DISH_LAYERS;
+    const full = this.busy || this.toast.place !== 'plate' || this.dish.length >= MAX_DISH_LAYERS;
     this.binIds.forEach((id, i) => {
       const status = this.binStatus(id);
       this.binButtons[i].setEnabled(!full && status.kind !== 'out');
@@ -343,6 +455,10 @@ export class PrepScene extends Phaser.Scene {
       const binIndex = Number(event.key) - 1;
       if (Number.isInteger(binIndex) && binIndex >= 0 && binIndex < this.binButtons.length) {
         this.binButtons[binIndex].press();
+      } else if (event.key === 't' || event.key === 'T') {
+        // Keyboard stand-in for the drags: in, then (once it pops) back out.
+        if (this.toast.place === 'ready') this.takeBackFromToaster();
+        else this.putInToaster();
       } else if (event.key === 'Enter') {
         this.serveButton.press();
       } else if (event.key === 'Backspace') {
