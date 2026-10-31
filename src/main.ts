@@ -8,6 +8,7 @@ import { initGameState } from './scenes/gameStore';
 import { PrepScene } from './scenes/PrepScene';
 import { OutdoorScene } from './scenes/OutdoorScene';
 import { WorldMapScene } from './scenes/WorldMapScene';
+import { TitleScene } from './scenes/TitleScene';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO, // WebGL when available, Canvas otherwise
@@ -21,11 +22,12 @@ const game = new Phaser.Game({
     width: BASE_WIDTH,
     height: BASE_HEIGHT,
   },
-  // The first scene in the list starts automatically. Prep and the summary
+  // The first scene in the list starts automatically: the title screen,
+  // which continues the save or starts a new game. Prep and the summary
   // are launched by the floor as overlays (when an order is taken, when the
   // day ends); later scenes in the list draw on top. The world map and the
   // outdoor places replace the floor between days.
-  scene: [FloorScene, PrepScene, DaySummaryScene, WorldMapScene, OutdoorScene, DecorateScene],
+  scene: [TitleScene, FloorScene, PrepScene, DaySummaryScene, WorldMapScene, OutdoorScene, DecorateScene],
 });
 
 // The registry exists as soon as the game is constructed, before any

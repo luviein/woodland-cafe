@@ -244,6 +244,18 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'fire')).toBe('Usage: fire <mascot|cleaner>');
   });
 
+  it('save and wipesave call the save slot', () => {
+    const calls: string[] = [];
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      save: { now: () => calls.push('now'), wipe: () => calls.push('wipe') },
+    });
+    expect(runCommand(commands, 'save')).toBe('Saved');
+    expect(runCommand(commands, 'wipesave')).toMatch(/Save deleted/);
+    expect(calls).toEqual(['now', 'wipe']);
+    expect(runCommand(createDevCommands({ floorTimeScale: 1 }, []), 'save')).toMatch(/not running/);
+  });
+
   it('goto accepts the map and every place, and nothing else', () => {
     const went: string[] = [];
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {

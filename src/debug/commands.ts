@@ -276,6 +276,26 @@ export function createDevCommands(
       },
     },
 
+    save: {
+      usage: 'save',
+      description: 'Save now, even mid-day (normally the game only saves between days)',
+      run: () => {
+        if (!actions.save) throw new Error('The game is not running yet');
+        actions.save.now();
+        return 'Saved';
+      },
+    },
+
+    wipesave: {
+      usage: 'wipesave',
+      description: 'Delete the save. The game keeps running; reload to see the title screen with no save',
+      run: () => {
+        if (!actions.save) throw new Error('The game is not running yet');
+        actions.save.wipe();
+        return 'Save deleted (anything you do between days saves again)';
+      },
+    },
+
     goto: {
       usage: `goto <map|${LOCATION_IDS.join('|')}>`,
       description: 'Jump straight there. goto cafe opens the SAME day (no new day starts)',

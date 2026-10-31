@@ -42,7 +42,7 @@ import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
 import { createCleanerSprite, createPlayerSprite } from '../ui/sprites';
 import { WalletDisplay } from '../ui/WalletDisplay';
-import { getGameState, setGameState, watchGameState } from './gameStore';
+import { beginCafeDay, endCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
 import type { PrepRequest, PrepScene } from './PrepScene';
 import type { WorldMapRequest } from './WorldMapScene';
@@ -127,6 +127,12 @@ export class FloorScene extends Phaser.Scene {
   }
 
   create(): void {
+    // No autosaves while the cafe is open (GAME_DESIGN.md §6.1). Leaving the
+    // floor, normally through the summary's "Exit cafe", ends the day and
+    // saves; quitting the browser mid-day just never saves it.
+    beginCafeDay(this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => endCafeDay(this));
+
     // The room plus today's furniture (the player arranges it from the map).
     this.layout = buildLayout(getGameState(this).furniture);
     this.origin = cafeOrigin(this.layout);

@@ -18,6 +18,18 @@ npm run build    # type-check + production build into dist/
 
 Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 
+## Saving
+
+The game opens on a title screen: **Continue** carries on from the save
+(shown as e.g. "Day 4 done · 🍃120") on the world map; **New game** starts
+Day 1 (and asks first if it would delete a save). `Enter` presses the top
+button.
+
+There's one save slot, in the browser's local storage, and it saves itself
+**between days only**: when the day summary closes, and after anything you do
+on the map, in the Forest or Marketplace, or while decorating. Nothing is saved
+during a cafe day, so reloading mid-day goes back to just before that day.
+
 ## Controls (cafe floor)
 
 | Action              | Mouse / touch |
@@ -108,6 +120,8 @@ It isn't included in production builds.
 | `unlock <chilli\|tuna\|tomato\|toaster>` | Own it for free, no Leaves spent (works anywhere). Ingredients come with 0 stock. A new toaster or bin shows from the next order you take |
 | `furniture [table\|chair n]` | Show stored and placed furniture, or set how many are in storage, e.g. `furniture table 3` (works anywhere, free). Place them from the map: Cafe > Decorate |
 | `hire <mascot\|cleaner>` / `fire <mascot\|cleaner>` | Hire or let go an employee, free (works anywhere). A hired Mascot dances next to the cafe on the map straight away; the faster arrivals and the Cleaner start the next time the cafe opens (`goto cafe` to see them now) |
+| `save`      | Save now, even mid-day (normally only between days) |
+| `wipesave`  | Delete the save; reload to see the title screen with no save |
 | `time`      | Show the day number and the cafe clock |
 | `endday`    | End the day now: jump to closing time and send every customer home (not counted as giving up), so the summary shows. An open prep station closes first |
 

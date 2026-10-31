@@ -7,7 +7,7 @@ import { LEAF_CONFIG } from '../data/leafConfig';
 import { LOCATIONS } from '../data/locations';
 import { STOCK_CONFIG } from '../data/stockConfig';
 import { TOASTER_CONFIG } from '../data/toasterConfig';
-import { getGameState, setGameState } from '../scenes/gameStore';
+import { deleteSave, getGameState, saveNow, setGameState } from '../scenes/gameStore';
 import type { LocationRequest, WorldMapRequest } from '../scenes/WorldMapScene';
 import { createDevCommands, runCommand } from './commands';
 import { devActions } from './devActions';
@@ -25,6 +25,7 @@ export function mountDevConsole(game: Phaser.Game): void {
   // Game-wide commands, registered once (scene-specific ones are registered
   // by their scene while it runs).
   devActions.game = { get: () => getGameState(game), set: (state) => setGameState(game, state) };
+  devActions.save = { now: () => saveNow(game), wipe: deleteSave };
   devActions.goto = (place) => {
     // Overlays included (prep, summary): a clean jump, like a fresh visit.
     for (const scene of game.scene.getScenes(true)) game.scene.stop(scene.scene.key);

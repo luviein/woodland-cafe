@@ -491,3 +491,12 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Cleaner:** waits just inside the door, walks (at `cleanerSpeed` 4, the player is 6) to the nearest messy table and wipes every mess there, using the same wiping time as the player. Leaves any table the player is heading to or wiping; goes home when all is clean. Runs on floor time, so `speed` speeds them up too.
 - **Dev console:** `hire` / `fire <mascot|cleaner>`, and `config` / `set` cover `mascotIntervalMultiplier` and `cleanerSpeed`.
 - **Not yet:** more roles (Server, Greeter) and more than one of a role (later features).
+
+### Milestone 9 scope: Saving and loading (as built)
+
+- **Save text** (`logic/save.ts`): `{ version, state }` as JSON. Loading checks every field: missing fields get new-game values, ids the game no longer has are dropped, furniture that no longer fits the room goes into storage, and anything else wrong (not JSON, a newer version, a field of the wrong type) refuses the save with a reason.
+- **One slot** (`storage/saveSlot.ts`): localStorage behind a small `SaveSlot` interface, ready to swap for a file in the desktop build. Storage errors are caught (a failed save warns in the console).
+- **Autosave** (`scenes/gameStore.ts`): every game-state change between days writes the slot. Opening the cafe stops autosaving (before the day number moves on); leaving the floor (the summary's Exit cafe) saves and starts it again.
+- **Title screen** (`TitleScene`, first scene): Continue ("Day N done · 🍃X", opens the map) or New game (asks first when a save exists; deletes it straight away). An unreadable save is explained there and only New game is offered.
+- **Dev console:** `save` (save now, even mid-day) and `wipesave`.
+- **Not yet:** more than one slot; the desktop build's file storage (milestone 11).

@@ -9,7 +9,7 @@ import { COLORS, TEXT, css } from '../ui/theme';
 import { createMascotSprite, drawStall, drawTree } from '../ui/sprites';
 import { isHired } from '../logic/employees';
 import { WalletDisplay } from '../ui/WalletDisplay';
-import { getGameState, setGameState, watchGameState } from './gameStore';
+import { beginCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
 
 /** What a location's scene is started with. */
 export interface LocationRequest {
@@ -115,6 +115,9 @@ export class WorldMapScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
     const open = new Button(this, cx - 120, top + height - 30, 110, 30, 'Open cafe', COLORS.serve, () => {
       // Going back to the cafe opens it for the next day (GAME_DESIGN.md §5.3).
+      // The day counts as started first, so the new day number isn't saved
+      // until the day is over (GAME_DESIGN.md §6.1).
+      beginCafeDay(this);
       setGameState(this, startNextDay(getGameState(this)));
       this.enter('cafe');
     });
