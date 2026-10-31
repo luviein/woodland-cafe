@@ -40,11 +40,23 @@ over.
 | Action              | Mouse / touch |
 | ------------------- | ------------- |
 | Go somewhere        | Tap its signpost on the map (the green one is where you are) |
+| Cafe options        | Tapping **Cafe** asks: **Open cafe** (`Enter`, starts the next day), **Decorate** (`D`) or **Not yet** (`Esc`) |
 | Walk (Forest, Marketplace) | Tap anywhere |
 | Pick up a Leaf      | Walk over it (+1 🍃). New ones keep appearing, up to 15 a day (Forest and Marketplace together) |
 | Forage (Forest)     | Tap a mushroom patch or berry bush: walk there, gather for a second, +2 to stock. Once a day each |
 | Shop (Marketplace)  | Tap a stall: walk up to it and its shop opens. At the Pantry, **+1** / **+10** buy stock straight away (greyed out when you can't afford it). At Tools, **Buy** gets the Toaster (customers then ask for toasted dishes). At Specialty, **Buy** unlocks chilli, tomato or tuna for good: its recipes start showing up in orders, it gets a prep bin, and the Pantry sells it (it starts with 0 stock). Close or `Esc` shuts it |
 | Back to the map     | Map button (top-right) |
+
+## Controls (decorating)
+
+Between days only (from the map). The cafe is empty while you arrange it.
+
+| Action              | Mouse / touch |
+| ------------------- | ------------- |
+| Pick a piece        | Tap **Table** or **Chair** in Storage (left); tap it again to let go. It stays picked, so you can place several |
+| Place it            | Tap a floor tile. Refused taps say why: chairs need exactly one table next to them, the door, counter and queue stay clear, and nothing may block the way |
+| Put one away        | Tap a placed piece (free). A table takes its chairs with it |
+| Finish              | **Done** (or `Esc` / `Enter`) goes back to the map |
 
 ## Controls (prep station)
 

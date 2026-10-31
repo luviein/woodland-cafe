@@ -89,7 +89,8 @@ export class WorldMapScene extends Phaser.Scene {
   }
 
   /**
-   * "Start Day N at the cafe?" with Open cafe / Not yet (Enter / Esc).
+   * "Start Day N at the cafe?" with Open cafe / Decorate / Not yet (Enter /
+   * D / Esc). Decorating doesn't start the day: it comes back to the map.
    * Built on demand and destroyed on "Not yet"; the dim layer underneath
    * takes taps, so the signposts can't be pressed while it's open.
    */
@@ -97,7 +98,7 @@ export class WorldMapScene extends Phaser.Scene {
     const nextDay = getGameState(this).day + 1;
     const cx = BASE_WIDTH / 2;
     const cy = BASE_HEIGHT / 2;
-    const width = 340;
+    const width = 380;
     const height = 130;
     const top = cy - height / 2;
 
@@ -107,24 +108,29 @@ export class WorldMapScene extends Phaser.Scene {
     const note = this.add
       .text(cx, top + 44, 'Forage spots grow back and new leaves fall.', TEXT.body)
       .setOrigin(0.5, 0);
-    const open = new Button(this, cx - 70, top + height - 30, 120, 30, 'Open cafe', COLORS.serve, () => {
+    const open = new Button(this, cx - 120, top + height - 30, 110, 30, 'Open cafe', COLORS.serve, () => {
       // Going back to the cafe opens it for the next day (GAME_DESIGN.md §5.3).
       setGameState(this, startNextDay(getGameState(this)));
       this.enter('cafe');
     });
-    const notYet = new Button(this, cx + 70, top + height - 30, 120, 30, 'Not yet', COLORS.reset, () => close());
+    // Arranging tables and chairs (GAME_DESIGN.md §5.7); only between days.
+    const decorate = new Button(this, cx, top + height - 30, 110, 30, 'Decorate', COLORS.book, () =>
+      this.scene.start('DecorateScene'),
+    );
+    const notYet = new Button(this, cx + 120, top + height - 30, 110, 30, 'Not yet', COLORS.reset, () => close());
 
     const onKey = (event: KeyboardEvent) => {
       if (event.repeat) return;
       if (event.key === 'Enter') open.press();
+      else if (event.key === 'd' || event.key === 'D') decorate.press();
       // Not notYet.press(): its 80ms un-press flash would fire on a destroyed button.
       else if (event.key === 'Escape') close();
     };
     const close = () => {
       this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
-      for (const o of [dim, panel, title, note, open, notYet]) o.destroy();
+      for (const o of [dim, panel, title, note, open, decorate, notYet]) o.destroy();
     };
-    for (const o of [dim, panel, title, note, open, notYet]) o.setDepth(100);
+    for (const o of [dim, panel, title, note, open, decorate, notYet]) o.setDepth(100);
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
   }
 

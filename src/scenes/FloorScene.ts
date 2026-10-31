@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
+import { TILE_SIZE } from '../config/display';
 import { buildLayout } from '../logic/furniture';
+import { cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
 import { DAY_CONFIG } from '../data/dayConfig';
 import { INGREDIENTS } from '../data/ingredients';
 import { FLOOR_CONFIG } from '../data/floorConfig';
@@ -24,7 +25,7 @@ import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } fr
 import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe } from '../logic/dayStats';
 import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
-import { pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
+import { pointKey, tableById, type Layout, type Point } from '../logic/layout';
 import {
   cleaningProgress,
   createPlayer,
@@ -76,14 +77,6 @@ function statusLabel(c: Customer, counter: CounterStatus): { text: string; color
 /** Each customer's fur colour, picked by id, so they look the same on the floor and at prep. */
 const furColor = (id: number): number => COLORS.customerFur[id % COLORS.customerFur.length];
 
-const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
-  wall: COLORS.wallTile,
-  door: COLORS.doorTile,
-  counter: COLORS.counterTop,
-  table: COLORS.tableTop,
-  seat: COLORS.seatTile,
-};
-
 /**
  * Top-down cafe floor. Drawn entirely from the layout data, so editing
  * data/cafeLayout.ts changes the room without touching this file.
@@ -131,14 +124,11 @@ export class FloorScene extends Phaser.Scene {
   create(): void {
     // The room plus today's furniture (the player arranges it from the map).
     this.layout = buildLayout(getGameState(this).furniture);
-    // Math.floor keeps the grid on whole pixels; a half-pixel offset would
-    // make every tile edge blurry.
-    this.origin = {
-      x: Math.floor((BASE_WIDTH - this.layout.width * TILE_SIZE) / 2),
-      y: Math.floor((BASE_HEIGHT - this.layout.height * TILE_SIZE) / 2),
-    };
+    this.origin = cafeOrigin(this.layout);
 
-    this.drawTiles();
+    // One Graphics object for the whole static floor: far cheaper than
+    // hundreds of separate rectangle objects, and it never changes.
+    drawCafeTiles(this.add.graphics(), this.layout, this.origin);
     this.tableOverlay = this.add.graphics();
     this.progressBar = this.add.graphics().setDepth(20);
     this.patienceBars = this.add.graphics().setDepth(15);
@@ -389,33 +379,6 @@ export class FloorScene extends Phaser.Scene {
       x: Math.floor((px - this.origin.x) / TILE_SIZE),
       y: Math.floor((py - this.origin.y) / TILE_SIZE),
     };
-  }
-
-  private drawTiles(): void {
-    // One Graphics object for the whole static floor: far cheaper than
-    // hundreds of separate rectangle objects, and it never changes.
-    const g = this.add.graphics();
-    this.layout.tiles.forEach((row, y) => {
-      row.forEach((tile, x) => {
-        const { x: px, y: py } = this.tileToPixel({ x, y });
-        // Checkerboard floor makes the tile grid readable before real art.
-        const checker = (x + y) % 2 === 0 ? COLORS.floorA : COLORS.floorB;
-        const color = tile === 'floor' ? checker : TILE_COLORS[tile];
-        g.fillStyle(color);
-        g.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-      });
-    });
-
-    // Mark where customers stand to order.
-    const spot = this.tileToPixel(this.layout.orderSpot);
-    g.fillStyle(COLORS.orderSpot);
-    g.fillRect(spot.x + 3, spot.y + 3, TILE_SIZE - 6, TILE_SIZE - 6);
-
-    // Small dots where the counter queue forms.
-    for (const linePoint of this.layout.queueSpots) {
-      const p = this.tileToPixel(linePoint);
-      g.fillRect(p.x + 6, p.y + 6, 4, 4);
-    }
   }
 
   /**
