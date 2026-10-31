@@ -228,6 +228,22 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'furniture chair -1')).toMatch(/Usage/);
   });
 
+  it('hire and fire change who is employed, for free', () => {
+    let state: GameState = { ...createNewGame(), leaves: 3 };
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      game: { get: () => state, set: (s) => (state = s) },
+    });
+    expect(runCommand(commands, 'hire Cleaner')).toMatch(/Cleaner hired/);
+    expect(runCommand(commands, 'hire mascot')).toMatch(/Mascot hired/);
+    expect(state.employees).toEqual(['mascot', 'cleaner']);
+    expect(runCommand(commands, 'fire mascot')).toBe('Mascot let go');
+    expect(state.employees).toEqual(['cleaner']);
+    expect(state.leaves).toBe(3);
+    expect(runCommand(commands, 'hire chef')).toBe('Usage: hire <mascot|cleaner>');
+    expect(runCommand(commands, 'fire')).toBe('Usage: fire <mascot|cleaner>');
+  });
+
   it('goto accepts the map and every place, and nothing else', () => {
     const went: string[] = [];
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {

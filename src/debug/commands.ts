@@ -1,10 +1,12 @@
 import { FURNITURE, FURNITURE_KINDS } from '../data/furniture';
+import { EMPLOYEE_ROLES, EMPLOYEES, type EmployeeRole } from '../data/employees';
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
 import { LOCATION_IDS } from '../data/locations';
 import { TOOLS_ON_SALE } from '../data/shops';
 import { UPGRADES } from '../data/upgrades';
 import type { GameState } from '../logic/gameState';
 import { addIngredient, addUpgrade, unlockableIngredients } from '../logic/shop';
+import { hire, letGo } from '../logic/employees';
 import type { Score } from '../logic/types';
 import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
@@ -81,6 +83,12 @@ export function createDevCommands(
     const n = Number(value);
     if (value === undefined || !Number.isInteger(n) || n < 0) throw new Error(`Usage: ${usage} (a whole number, 0 or more)`);
     return n;
+  };
+
+  const role = (value: string | undefined, usage: string): EmployeeRole => {
+    const found = EMPLOYEE_ROLES.find((r) => r === value?.toLowerCase());
+    if (!found) throw new Error(`Usage: ${usage} <${EMPLOYEE_ROLES.join('|')}>`);
+    return found;
   };
 
   const commands: CommandRegistry = {
@@ -245,6 +253,26 @@ export function createDevCommands(
           return `${UPGRADES[upgrade].name} unlocked (the prep station shows it from the next order)`;
         }
         throw new Error(`Usage: unlock <${UNLOCKABLE.join('|')}>`);
+      },
+    },
+
+    hire: {
+      usage: `hire <${EMPLOYEE_ROLES.join('|')}>`,
+      description: 'Hire an employee (free, like the Notice Board). They show up the next time the cafe opens',
+      run: ([value]) => {
+        const r = role(value, 'hire');
+        game().set(hire(game().get(), r));
+        return `${EMPLOYEES[r].name} hired (from the next time the cafe opens; 'goto cafe' to see them now)`;
+      },
+    },
+
+    fire: {
+      usage: `fire <${EMPLOYEE_ROLES.join('|')}>`,
+      description: 'Let an employee go (free). They leave the next time the cafe opens',
+      run: ([value]) => {
+        const r = role(value, 'fire');
+        game().set(letGo(game().get(), r));
+        return `${EMPLOYEES[r].name} let go`;
       },
     },
 
