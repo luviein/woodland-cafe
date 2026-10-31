@@ -82,9 +82,11 @@ export interface FloorState {
    */
   doorsOpen: boolean;
   nextCustomerId: number;
+  /** The Mascot is waving at the door today: customers arrive more often. */
+  mascot: boolean;
 }
 
-export function createFloorState(config: FloorConfig = FLOOR_CONFIG): FloorState {
+export function createFloorState(config: FloorConfig = FLOOR_CONFIG, mascot = false): FloorState {
   return {
     customers: [],
     messySeats: [],
@@ -92,6 +94,7 @@ export function createFloorState(config: FloorConfig = FLOOR_CONFIG): FloorState
     spawnTimer: config.firstCustomerDelay,
     doorsOpen: true,
     nextCustomerId: 1,
+    mascot,
   };
 }
 
@@ -155,7 +158,9 @@ export function stepFloor(
       upset: false,
     });
     queue.push(id);
-    spawnTimer = between(config.spawnIntervalMin, config.spawnIntervalMax, rng);
+    // Read from the config every time, so `set mascotIntervalMultiplier` applies live.
+    const scale = state.mascot ? config.mascotIntervalMultiplier : 1;
+    spawnTimer = between(config.spawnIntervalMin, config.spawnIntervalMax, rng) * scale;
   }
 
   const leave = (c: Customer, upset: boolean): void => {
@@ -231,6 +236,7 @@ export function stepFloor(
     spawnTimer,
     doorsOpen: state.doorsOpen,
     nextCustomerId,
+    mascot: state.mascot,
   };
 }
 

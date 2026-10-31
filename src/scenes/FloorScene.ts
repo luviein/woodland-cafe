@@ -27,6 +27,8 @@ import { payWages } from '../logic/employees';
 import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
 import { pointKey, tableById, type Layout, type Point } from '../logic/layout';
+import { createCleaner, stepCleaner, type CleanerState } from '../logic/cleaner';
+import { isHired } from '../logic/employees';
 import {
   cleaningProgress,
   createPlayer,
@@ -38,7 +40,7 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createPlayerSprite } from '../ui/sprites';
+import { createCleanerSprite, createMascotSprite, createPlayerSprite } from '../ui/sprites';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
@@ -94,6 +96,8 @@ export class FloorScene extends Phaser.Scene {
   private player!: PlayerState;
   private playerSprite!: Phaser.GameObjects.Container;
   private destinationMarker!: Phaser.GameObjects.Rectangle;
+  /** The hired Cleaner, or null if nobody's hired today (GAME_DESIGN.md §5.8). */
+  private cleaner: { state: CleanerState; sprite: Phaser.GameObjects.Container } | null = null;
 
   private floor!: FloorState;
   /** Today's clock. Runs on floor time, so `speed` makes the day go faster too. */
@@ -134,7 +138,13 @@ export class FloorScene extends Phaser.Scene {
     this.progressBar = this.add.graphics().setDepth(20);
     this.patienceBars = this.add.graphics().setDepth(15);
 
-    this.floor = createFloorState();
+    // Employees hired at the Notice Board work from the day the cafe opens.
+    const game = getGameState(this);
+    this.floor = createFloorState(FLOOR_CONFIG, isHired(game, 'mascot'));
+    if (this.floor.mascot) this.addMascot();
+    this.cleaner = isHired(game, 'cleaner')
+      ? { state: createCleaner(this.layout), sprite: createCleanerSprite(this) }
+      : null;
     // Map entries point at the previous run's destroyed sprites if the scene
     // restarts, so start with a fresh map.
     this.customerSprites = new Map();
@@ -207,9 +217,17 @@ export class FloorScene extends Phaser.Scene {
     this.player = player;
     if (cleanedSeats.length > 0) this.floor = cleanSeats(this.floor, cleanedSeats);
 
-    // Dev console "speed" command scales time for the critters and the day
-    // clock only; the player keeps walking at normal speed.
+    // Dev console "speed" command scales time for the critters (the Cleaner
+    // too) and the day clock only; the player keeps walking at normal speed.
     const floorSeconds = seconds * devSettings.floorTimeScale;
+    if (this.cleaner) {
+      const playerTable = this.player.cleaning?.tableId ?? null;
+      const worked = stepCleaner(this.cleaner.state, this.floor, this.layout, playerTable, floorSeconds);
+      this.cleaner.state = worked.cleaner;
+      if (worked.cleanedSeats.length > 0) this.floor = cleanSeats(this.floor, worked.cleanedSeats);
+      const at = this.walkerToPixel(worked.cleaner.walker);
+      this.cleaner.sprite.setPosition(at.x, at.y);
+    }
     this.day = stepDay(this.day, floorSeconds);
     // Closing time: the day decides, the floor just stops letting people in.
     if (this.floor.doorsOpen && !doorsOpen(this.day)) this.floor = { ...this.floor, doorsOpen: false };
@@ -361,6 +379,25 @@ export class FloorScene extends Phaser.Scene {
     this.destinationMarker.setPosition(marker.x + 1, marker.y + 1).setVisible(true);
   }
 
+  /**
+   * The Mascot, just outside the door (one tile out and one along, so it
+   * doesn't stand where customers walk in), bobbing up and down to wave
+   * people in. Purely for show: the faster arrivals are the floor's rule
+   * (FloorState.mascot).
+   */
+  private addMascot(): void {
+    const { door } = this.layout;
+    const outside = [
+      { x: door.x, y: door.y + 1 },
+      { x: door.x, y: door.y - 1 },
+      { x: door.x + 1, y: door.y },
+      { x: door.x - 1, y: door.y },
+    ].find((p) => this.layout.tiles[p.y]?.[p.x] === undefined) ?? door;
+    const spot = this.tileToPixel({ x: outside.x + (outside.y === door.y ? 0 : 1), y: outside.y });
+    const sprite = createMascotSprite(this).setPosition(spot.x, spot.y);
+    this.tweens.add({ targets: sprite, y: spot.y - 3, duration: 350, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
   /** Top-left pixel of a tile. */
   private tileToPixel(p: Point): Point {
     return { x: this.origin.x + p.x * TILE_SIZE, y: this.origin.y + p.y * TILE_SIZE };
@@ -442,17 +479,19 @@ export class FloorScene extends Phaser.Scene {
   private drawProgressBar(): void {
     const g = this.progressBar;
     g.clear();
-    const progress = cleaningProgress(this.player);
-    if (progress === null || !this.player.cleaning) return;
-
-    const table = tableById(this.layout, this.player.cleaning.tableId);
-    const { x, y } = this.tileToPixel(table.position);
-    const barWidth = TILE_SIZE - 2;
-    g.fillStyle(COLORS.ink);
-    g.fillRect(x + 1, y - 5, barWidth, 4);
-    g.fillStyle(COLORS.serve);
-    // Math.floor: whole-pixel widths keep the bar crisp as it fills.
-    g.fillRect(x + 2, y - 4, Math.floor((barWidth - 2) * progress), 2);
+    // The player's, and the Cleaner's: never the same table (stepCleaner).
+    for (const worker of [this.player, this.cleaner?.state]) {
+      const progress = worker && cleaningProgress(worker);
+      if (progress === null || progress === undefined || !worker?.cleaning) continue;
+      const table = tableById(this.layout, worker.cleaning.tableId);
+      const { x, y } = this.tileToPixel(table.position);
+      const barWidth = TILE_SIZE - 2;
+      g.fillStyle(COLORS.ink);
+      g.fillRect(x + 1, y - 5, barWidth, 4);
+      g.fillStyle(COLORS.serve);
+      // Math.floor: whole-pixel widths keep the bar crisp as it fills.
+      g.fillRect(x + 2, y - 4, Math.floor((barWidth - 2) * progress), 2);
+    }
   }
 
   /**

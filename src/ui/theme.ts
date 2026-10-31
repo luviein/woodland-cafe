@@ -28,6 +28,11 @@ export const COLORS = {
   orderSpot: 0xe0c48f,
   player: 0x5a7a9c,
   apron: 0xf4e9d8,
+  // Employees (GAME_DESIGN.md §5.8): their own colours so they never look like customers.
+  mascot: 0xe07a30,
+  mascotBelly: 0xf4e9d8,
+  cleaner: 0x7f9b6a,
+  bandana: 0x4f86a8,
   mess: 0x5b3b22,
   messLight: 0x8a6440,
   // Customer status label colours, so mood reads at a glance.

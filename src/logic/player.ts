@@ -78,12 +78,7 @@ export function tapTile(
     // redirect() hands back the very same walker only when there's no route.
     // (Already standing next to the table gives a new walker with an empty path.)
     if (walker === player.walker) return player; // can't reach it
-    const totalSeconds = config.cleanSeconds * messes.length;
-    return {
-      walker,
-      cleaning: { tableId: table.id, seats: messes, secondsLeft: totalSeconds, totalSeconds },
-      takingOrder: false,
-    };
+    return { walker, cleaning: cleaningTask(table.id, messes, config), takingOrder: false };
   }
 
   const walker = walkTo(player.walker, layout, tile);
@@ -105,21 +100,35 @@ export function stepPlayer(
   config: FloorConfig = FLOOR_CONFIG,
 ): { player: PlayerState; cleanedSeats: Point[] } {
   const walker = stepWalker(player.walker, seconds, config.playerSpeed);
-  let cleaning = player.cleaning;
+  const { cleaning, cleanedSeats } = workOnCleaning(player.cleaning, walker, floor, seconds);
+  return { player: { ...player, walker, cleaning }, cleanedSeats };
+}
 
-  // Already clean (e.g. a dev command did it)? Nothing left to do.
+/** A new job wiping `seats` at a table: cleanSeconds per mess. Shared with the Cleaner (cleaner.ts). */
+export function cleaningTask(tableId: string, seats: Point[], config: FloorConfig = FLOOR_CONFIG): CleaningTask {
+  const totalSeconds = config.cleanSeconds * seats.length;
+  return { tableId, seats, secondsLeft: totalSeconds, totalSeconds };
+}
+
+/**
+ * `seconds` of work on a cleaning job, for whoever is doing it: the player
+ * or the Cleaner. `walker` has already moved this frame. Returns the job
+ * left (null once done or no longer needed) and the seats wiped, if any.
+ */
+export function workOnCleaning(
+  cleaning: CleaningTask | null,
+  walker: Walker,
+  floor: FloorState,
+  seconds: number,
+): { cleaning: CleaningTask | null; cleanedSeats: Point[] } {
+  // Already clean (someone else wiped it, or a dev command)? Nothing left to do.
   const stillMessy = (s: Point) => floor.messySeats.includes(pointKey(s));
-  if (cleaning && !cleaning.seats.some(stillMessy)) cleaning = null;
-
-  // Wiping only happens once the player has arrived next to the table.
-  if (cleaning && !isMoving(walker)) {
-    const secondsLeft = cleaning.secondsLeft - seconds;
-    if (secondsLeft <= 0) {
-      return { player: { ...player, walker, cleaning: null }, cleanedSeats: cleaning.seats };
-    }
-    cleaning = { ...cleaning, secondsLeft };
-  }
-  return { player: { ...player, walker, cleaning }, cleanedSeats: [] };
+  if (!cleaning || !cleaning.seats.some(stillMessy)) return { cleaning: null, cleanedSeats: [] };
+  // Wiping only happens once they've arrived next to the table.
+  if (isMoving(walker)) return { cleaning, cleanedSeats: [] };
+  const secondsLeft = cleaning.secondsLeft - seconds;
+  if (secondsLeft <= 0) return { cleaning: null, cleanedSeats: cleaning.seats };
+  return { cleaning: { ...cleaning, secondsLeft }, cleanedSeats: [] };
 }
 
 /**
@@ -150,8 +159,8 @@ export function takeOrderAtCounter(
   return { player: done, floor: taken.floor, result: taken.result };
 }
 
-/** 0..1 for the progress bar; null when not actively wiping. */
-export function cleaningProgress(player: PlayerState): number | null {
-  if (!player.cleaning || isMoving(player.walker)) return null;
-  return 1 - player.cleaning.secondsLeft / player.cleaning.totalSeconds;
+/** 0..1 for the progress bar; null when not actively wiping. Works for the Cleaner too. */
+export function cleaningProgress(worker: { walker: Walker; cleaning: CleaningTask | null }): number | null {
+  if (!worker.cleaning || isMoving(worker.walker)) return null;
+  return 1 - worker.cleaning.secondsLeft / worker.cleaning.totalSeconds;
 }

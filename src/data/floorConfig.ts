@@ -24,6 +24,10 @@ export type FloorConfig = {
   patienceSeconds: number;
   /** Seconds to wipe ONE mess, once standing next to the table (two messes take twice as long). */
   cleanSeconds: number;
+  /** With the Mascot hired, the gap between arrivals is multiplied by this (GAME_DESIGN.md §5.8). */
+  mascotIntervalMultiplier: number;
+  /** The Cleaner's walking speed; a little slower than the player. */
+  cleanerSpeed: number;
 };
 
 export const FLOOR_CONFIG: FloorConfig = {
@@ -38,4 +42,6 @@ export const FLOOR_CONFIG: FloorConfig = {
   eatSecondsMax: 10,
   patienceSeconds: 25,
   cleanSeconds: 0.5,
+  mascotIntervalMultiplier: 0.6,
+  cleanerSpeed: 4,
 };

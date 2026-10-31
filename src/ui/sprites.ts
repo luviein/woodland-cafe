@@ -19,6 +19,37 @@ export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Cont
   return scene.add.container(0, 0, [g]).setDepth(10);
 }
 
+/** The Mascot: a 16x16 orange fox-ish critter with its paws up. Origin is its top-left corner. */
+export function createMascotSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
+  const g = scene.add.graphics();
+  g.fillStyle(COLORS.mascot);
+  g.fillRect(3, 3, 10, 12);
+  g.fillRect(3, 1, 3, 2); // ears
+  g.fillRect(10, 1, 3, 2);
+  g.fillRect(0, 2, 3, 3); // paws up, waving
+  g.fillRect(13, 2, 3, 3);
+  g.fillStyle(COLORS.mascotBelly);
+  g.fillRect(6, 9, 4, 5);
+  g.fillStyle(COLORS.ink);
+  g.fillRect(5, 5, 2, 2);
+  g.fillRect(9, 5, 2, 2);
+  return scene.add.container(0, 0, [g]).setDepth(9);
+}
+
+/** The Cleaner: a 16x16 critter in a blue bandana. Origin is its top-left corner. */
+export function createCleanerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
+  const g = scene.add.graphics();
+  g.fillStyle(COLORS.cleaner);
+  g.fillRect(3, 1, 10, 14);
+  g.fillStyle(COLORS.bandana);
+  g.fillRect(3, 1, 10, 3);
+  g.fillStyle(COLORS.ink);
+  g.fillRect(5, 5, 2, 2);
+  g.fillRect(9, 5, 2, 2);
+  // Just under the player, so the player stays on top when they overlap.
+  return scene.add.container(0, 0, [g]).setDepth(9);
+}
+
 /** Height of a tree's trunk at `size` 1; its base (y + this * size) is where it stands. */
 export const TREE_TRUNK_HEIGHT = 8;
 /** Height of a stall's counter; its base (y + this) is where it stands. */

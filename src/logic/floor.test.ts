@@ -54,6 +54,8 @@ const CONFIG: FloorConfig = {
   eatSecondsMax: 2,
   patienceSeconds: 10,
   cleanSeconds: 1,
+  mascotIntervalMultiplier: 0.5,
+  cleanerSpeed: 4,
 };
 /** Arrivals every second. */
 const BUSY: FloorConfig = { ...CONFIG, spawnIntervalMin: 1, spawnIntervalMax: 1 };
@@ -158,6 +160,20 @@ const scene = (customers: Customer[], queue: number[] = [], messySeats: string[]
   messySeats,
   spawnTimer: 1000,
   nextCustomerId: 100,
+});
+
+describe('the Mascot', () => {
+  it('shortens the gap between arrivals by mascotIntervalMultiplier', () => {
+    const config: FloorConfig = { ...CONFIG, spawnIntervalMin: 10, spawnIntervalMax: 10 };
+    // The first arrival comes after firstCustomerDelay either way; the gap
+    // to the next one is what changes.
+    const without = stepFloor(createFloorState(config), TINY, 0.6, () => 0, config);
+    const withMascot = stepFloor(createFloorState(config, true), TINY, 0.6, () => 0, config);
+    expect(without.queue).toHaveLength(1);
+    expect(without.spawnTimer).toBeCloseTo(10);
+    expect(withMascot.spawnTimer).toBeCloseTo(5);
+    expect(withMascot.mascot).toBe(true);
+  });
 });
 
 describe('stepFloor: one customer visit', () => {
