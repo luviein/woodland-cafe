@@ -40,7 +40,7 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createCleanerSprite, createMascotSprite, createPlayerSprite } from '../ui/sprites';
+import { createCleanerSprite, createPlayerSprite } from '../ui/sprites';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
@@ -139,9 +139,9 @@ export class FloorScene extends Phaser.Scene {
     this.patienceBars = this.add.graphics().setDepth(15);
 
     // Employees hired at the Notice Board work from the day the cafe opens.
+    // (The Mascot dances outside, so it's drawn on the world map, not here.)
     const game = getGameState(this);
     this.floor = createFloorState(FLOOR_CONFIG, isHired(game, 'mascot'));
-    if (this.floor.mascot) this.addMascot();
     this.cleaner = isHired(game, 'cleaner')
       ? { state: createCleaner(this.layout), sprite: createCleanerSprite(this) }
       : null;
@@ -377,25 +377,6 @@ export class FloorScene extends Phaser.Scene {
       : destination(next.walker);
     const marker = this.tileToPixel(target);
     this.destinationMarker.setPosition(marker.x + 1, marker.y + 1).setVisible(true);
-  }
-
-  /**
-   * The Mascot, just outside the door (one tile out and one along, so it
-   * doesn't stand where customers walk in), bobbing up and down to wave
-   * people in. Purely for show: the faster arrivals are the floor's rule
-   * (FloorState.mascot).
-   */
-  private addMascot(): void {
-    const { door } = this.layout;
-    const outside = [
-      { x: door.x, y: door.y + 1 },
-      { x: door.x, y: door.y - 1 },
-      { x: door.x + 1, y: door.y },
-      { x: door.x - 1, y: door.y },
-    ].find((p) => this.layout.tiles[p.y]?.[p.x] === undefined) ?? door;
-    const spot = this.tileToPixel({ x: outside.x + (outside.y === door.y ? 0 : 1), y: outside.y });
-    const sprite = createMascotSprite(this).setPosition(spot.x, spot.y);
-    this.tweens.add({ targets: sprite, y: spot.y - 3, duration: 350, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
   /** Top-left pixel of a tile. */

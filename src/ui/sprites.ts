@@ -19,9 +19,13 @@ export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Cont
   return scene.add.container(0, 0, [g]).setDepth(10);
 }
 
-/** The Mascot: a 16x16 orange fox-ish critter with its paws up. Origin is its top-left corner. */
+/**
+ * The Mascot: a 16x16 orange fox-ish critter with its paws up. Unlike the
+ * other critters, its origin is its FEET (bottom middle), so a dance that
+ * sways it (rotation) pivots on the ground rather than on its top-left corner.
+ */
 export function createMascotSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  const g = scene.add.graphics();
+  const g = scene.add.graphics().setPosition(-8, -16);
   g.fillStyle(COLORS.mascot);
   g.fillRect(3, 3, 10, 12);
   g.fillRect(3, 1, 3, 2); // ears
@@ -33,7 +37,7 @@ export function createMascotSprite(scene: Phaser.Scene): Phaser.GameObjects.Cont
   g.fillStyle(COLORS.ink);
   g.fillRect(5, 5, 2, 2);
   g.fillRect(9, 5, 2, 2);
-  return scene.add.container(0, 0, [g]).setDepth(9);
+  return scene.add.container(0, 0, [g]);
 }
 
 /** The Cleaner: a 16x16 critter in a blue bandana. Origin is its top-left corner. */

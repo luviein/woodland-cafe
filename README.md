@@ -107,7 +107,7 @@ It isn't included in production builds.
 | `leaves <n>` | Set the wallet, e.g. `leaves 0` (works anywhere) |
 | `unlock <chilli\|tuna\|tomato\|toaster>` | Own it for free, no Leaves spent (works anywhere). Ingredients come with 0 stock. A new toaster or bin shows from the next order you take |
 | `furniture [table\|chair n]` | Show stored and placed furniture, or set how many are in storage, e.g. `furniture table 3` (works anywhere, free). Place them from the map: Cafe > Decorate |
-| `hire <mascot\|cleaner>` / `fire <mascot\|cleaner>` | Hire or let go an employee, free (works anywhere). The change shows the next time the cafe opens (`goto cafe` to see it now) |
+| `hire <mascot\|cleaner>` / `fire <mascot\|cleaner>` | Hire or let go an employee, free (works anywhere). A hired Mascot dances next to the cafe on the map straight away; the faster arrivals and the Cleaner start the next time the cafe opens (`goto cafe` to see them now) |
 | `time`      | Show the day number and the cafe clock |
 | `endday`    | End the day now: jump to closing time and send every customer home (not counted as giving up), so the summary shows. An open prep station closes first |
 

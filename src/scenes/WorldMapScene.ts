@@ -6,7 +6,8 @@ import type { Point } from '../logic/layout';
 import { chooseLocation, dotsAlong } from '../logic/worldMap';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT, css } from '../ui/theme';
-import { drawStall, drawTree } from '../ui/sprites';
+import { createMascotSprite, drawStall, drawTree } from '../ui/sprites';
+import { isHired } from '../logic/employees';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
 
@@ -19,6 +20,9 @@ export interface LocationRequest {
 export interface WorldMapRequest {
   current: LocationId;
 }
+
+/** Where the hired Mascot dances: on the grass just right of the cafe house, feet on its baseline. */
+const MASCOT_SPOT: Point = { x: LOCATIONS.cafe.position.x + 36, y: LOCATIONS.cafe.position.y + 20 };
 
 /** Signposts sit this far above their landmark's centre. */
 const SIGN_OFFSET_Y = 44;
@@ -58,6 +62,7 @@ export class WorldMapScene extends Phaser.Scene {
       this.drawLandmark(id);
       this.createSignpost(id);
     }
+    if (isHired(getGameState(this), 'mascot')) this.addDancingMascot();
 
     const wallet = new WalletDisplay(this, 8, 8);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
@@ -180,6 +185,19 @@ export class WorldMapScene extends Phaser.Scene {
         drawStall(g, x + 22, y);
         break;
     }
+  }
+
+  /**
+   * The Mascot dancing outside the cafe (GAME_DESIGN.md §5.8): little hops
+   * plus a side-to-side sway. Two tweens with different lengths, so the
+   * moves drift in and out of step and the dance doesn't look like one loop.
+   * Purely for show: the faster arrivals are the floor's rule (FloorState.mascot).
+   */
+  private addDancingMascot(): void {
+    const { x, y } = MASCOT_SPOT;
+    const mascot = createMascotSprite(this).setPosition(x, y).setAngle(-12);
+    this.tweens.add({ targets: mascot, y: y - 5, duration: 260, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: mascot, angle: 12, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
   /** The clickable signpost: a post and a board, green for where the player is. */
