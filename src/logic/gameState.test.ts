@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
 import { createNewGame, earnLeaves, leavesLeftToday, pickUpLeaves, spendLeaves, startNextDay } from './gameState';
+import { startingFurniture } from './furniture';
 import { availableRecipes } from './orders';
 
 describe('createNewGame', () => {
@@ -14,6 +15,7 @@ describe('createNewGame', () => {
       stock: { bread: 30, mushroom: 30, jam: 30, chilli: 0, tuna: 0, tomato: 0 },
       leavesPickedToday: 0,
       foragedToday: [],
+      furniture: startingFurniture(),
     });
   });
 

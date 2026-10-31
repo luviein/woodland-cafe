@@ -1,6 +1,7 @@
 import { STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { LEAF_CONFIG, type LeafConfig } from '../data/leafConfig';
 import type { UpgradeId } from '../data/upgrades';
+import { startingFurniture, type Furniture } from './furniture';
 import { startingStock, type Stock } from './stock';
 
 /**
@@ -14,8 +15,7 @@ import { startingStock, type Stock } from './stock';
  * Its `ingredients` and `upgrades` fields match the Owned type in orders.ts,
  * so a GameState can be passed straight to order generation.
  *
- * Furniture, the cafe layout and unlocked locations join it in the
- * milestones that need them.
+ * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
   /** Which day it is, starting at 1. */
@@ -31,6 +31,8 @@ export interface GameState {
   leavesPickedToday: number;
   /** Ids of forage spots gathered today; they grow back the next day (foraging.ts). */
   foragedToday: readonly string[];
+  /** Tables and chairs: placed in the cafe, and in storage (furniture.ts). */
+  furniture: Furniture;
 }
 
 export function createNewGame(): GameState {
@@ -42,6 +44,7 @@ export function createNewGame(): GameState {
     stock: startingStock(),
     leavesPickedToday: 0,
     foragedToday: [],
+    furniture: startingFurniture(),
   };
 }
 

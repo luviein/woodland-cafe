@@ -1,6 +1,6 @@
-// Turns the text grid in data/cafeLayout.ts into structured data the game can
-// use. Pure: text in, data out, so it's easy to test and to reuse later when
-// the shop lets players change the layout.
+// Turns a text grid like data/cafeLayout.ts into structured data the game can
+// use. Pure: text in, data out, so it's easy to test. The day's cafe is the
+// room plus the player's furniture, written into rows (logic/furniture.ts).
 
 export type TileKind = 'wall' | 'floor' | 'door' | 'counter' | 'table' | 'seat';
 
@@ -143,11 +143,8 @@ export function parseLayout(rows: readonly string[]): Layout {
     }
     touching[0].seats.push(seat);
   }
-  for (const table of tables) {
-    if (table.seats.length === 0) {
-      throw new Error(`Table at (${table.position.x}, ${table.position.y}) has no seats`);
-    }
-  }
+  // A table with no seats is fine: nobody sits there. (The player can place a
+  // table before its chairs while decorating, GAME_DESIGN.md §5.7.)
 
   return {
     width,

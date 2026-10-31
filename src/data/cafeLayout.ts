@@ -2,6 +2,10 @@
 // change or expand the cafe; no code changes needed. logic/layout.ts turns it
 // into tables, seats and walkable tiles, and its tests check it's valid.
 //
+// The tables (T) and seats (S) here are only a NEW GAME's furniture: from
+// then on the player's own furniture (in the game state) is used instead,
+// placed into this room with the T and S taken out (logic/furniture.ts).
+//
 // Key:
 //   W  wall               .  floor
 //   D  door (customers enter and leave here)

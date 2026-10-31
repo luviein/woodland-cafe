@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
-import { CAFE_LAYOUT } from '../data/cafeLayout';
+import { buildLayout } from '../logic/furniture';
 import { DAY_CONFIG } from '../data/dayConfig';
 import { INGREDIENTS } from '../data/ingredients';
 import { FLOOR_CONFIG } from '../data/floorConfig';
@@ -24,7 +24,7 @@ import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } fr
 import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe } from '../logic/dayStats';
 import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
-import { parseLayout, pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
+import { pointKey, tableById, type Layout, type Point, type TileKind } from '../logic/layout';
 import {
   cleaningProgress,
   createPlayer,
@@ -129,7 +129,8 @@ export class FloorScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.layout = parseLayout(CAFE_LAYOUT);
+    // The room plus today's furniture (the player arranges it from the map).
+    this.layout = buildLayout(getGameState(this).furniture);
     // Math.floor keeps the grid on whole pixels; a half-pixel offset would
     // make every tile edge blurry.
     this.origin = {

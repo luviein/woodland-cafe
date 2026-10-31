@@ -86,8 +86,9 @@ describe('parseLayout errors', () => {
     expect(() => parseLayout(withRow(2, 'WTSTOW'))).toThrow(/touches 2 tables/);
   });
 
-  it('rejects a table with no seats', () => {
-    expect(() => parseLayout(withRow(3, 'W...TW'))).toThrow(/no seats/);
+  it('allows a table with no seats (nobody can sit there)', () => {
+    const table = parseLayout(withRow(3, 'W...TW')).tables.find((t) => t.position.y === 3);
+    expect(table?.seats).toEqual([]);
   });
 
   it('rejects a missing counter queue', () => {
