@@ -20,8 +20,8 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
 
 - A **counter** with a **customer queue**, plus **tables and seats** laid out on a tile grid.
 - Customer lifecycle:
-  1. Wait in line at the counter (patience counting down)
-  2. Order, **only once a clean seat is free**; ordering **reserves** that seat
+  1. Wait in line at the counter (patience stays full: they're happy to wait)
+  2. Order, **only once a clean seat is free**; ordering **reserves** that seat and **starts their patience**
   3. Get served and **pay** (patience stops)
   4. Walk to their reserved seat
   5. Eat
@@ -30,7 +30,7 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
   - **No free seat, no order.** The front customer can only order if a clean, unreserved seat is free. Taking their order reserves it. E.g. 2 customers waiting, 1 clean seat: the 1st orders and reserves it; the 2nd keeps waiting, even before the 1st reaches the table.
   - **Taking an order:** the player taps the front customer and walks to the counter spot (`P`, behind the counter across from the order spot `O`); the order is taken on arrival. With no clean seat, a "No clean seats!" message appears and the player must tap again after cleaning.
   - **Cooking:** taking the order opens the prep station on top of the floor. The floor keeps running (patience drops, others eat and leave). Serving stops their patience; they stay at the counter while reacting, and **start moving only when the prep screen closes**: perfect/close → they go to their seat; wrong → they leave, angry, unpaid, freeing the seat. If patience runs out mid-cook, they say so and the prep station closes.
-  - So messy tables **block the queue**, and the whole queue keeps losing patience while the player cleans. That's the key tradeoff.
+  - So messy tables **block the queue**: the queue doesn't lose patience while the player cleans, but every minute spent away from the counter is a minute less to serve before closing time (§5.1). That's the key tradeoff.
   - Because a seat is guaranteed before ordering, there's never any waiting for a seat after being served, so no one leaves unhappy after paying.
 - **Messes are per seat.** A customer leaves a mess on **their own side** of the table. That **seat** can't be used until cleaned, but the other seats at the same table still can.
   - Customers never walk to a messy seat.
@@ -188,10 +188,10 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 
 ## 4. Patience & Tips
 
-- Every customer in the counter queue has a **patience timer**.
-- Patience **always counts down at one fixed rate**, no matter what the player is doing: cleaning, preparing an order, or anything else.
-- Patience **keeps dropping at the same rate after the order is taken**, while the player prepares it.
-- If patience hits **0 before the order is served**, the customer leaves the queue and the cafe unhappy and **doesn't pay**.
+- Every customer has a **patience timer**.
+- **Waiting in the queue doesn't use patience.** It starts counting down only **when the player takes their order**. (Changed in milestone 6: before, it dropped from the moment they joined the queue.)
+- From then on it counts down at **one fixed rate**, no matter what the player is doing: cooking, reading the Recipe Book, toasting, or anything else.
+- If patience hits **0 before the order is served**, the customer leaves the cafe unhappy and **doesn't pay**.
 - **Patience stops once the order is served.** The customer **pays when served** (price + tip), then goes to the seat reserved for them.
 - A **wrong** dish: the customer **leaves right away**, angry, without paying or eating (so no mess). Their reserved seat is freed.
 - When an order is served, the **tip (in Leaves) is based on remaining patience**, using thresholds:
@@ -217,7 +217,7 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 
 ### Key tradeoff
 
-The player can leave the counter **before taking an order** to clean messes, but the whole queue keeps losing patience meanwhile. Clean tables mean more seating; an unattended queue means lost tips and lost customers.
+The player can leave the counter **before taking an order** to clean messes; the queue waits patiently. But the day is short: clean tables mean more seating, and an unattended queue means fewer customers served before closing time, when everyone still waiting goes home. Once an order is taken, the clock is on: patience (and the tip) drops until it's served.
 
 ---
 
@@ -227,7 +227,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 
 - One cafe **run is one day**.
 - **Day clock:** a day runs from **8:00 to 17:00** in game time, which takes **3 real minutes** (config value). The clock is shown on the floor and at the prep station (it keeps ticking while cooking).
-- **Closing time:** at 17:00 the doors close and **no new customers arrive**. Customers already inside stay: the queue can still be served, and patience keeps dropping as usual. The day is **over once the last customer has left**.
+- **Closing time:** at 17:00 the doors close and **no new customers arrive**. Everyone **still waiting in the queue goes home** (calmly: unpaid, but not counted as giving up). A customer whose order has been taken can still be served, and seated customers finish eating. The day is **over once the last customer has left**.
 - When a run ends, the game shows a **day summary**: customers served (perfect / close / wrong), customers who gave up or left because an ingredient ran out, Leaves earned (prices and tips), ingredients used (from stock / rush-bought), Leaves spent on rush deliveries, the day's net, and the wallet total. The player can then **exit the cafe**, which opens the world map.
 - **Each day starts fresh:** clean floor, empty queue. Leaves and everything owned carry over.
 
