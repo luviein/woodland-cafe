@@ -1,6 +1,7 @@
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { SHOP_IDS, SHOPS, type ShopId } from '../data/shops';
 import type { OutdoorLocationId } from '../data/outdoorAreas';
+import { UPGRADES, type UpgradeId } from '../data/upgrades';
 import { spendLeaves, type GameState } from './gameState';
 import type { Point } from './layout';
 import { availableRecipes } from './orders';
@@ -40,6 +41,17 @@ export function buyStock(state: GameState, id: IngredientId, quantity: number): 
   if (!state.ingredients.includes(id)) throw new Error(`buyStock: '${id}' isn't owned`);
   const paid = spendLeaves(state, stockCost(id, quantity));
   return { ...paid, stock: { ...paid.stock, [id]: paid.stock[id] + quantity } };
+}
+
+export function canBuyUpgrade(state: GameState, id: UpgradeId): boolean {
+  return !state.upgrades.includes(id) && UPGRADES[id].price <= state.leaves;
+}
+
+/** Buys an upgrade for good (it unlocks its modifier). Throws if owned or unaffordable. */
+export function buyUpgrade(state: GameState, id: UpgradeId): GameState {
+  if (state.upgrades.includes(id)) throw new Error(`buyUpgrade: '${id}' is already owned`);
+  const paid = spendLeaves(state, UPGRADES[id].price);
+  return { ...paid, upgrades: [...state.upgrades, id] };
 }
 
 /** Ingredients the Specialty stall sells: everything with an unlock price, owned or not. */

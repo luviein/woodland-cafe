@@ -6,7 +6,8 @@ import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type Outdoo
 import type { ForageSpotDef } from '../data/forageSpots';
 import { INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
-import { SHOPS, STOCK_BUY_AMOUNTS, type ShopId } from '../data/shops';
+import { SHOPS, STOCK_BUY_AMOUNTS, TOOLS_ON_SALE, type ShopId } from '../data/shops';
+import { UPGRADES } from '../data/upgrades';
 import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
 import {
   forage,
@@ -23,7 +24,9 @@ import { collectLeaves, createLeafField, stepLeafField, type LeafField, type Lea
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import {
   buyStock,
+  buyUpgrade,
   canBuyStock,
+  canBuyUpgrade,
   canUnlock,
   newRecipesWith,
   shopStandPoint,
@@ -312,7 +315,22 @@ export class OutdoorScene extends Phaser.Scene {
         };
       });
     }
-    if (id !== 'pantry') return []; // Tools: next step
+    if (id === 'tools') {
+      return TOOLS_ON_SALE.map((upgrade) => {
+        const owned = state.upgrades.includes(upgrade);
+        return {
+          name: UPGRADES[upgrade].name,
+          detail: owned ? 'Owned' : `🍃${UPGRADES[upgrade].price}   ${UPGRADES[upgrade].effect}`,
+          buttons: [
+            {
+              label: owned ? '-' : 'Buy',
+              enabled: canBuyUpgrade(state, upgrade),
+              onPress: () => setGameState(this, buyUpgrade(getGameState(this), upgrade)),
+            },
+          ],
+        };
+      });
+    }
     return state.ingredients.map((ingredient) => ({
       name: INGREDIENTS[ingredient].name,
       detail: `x${state.stock[ingredient]}   🍃${INGREDIENTS[ingredient].unitPrice} each`,

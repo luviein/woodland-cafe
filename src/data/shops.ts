@@ -1,5 +1,6 @@
 import type { Point } from '../logic/layout';
 import type { OutdoorLocationId } from './outdoorAreas';
+import type { UpgradeId } from './upgrades';
 
 // The Marketplace stalls and what each sells (GAME_DESIGN.md §5.6). What's
 // on sale comes from the other data files (ingredient and upgrade prices);
@@ -41,3 +42,9 @@ export const SHOP_IDS = Object.keys(SHOPS) as ShopId[];
 
 /** The stock buttons in the Pantry: how many units each tap buys. */
 export const STOCK_BUY_AMOUNTS = [1, 10] as const;
+
+/**
+ * Upgrades the Tools stall sells, in this order. Only ones that are built
+ * (their modifier works at the prep station) go here; the rest wait.
+ */
+export const TOOLS_ON_SALE: readonly UpgradeId[] = ['toaster'];

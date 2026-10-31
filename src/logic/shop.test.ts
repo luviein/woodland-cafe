@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SHOPS } from '../data/shops';
 import { createNewGame, earnLeaves } from './gameState';
-import { availableRecipes } from './orders';
+import { availableModifiers, availableRecipes } from './orders';
 import {
   buyStock,
+  buyUpgrade,
   canBuyStock,
+  canBuyUpgrade,
   canUnlock,
   newRecipesWith,
   shopStandPoint,
@@ -54,6 +56,27 @@ describe('buying stock', () => {
   it("can't buy stock of an ingredient that isn't owned yet", () => {
     expect(canBuyStock(rich(), 'tuna', 1)).toBe(false);
     expect(() => buyStock(rich(), 'tuna', 1)).toThrow(/isn't owned/);
+  });
+});
+
+describe('buying upgrades', () => {
+  it('costs its price and is owned from then on', () => {
+    const state = buyUpgrade(rich(), 'toaster');
+    expect(state.upgrades).toEqual(['toaster']);
+    expect(state.leaves).toBe(20);
+    expect(canBuyUpgrade(state, 'toaster')).toBe(false);
+    expect(() => buyUpgrade(state, 'toaster')).toThrow(/already owned/);
+  });
+
+  it("can't be bought with too few Leaves", () => {
+    expect(canBuyUpgrade(earnLeaves(createNewGame(), 29), 'toaster')).toBe(false);
+    expect(() => buyUpgrade(earnLeaves(createNewGame(), 29), 'toaster')).toThrow(/can't pay/);
+  });
+
+  it('owning the Toaster lets orders be toasted', () => {
+    const owned = buyUpgrade(rich(), 'toaster');
+    expect(availableModifiers('jamBread', owned)).toContain('toasted');
+    expect(availableModifiers('jamBread', rich())).not.toContain('toasted');
   });
 });
 
