@@ -30,8 +30,10 @@ export const FLOOR_CONFIG: FloorConfig = {
   playerSpeed: 6,
   customerSpeed: 3,
   firstCustomerDelay: 1,
-  spawnIntervalMin: 4,
-  spawnIntervalMax: 8,
+  // A quiet start, about 15 customers a day (GAME_DESIGN.md §5.8). Hiring
+  // the Mascot shortens these gaps, so busy days are earned.
+  spawnIntervalMin: 9,
+  spawnIntervalMax: 15,
   eatSecondsMin: 6,
   eatSecondsMax: 10,
   patienceSeconds: 25,
