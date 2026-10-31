@@ -277,7 +277,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 5.6 Marketplace shops
 
-- The Marketplace has **three stalls**. Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
+- The Marketplace has **three stalls** (plus the Carpenter, §5.7). Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
 
   | Stall | Sells |
   | ----- | ----- |
@@ -288,6 +288,25 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Buying stock is one unit at a time:** each ingredient row has a **+1** and a **+10** button. Each tap buys straight away (no basket, no checkout) and shows the new stock. A button is greyed out when the wallet can't pay for it, so +10 can be grey while +1 still works.
 - A newly unlocked ingredient starts with **0 stock**: buy some at the Pantry, or the first dishes are rush deliveries.
 - **Spending** never takes the wallet below 0; a purchase that can't be paid for does nothing (the buttons are greyed out anyway).
+- A fourth stall, the **Carpenter**, sells furniture (§5.7).
+
+### 5.7 Furniture and decorating
+
+- **Pieces:** for now, **tables** (🍃30) and **chairs** (🍃10), each one tile. A chair is a seat: customers sit on it and eat at the table it touches. More kinds (bigger tables, decorations) can come later.
+- **Starting furniture:** the cafe opens with today's 4 tables and 8 chairs already placed.
+- **Buying:** the **Carpenter** stall at the Marketplace sells them one at a time (**+1**). Bought pieces go into **storage**, not straight into the cafe.
+- **Decorating:** tapping **Cafe** on the world map offers **Open cafe**, **Decorate** or **Not yet**. Decorate shows the empty cafe (no customers) with the storage tray:
+  - Tap **Table** or **Chair** in the tray, then tap a floor tile to place it there. It stays selected, so several can be placed in a row.
+  - Tap a placed piece to put it back into storage. Putting a table away also puts away the chairs at it.
+  - **Moving is free.** Only buying costs Leaves.
+  - **Done** goes back to the map.
+- **Placement rules** (a refused tap says why, e.g. "A chair needs a table next to it"):
+  - Only on plain floor: not the door, the counter, the player's counter spot, the order spot or the queue spots.
+  - A chair must touch **exactly one** table (so it's clear where its customer eats). A table can't go where it would make a chair touch two.
+  - Nothing may cut the floor into pieces: everywhere walkable must stay connected, and every table and chair must have floor next to it, so customers can reach their seat and the player can clean.
+- A table with no chairs is allowed but unused: nobody can sit there.
+- **Furniture is in the game state** (§6): what's placed where, and how many of each are in storage. The room itself (walls, door, counter, queue) stays in `data/cafeLayout.ts`.
+- Decorating is only between days, from the map, so nobody is ever sitting at a table that moves.
 
 ---
 
@@ -298,8 +317,8 @@ The player can leave the counter **before taking an order** to clean messes; the
   - Inventory (ingredient stock, §3.6)
   - **Owned ingredients**
   - **Owned upgrades**
-  - Owned furniture
-  - Cafe layout
+  - Owned furniture: placed (where) and in storage (§5.7)
+  - Cafe layout: the fixed room plus the placed furniture
   - Unlocked locations
 - "Serializable" means plain data only (no Phaser objects, class instances, or functions), so it can be converted to JSON and back without losing anything.
 
@@ -307,7 +326,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ## 7. Later Features
 
-- Expanding the cafe layout with purchased furniture
+- More furniture kinds: bigger tables, decorations (plants, rugs), a bigger room
 - Hiring employees who clean or serve automatically
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
 - **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
