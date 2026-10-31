@@ -138,6 +138,21 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 
 - The **Toaster is the first fully built upgrade**. The rest only need **placeholder data entries** for now.
 
+#### Toasting (the Toaster at the prep station)
+
+- Once the Toaster is bought (Tools stall, 🍃30, §5.6), it sits on the prep counter beside the plate, and customers can ask for **toasted** dishes.
+- **Toasting is drag and drop, for the whole dish** (toasted is one modifier for the whole order):
+  1. Build the dish (or part of it), then **drag it from the plate into the toaster**. The plate is left empty.
+  2. The toaster works for a short while (**about 2 seconds**, config value) and shakes a little.
+  3. The dish **pops up on top of the toaster**, toasted (its bread looks browner).
+  4. **Drag it back onto the plate.** It counts as toasted from then on, even if more layers are added after.
+- Dropping the dish anywhere else sends it back where it came from (the plate, or the top of the toaster).
+- While the dish is **in or on the toaster**, the bins, Serve and Reset are greyed out: there's nothing on the plate to add to or serve.
+- The toaster doesn't take an empty plate or a dish that's already toasted.
+- **Reset** clears the toasting too. Toasting costs nothing; stock is still used on serving.
+- Patience keeps dropping while toasting, so toasting an order that didn't ask for it only wastes time (an unrequested modifier has no other penalty, §4).
+- **Keyboard:** `T` puts the dish in the toaster, and takes it back to the plate once it's done.
+
 ### 3.5 Dialogue
 
 - Every **recipe, ingredient and modifier** has several lines a customer might say, in two styles:
@@ -267,7 +282,7 @@ The player can leave the counter **before taking an order** to clean messes, but
   | ----- | ----- |
   | **Pantry** | Stock of every **owned** ingredient, at its unit price (§3.6) |
   | **Specialty** | One-time **unlocks** for chilli (15), tomato (10) and tuna (20). Once unlocked, its recipes appear in orders, its bin shows at the prep station, and the Pantry sells its stock. Bought ones show "Owned". |
-  | **Tools** | **Upgrades** (§3.4). For now only the Toaster (30); the others aren't listed until they're built. |
+  | **Tools** | **Upgrades** (§3.4). For now only the Toaster (30, see "Toasting" in §3.4); the others aren't listed until they're built. Bought ones show "Owned". |
 
 - **Buying stock is one unit at a time:** each ingredient row has a **+1** and a **+10** button. Each tap buys straight away (no basket, no checkout) and shows the new stock. A button is greyed out when the wallet can't pay for it, so +10 can be grey while +1 still works.
 - A newly unlocked ingredient starts with **0 stock**: buy some at the Pantry, or the first dishes are rush deliveries.
