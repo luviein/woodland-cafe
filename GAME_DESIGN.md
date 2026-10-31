@@ -338,6 +338,23 @@ The player can leave the counter **before taking an order** to clean messes; the
   - Unlocked locations
 - "Serializable" means plain data only (no Phaser objects, class instances, or functions), so it can be converted to JSON and back without losing anything.
 
+### 6.1 Saving and loading
+
+- **One save slot**, saved automatically. There is no Save button.
+- **Only between days.** The game saves when:
+  - the day summary closes (after wages are paid)
+  - something is bought, hired or let go
+  - decorating is finished
+  - leaves are picked up or a forage spot is gathered
+- **Nothing is saved during a cafe day:** customers, the queue and the clock aren't part of the save. Quitting mid-day loses that day: Continue goes back to the world map just before it, and opening the Cafe starts that same day again.
+- **Title screen** (the first thing shown):
+  - **Continue** shows the last finished day and the wallet (e.g. "Day 4 done · 🍃120") and opens the world map.
+  - **New game** starts Day 1 at the cafe. If a save exists, it asks first: the old save is deleted straight away.
+  - With no save, only New game is offered.
+- **Versioned:** every save records a version number. A save from an older version gets defaults for anything added since (e.g. no employees), so old saves keep working.
+- **Never half-loaded:** a save that can't be read (broken, or from a newer version) isn't loaded. The title screen says so and offers New game.
+- **Where:** the browser's local storage for now, behind a small storage interface, so the desktop build (milestone 11) can save to a file instead.
+
 ---
 
 ## 7. Later Features
@@ -384,7 +401,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 6. **Marketplace shop:** buy ingredients and upgrades (Toaster first), unlocking new recipes, modifiers and dialogue; add hint-style dialogue
 7. **Furniture and cafe expansion**
 8. **Employees:** a quieter start, the Mascot (more customers) and the Cleaner, hired at the Notice Board for a daily wage (§5.8)
-9. **Saving and loading**
+9. **Saving and loading:** one autosaved slot, between days only, and a title screen (§6.1)
 10. **Pixel art, animation, sound** (including the illustrated island map)
 11. **Desktop build** (Tauri or Electron)
 
