@@ -50,8 +50,12 @@ export function canBuyUpgrade(state: GameState, id: UpgradeId): boolean {
 /** Buys an upgrade for good (it unlocks its modifier). Throws if owned or unaffordable. */
 export function buyUpgrade(state: GameState, id: UpgradeId): GameState {
   if (state.upgrades.includes(id)) throw new Error(`buyUpgrade: '${id}' is already owned`);
-  const paid = spendLeaves(state, UPGRADES[id].price);
-  return { ...paid, upgrades: [...state.upgrades, id] };
+  return addUpgrade(spendLeaves(state, UPGRADES[id].price), id);
+}
+
+/** Owns `id` from now on, for free (buyUpgrade charges; the dev console `unlock` doesn't). */
+export function addUpgrade(state: GameState, id: UpgradeId): GameState {
+  return state.upgrades.includes(id) ? state : { ...state, upgrades: [...state.upgrades, id] };
 }
 
 /** Ingredients the Specialty stall sells: everything with an unlock price, owned or not. */
@@ -80,9 +84,13 @@ export function unlockIngredient(state: GameState, id: IngredientId): GameState 
   const price = INGREDIENTS[id].unlockPrice;
   if (price === null) throw new Error(`unlockIngredient: '${id}' isn't for sale`);
   if (state.ingredients.includes(id)) throw new Error(`unlockIngredient: '${id}' is already owned`);
-  const paid = spendLeaves(state, price);
+  return addIngredient(spendLeaves(state, price), id);
+}
+
+/** Owns `id` from now on, for free and with no stock (unlockIngredient charges; dev `unlock` doesn't). */
+export function addIngredient(state: GameState, id: IngredientId): GameState {
   // Kept in the catalogue order (ingredients.ts), not the order bought, so
   // each prep bin and its number key stay put as more are bought.
   const ingredients = INGREDIENT_IDS.filter((i) => i === id || state.ingredients.includes(i));
-  return { ...paid, ingredients };
+  return { ...state, ingredients };
 }

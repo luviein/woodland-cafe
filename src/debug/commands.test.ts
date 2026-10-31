@@ -193,6 +193,24 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'leaves 1.5')).toMatch(/Usage/);
   });
 
+  it('unlock gives an ingredient or the Toaster for free', () => {
+    let state: GameState = { ...createNewGame(), leaves: 3 };
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      game: { get: () => state, set: (s) => (state = s) },
+    });
+    expect(runCommand(commands, 'unlock Toaster')).toMatch(/Toaster unlocked/);
+    expect(runCommand(commands, 'unlock tuna')).toMatch(/Tuna unlocked/);
+    expect(state.upgrades).toEqual(['toaster']);
+    expect(state.ingredients).toContain('tuna');
+    expect(state.stock.tuna).toBe(0);
+    expect(state.leaves).toBe(3); // free
+    runCommand(commands, 'unlock toaster'); // twice is fine
+    expect(state.upgrades).toEqual(['toaster']);
+    expect(runCommand(commands, 'unlock bread')).toMatch(/Usage: unlock <chilli\|tuna\|tomato\|toaster>/);
+    expect(runCommand(commands, 'unlock')).toMatch(/Usage/);
+  });
+
   it('goto accepts the map and every place, and nothing else', () => {
     const went: string[] = [];
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {

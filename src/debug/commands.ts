@@ -1,11 +1,16 @@
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
 import { LOCATION_IDS } from '../data/locations';
+import { TOOLS_ON_SALE } from '../data/shops';
+import { UPGRADES } from '../data/upgrades';
 import type { GameState } from '../logic/gameState';
+import { addIngredient, addUpgrade, unlockableIngredients } from '../logic/shop';
 import type { Score } from '../logic/types';
 import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
 const SCORES: readonly Score[] = ['perfect', 'close', 'wrong'];
+/** What `unlock` accepts: everything the Specialty and Tools stalls sell. */
+const UNLOCKABLE: readonly string[] = [...unlockableIngredients(), ...TOOLS_ON_SALE];
 
 /**
  * A dev console command. `run` gets the words typed after the command name
@@ -197,6 +202,27 @@ export function createDevCommands(
         const n = count(value, 'leaves <n>');
         game().set({ ...game().get(), leaves: n });
         return `Wallet = ${n}`;
+      },
+    },
+
+    unlock: {
+      usage: `unlock <${UNLOCKABLE.join('|')}>`,
+      description: 'Own an ingredient or upgrade for free (no Leaves spent; ingredients come with 0 stock)',
+      run: ([value]) => {
+        const name = value?.toLowerCase();
+        const state = game().get();
+        const ingredient = unlockableIngredients().find((i) => i === name);
+        if (ingredient) {
+          game().set(addIngredient(state, ingredient));
+          return `${INGREDIENTS[ingredient].name} unlocked (its recipes now show up in orders)`;
+        }
+        // Lower-cased match, so "sandwichpress" would work for later upgrades too.
+        const upgrade = TOOLS_ON_SALE.find((u) => u.toLowerCase() === name);
+        if (upgrade) {
+          game().set(addUpgrade(state, upgrade));
+          return `${UPGRADES[upgrade].name} unlocked (the prep station shows it from the next order)`;
+        }
+        throw new Error(`Usage: unlock <${UNLOCKABLE.join('|')}>`);
       },
     },
 
