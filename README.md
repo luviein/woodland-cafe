@@ -41,6 +41,7 @@ over.
 | Walk (Forest, Marketplace) | Tap anywhere |
 | Pick up a Leaf      | Walk over it (+1 🍃). New ones keep appearing, up to 15 a day (Forest and Marketplace together) |
 | Forage (Forest)     | Tap a mushroom patch or berry bush: walk there, gather for a second, +2 to stock. Once a day each |
+| Shop (Marketplace)  | Tap a stall: walk up to it and its shop opens. At the Pantry, **+1** / **+10** buy stock straight away (greyed out when you can't afford it). Close or `Esc` shuts it |
 | Back to the map     | Map button (top-right) |
 
 ## Controls (prep station)

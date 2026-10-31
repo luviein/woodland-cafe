@@ -67,12 +67,25 @@ export function pickUpLeaves(state: GameState, count: number): GameState {
  * The state with `amount` Leaves added. Returns a new object, like the floor
  * functions, so a state handed to a scene can't change behind its back.
  * Throws on a negative or fractional amount: that's always a bug. (Rush
- * deliveries spend Leaves through useIngredients(); the shop gets its own
- * spending function in milestone 6.)
+ * deliveries spend Leaves through useIngredients(), the shop through
+ * spendLeaves().)
  */
 export function earnLeaves(state: GameState, amount: number): GameState {
   if (!Number.isInteger(amount) || amount < 0) {
     throw new Error(`earnLeaves: amount must be a whole number, 0 or more (got ${amount})`);
   }
   return { ...state, leaves: state.leaves + amount };
+}
+
+/**
+ * The state with `amount` Leaves taken out. Throws if the wallet can't pay:
+ * callers check first (the shop greys out what you can't afford), so a
+ * throw here means a bug, never a wallet below 0.
+ */
+export function spendLeaves(state: GameState, amount: number): GameState {
+  if (!Number.isInteger(amount) || amount < 0) {
+    throw new Error(`spendLeaves: amount must be a whole number, 0 or more (got ${amount})`);
+  }
+  if (amount > state.leaves) throw new Error(`spendLeaves: can't pay ${amount} with ${state.leaves} Leaves`);
+  return { ...state, leaves: state.leaves - amount };
 }

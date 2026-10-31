@@ -7,6 +7,7 @@ import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients'
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS } from './locations';
 import { FORAGE_SPOTS } from './forageSpots';
 import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor } from './outdoorAreas';
+import { SHOP_IDS, SHOPS } from './shops';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { MODIFIER_IDS, MODIFIERS } from './modifiers';
 import { RECIPE_PRICES } from './prices';
@@ -154,9 +155,17 @@ describe('locations', () => {
 
   it('outdoor scenery and the entry point are inside the screen', () => {
     for (const area of Object.values(OUTDOOR_AREAS)) {
-      for (const { x, y } of [...area.trees, ...area.stalls, OUTDOOR_ENTRY]) {
+      for (const { x, y } of [...area.trees, OUTDOOR_ENTRY]) {
         expect(x > 0 && x < BASE_WIDTH && y > 0 && y < BASE_HEIGHT).toBe(true);
       }
+    }
+  });
+
+  it('shop stalls are in the walk area, with room in front to stand', () => {
+    const a = OUTDOOR_WALK_AREA;
+    for (const id of SHOP_IDS) {
+      const { x, y } = SHOPS[id].stall;
+      expect(x >= a.x && x <= a.x + a.width && y >= a.y && y + 30 <= a.y + a.height, id).toBe(true);
     }
   });
 

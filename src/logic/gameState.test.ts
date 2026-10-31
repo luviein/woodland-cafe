@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
-import { createNewGame, earnLeaves, leavesLeftToday, pickUpLeaves, startNextDay } from './gameState';
+import { createNewGame, earnLeaves, leavesLeftToday, pickUpLeaves, spendLeaves, startNextDay } from './gameState';
 import { availableRecipes } from './orders';
 
 describe('createNewGame', () => {
@@ -42,6 +42,22 @@ describe('earnLeaves', () => {
   it('rejects negative and fractional amounts', () => {
     expect(() => earnLeaves(createNewGame(), -1)).toThrow(/whole number/);
     expect(() => earnLeaves(createNewGame(), 1.5)).toThrow(/whole number/);
+  });
+});
+
+describe('spendLeaves', () => {
+  it('takes from the wallet, down to exactly 0', () => {
+    const state = earnLeaves(createNewGame(), 10);
+    expect(spendLeaves(state, 4).leaves).toBe(6);
+    expect(spendLeaves(state, 10).leaves).toBe(0);
+    expect(state.leaves).toBe(10);
+  });
+
+  it('never goes below 0, and rejects negative and fractional amounts', () => {
+    const state = earnLeaves(createNewGame(), 3);
+    expect(() => spendLeaves(state, 4)).toThrow(/can't pay 4 with 3/);
+    expect(() => spendLeaves(state, -1)).toThrow(/whole number/);
+    expect(() => spendLeaves(state, 0.5)).toThrow(/whole number/);
   });
 });
 

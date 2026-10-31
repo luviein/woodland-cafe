@@ -6,6 +6,7 @@ import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type Outdoo
 import type { ForageSpotDef } from '../data/forageSpots';
 import { INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
+import { SHOPS, STOCK_BUY_AMOUNTS, type ShopId } from '../data/shops';
 import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
 import {
   forage,
@@ -20,7 +21,9 @@ import {
 import type { Point } from '../logic/layout';
 import { collectLeaves, createLeafField, stepLeafField, type LeafField, type LeafGround } from '../logic/leafPickups';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
+import { buyStock, canBuyStock, shopStandPoint, shopsAt } from '../logic/shop';
 import { Button } from '../ui/Button';
+import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import {
   STALL_HEIGHT,
   TREE_TRUNK_HEIGHT,
@@ -66,6 +69,10 @@ export class OutdoorScene extends Phaser.Scene {
   private spotSprites = new Map<string, Phaser.GameObjects.Graphics>();
   private gathering: Gathering | null = null;
   private progressBar!: Phaser.GameObjects.Graphics;
+  /** Shop stalls here, the one the player is walking to, and the open panel. */
+  private shops: ShopId[] = [];
+  private walkingToShop: ShopId | null = null;
+  private shop: { id: ShopId; panel: ShopPanel } | null = null;
   /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
   private leafCount!: Phaser.GameObjects.Text;
   private bareGround!: Phaser.GameObjects.Text;
@@ -86,12 +93,12 @@ export class OutdoorScene extends Phaser.Scene {
     // touches the ground, and higher depths draw on top. Something lower on
     // the screen is nearer the viewer, so the player walking behind a tree
     // (feet above its base) is hidden by it, and in front of it covers it.
-    // That needs one Graphics per tree/stall rather than one for all of them.
+    // That needs one Graphics per tree (and stall) rather than one for all of them.
     for (const t of area.trees) {
       drawTree(this.add.graphics().setDepth(t.y + TREE_TRUNK_HEIGHT * TREE_SIZE), t.x, t.y, TREE_SIZE);
     }
-    for (const s of area.stalls) drawStall(this.add.graphics().setDepth(s.y + STALL_HEIGHT), s.x, s.y);
     this.createForageSpots();
+    this.createShops();
     this.progressBar = this.add.graphics().setDepth(HUD_DEPTH);
 
     // A fresh field each visit: leaves don't wait for you while you're away.
@@ -99,7 +106,7 @@ export class OutdoorScene extends Phaser.Scene {
       area: OUTDOOR_WALK_AREA,
       keepClear: [
         ...area.trees.map((t) => ({ x: t.x, y: t.y + TREE_TRUNK_HEIGHT * TREE_SIZE })),
-        ...area.stalls.map((s) => ({ x: s.x, y: s.y + STALL_HEIGHT })),
+        ...this.shops.map((id) => ({ x: SHOPS[id].stall.x, y: SHOPS[id].stall.y + STALL_HEIGHT })),
         ...this.spots.map((s) => s.position),
       ],
       clearance: LEAF_CLEARANCE,
@@ -127,6 +134,7 @@ export class OutdoorScene extends Phaser.Scene {
       wallet.setLeaves(state.leaves);
       this.leafCount.setText(`Leaves today: ${state.leavesPickedToday}/${LEAF_CONFIG.leavesPerDay}`);
       this.redrawSpots();
+      if (this.shop) this.shop.panel.setRows(this.shopRows(this.shop.id));
     });
     this.add
       .text(BASE_WIDTH / 2, 10, LOCATIONS[this.location].name, {
@@ -142,8 +150,9 @@ export class OutdoorScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (over.length > 0) return; // a button's or forage spot's tap, not a walk
+        if (over.length > 0) return; // a button's, forage spot's or stall's tap, not a walk
         this.gathering = null; // walking off cancels gathering, like cleaning on the floor
+        this.walkingToShop = null;
         this.walkTo({ x: pointer.worldX, y: pointer.worldY });
       },
     );
@@ -164,6 +173,10 @@ export class OutdoorScene extends Phaser.Scene {
       if (step.finished) this.finishGathering(spot);
     }
     this.drawProgressBar();
+    if (this.walkingToShop && !this.player.target) {
+      this.openShop(this.walkingToShop);
+      this.walkingToShop = null;
+    }
 
     const leftToday = leavesLeftToday(getGameState(this));
     this.leafField = stepLeafField(this.leafField, deltaMs / 1000, this.leafGround, Math.random, LEAF_CONFIG, leftToday);
@@ -219,8 +232,66 @@ export class OutdoorScene extends Phaser.Scene {
       this.showFloatingText(spot.position, 'Grows back tomorrow');
       return;
     }
+    this.walkingToShop = null;
     this.gathering = startGathering(spot);
     this.walkTo(standPoint(spot));
+  }
+
+  /** A stall, its name sign and a tap area for each shop in this place. */
+  private createShops(): void {
+    this.shops = shopsAt(this.location);
+    this.walkingToShop = null;
+    this.shop = null;
+    for (const id of this.shops) {
+      const { x, y } = SHOPS[id].stall;
+      drawStall(this.add.graphics().setDepth(y + STALL_HEIGHT), x, y);
+      this.add
+        .text(x, y - 12, SHOPS[id].name, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
+        .setOrigin(0.5, 1)
+        .setDepth(y + STALL_HEIGHT);
+      // Covers the awning and counter (36x26), plus a bit, for fingers.
+      this.add
+        .zone(x, y + 2, 44, 34)
+        .setInteractive({ useHandCursor: true })
+        .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onShopTapped(id));
+    }
+  }
+
+  /** Walk up to the counter; the panel opens on arrival (see update()). */
+  private onShopTapped(id: ShopId): void {
+    if (this.shop) return; // a panel is already open (its dim layer should catch this anyway)
+    this.gathering = null;
+    this.walkingToShop = id;
+    this.walkTo(shopStandPoint(id));
+  }
+
+  private openShop(id: ShopId): void {
+    const panel = new ShopPanel(this, SHOPS[id].name, SHOPS[id].blurb, this.shopRows(id), () => this.closeShop());
+    // Above the HUD, so its dim layer covers the Map button too.
+    this.shop = { id, panel: panel.setDepth(HUD_DEPTH + 1) };
+  }
+
+  private closeShop(): void {
+    // Destroyed once the Close tap is over: removing the button inside its
+    // own pointer-up handler would pull it out from under Phaser's input loop.
+    const panel = this.shop?.panel;
+    this.shop = null;
+    this.time.delayedCall(0, () => panel?.destroy());
+  }
+
+  /** What the open shop shows, from the current game state. */
+  private shopRows(id: ShopId): ShopRowView[] {
+    const state = getGameState(this);
+    if (id !== 'pantry') return []; // Specialty and Tools: next steps
+    return state.ingredients.map((ingredient) => ({
+      name: INGREDIENTS[ingredient].name,
+      detail: `x${state.stock[ingredient]}   🍃${INGREDIENTS[ingredient].unitPrice} each`,
+      buttons: STOCK_BUY_AMOUNTS.map((amount) => ({
+        label: `+${amount}`,
+        enabled: canBuyStock(state, ingredient, amount),
+        onPress: () => setGameState(this, buyStock(getGameState(this), ingredient, amount)),
+      })),
+    }));
   }
 
   private finishGathering(spot: ForageSpotDef): void {

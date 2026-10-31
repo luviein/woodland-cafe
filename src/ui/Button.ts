@@ -63,6 +63,11 @@ export class Button extends Phaser.GameObjects.Container {
     this.onClick();
   }
 
+  setText(text: string): this {
+    this.label.setText(text);
+    return this;
+  }
+
   setEnabled(enabled: boolean): this {
     this.enabled = enabled;
     this.bg.setFillStyle(enabled ? this.color : COLORS.disabled);
