@@ -379,7 +379,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 ### Milestone 3 scope: Connected Cafe (as built)
 
 - **One counter queue** on the order spot `O` and the queue spots `1-9`; arrivals stop while it's full.
-- **Patience** (`patienceSeconds`, 50s since milestone 5; 45s before) counts down at a fixed rate from joining the queue until served, shown as a bar over each waiting customer and at the prep station. At 0 they leave upset ("!!"), unpaid.
+- **Patience** (`patienceSeconds`: 45s at first, 50s in milestone 5, 25s in milestone 6) counted down at a fixed rate from joining the queue until served, shown as a bar over each waiting customer and at the prep station. At 0 they leave upset ("!!"), unpaid. (Since milestone 6 it only starts when the order is taken, §4.)
 - **Taking orders:** tap the customer at the counter ("!") and the player walks to the counter spot `P`. The order is taken on arrival if a clean, unreserved seat is free (taking it reserves the seat). Otherwise "No clean seats!" appears ("?" over the customer).
 - **Prep station as an overlay** (`scene.launch`): it shows the customer's real order, and the floor keeps running underneath. Serving stops patience; the customer reacts, and **starts walking only once the prep screen closes**: to their seat, or out angry for a wrong dish. If patience runs out mid-cook, they say so and prep closes.
 - **Payment** when served: price (`data/prices.ts`) plus a patience-tier tip (`data/tipConfig.ts`), shown as "+X 🍃". (Milestone 4 put it into the real wallet.)
