@@ -59,7 +59,7 @@ A cozy 2D pixel-art cafe game. The cafe is run by woodland creatures and serves 
     - one layer replaced (bread > mushroom > bread)
     - two neighbouring layers swapped (bread > bread > jam)
   - **Wrong:** two or more mistakes. An **empty dish is always wrong**.
-  - Modifiers are checked separately (see §4 "Missing modifiers").
+  - A **modifier** that's missing or extra also counts as one mistake (see §4 "Modifier mistakes").
 - **No result pop-up.** After serving, the customer **reacts in their speech bubble**, and that's how the player learns how they did:
 
   | Score   | Reaction    | Example |
@@ -150,7 +150,7 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 - While the dish is **in or on the toaster**, the bins, Serve and Reset are greyed out: there's nothing on the plate to add to or serve.
 - The toaster doesn't take an empty plate or a dish that's already toasted.
 - **Reset** clears the toasting too. Toasting costs nothing; stock is still used on serving.
-- Patience keeps dropping while toasting, so toasting an order that didn't ask for it only wastes time (an unrequested modifier has no other penalty, §4).
+- Toasting a dish that wasn't asked for toasted is a mistake, like forgetting to toast one that was (§4 "Modifier mistakes"). It also wastes time: patience keeps dropping while toasting.
 - **Keyboard:** `T` puts the dish in the toaster, and takes it back to the plate once it's done.
 
 ### 3.5 Dialogue
@@ -204,16 +204,17 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
   | < 25%         | No tip       |
 
 - Patience rate, thresholds, and tip amounts live in a **data/config file** so they're easy to tune.
-- **As built (placeholders):** dish prices are in `data/prices.ts` (milestone 5 raised them to cover ingredients, see §3.6; before that, 2-5 Leaves by layer count). Tip settings are in `data/tipConfig.ts`: the full tip equals the price; the patience tiers give 100% / 60% / 30% / 0% of it (a value exactly on a boundary counts as the lower tier). Close ×0.5 and missing modifier ×0.2 apply on top. The tip is rounded to whole Leaves at the end, and a double order pays for two. The payment shows as "+X 🍃" at the prep station, and a temporary total sits top-left on the floor until the wallet arrives in milestone 4.
+- **As built (placeholders):** dish prices are in `data/prices.ts` (milestone 5 raised them to cover ingredients, see §3.6; before that, 2-5 Leaves by layer count). Tip settings are in `data/tipConfig.ts`: the full tip equals the price; the patience tiers give 100% / 60% / 30% / 0% of it (a value exactly on a boundary counts as the lower tier). Close ×0.5 applies on top (until milestone 6, a missing modifier also cut it ×0.2; now it's a scoring mistake instead). The tip is rounded to whole Leaves at the end, and a double order pays for two. The payment shows as "+X 🍃" at the prep station, and a temporary total sits top-left on the floor until the wallet arrives in milestone 4.
 
-### Missing modifiers
+### Modifier mistakes
 
-- If the recipe's ingredients are right but a requested **modifier is missing** (e.g. the order was "toasted" but the bread wasn't toasted), the tip is **multiplied by 0.2** (the customer receives 20% of the tip they would otherwise get).
-- The 0.2 penalty is applied **once**, however many modifiers are missing.
-- **Extra modifiers** the customer didn't ask for carry **no penalty**.
-- If the **whole order is wrong**, the result is **wrong**, regardless of modifiers. A wrong order **pays nothing** (no payment, no tip), like an unhappy customer.
-- A **close** order gets a **reduced tip (0.5×)**.
-- The 0.2 and 0.5 multipliers live in the **config file** with the other tip values.
+- A modifier counts like a layer: **each one that's wrong is one mistake** in the score (§2.2).
+  - **Missing:** the customer asked for it and didn't get it (asked for toasted, got plain bread).
+  - **Extra:** the customer got it without asking (toasted when they wanted it soft).
+- So a dish with the right layers but one modifier wrong is **close** (indifferent reaction, tip ×0.5). A layer mistake plus a modifier mistake is two mistakes: **wrong**, which pays nothing.
+- (Changed in milestone 6. Before, a missing modifier only cut the tip to 20% and kept the score, and an extra one had no penalty at all. That made toasting "just in case" free, and a perfect reaction for a dish the customer didn't ask for felt wrong.)
+- A **wrong** order **pays nothing** (no payment, no tip), like an unhappy customer.
+- A **close** order gets a **reduced tip (0.5×)**, a config value with the other tip settings.
 
 ### Key tradeoff
 
