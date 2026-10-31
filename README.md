@@ -52,6 +52,14 @@ Opens on top of the floor when you take an order, and closes shortly after the
 customer reacts (tap or press any key to close it sooner). The floor keeps running underneath, so patience keeps dropping
 while you cook. A wrong dish sends the customer away angry.
 
+**Hints:** from day 2, customers sometimes describe their order instead of
+naming it ("Something earthy, tucked inside bread" = Mushroom Sandwich). Day 2
+is 10% hints, and each day adds 10%, up to 50%. Clue words: sweet/sticky = jam,
+earthy/forest floor = mushroom, from the river = tuna, round and red = tomato,
+spicy/fiery = chilli; "on a slice" = open bread, "between two slices" = sandwich,
+"twice" = a doubled layer, "crunch"/"warm and golden" = toasted. Try
+`set hintRatioStart 1` to see only hints.
+
 | Action              | Mouse / touch        | Keyboard        |
 | ------------------- | -------------------- | --------------- |
 | Add a layer         | Tap an ingredient bin | `1`–`6` (the number on the bin) |
@@ -76,7 +84,7 @@ It isn't included in production builds.
 | ----------- | ------------ |
 | `help`      | List all commands |
 | `speed [n]` | Run the cafe floor (critters, timers) n times faster, e.g. `speed 5`; `speed 1` = normal; no n shows the current speed |
-| `config`    | List every floor, day, stock, leaf, forage and toaster setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`, `leafConfig.ts`, `forageSpots.ts`, `toasterConfig.ts`) and its current value; changed ones show the file's value too |
+| `config`    | List every floor, day, stock, leaf, forage, toaster and hint setting (`src/data/floorConfig.ts`, `dayConfig.ts`, `stockConfig.ts`, `leafConfig.ts`, `forageSpots.ts`, `toasterConfig.ts`, `hintConfig.ts`) and its current value; changed ones show the file's value too |
 | `set <name> <value>` | Change a setting live, e.g. `set eatSecondsMax 15` or `set dayLengthSeconds 30` |
 | `reset`     | Put all settings and the speed back to normal |
 | `serve [perfect\|close\|wrong]` | At the prep station: serve as if the dish scored that (default `perfect`), skipping the cooking |

@@ -26,7 +26,6 @@ const STARTER_RECIPES = [
 // Config that always adds every modifier it can and always doubles, so tests
 // don't depend on luck.
 const ALWAYS: OrderConfig = {
-  hintRatio: 0,
   modifierChance: 1,
   maxModifiers: 10,
   doubleOrderChance: 1,

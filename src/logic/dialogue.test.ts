@@ -1,20 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DOUBLE_ORDER_LINES,
-  GAVE_UP_LINES,
-  INGREDIENT_LINES,
-  MODIFIER_LINES,
-  REACTION_LINES,
-  RECIPE_LINES,
-} from '../data/dialogue';
-import { ORDER_CONFIG, type OrderConfig } from '../data/orderConfig';
+import { DOUBLE_ORDER_LINES, GAVE_UP_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from '../data/dialogue';
 import { RECIPE_IDS } from '../data/recipes';
-import { buildGaveUp, buildReaction, buildSpeech } from './dialogue';
+import { buildGaveUp, buildReaction, buildSpeech, hintRatioForDay } from './dialogue';
 import { seededRng } from './random';
 import type { Order } from './types';
 
-const DIRECT: OrderConfig = { ...ORDER_CONFIG, hintRatio: 0 };
-const HINTS: OrderConfig = { ...ORDER_CONFIG, hintRatio: 1 };
+const DIRECT = 0;
+const HINTS = 1;
 
 const order = (recipeId: Order['recipeId'], extra: Partial<Order> = {}): Order => ({
   recipeId,
@@ -25,65 +17,59 @@ const order = (recipeId: Order['recipeId'], extra: Partial<Order> = {}): Order =
 
 describe('buildSpeech: direct style', () => {
   it('a plain order is one direct recipe line', () => {
-    const speech = buildSpeech(order('jamBread'), seededRng(1), DIRECT);
+    const speech = buildSpeech(order('jamBread'), DIRECT, seededRng(1));
     expect(speech).toHaveLength(1);
     expect(RECIPE_LINES.jamBread.direct).toContain(speech[0]);
   });
 
   it('every recipe produces a non-empty speech', () => {
     for (const id of RECIPE_IDS) {
-      const speech = buildSpeech(order(id), seededRng(2), DIRECT);
+      const speech = buildSpeech(order(id), DIRECT, seededRng(2));
       expect(speech.length, id).toBeGreaterThan(0);
     }
   });
 
   it('adds one line per modifier, after the recipe line', () => {
-    const speech = buildSpeech(
-      order('jamBread', { modifiers: ['toasted', 'toGo'] }),
-      seededRng(3),
-      DIRECT,
-    );
+    const speech = buildSpeech(order('jamBread', { modifiers: ['toasted', 'toGo'] }), DIRECT, seededRng(3));
     expect(speech).toHaveLength(3);
     expect(MODIFIER_LINES.toasted.direct).toContain(speech[1]);
     expect(MODIFIER_LINES.toGo.direct).toContain(speech[2]);
   });
 
   it('starts with a double-order line when quantity is 2', () => {
-    const speech = buildSpeech(order('jamBread', { quantity: 2 }), seededRng(4), DIRECT);
+    const speech = buildSpeech(order('jamBread', { quantity: 2 }), DIRECT, seededRng(4));
     expect(DOUBLE_ORDER_LINES.direct).toContain(speech[0]);
     expect(RECIPE_LINES.jamBread.direct).toContain(speech[1]);
   });
 
   it('is repeatable with the same seed', () => {
     const o = order('mushroomSandwich', { modifiers: ['toasted'] });
-    expect(buildSpeech(o, seededRng(9), DIRECT)).toEqual(buildSpeech(o, seededRng(9), DIRECT));
+    expect(buildSpeech(o, DIRECT, seededRng(9))).toEqual(buildSpeech(o, DIRECT, seededRng(9)));
   });
 });
 
 describe('buildSpeech: hint style', () => {
   it("uses the recipe's hint lines when it has them", () => {
-    const speech = buildSpeech(order('jamBread'), seededRng(5), HINTS);
+    const speech = buildSpeech(order('jamBread'), HINTS, seededRng(5));
     expect(speech).toHaveLength(1);
     expect(RECIPE_LINES.jamBread.hint).toContain(speech[0]);
   });
 
-  it('builds the hint from ingredient hints when the recipe has none', () => {
-    // Double Mushroom Bread has no recipe hints yet; bread and mushroom do.
-    const speech = buildSpeech(order('doubleMushroomBread'), seededRng(6), HINTS);
-    expect(speech).toHaveLength(2);
-    expect(INGREDIENT_LINES.bread.hint).toContain(speech[0]);
-    expect(INGREDIENT_LINES.mushroom.hint).toContain(speech[1]);
+  it('every recipe hints with one line of its own', () => {
+    for (const id of RECIPE_IDS) {
+      const speech = buildSpeech(order(id), HINTS, seededRng(6));
+      expect(speech, id).toHaveLength(1);
+      expect(RECIPE_LINES[id].hint, id).toContain(speech[0]);
+    }
   });
 
-  it('falls back to a direct line when an ingredient has no hint either', () => {
-    // Tuna has no hint lines yet, so a hint for Tuna Sandwich can't be built.
-    const speech = buildSpeech(order('tunaSandwich'), seededRng(7), HINTS);
-    expect(speech).toHaveLength(1);
-    expect(RECIPE_LINES.tunaSandwich.direct).toContain(speech[0]);
+  it('falls back to a direct line for a placeholder modifier with no hints yet', () => {
+    const speech = buildSpeech(order('jamBread', { modifiers: ['toGo'] }), HINTS, seededRng(7));
+    expect(MODIFIER_LINES.toGo.direct).toContain(speech[1]);
   });
 
   it('uses modifier hint lines when available', () => {
-    const speech = buildSpeech(order('plainBread', { modifiers: ['toasted'] }), seededRng(8), HINTS);
+    const speech = buildSpeech(order('plainBread', { modifiers: ['toasted'] }), HINTS, seededRng(8));
     expect(MODIFIER_LINES.toasted.hint).toContain(speech[1]);
   });
 });
@@ -91,16 +77,30 @@ describe('buildSpeech: hint style', () => {
 describe('buildSpeech: hint ratio', () => {
   it('roughly matches the configured ratio over many orders', () => {
     const rng = seededRng(10);
-    const half: OrderConfig = { ...ORDER_CONFIG, hintRatio: 0.5 };
     let hints = 0;
     const runs = 2000;
     for (let i = 0; i < runs; i++) {
-      const [line] = buildSpeech(order('jamBread'), rng, half);
+      const [line] = buildSpeech(order('jamBread'), 0.5, rng);
       if (RECIPE_LINES.jamBread.hint.includes(line)) hints++;
     }
     // 50% +/- 5%: loose enough to never flake, tight enough to catch a bug.
     expect(hints / runs).toBeGreaterThan(0.45);
     expect(hints / runs).toBeLessThan(0.55);
+  });
+});
+
+describe('hintRatioForDay', () => {
+  const CONFIG = { hintRatioStart: 0, hintRatioPerDay: 0.1, hintRatioMax: 0.5 };
+
+  it('starts with no hints on day 1, then adds a step each day', () => {
+    expect(hintRatioForDay(1, CONFIG)).toBe(0);
+    expect(hintRatioForDay(2, CONFIG)).toBeCloseTo(0.1);
+    expect(hintRatioForDay(4, CONFIG)).toBeCloseTo(0.3);
+  });
+
+  it('stops at the cap', () => {
+    expect(hintRatioForDay(6, CONFIG)).toBeCloseTo(0.5);
+    expect(hintRatioForDay(40, CONFIG)).toBe(0.5);
   });
 });
 

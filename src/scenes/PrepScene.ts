@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { devActions } from '../debug/devActions';
-import { buildGaveUp, buildReaction, buildSpeech } from '../logic/dialogue';
+import { buildGaveUp, buildReaction, buildSpeech, hintRatioForDay } from '../logic/dialogue';
 import { availableRecipes, expectedPlate } from '../logic/orders';
 import { computePayment, type Payment } from '../logic/payment';
 import { scoreDish } from '../logic/scoreDish';
@@ -138,7 +138,8 @@ export class PrepScene extends Phaser.Scene {
 
     // No order ticket: the speech bubble is the only clue (see GAME_DESIGN.md).
     this.bubble = new SpeechBubble(this, 112, 24, 392, 88);
-    this.bubble.setLines(buildSpeech(this.request.order));
+    // Hints get more common as the days go by (data/hintConfig.ts).
+    this.bubble.setLines(buildSpeech(this.request.order, hintRatioForDay(getGameState(this).day)));
     this.dishView = new DishView(this, PLATE_X, PLATE_Y);
     if (getGameState(this).upgrades.includes('toaster')) this.createToaster();
 

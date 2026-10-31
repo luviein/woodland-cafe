@@ -1,5 +1,4 @@
 import type { Score } from '../logic/types';
-import type { IngredientId } from './ingredients';
 import type { ModifierId } from './modifiers';
 import type { RecipeId } from './recipes';
 
@@ -7,64 +6,120 @@ import type { RecipeId } from './recipes';
 //   direct: names the thing outright      -> "One jam bread, please!"
 //   hint:   describes it, player decodes  -> "Something sweet on soft bread, please."
 // A speech bubble is assembled from these lines when an order is generated
-// (logic/dialogue.ts). ORDER_CONFIG.hintRatio decides how often hints are used.
+// (logic/dialogue.ts). How often hints are used grows day by day (hintConfig.ts).
 //
 // The Record<RecipeId, ...> types mean the compiler refuses to build if any
-// recipe, ingredient or modifier is missing its dialogue entry.
+// recipe or modifier is missing its dialogue entry.
 //
-// Milestone 1 only uses direct recipe lines. Hint lines get filled out in
-// milestone 6, so some hint lists are still empty.
+// Every recipe has hint lines (a data test checks), and so does every
+// modifier that can be ordered so far; the rest are placeholders until their
+// upgrade is built.
 
 export interface DialogueLines {
   direct: readonly string[];
   hint: readonly string[];
 }
 
+// Hints use the same clue words every time, so players can learn them
+// (GAME_DESIGN.md §3.5):
+//   jam:      sweet, sticky, berry          mushroom: earthy, forest floor, under the trees
+//   tuna:     from the river, fishy         tomato:   round and red, juicy, from the garden
+//   chilli:   spicy, fiery, a kick
+//   open bread: "on a slice" / "on bread"   sandwich: "between two slices", "tucked inside"
+//   a doubled layer: "twice", "more of it", "double"
+// Each hint must fit exactly one recipe.
 export const RECIPE_LINES: Record<RecipeId, DialogueLines> = {
   plainBread: {
     direct: ['Just plain bread, please.', 'One plain bread, thank you!', 'Plain bread for me. Nothing fancy.'],
-    hint: ['Just bread. I like to keep things simple.'],
+    hint: [
+      'Just bread. I like to keep things simple.',
+      'A slice of bread, with nothing on it at all.',
+      'Something soft and fresh from the oven. Nothing else!',
+    ],
   },
   jamBread: {
     direct: ['One jam bread, please!', 'Jam bread, please!', "I'd love a jam bread."],
-    hint: ['Something sweet on soft bread, please.'],
+    hint: [
+      'Something sweet on soft bread, please.',
+      'A slice with something sticky and berry-sweet on top.',
+      'Bread with a smear of something sweet, please.',
+    ],
   },
   extraJammyBread: {
     direct: ['Extra jammy bread, please!', 'One extra jammy bread. Lots of jam!', 'Extra jammy bread, if you please.'],
-    hint: ['Bread, and jam... and then more jam!'],
+    hint: [
+      'Bread, and jam... and then more jam!',
+      'A slice with twice the sweet, sticky stuff!',
+      'Something sweet on bread. No, sweeter. Double it!',
+    ],
   },
   mushroomBread: {
     direct: ['One mushroom bread, please.', 'Mushroom bread, please!', "I'll have the mushroom bread."],
-    hint: ['Something from the forest floor, on bread.'],
+    hint: [
+      'Something from the forest floor, on bread.',
+      'A slice with something earthy on top, please.',
+      'Something from under the trees, on a slice.',
+    ],
   },
   doubleMushroomBread: {
     direct: ['Double mushroom bread, please!', 'One double mushroom bread.', 'Double mushroom bread for me!'],
-    hint: [],
+    hint: [
+      'Forest-floor finds on a slice. Twice as many!',
+      'Something earthy on bread... and then more of it!',
+      'Double the forest floor on my slice, please.',
+    ],
   },
   mushroomSandwich: {
     direct: ['A mushroom sandwich, please.', 'One mushroom sandwich!', 'Mushroom sandwich, thank you.'],
-    hint: [],
+    hint: [
+      'Forest finds, tucked between two slices.',
+      'Something earthy, tucked inside bread.',
+      'Two slices hugging something from under the trees.',
+    ],
   },
   jamSandwich: {
     direct: ['A jam sandwich, please!', 'One jam sandwich, thank you!', 'Jam sandwich, please. My favourite!'],
-    hint: [],
+    hint: [
+      'Something sweet and sticky, between two slices.',
+      'Something berry-sweet, tucked inside bread, please.',
+      'Two slices with something sticky in the middle.',
+    ],
   },
-  // Placeholders: unlocked by purchasable ingredients (milestone 6)
-  tomatoBread: { direct: ['One tomato bread, please.'], hint: [] },
-  tunaSandwich: { direct: ['A tuna sandwich, please!'], hint: [] },
-  tunaTomatoSandwich: { direct: ['A tuna tomato sandwich, please.'], hint: [] },
-  spicyTunaBread: { direct: ['One spicy tuna bread, please!'], hint: [] },
-  spicyMushroomBread: { direct: ['Spicy mushroom bread, please!'], hint: [] },
-};
-
-export const INGREDIENT_LINES: Record<IngredientId, DialogueLines> = {
-  bread: { direct: ['On bread, please.'], hint: ['Something soft and fresh from the oven.'] },
-  mushroom: { direct: ['With mushroom, please.'], hint: ['Something earthy from under the trees.'] },
-  jam: { direct: ['With jam, please.'], hint: ['Something sweet and sticky.'] },
-  // Placeholders (milestone 6)
-  chilli: { direct: ['Make it spicy! I want my ears to go pink.'], hint: ['Give it a kick!'] },
-  tuna: { direct: ['With tuna, please.'], hint: [] },
-  tomato: { direct: ['With tomato, please.'], hint: [] },
+  tomatoBread: {
+    direct: ['One tomato bread, please.', 'Tomato bread, please!', "I'll have the tomato bread."],
+    hint: [
+      'Something round and red from the garden, on a slice.',
+      'A slice with something juicy and red on top.',
+    ],
+  },
+  tunaSandwich: {
+    direct: ['A tuna sandwich, please!', 'One tuna sandwich, thank you.', 'Tuna sandwich for me!'],
+    hint: [
+      'Something from the river, between two slices.',
+      'Two slices with something fishy tucked inside.',
+    ],
+  },
+  tunaTomatoSandwich: {
+    direct: ['A tuna tomato sandwich, please.', 'One tuna and tomato sandwich!', 'Tuna tomato sandwich, please.'],
+    hint: [
+      'Something from the river AND something red from the garden, between two slices.',
+      'Two slices with fish and something juicy and red tucked inside.',
+    ],
+  },
+  spicyTunaBread: {
+    direct: ['One spicy tuna bread, please!', 'Spicy tuna bread, please.', "I'll have the spicy tuna bread."],
+    hint: [
+      'Something from the river on a slice. And make it fiery!',
+      'Fishy and spicy, on bread. I want my ears to go pink!',
+    ],
+  },
+  spicyMushroomBread: {
+    direct: ['Spicy mushroom bread, please!', 'One spicy mushroom bread.', 'Spicy mushroom bread for me!'],
+    hint: [
+      'Something earthy on a slice, with a fiery kick!',
+      'Forest-floor finds on bread. Make it spicy!',
+    ],
+  },
 };
 
 /**
@@ -113,8 +168,12 @@ export const DOUBLE_ORDER_LINES: DialogueLines = {
 
 export const MODIFIER_LINES: Record<ModifierId, DialogueLines> = {
   toasted: {
-    direct: ['Make it toasty, please! My paws are freezing.', 'Toasted, please!'],
-    hint: ['I like my bread with a bit of crunch.'],
+    direct: ['Make it toasty, please! My paws are freezing.', 'Toasted, please!', 'Could you toast it?'],
+    hint: [
+      'I like my bread with a bit of crunch.',
+      'Could it be warm and golden, please?',
+      'My paws are cold. Something warm and crunchy!',
+    ],
   },
   // Placeholders (milestone 6)
   buttered: { direct: ['Buttered, please.'], hint: [] },
