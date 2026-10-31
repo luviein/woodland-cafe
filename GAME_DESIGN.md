@@ -236,7 +236,7 @@ The player can leave the counter **before taking an order** to clean messes, but
 | --------------- | ------- |
 | **Cafe**        | Return here to start the next day. Tapping it on the map first asks "Start Day N at the cafe?" (**Open cafe** / **Not yet**), so a new day never starts by surprise. |
 | **Forest**      | Grassy outdoor area. Some ingredients can be **foraged** (clicked/collected and added to the player's stock, §5.5). |
-| **Marketplace** | Grassy outdoor area with **shops** where the player spends Leaves on ingredients, upgrades and furniture. |
+| **Marketplace** | Grassy outdoor area with **shops** where the player spends Leaves on ingredients, upgrades and furniture (§5.6). |
 
 ### 5.4 Leaf pickups
 
@@ -257,7 +257,21 @@ The player can leave the counter **before taking an order** to clean messes, but
 - **Gathering:** tap a spot; the player walks next to it and gathers for about 1 second (config value), with a progress bar like cleaning. Then "+2 Mushroom" floats up and it goes into **stock**. Tapping elsewhere cancels.
 - **Regrowth:** each spot can be gathered **once a day** and grows back the next day. A gathered spot looks bare (no mushrooms, no berries). Gathered spots are kept in the game state, so going to the map and back doesn't regrow them.
 - **Worth:** all six spots give 12 stock a day (about 12 Leaves at the unit price, 24 at the rush price), about the same as the daily leaf pickup cap. A bonus, not a replacement for the cafe.
-- The Marketplace has no forage spots; its shops come in milestone 6.
+- The Marketplace has no forage spots; its shops come in milestone 6 (§5.6).
+
+### 5.6 Marketplace shops
+
+- The Marketplace has **three stalls**. Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
+
+  | Stall | Sells |
+  | ----- | ----- |
+  | **Pantry** | Stock of every **owned** ingredient, at its unit price (§3.6) |
+  | **Specialty** | One-time **unlocks** for chilli (15), tomato (10) and tuna (20). Once unlocked, its recipes appear in orders, its bin shows at the prep station, and the Pantry sells its stock. Bought ones show "Owned". |
+  | **Tools** | **Upgrades** (§3.4). For now only the Toaster (30); the others aren't listed until they're built. |
+
+- **Buying stock is one unit at a time:** each ingredient row has a **+1** and a **+10** button. Each tap buys straight away (no basket, no checkout) and shows the new stock. A button is greyed out when the wallet can't pay for it, so +10 can be grey while +1 still works.
+- A newly unlocked ingredient starts with **0 stock**: buy some at the Pantry, or the first dishes are rush deliveries.
+- **Spending** never takes the wallet below 0; a purchase that can't be paid for does nothing (the buttons are greyed out anyway).
 
 ---
 
