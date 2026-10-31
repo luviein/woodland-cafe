@@ -315,7 +315,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
   | Role | Does | Wage |
   | ---- | ---- | ---- |
-  | **Mascot** | Stands by the cafe door and waves. While the doors are open, the gap between arrivals is multiplied by `mascotIntervalMultiplier` (**0.6**, so 9-15s becomes about 5-9s). | 🍃20 / day |
+  | **Mascot** | Dances outside the cafe, seen on the world map next to the cafe. While the doors are open, the gap between arrivals is multiplied by `mascotIntervalMultiplier` (**0.6**, so 9-15s becomes about 5-9s). | 🍃20 / day |
   | **Cleaner** | Walks to the nearest mess and wipes it (a little slower than the player). Never goes for a table the player is already heading to clean. | 🍃15 / day |
 
 - **Progression:** the Mascot brings more customers, more customers make more messes, and that makes the Cleaner worth hiring.
@@ -470,7 +470,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Quieter start** (§5.8): a customer every 9-15s (was 4-8s), about 15 a day.
 - **Notice Board**, a fifth Marketplace stall (the others moved left): **Hire** / **Let go** the Mascot (🍃20/day) or Cleaner (🍃15/day), both free. Hires are in the game state and work from the next day the cafe opens.
 - **Wages** are paid when the day ends, before the summary: a "Wages" line, taken off Net. Anyone the wallet can't pay in full quits unpaid ("Couldn't pay, quit: ..."); a cheaper one after them can still be paid.
-- **Mascot:** an orange critter bobbing just outside the door. The gap between arrivals is multiplied by `mascotIntervalMultiplier` (0.6, in `floorConfig.ts`, so `set` works on it live).
+- **Mascot:** an orange critter dancing (hopping and swaying) next to the cafe on the world map, whenever hired; not shown inside the cafe. The gap between arrivals is multiplied by `mascotIntervalMultiplier` (0.6, in `floorConfig.ts`, so `set` works on it live).
 - **Cleaner:** waits just inside the door, walks (at `cleanerSpeed` 4, the player is 6) to the nearest messy table and wipes every mess there, using the same wiping time as the player. Leaves any table the player is heading to or wiping; goes home when all is clean. Runs on floor time, so `speed` speeds them up too.
 - **Dev console:** `hire` / `fire <mascot|cleaner>`, and `config` / `set` cover `mascotIntervalMultiplier` and `cleanerSpeed`.
 - **Not yet:** more roles (Server, Greeter) and more than one of a role (later features).
