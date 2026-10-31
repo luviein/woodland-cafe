@@ -155,7 +155,7 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 
 ### 3.5 Dialogue
 
-- Every **recipe, ingredient and modifier** has several lines a customer might say, in two styles:
+- Every **recipe and modifier** has several lines a customer might say, in two styles:
 
   | Style      | Example |
   | ---------- | ------- |
@@ -165,11 +165,11 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 - Example "toasted" lines:
   - "Make it toasty, please! My paws are freezing."
   - "I like my bread with a bit of crunch."
-- Example chilli lines:
-  - "Make it spicy! I want my ears to go pink."
-  - "Give it a kick!"
-- When an order is generated, the customer's **speech bubble is built from matching lines** (for the recipe, its ingredients, and any modifiers).
-- The **ratio of hint to direct lines is a config value**, so difficulty can ramp up over days.
+- When an order is generated, the customer's **speech bubble is built from matching lines**: one for the recipe, then one per modifier. Each part picks direct or hint on its own, so "One jam bread, please! I like my bread with a bit of crunch." can happen.
+- **Hints describe the whole dish**, using the same clue words for each ingredient so they can be learned: sweet / sticky / berries = jam, earthy / forest floor / under the trees = mushroom, from the river / fishy = tuna, round and red / from the garden = tomato, spicy / fiery / a kick = chilli. "On a slice" means open bread; "between two slices" / "tucked inside" means a sandwich; "twice" / "more of it" means a doubled layer.
+  - Every recipe needs its **own** hint lines. Building a hint ingredient by ingredient ("Something soft... Something earthy.") was dropped: it can't tell Mushroom Bread from Double Mushroom Bread or a Mushroom Sandwich. (Ingredients therefore have no lines of their own any more.)
+  - Each hint must point to exactly one recipe.
+- **Hints get more common day by day:** day 1 has none, each day adds **10%**, up to **50%** (day 6 on). Start, step and cap are config values (`data/hintConfig.ts`).
 - There is **no order ticket**. The speech bubble is the only clue, plus the Recipe Book for looking up layers. Hint lines therefore make orders genuinely harder to decode.
 
 ### 3.6 Ingredient stock
