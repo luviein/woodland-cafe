@@ -407,3 +407,16 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Tuning on the way:** cleaning 0.5s per mess, patience 50s.
 - **Dev console:** `stock`, `leaves` and `goto <map|cafe|forest|marketplace>` work anywhere; `config` / `set` also cover the stock, leaf and forage settings.
 - **Not yet:** obstacles outdoors (the player walks through trees and stalls), Marketplace shops (milestone 6), farming and the tutorial (later features).
+
+### Milestone 6 scope: Marketplace Shop (as built)
+
+- **Shops** (§5.6): three Marketplace stalls. Tap one to walk up to it; its panel opens on arrival (Close or `Esc`).
+  - **Pantry:** stock of owned ingredients at the unit price, **+1** / **+10** per tap, greyed out when unaffordable.
+  - **Specialty:** unlocks chilli (15), tomato (10) and tuna (20), showing how many recipes each adds. New ingredients come with 0 stock, and owned ingredients stay in catalogue order, so prep bins and keys `1`-`6` don't move.
+  - **Tools:** the Toaster (30). The other upgrades aren't listed until they're built.
+- **Toasting** (§3.4): drag the dish from the plate into the toaster, wait ~2s (`toastSeconds`) while it rattles, then drag it back from the top. `T` does both on the keyboard.
+- **Modifier mistakes** (§4): a missing or extra modifier counts as one mistake, so a dish toasted without being asked is "close". This replaced the 20% missing-modifier tip cut.
+- **Hint dialogue** (§3.5): every recipe has its own hint lines with consistent clue words, and more for toasted. Hints are 0% on day 1, +10% a day, up to 50% (`data/hintConfig.ts`). The ingredient-by-ingredient hints were dropped because they were ambiguous.
+- **Patience** (§4): it now only counts down once the order is taken; the queue waits for free. At closing time, the queue goes home calmly (not counted as giving up). Patience retuned to 25s.
+- **Dev console:** `unlock <chilli|tuna|tomato|toaster>` (free), `endday` also sends every customer home, and `config` / `set` cover the toaster and hint settings.
+- **Not yet:** the other upgrades (Butter Churn ... Serving Tray) and double orders; a summary line for customers sent home at closing; obstacles outdoors.
