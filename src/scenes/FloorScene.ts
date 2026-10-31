@@ -22,7 +22,8 @@ import {
   type FloorState,
 } from '../logic/floor';
 import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } from '../logic/day';
-import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe } from '../logic/dayStats';
+import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe, recordWages } from '../logic/dayStats';
+import { payWages } from '../logic/employees';
 import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
 import { pointKey, tableById, type Layout, type Point } from '../logic/layout';
@@ -289,6 +290,10 @@ export class FloorScene extends Phaser.Scene {
   private openSummary(): void {
     this.summaryOpen = true;
     this.destinationMarker.setVisible(false);
+    // Wages come out at the end of the day, after the day's takings are in.
+    const wages = payWages(getGameState(this));
+    setGameState(this, wages.state);
+    this.day = { ...this.day, stats: recordWages(this.day.stats, wages.paid, wages.quit) };
     const request: DaySummaryRequest = {
       stats: this.day.stats,
       onExit: () => {

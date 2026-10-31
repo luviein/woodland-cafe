@@ -7,6 +7,7 @@ import {
   recordIngredients,
   recordOutOfStock,
   recordServe,
+  recordWages,
   summaryLines,
   totalEarned,
   totalServed,
@@ -86,6 +87,26 @@ describe('summaryLines', () => {
       'Rush deliveries: 🍃 2',
       'Net: 🍃 4',
       'Wallet: 🍃 40',
+    ]);
+  });
+});
+
+describe('wages in the summary', () => {
+  it('come off the net, with a line only once someone was employed', () => {
+    const stats = recordServe(createDayStats(), 'perfect', paid(30, 10));
+    expect(summaryLines(stats, 0).some((l) => l.startsWith('Wages'))).toBe(false);
+    const paidOut = recordWages(stats, 15, ['mascot']);
+    expect(netLeaves(paidOut)).toBe(25);
+    expect(summaryLines(paidOut, 25)).toEqual([
+      'Served: 1 (1 perfect, 0 close, 0 wrong)',
+      'Gave up waiting: 0',
+      'Left, out of stock: 0',
+      'Earned: 🍃 40 (30 dishes + 10 tips)',
+      'Rush deliveries: 🍃 0',
+      'Wages: 🍃 15',
+      "Couldn't pay, quit: Mascot",
+      'Net: 🍃 25',
+      'Wallet: 🍃 25',
     ]);
   });
 });

@@ -1,3 +1,4 @@
+import { EMPLOYEES, type EmployeeRole } from '../data/employees';
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
 import type { Payment } from './payment';
 import type { IngredientPlan } from './stock';
@@ -16,6 +17,10 @@ export interface DayStats {
   tipLeaves: number;
   /** Leaves spent on rush deliveries. */
   rushLeaves: number;
+  /** Leaves paid in wages at the end of the day (employees.ts payWages). */
+  wageLeaves: number;
+  /** Employees who couldn't be paid, and quit. */
+  quit: EmployeeRole[];
   /** Ingredients used, split into from stock / rush-bought. Only ones used today appear. */
   used: Partial<Record<IngredientId, { fromStock: number; rushed: number }>>;
 }
@@ -28,6 +33,8 @@ export function createDayStats(): DayStats {
     priceLeaves: 0,
     tipLeaves: 0,
     rushLeaves: 0,
+    wageLeaves: 0,
+    quit: [],
     used: {},
   };
 }
@@ -57,6 +64,11 @@ export function recordOutOfStock(stats: DayStats): DayStats {
   return { ...stats, outOfStock: stats.outOfStock + 1 };
 }
 
+/** End-of-day wages: what was paid, and who quit unpaid. */
+export function recordWages(stats: DayStats, paid: number, quit: readonly EmployeeRole[]): DayStats {
+  return { ...stats, wageLeaves: stats.wageLeaves + paid, quit: [...stats.quit, ...quit] };
+}
+
 /** `count` customers gave up waiting. */
 export function recordGaveUp(stats: DayStats, count = 1): DayStats {
   return { ...stats, gaveUp: stats.gaveUp + count };
@@ -70,9 +82,9 @@ export function totalEarned(stats: DayStats): number {
   return stats.priceLeaves + stats.tipLeaves;
 }
 
-/** Earned minus spent on rush deliveries. Can be negative on a bad day. */
+/** Earned minus spent on rush deliveries and wages. Can be negative on a bad day. */
 export function netLeaves(stats: DayStats): number {
-  return totalEarned(stats) - stats.rushLeaves;
+  return totalEarned(stats) - stats.rushLeaves - stats.wageLeaves;
 }
 
 /**
@@ -82,12 +94,18 @@ export function netLeaves(stats: DayStats): number {
  */
 export function summaryLines(stats: DayStats, wallet: number): string[] {
   const { perfect, close, wrong } = stats.served;
+  // Wage lines only once someone's been hired, so early days stay short.
+  const wages = stats.wageLeaves > 0 || stats.quit.length > 0 ? [`Wages: 🍃 ${stats.wageLeaves}`] : [];
+  const quit =
+    stats.quit.length > 0 ? [`Couldn't pay, quit: ${stats.quit.map((r) => EMPLOYEES[r].name).join(', ')}`] : [];
   return [
     `Served: ${totalServed(stats)} (${perfect} perfect, ${close} close, ${wrong} wrong)`,
     `Gave up waiting: ${stats.gaveUp}`,
     `Left, out of stock: ${stats.outOfStock}`,
     `Earned: 🍃 ${totalEarned(stats)} (${stats.priceLeaves} dishes + ${stats.tipLeaves} tips)`,
     `Rush deliveries: 🍃 ${stats.rushLeaves}`,
+    ...wages,
+    ...quit,
     `Net: 🍃 ${netLeaves(stats)}`,
     `Wallet: 🍃 ${wallet}`,
   ];

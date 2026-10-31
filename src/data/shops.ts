@@ -19,26 +19,32 @@ export const SHOPS = {
   pantry: {
     name: 'Pantry',
     location: 'marketplace',
-    stall: { x: 120, y: 120 },
+    stall: { x: 100, y: 120 },
     blurb: 'Stock up on ingredients you own.',
   },
   specialty: {
     name: 'Specialty',
     location: 'marketplace',
-    stall: { x: 253, y: 110 },
+    stall: { x: 210, y: 110 },
     blurb: 'New ingredients for new recipes.',
   },
   tools: {
     name: 'Tools',
     location: 'marketplace',
-    stall: { x: 386, y: 120 },
+    stall: { x: 320, y: 120 },
     blurb: 'Kitchen upgrades.',
   },
   carpenter: {
     name: 'Carpenter',
     location: 'marketplace',
-    stall: { x: 520, y: 110 },
+    stall: { x: 430, y: 110 },
     blurb: 'Furniture. Place it via Cafe > Decorate.',
+  },
+  noticeBoard: {
+    name: 'Notice Board',
+    location: 'marketplace',
+    stall: { x: 540, y: 120 },
+    blurb: 'Hire help. Wages are paid at the end of each day.',
   },
 } satisfies Record<string, ShopDef>;
 

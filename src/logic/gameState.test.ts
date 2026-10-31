@@ -16,6 +16,7 @@ describe('createNewGame', () => {
       leavesPickedToday: 0,
       foragedToday: [],
       furniture: startingFurniture(),
+      employees: [],
     });
   });
 

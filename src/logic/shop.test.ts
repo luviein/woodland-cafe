@@ -21,8 +21,8 @@ import {
 const rich = () => earnLeaves(createNewGame(), 50);
 
 describe('shopsAt', () => {
-  it('lists the four Marketplace stalls, and none in the Forest', () => {
-    expect(shopsAt('marketplace')).toEqual(['pantry', 'specialty', 'tools', 'carpenter']);
+  it('lists the five Marketplace stalls, and none in the Forest', () => {
+    expect(shopsAt('marketplace')).toEqual(['pantry', 'specialty', 'tools', 'carpenter', 'noticeBoard']);
     expect(shopsAt('forest')).toEqual([]);
   });
 

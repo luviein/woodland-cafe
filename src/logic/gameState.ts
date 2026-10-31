@@ -1,6 +1,7 @@
 import { STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { LEAF_CONFIG, type LeafConfig } from '../data/leafConfig';
 import type { UpgradeId } from '../data/upgrades';
+import type { EmployeeRole } from '../data/employees';
 import { startingFurniture, type Furniture } from './furniture';
 import { startingStock, type Stock } from './stock';
 
@@ -33,6 +34,8 @@ export interface GameState {
   foragedToday: readonly string[];
   /** Tables and chairs: placed in the cafe, and in storage (furniture.ts). */
   furniture: Furniture;
+  /** Roles hired at the Notice Board; each works every day until let go (employees.ts). */
+  employees: readonly EmployeeRole[];
 }
 
 export function createNewGame(): GameState {
@@ -45,6 +48,7 @@ export function createNewGame(): GameState {
     leavesPickedToday: 0,
     foragedToday: [],
     furniture: startingFurniture(),
+    employees: [],
   };
 }
 

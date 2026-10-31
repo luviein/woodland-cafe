@@ -6,7 +6,8 @@ import { COLORS, TEXT } from '../ui/theme';
 import { getGameState } from './gameStore';
 
 const PANEL_WIDTH = 520;
-const PANEL_HEIGHT = 290;
+// Tall enough for the two wage lines too (dayStats.ts summaryLines).
+const PANEL_HEIGHT = 330;
 /** Where the "Ingredients used" column starts, from the panel's left edge. */
 const SECOND_COLUMN_X = 330;
 

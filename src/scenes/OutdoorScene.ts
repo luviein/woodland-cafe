@@ -9,6 +9,8 @@ import { LEAF_CONFIG } from '../data/leafConfig';
 import { SHOPS, STOCK_BUY_AMOUNTS, TOOLS_ON_SALE, type ShopId } from '../data/shops';
 import { UPGRADES } from '../data/upgrades';
 import { FURNITURE, FURNITURE_KINDS } from '../data/furniture';
+import { EMPLOYEE_ROLES, EMPLOYEES } from '../data/employees';
+import { hire, isHired, letGo } from '../logic/employees';
 import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
 import {
   forage,
@@ -313,6 +315,26 @@ export class OutdoorScene extends Phaser.Scene {
               label: owned ? '-' : 'Buy',
               enabled: canUnlock(state, ingredient),
               onPress: () => setGameState(this, unlockIngredient(getGameState(this), ingredient)),
+            },
+          ],
+        };
+      });
+    }
+    if (id === 'noticeBoard') {
+      return EMPLOYEE_ROLES.map((role) => {
+        const hired = isHired(state, role);
+        const { does, wage } = EMPLOYEES[role];
+        return {
+          name: EMPLOYEES[role].name,
+          detail: `${hired ? 'Hired' : does}   🍃${wage}/day`,
+          buttons: [
+            {
+              label: hired ? 'Let go' : 'Hire',
+              enabled: true,
+              onPress: () => {
+                const now = getGameState(this);
+                setGameState(this, isHired(now, role) ? letGo(now, role) : hire(now, role));
+              },
             },
           ],
         };

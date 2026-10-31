@@ -21,7 +21,7 @@ const WIDTH = 400;
 const ROW_HEIGHT = 30;
 const HEADER = 64;
 const FOOTER = 44;
-const BUTTON_WIDTH = 52;
+const BUTTON_WIDTH = 64; // fits "Let go" (Notice Board)
 const BUTTON_GAP = 6;
 
 /**
