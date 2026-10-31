@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { SHOPS } from '../data/shops';
 import { createNewGame, earnLeaves } from './gameState';
-import { buyStock, canBuyStock, shopStandPoint, shopsAt, stockCost } from './shop';
+import { availableRecipes } from './orders';
+import {
+  buyStock,
+  canBuyStock,
+  canUnlock,
+  newRecipesWith,
+  shopStandPoint,
+  shopsAt,
+  stockCost,
+  unlockableIngredients,
+  unlockIngredient,
+} from './shop';
 
 const rich = () => earnLeaves(createNewGame(), 50);
 
@@ -43,5 +54,43 @@ describe('buying stock', () => {
   it("can't buy stock of an ingredient that isn't owned yet", () => {
     expect(canBuyStock(rich(), 'tuna', 1)).toBe(false);
     expect(() => buyStock(rich(), 'tuna', 1)).toThrow(/isn't owned/);
+  });
+});
+
+describe('unlocking ingredients', () => {
+  it('the Specialty stall sells chilli, tuna and tomato, not the starters', () => {
+    expect(unlockableIngredients()).toEqual(['chilli', 'tuna', 'tomato']);
+  });
+
+  it('costs the unlock price, adds no stock, and opens its recipes', () => {
+    const before = rich();
+    const after = unlockIngredient(before, 'tomato');
+    expect(after.leaves).toBe(40);
+    expect(after.stock.tomato).toBe(0);
+    expect(availableRecipes(after)).toContain('tomatoBread');
+    expect(before.ingredients).not.toContain('tomato');
+  });
+
+  it('keeps owned ingredients in catalogue order, whatever order they were bought in', () => {
+    const state = unlockIngredient(unlockIngredient(rich(), 'tomato'), 'chilli');
+    expect(state.ingredients).toEqual(['bread', 'mushroom', 'jam', 'chilli', 'tomato']);
+  });
+
+  it("can't unlock a starter, something owned, or with too few Leaves", () => {
+    const owned = unlockIngredient(rich(), 'tuna');
+    expect(canUnlock(owned, 'tuna')).toBe(false);
+    expect(() => unlockIngredient(owned, 'tuna')).toThrow(/already owned/);
+    expect(canUnlock(rich(), 'bread')).toBe(false);
+    expect(() => unlockIngredient(rich(), 'bread')).toThrow(/isn't for sale/);
+    const poor = earnLeaves(createNewGame(), 14);
+    expect(canUnlock(poor, 'chilli')).toBe(false);
+    expect(canUnlock(earnLeaves(poor, 1), 'chilli')).toBe(true);
+  });
+
+  it('counts the recipes an unlock would add', () => {
+    const state = rich();
+    expect(newRecipesWith(state, 'tuna')).toBe(1); // Tuna Sandwich (the others need tomato or chilli too)
+    expect(newRecipesWith(unlockIngredient(state, 'tomato'), 'tuna')).toBe(2); // + Tuna Tomato Sandwich
+    expect(newRecipesWith(unlockIngredient(state, 'tuna'), 'tuna')).toBe(0);
   });
 });

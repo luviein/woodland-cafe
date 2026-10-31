@@ -41,7 +41,7 @@ over.
 | Walk (Forest, Marketplace) | Tap anywhere |
 | Pick up a Leaf      | Walk over it (+1 🍃). New ones keep appearing, up to 15 a day (Forest and Marketplace together) |
 | Forage (Forest)     | Tap a mushroom patch or berry bush: walk there, gather for a second, +2 to stock. Once a day each |
-| Shop (Marketplace)  | Tap a stall: walk up to it and its shop opens. At the Pantry, **+1** / **+10** buy stock straight away (greyed out when you can't afford it). Close or `Esc` shuts it |
+| Shop (Marketplace)  | Tap a stall: walk up to it and its shop opens. At the Pantry, **+1** / **+10** buy stock straight away (greyed out when you can't afford it). At Specialty, **Buy** unlocks chilli, tomato or tuna for good: its recipes start showing up in orders, it gets a prep bin, and the Pantry sells it (it starts with 0 stock). Close or `Esc` shuts it |
 | Back to the map     | Map button (top-right) |
 
 ## Controls (prep station)
@@ -52,7 +52,7 @@ while you cook. A wrong dish sends the customer away angry.
 
 | Action              | Mouse / touch        | Keyboard        |
 | ------------------- | -------------------- | --------------- |
-| Add a layer         | Tap an ingredient bin | `1` `2` `3`    |
+| Add a layer         | Tap an ingredient bin | `1`–`6` (the number on the bin) |
 | Serve               | Serve button         | `Enter`         |
 | Clear the plate     | Reset button         | `Backspace`     |
 | Recipe Book         | Recipes button       | `R` (toggle), `Esc` (close) |

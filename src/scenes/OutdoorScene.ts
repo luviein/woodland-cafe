@@ -21,7 +21,16 @@ import {
 import type { Point } from '../logic/layout';
 import { collectLeaves, createLeafField, stepLeafField, type LeafField, type LeafGround } from '../logic/leafPickups';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
-import { buyStock, canBuyStock, shopStandPoint, shopsAt } from '../logic/shop';
+import {
+  buyStock,
+  canBuyStock,
+  canUnlock,
+  newRecipesWith,
+  shopStandPoint,
+  shopsAt,
+  unlockableIngredients,
+  unlockIngredient,
+} from '../logic/shop';
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import {
@@ -282,7 +291,28 @@ export class OutdoorScene extends Phaser.Scene {
   /** What the open shop shows, from the current game state. */
   private shopRows(id: ShopId): ShopRowView[] {
     const state = getGameState(this);
-    if (id !== 'pantry') return []; // Specialty and Tools: next steps
+    if (id === 'specialty') {
+      // Every unlockable stays listed once bought, so the rows keep their
+      // shape (ShopPanel.setRows) and the player sees what they own.
+      return unlockableIngredients().map((ingredient) => {
+        const owned = state.ingredients.includes(ingredient);
+        const recipes = newRecipesWith(state, ingredient);
+        return {
+          name: INGREDIENTS[ingredient].name,
+          detail: owned
+            ? 'Owned: stock at Pantry'
+            : `🍃${INGREDIENTS[ingredient].unlockPrice}   +${recipes} recipe${recipes === 1 ? '' : 's'}`,
+          buttons: [
+            {
+              label: owned ? '-' : 'Buy',
+              enabled: canUnlock(state, ingredient),
+              onPress: () => setGameState(this, unlockIngredient(getGameState(this), ingredient)),
+            },
+          ],
+        };
+      });
+    }
+    if (id !== 'pantry') return []; // Tools: next step
     return state.ingredients.map((ingredient) => ({
       name: INGREDIENTS[ingredient].name,
       detail: `x${state.stock[ingredient]}   🍃${INGREDIENTS[ingredient].unitPrice} each`,
