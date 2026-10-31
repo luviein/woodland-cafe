@@ -3,8 +3,10 @@ import { SHOPS } from '../data/shops';
 import { createNewGame, earnLeaves } from './gameState';
 import { availableModifiers, availableRecipes } from './orders';
 import {
+  buyFurniture,
   buyStock,
   buyUpgrade,
+  canBuyFurniture,
   canBuyStock,
   canBuyUpgrade,
   canUnlock,
@@ -19,8 +21,8 @@ import {
 const rich = () => earnLeaves(createNewGame(), 50);
 
 describe('shopsAt', () => {
-  it('lists the three Marketplace stalls, and none in the Forest', () => {
-    expect(shopsAt('marketplace')).toEqual(['pantry', 'specialty', 'tools']);
+  it('lists the four Marketplace stalls, and none in the Forest', () => {
+    expect(shopsAt('marketplace')).toEqual(['pantry', 'specialty', 'tools', 'carpenter']);
     expect(shopsAt('forest')).toEqual([]);
   });
 
@@ -77,6 +79,23 @@ describe('buying upgrades', () => {
     const owned = buyUpgrade(rich(), 'toaster');
     expect(availableModifiers('jamBread', owned)).toContain('toasted');
     expect(availableModifiers('jamBread', rich())).not.toContain('toasted');
+  });
+});
+
+describe('buying furniture', () => {
+  it('costs its price and goes into storage, not the cafe', () => {
+    const before = rich();
+    const after = buyFurniture(buyFurniture(before, 'chair'), 'table');
+    expect(after.leaves).toBe(10);
+    expect(after.furniture.stored).toEqual({ table: 1, chair: 1 });
+    expect(after.furniture.placed).toEqual(before.furniture.placed);
+  });
+
+  it("can't be bought with too few Leaves", () => {
+    const poor = earnLeaves(createNewGame(), 29);
+    expect(canBuyFurniture(poor, 'chair')).toBe(true);
+    expect(canBuyFurniture(poor, 'table')).toBe(false);
+    expect(() => buyFurniture(poor, 'table')).toThrow(/can't pay/);
   });
 });
 

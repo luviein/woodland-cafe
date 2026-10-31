@@ -1,7 +1,9 @@
+import { FURNITURE, type FurnitureKind } from '../data/furniture';
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { SHOP_IDS, SHOPS, type ShopId } from '../data/shops';
 import type { OutdoorLocationId } from '../data/outdoorAreas';
 import { UPGRADES, type UpgradeId } from '../data/upgrades';
+import { storePieces } from './furniture';
 import { spendLeaves, type GameState } from './gameState';
 import type { Point } from './layout';
 import { availableRecipes } from './orders';
@@ -56,6 +58,16 @@ export function buyUpgrade(state: GameState, id: UpgradeId): GameState {
 /** Owns `id` from now on, for free (buyUpgrade charges; the dev console `unlock` doesn't). */
 export function addUpgrade(state: GameState, id: UpgradeId): GameState {
   return state.upgrades.includes(id) ? state : { ...state, upgrades: [...state.upgrades, id] };
+}
+
+export function canBuyFurniture(state: GameState, kind: FurnitureKind): boolean {
+  return FURNITURE[kind].price <= state.leaves;
+}
+
+/** Buys one piece into storage; it's placed from the map's Decorate (GAME_DESIGN.md §5.7). */
+export function buyFurniture(state: GameState, kind: FurnitureKind): GameState {
+  const paid = spendLeaves(state, FURNITURE[kind].price);
+  return { ...paid, furniture: storePieces(paid.furniture, kind, 1) };
 }
 
 /** Ingredients the Specialty stall sells: everything with an unlock price, owned or not. */

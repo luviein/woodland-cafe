@@ -277,7 +277,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 5.6 Marketplace shops
 
-- The Marketplace has **three stalls** (plus the Carpenter, §5.7). Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
+- The Marketplace has **four stalls**: the three below, plus the Carpenter (§5.7). Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
 
   | Stall | Sells |
   | ----- | ----- |

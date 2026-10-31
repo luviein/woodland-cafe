@@ -8,6 +8,7 @@ import { INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
 import { SHOPS, STOCK_BUY_AMOUNTS, TOOLS_ON_SALE, type ShopId } from '../data/shops';
 import { UPGRADES } from '../data/upgrades';
+import { FURNITURE, FURNITURE_KINDS } from '../data/furniture';
 import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
 import {
   forage,
@@ -23,8 +24,10 @@ import type { Point } from '../logic/layout';
 import { collectLeaves, createLeafField, stepLeafField, type LeafField, type LeafGround } from '../logic/leafPickups';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import {
+  buyFurniture,
   buyStock,
   buyUpgrade,
+  canBuyFurniture,
   canBuyStock,
   canBuyUpgrade,
   canUnlock,
@@ -314,6 +317,19 @@ export class OutdoorScene extends Phaser.Scene {
           ],
         };
       });
+    }
+    if (id === 'carpenter') {
+      return FURNITURE_KINDS.map((kind) => ({
+        name: FURNITURE[kind].name,
+        detail: `🍃${FURNITURE[kind].price}   stored: ${state.furniture.stored[kind]}`,
+        buttons: [
+          {
+            label: '+1',
+            enabled: canBuyFurniture(state, kind),
+            onPress: () => setGameState(this, buyFurniture(getGameState(this), kind)),
+          },
+        ],
+      }));
     }
     if (id === 'tools') {
       return TOOLS_ON_SALE.map((upgrade) => {
