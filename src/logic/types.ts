@@ -23,12 +23,10 @@ export interface Plate {
 export type Score = 'perfect' | 'close' | 'wrong';
 
 export interface ScoreResult {
-  /** Based on layers only. */
+  /** Layer mistakes plus modifier mistakes (each missing or extra modifier is one). */
   score: Score;
-  /**
-   * Requested modifiers the dish doesn't have. Kept separate from `score`
-   * because the design treats them differently: a missing modifier cuts the
-   * tip (to 20%) rather than changing perfect/close/wrong.
-   */
+  /** Requested modifiers the dish doesn't have (each one is a mistake in `score`). */
   missingModifiers: ModifierId[];
+  /** Modifiers the dish has that weren't asked for (also a mistake each). */
+  extraModifiers: ModifierId[];
 }

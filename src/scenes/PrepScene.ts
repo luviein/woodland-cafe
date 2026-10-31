@@ -174,7 +174,7 @@ export class PrepScene extends Phaser.Scene {
     // The plate counts as the recipe's layers, which the order was checked to
     // be makeable with when it was taken.
     devActions.serve = (score) => {
-      if (!this.busy) this.deliver({ score, missingModifiers: [] }, expectedPlate(this.request.order).layers);
+      if (!this.busy) this.deliver({ score, missingModifiers: [], extraModifiers: [] }, expectedPlate(this.request.order).layers);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.serve = null;

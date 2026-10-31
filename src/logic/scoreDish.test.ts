@@ -95,11 +95,19 @@ describe('scoreDish: modifiers', () => {
     expect(result.missingModifiers).toEqual(['toasted']);
   });
 
-  it('keeps the layer score separate from missing modifiers', () => {
-    // Right layers, forgot to toast: still "perfect"; the tip penalty
-    // for the missing modifier is applied later by the tip logic.
+  it('a missing modifier is one mistake: right layers, forgot to toast = close', () => {
     const result = scoreDish(plate(['bread'], ['toasted']), plate(['bread']));
-    expect(result.score).toBe('perfect');
+    expect(result.score).toBe('close');
+  });
+
+  it('an extra modifier is one mistake too: toasted without being asked = close', () => {
+    const result = scoreDish(plate(['bread', 'jam']), plate(['bread', 'jam'], ['toasted']));
+    expect(result).toEqual({ score: 'close', missingModifiers: [], extraModifiers: ['toasted'] });
+  });
+
+  it('a modifier mistake plus a layer mistake is two mistakes: wrong', () => {
+    expect(scoreDish(plate(['bread', 'jam']), plate(['bread'], ['toasted'])).score).toBe('wrong');
+    expect(scoreDish(plate(['bread', 'jam'], ['toasted']), plate(['bread'])).score).toBe('wrong');
   });
 
   it('has no missing modifiers when all are applied', () => {
@@ -107,11 +115,6 @@ describe('scoreDish: modifiers', () => {
       plate(['bread'], ['toasted', 'buttered']),
       plate(['bread'], ['buttered', 'toasted']),
     );
-    expect(result.missingModifiers).toEqual([]);
-  });
-
-  it('ignores extra modifiers the customer did not ask for', () => {
-    const result = scoreDish(plate(['bread']), plate(['bread'], ['toasted']));
-    expect(result).toEqual({ score: 'perfect', missingModifiers: [] });
+    expect(result).toEqual({ score: 'perfect', missingModifiers: [], extraModifiers: [] });
   });
 });

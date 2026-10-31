@@ -2,7 +2,8 @@
 //
 // A served customer pays the dish price plus a tip. The tip starts as a share
 // of the price, shrinks with how long they waited, and is cut further for a
-// "close" dish or a missing modifier. A wrong dish pays nothing at all.
+// "close" dish (a wrong modifier counts as a mistake there, see scoreDish).
+// A wrong dish pays nothing at all.
 export interface TipTier {
   /** Applies when the patience left (0..1) is MORE than this. */
   above: number;
@@ -20,8 +21,6 @@ export interface TipConfig {
   tiers: readonly TipTier[];
   /** Tip multiplier for a "close" dish. */
   closeMultiplier: number;
-  /** Tip multiplier when any requested modifier is missing (applied once). */
-  missingModifierMultiplier: number;
 }
 
 export const TIP_CONFIG: TipConfig = {
@@ -35,5 +34,4 @@ export const TIP_CONFIG: TipConfig = {
     // 25% or less: no tip
   ],
   closeMultiplier: 0.5,
-  missingModifierMultiplier: 0.2,
 };

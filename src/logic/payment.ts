@@ -17,8 +17,8 @@ const NOTHING: Payment = { price: 0, tip: 0, total: 0 };
  *   - wrong dish: nothing at all
  *   - otherwise the price (x2 for a double order) plus a tip, which is
  *     fullTipShare of the price, times the patience tier's share, times
- *     closeMultiplier if "close", times missingModifierMultiplier (once) if
- *     any requested modifier is missing.
+ *     closeMultiplier if "close". (Modifier mistakes are already in the
+ *     score: one makes a perfect dish "close".)
  *
  * Leaves are whole, so the tip is rounded at the very end (rounding each
  * step would make the multipliers add up wrong). Pure: the caller decides
@@ -40,7 +40,6 @@ export function computePayment(
   const tier = config.tiers.find((t) => patienceLeft > t.above);
   let tip = price * config.fullTipShare * (tier?.share ?? 0);
   if (result.score === 'close') tip *= config.closeMultiplier;
-  if (result.missingModifiers.length > 0) tip *= config.missingModifierMultiplier;
 
   const rounded = Math.round(tip);
   return { price, tip: rounded, total: price + rounded };

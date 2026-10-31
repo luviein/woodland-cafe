@@ -66,7 +66,7 @@ spicy/fiery = chilli; "on a slice" = open bread, "between two slices" = sandwich
 | Serve               | Serve button         | `Enter`         |
 | Clear the plate     | Reset button         | `Backspace`     |
 | Recipe Book         | Recipes button       | `R` (toggle), `Esc` (close) |
-| Toast the dish (once the Toaster is bought) | Drag the dish from the plate into the toaster; after ~2 s it pops up on top, toasted. Drag it back onto the plate | `T` (in, then back out) |
+| Toast the dish (once the Toaster is bought) | Drag the dish from the plate into the toaster; after ~2 s it pops up on top, toasted. Drag it back onto the plate. Only toast when asked: an unrequested toast, or a forgotten one, is a mistake (perfect becomes close) | `T` (in, then back out) |
 
 **Ingredient stock:** the number over each bin is how many are left ("x5").
 At 0 it shows the rush-delivery price instead ("🍃2"), paid from your Leaves
