@@ -277,7 +277,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 5.6 Marketplace shops
 
-- The Marketplace has **four stalls**: the three below, plus the Carpenter (§5.7). Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
+- The Marketplace has **five stalls**: the three below, plus the Carpenter (§5.7) and the Notice Board (§5.8). Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
 
   | Stall | Sells |
   | ----- | ----- |
@@ -308,6 +308,21 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Furniture is in the game state** (§6): what's placed where, and how many of each are in storage. The room itself (walls, door, counter, queue) stays in `data/cafeLayout.ts`.
 - Decorating is only between days, from the map, so nobody is ever sitting at a table that moves.
 
+### 5.8 Employees
+
+- **A quiet start:** a new customer arrives every **9-15s** (`spawnIntervalMin` / `Max` in `data/floorConfig.ts`), about 15 a day. Busier days are something the player grows into by hiring the Mascot.
+- **Roles** (one of each for now; placeholder wages in `data/employees.ts`):
+
+  | Role | Does | Wage |
+  | ---- | ---- | ---- |
+  | **Mascot** | Stands by the cafe door and waves. While the doors are open, the gap between arrivals is multiplied by `mascotIntervalMultiplier` (**0.6**, so 9-15s becomes about 5-9s). | 🍃20 / day |
+  | **Cleaner** | Walks to the nearest mess and wipes it (a little slower than the player). Never goes for a table the player is already heading to clean. | 🍃15 / day |
+
+- **Progression:** the Mascot brings more customers, more customers make more messes, and that makes the Cleaner worth hiring.
+- **Hiring:** at the **Notice Board** stall in the Marketplace, in the same kind of shop panel. Each role has **Hire** or **Let go**. Hiring and letting go are free; employees start working from the next day opened.
+- **Wages** are paid at the end of each day and shown on the day summary ("Wages -🍃N"). If the wallet can't pay someone in full, they quit unpaid (the summary says so) and can be hired again later.
+- **Employees are in the game state** (§6): which roles are hired.
+
 ---
 
 ## 6. Game State
@@ -318,6 +333,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - **Owned ingredients**
   - **Owned upgrades**
   - Owned furniture: placed (where) and in storage (§5.7)
+  - Hired employees (§5.8)
   - Cafe layout: the fixed room plus the placed furniture
   - Unlocked locations
 - "Serializable" means plain data only (no Phaser objects, class instances, or functions), so it can be converted to JSON and back without losing anything.
@@ -327,7 +343,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 ## 7. Later Features
 
 - More furniture kinds: bigger tables, decorations (plants, rugs), a bigger room
-- Hiring employees who clean or serve automatically
+- More employee roles (e.g. a Server who carries dishes, a Greeter who takes orders), and more than one of a role
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
 - **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
 - **Tutorial with a mini story** at the start of a new game. Part of the story: the player is given **30 of each starter ingredient** to open the cafe with, so they learn about ingredient stock (§3.6) from the start. Story and steps still to be designed.
@@ -367,7 +383,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 5. **Ingredient stock** (§3.6) and the **world map** with Cafe, Forest (foraging + leaf pickups) and Marketplace (leaf pickups)
 6. **Marketplace shop:** buy ingredients and upgrades (Toaster first), unlocking new recipes, modifiers and dialogue; add hint-style dialogue
 7. **Furniture and cafe expansion**
-8. **Employees**
+8. **Employees:** a quieter start, the Mascot (more customers) and the Cleaner, hired at the Notice Board for a daily wage (§5.8)
 9. **Saving and loading**
 10. **Pixel art, animation, sound** (including the illustrated island map)
 11. **Desktop build** (Tauri or Electron)
