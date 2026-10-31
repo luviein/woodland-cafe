@@ -27,8 +27,10 @@ Requires Node 20.19+ or 22.12+ (Node 24 LTS recommended).
 | Clean a messy table | Tap the table (or one of its seats); tap elsewhere to cancel |
 
 **A day** runs from 8:00 to 17:00 (3 real minutes; clock top-left, under the
-Leaves). At 17:00 the doors close: nobody new comes in, but whoever is inside
-can still be served. Once the last customer leaves, the day summary shows what
+Leaves). Customers in the queue wait happily: their patience only starts
+dropping once you take their order. At 17:00 the doors close: nobody new comes
+in, and everyone still in the queue goes home. A customer whose order you've
+taken can still be served. Once the last customer leaves, the day summary shows what
 happened; **Exit cafe** (or `Enter`) opens the world map. Tap the **Cafe**
 signpost there to start the next day on a fresh floor. Leaves and stock carry
 over.

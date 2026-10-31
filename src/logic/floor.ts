@@ -129,16 +129,14 @@ export function stepFloor(
   let { spawnTimer, nextCustomerId } = state;
 
   // 1. Fresh copies we're free to change; the input state stays untouched.
-  const customers: Customer[] = state.customers.map((c) => {
-    const waiting = c.phase === 'queued' || c.phase === 'ordered';
-    return {
-      ...c,
-      walker: stepWalker(c.walker, seconds, config.customerSpeed),
-      timer: c.timer - seconds,
-      // Fixed rate, whatever else is going on; only while waiting to be served.
-      patience: waiting ? c.patience - seconds : c.patience,
-    };
-  });
+  const customers: Customer[] = state.customers.map((c) => ({
+    ...c,
+    walker: stepWalker(c.walker, seconds, config.customerSpeed),
+    timer: c.timer - seconds,
+    // Only once their order is taken, and then at a fixed rate whatever else
+    // is going on. Waiting in the queue is free (GAME_DESIGN.md §4).
+    patience: c.phase === 'ordered' ? c.patience - seconds : c.patience,
+  }));
 
   // 2. A new customer walks in if it's time, the doors are open and the
   // queue has room.
@@ -175,6 +173,11 @@ export function stepFloor(
     const arrived = !isMoving(c.walker);
     switch (c.phase) {
       case 'queued':
+        // Closing time: nobody's order will be taken now, so they go home,
+        // calmly (not upset: they never got to order, so it's not on the player).
+        if (!state.doorsOpen) leave(c, false);
+        break;
+
       case 'ordered':
         // Being served is the player's action (serveCustomer), not a timer.
         if (c.patience <= 0) leave(c, true); // waited too long: leaves unhappy, doesn't pay

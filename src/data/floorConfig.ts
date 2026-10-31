@@ -17,9 +17,9 @@ export type FloorConfig = {
   eatSecondsMin: number;
   eatSecondsMax: number;
   /**
-   * Full patience, in seconds: how long a customer will wait from joining the
-   * counter queue until served. Counts down at a fixed rate the whole time,
-   * even while their order is being made. At 0 they leave upset, unpaid.
+   * Full patience, in seconds: how long a customer will wait from the moment
+   * their order is taken until it's served. Waiting in the queue before that
+   * doesn't count. At 0 they leave upset, unpaid.
    */
   patienceSeconds: number;
   /** Seconds to wipe ONE mess, once standing next to the table (two messes take twice as long). */

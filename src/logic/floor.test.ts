@@ -196,18 +196,17 @@ describe('stepFloor: one customer visit', () => {
 });
 
 describe('stepFloor: patience', () => {
-  it('starts full and counts down at a fixed rate while queued', () => {
-    const s = run(allMessy(), 3); // nobody can order, so they just wait
-    const c = find(s, 1)!;
-    // Arrived at ~0.5s, so about 2.5s of patience is gone.
-    expect(c.patience).toBeGreaterThan(CONFIG.patienceSeconds - 3);
-    expect(c.patience).toBeLessThan(CONFIG.patienceSeconds - 2);
+  it("doesn't drop while queued, however long they wait", () => {
+    const s = run(allMessy(), 30); // nobody can order, so they just wait (3x their patience)
+    expect(find(s, 1)!.phase).toBe('queued');
+    expect(find(s, 1)!.patience).toBe(CONFIG.patienceSeconds);
   });
 
-  it('keeps counting down after ordering, while the order is made', () => {
-    const ordered = runUntil(start(), phaseOf(1, 'ordered'));
-    const later = step(ordered);
-    expect(find(later, 1)!.patience).toBeLessThan(find(ordered, 1)!.patience);
+  it('starts full when the order is taken, then counts down at a fixed rate', () => {
+    const ordered = runUntil(start(), phaseOf(1, 'ordered'), { autoServe: false });
+    expect(find(ordered, 1)!.patience).toBe(CONFIG.patienceSeconds);
+    const later = run(ordered, 2, { autoServe: false });
+    expect(find(later, 1)!.patience).toBeCloseTo(CONFIG.patienceSeconds - 2, 1);
   });
 
   it('stops once served', () => {
@@ -216,12 +215,12 @@ describe('stepFloor: patience', () => {
     expect(find(eating, 1)!.patience).toBe(find(served, 1)!.patience);
   });
 
-  it('at zero, a queued customer leaves upset and the queue moves up', () => {
-    let s = runUntil(allMessy(), (st) => st.queue.length === 2, { config: BUSY });
-    s = runUntil(s, phaseOf(1, 'leaving'), { config: BUSY });
+  it('at zero after ordering, the queue moves up behind them', () => {
+    let s = runUntil(start(), (st) => st.queue.length === 2, { config: BUSY, autoServe: false });
+    s = runUntil(s, phaseOf(1, 'leaving'), { config: BUSY, autoServe: false, autoOrder: false });
     expect(find(s, 1)!.upset).toBe(true);
     expect(s.queue[0]).toBe(2);
-    s = run(s, 0.1, { config: BUSY });
+    s = run(s, 0.1, { config: BUSY, autoOrder: false });
     expect(destination(find(s, 2)!.walker)).toEqual(TINY.orderSpot);
   });
 
@@ -234,14 +233,14 @@ describe('stepFloor: patience', () => {
 });
 
 describe('countGaveUp', () => {
-  it('counts customers who ran out of patience in the queue or while their order was cooking', () => {
+  it('counts customers who ran out of patience while their order was cooking', () => {
     const cooking = customer(1, TINY.orderSpot, {
       phase: 'ordered',
       patience: 0.01,
       seat: { tableId: 'table-0', seat: LEFT_SEAT },
     });
     const before = scene([cooking, customer(2, SPOT_1, { patience: 0.01 })], [1, 2]);
-    expect(countGaveUp(before, step(before))).toBe(2);
+    expect(countGaveUp(before, step(before))).toBe(1); // the queued one doesn't lose patience
   });
 
   it("doesn't count a wrong dish, or customers leaving after eating", () => {
@@ -256,7 +255,10 @@ describe('countGaveUp', () => {
   });
 
   it('counts each customer once, on the step they give up', () => {
-    const before = scene([customer(1, SPOT_1, { patience: 0.01 })], [1]);
+    const before = scene(
+      [customer(1, TINY.orderSpot, { phase: 'ordered', patience: 0.01, seat: { tableId: 'table-0', seat: LEFT_SEAT } })],
+      [1],
+    );
     const gaveUp = step(before);
     expect(countGaveUp(gaveUp, step(gaveUp))).toBe(0);
   });
@@ -268,10 +270,23 @@ describe('stepFloor: closing time', () => {
     expect(s.customers).toHaveLength(0);
   });
 
-  it('whoever is already inside stays and can still be served', () => {
-    const inside = runUntil(start(), (st) => st.queue.length === 1);
-    const s = runUntil({ ...inside, doorsOpen: false }, phaseOf(1, 'eating'));
+  it('a customer whose order was taken stays and can still be served', () => {
+    const ordered = runUntil(start(), phaseOf(1, 'ordered'), { autoServe: false });
+    const s = runUntil({ ...ordered, doorsOpen: false }, phaseOf(1, 'eating'));
     expect(s.customers.map((c) => c.id)).toEqual([1]);
+  });
+
+  it('everyone still waiting in the queue goes home, calmly, and is not counted as giving up', () => {
+    const waiting = runUntil(allMessy(), (st) => st.queue.length === 2, { config: BUSY });
+    const closed = { ...waiting, doorsOpen: false };
+    const s = step(closed);
+    expect(s.queue).toEqual([]);
+    for (const c of s.customers) {
+      expect(c.phase).toBe('leaving');
+      expect(c.upset).toBe(false);
+    }
+    expect(countGaveUp(closed, s)).toBe(0);
+    expect(runUntil(s, (st) => st.customers.length === 0, { autoOrder: false }).customers).toEqual([]);
   });
 });
 

@@ -487,15 +487,16 @@ export class FloorScene extends Phaser.Scene {
   }
 
   /**
-   * A small bar over each customer still waiting to be served, draining as
-   * their patience runs out. On its own layer above the characters.
+   * A small bar over a customer whose order has been taken, draining as
+   * their patience runs out. (Queued customers don't lose patience, so they
+   * get no bar.) On its own layer above the characters.
    */
   private drawPatienceBars(): void {
     const g = this.patienceBars;
     g.clear();
     const width = TILE_SIZE - 4;
     for (const c of this.floor.customers) {
-      if (c.phase !== 'queued' && c.phase !== 'ordered') continue;
+      if (c.phase !== 'ordered') continue;
       // Clamp: if `set patienceSeconds` lowers the max mid-game, don't overflow.
       const fraction = Phaser.Math.Clamp(c.patience / FLOOR_CONFIG.patienceSeconds, 0, 1);
       const { x, y } = this.walkerToPixel(c.walker);
