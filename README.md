@@ -106,6 +106,7 @@ It isn't included in production builds.
 | `stock [ingredient n]` | Show ingredient stock, or set one, e.g. `stock jam 0` (works anywhere) |
 | `leaves <n>` | Set the wallet, e.g. `leaves 0` (works anywhere) |
 | `unlock <chilli\|tuna\|tomato\|toaster>` | Own it for free, no Leaves spent (works anywhere). Ingredients come with 0 stock. A new toaster or bin shows from the next order you take |
+| `furniture [table\|chair n]` | Show stored and placed furniture, or set how many are in storage, e.g. `furniture table 3` (works anywhere, free). Place them from the map: Cafe > Decorate |
 | `time`      | Show the day number and the cafe clock |
 | `endday`    | End the day now: jump to closing time and send every customer home (not counted as giving up), so the summary shows. An open prep station closes first |
 

@@ -439,3 +439,12 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Patience** (§4): it now only counts down once the order is taken; the queue waits for free. At closing time, the queue goes home calmly (not counted as giving up). Patience retuned to 25s.
 - **Dev console:** `unlock <chilli|tuna|tomato|toaster>` (free), `endday` also sends every customer home, and `config` / `set` cover the toaster and hint settings.
 - **Not yet:** the other upgrades (Butter Churn ... Serving Tray) and double orders; a summary line for customers sent home at closing; obstacles outdoors.
+
+### Milestone 7 scope: Furniture (as built)
+
+- **Furniture in the game state** (§5.7): which tables and chairs are placed where, plus how many of each are in storage. The cafe starts with today's 4 tables and 8 chairs. The empty room (walls, door, counter, queue) still comes from `data/cafeLayout.ts`, and the floor is built from the room plus the furniture each day.
+- **Carpenter stall** at the Marketplace: **+1** buys a table (🍃30) or chair (🍃10) into storage. The other stalls moved left to make room.
+- **Decorate** from the map's Cafe panel (Open cafe / Decorate / Not yet, `D` for Decorate): pick a piece from the storage tray, tap the floor to place it, tap a placed piece to put it away (a table takes its chairs). Moving is free.
+- **Placement rules:** plain floor only; a chair touches exactly one table; nothing may cut the floor into pieces (checked with a flood fill from the door), so every seat stays reachable. Refused taps say why.
+- **Dev console:** `furniture [table|chair n]` lists what's stored and placed, or sets how many are in storage, for free.
+- **Not yet:** a bigger room (cafe expansion), more furniture kinds and decorations (later features).

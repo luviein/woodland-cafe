@@ -1,3 +1,4 @@
+import { FURNITURE, FURNITURE_KINDS } from '../data/furniture';
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
 import { LOCATION_IDS } from '../data/locations';
 import { TOOLS_ON_SALE } from '../data/shops';
@@ -202,6 +203,27 @@ export function createDevCommands(
         const n = count(value, 'leaves <n>');
         game().set({ ...game().get(), leaves: n });
         return `Wallet = ${n}`;
+      },
+    },
+
+    furniture: {
+      usage: `furniture [${FURNITURE_KINDS.join('|')} n]`,
+      description: "Show stored and placed furniture, or set how many are in storage, e.g. 'furniture table 3'",
+      run: ([name, value]) => {
+        const state = game().get();
+        const { placed, stored } = state.furniture;
+        if (name === undefined) {
+          return FURNITURE_KINDS.map((kind) => {
+            const inCafe = placed.filter((p) => p.kind === kind).length;
+            return `${kind}: stored ${stored[kind]}, in the cafe ${inCafe}`;
+          }).join('\n');
+        }
+        const kind = FURNITURE_KINDS.find((k) => k === name.toLowerCase());
+        if (!kind) throw new Error(`Usage: furniture [${FURNITURE_KINDS.join('|')} n]`);
+        const n = count(value, `furniture ${kind} <n>`);
+        // Only storage changes: pieces are placed from Decorate, which checks the rules.
+        game().set({ ...state, furniture: { placed, stored: { ...stored, [kind]: n } } });
+        return `${FURNITURE[kind].name}s in storage = ${n} (place them from the map: Cafe > Decorate)`;
       },
     },
 

@@ -211,6 +211,23 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'unlock')).toMatch(/Usage/);
   });
 
+  it('furniture lists pieces and sets how many are stored, for free', () => {
+    let state: GameState = { ...createNewGame(), leaves: 3 };
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      game: { get: () => state, set: (s) => (state = s) },
+    });
+    expect(runCommand(commands, 'furniture')).toBe('table: stored 0, in the cafe 4\nchair: stored 0, in the cafe 8');
+    const placed = state.furniture.placed;
+    expect(runCommand(commands, 'furniture Table 3')).toMatch(/Tables in storage = 3/);
+    expect(state.furniture.stored).toEqual({ table: 3, chair: 0 });
+    expect(state.furniture.placed).toBe(placed); // the cafe itself is untouched
+    expect(state.leaves).toBe(3);
+    expect(runCommand(commands, 'furniture table 0')).toMatch(/= 0/);
+    expect(runCommand(commands, 'furniture sofa 2')).toMatch(/Usage: furniture \[table\|chair n\]/);
+    expect(runCommand(commands, 'furniture chair -1')).toMatch(/Usage/);
+  });
+
   it('goto accepts the map and every place, and nothing else', () => {
     const went: string[] = [];
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {
