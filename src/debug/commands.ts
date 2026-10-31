@@ -224,11 +224,11 @@ export function createDevCommands(
 
     endday: {
       usage: 'endday',
-      description: 'Jump to closing time (customers inside can still be served)',
+      description: 'End the day now: closing time, every customer leaves, the summary shows',
       run: () => {
         if (!actions.endDay) throw new Error('Only works on the cafe floor');
         actions.endDay();
-        return 'Doors closed. The day ends when the last customer leaves.';
+        return 'Doors closed and everyone sent home. Day over.';
       },
     },
   };

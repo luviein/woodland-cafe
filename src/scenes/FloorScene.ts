@@ -8,6 +8,7 @@ import { devActions } from '../debug/devActions';
 import { devSettings } from '../debug/devSettings';
 import {
   cleanSeats,
+  clearCustomers,
   countGaveUp,
   createFloorState,
   customerAtCounter,
@@ -189,12 +190,15 @@ export class FloorScene extends Phaser.Scene {
       this.floor = { ...this.floor, messySeats: [...new Set([...this.floor.messySeats, ...free])] };
       return this.floor.messySeats.length - before;
     };
-    // Dev console `time` / `endday`. Ending the day just moves the clock to
-    // closing time; the normal closing rules do the rest next frame.
+    // Dev console `time` / `endday`. Ending the day moves the clock to
+    // closing time and sends every customer away; the normal closing rules
+    // do the rest next frame (an open prep station closes on its customer,
+    // as if they gave up, then the summary shows).
     devActions.dayTime = () =>
       `Day ${getGameState(this).day}, ${clockText(this.day)} (${this.floor.doorsOpen ? 'open' : 'closed'})`;
     devActions.endDay = () => {
       this.day = { ...this.day, elapsed: Math.max(this.day.elapsed, DAY_CONFIG.dayLengthSeconds) };
+      this.floor = clearCustomers(this.floor);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.setMessy = null;

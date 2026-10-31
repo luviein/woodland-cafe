@@ -323,6 +323,15 @@ export function releaseCustomer(state: FloorState, layout: Layout, customerId: n
 }
 
 /**
+ * Everyone gone at once, queue and all (dev console `endday`). Not a game
+ * rule, so it isn't counted anywhere: nobody paid, nobody gave up. Messes
+ * stay; the next day starts with a fresh floor anyway.
+ */
+export function clearCustomers(state: FloorState): FloorState {
+  return { ...state, customers: [], queue: [] };
+}
+
+/**
  * How many customers ran out of patience between two floor states (usually
  * one stepFloor apart): they were waiting in `before` and are leaving upset
  * in `after`. A wrong dish doesn't count: that customer was served.

@@ -3,6 +3,7 @@ import { CAFE_LAYOUT } from '../data/cafeLayout';
 import type { FloorConfig } from '../data/floorConfig';
 import {
   cleanSeats,
+  clearCustomers,
   countGaveUp,
   createFloorState,
   customerAtCounter,
@@ -499,6 +500,17 @@ describe('messySeatsAt / cleanSeats', () => {
     const cleaned = cleanSeats(messy, [LEFT_SEAT]);
     expect(cleaned.messySeats).toEqual([RIGHT]);
     expect(messy.messySeats).toEqual([LEFT, RIGHT]);
+  });
+});
+
+describe('clearCustomers', () => {
+  it('empties the floor and the queue, and keeps the messes', () => {
+    const busy = { ...run(start(), 2, { autoOrder: false }), messySeats: [RIGHT] };
+    expect(busy.queue).toEqual([1]); // waiting at the counter
+    const cleared = clearCustomers(busy);
+    expect(cleared.customers).toEqual([]);
+    expect(cleared.queue).toEqual([]);
+    expect(cleared.messySeats).toEqual(busy.messySeats);
   });
 });
 

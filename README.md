@@ -84,7 +84,7 @@ It isn't included in production builds.
 | `stock [ingredient n]` | Show ingredient stock, or set one, e.g. `stock jam 0` (works anywhere) |
 | `leaves <n>` | Set the wallet, e.g. `leaves 0` (works anywhere) |
 | `time`      | Show the day number and the cafe clock |
-| `endday`    | Jump to closing time (customers inside can still be served) |
+| `endday`    | End the day now: jump to closing time and send every customer home (not counted as giving up), so the summary shows. An open prep station closes first |
 
 **Tuning workflow:** play with `set` until it feels right, check `config`, then
 copy the values you like into `src/data/floorConfig.ts` or `src/data/dayConfig.ts`. Changes made with
