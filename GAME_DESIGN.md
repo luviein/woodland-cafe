@@ -425,7 +425,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   | leaf / gather | a Leaf is picked up / a forage spot is gathered |
   | buy | anything bought, unlocked or hired at a stall |
   | dayEnd | the day summary opens (a short tune) |
-- **Volume control, always there:** a small speaker button in the bottom-left corner of every screen (a red cross on it while muted). Tapping it opens a little panel with a **mute button** and a **volume slider** (0-100%, drag the knob or tap the track; 60% to start), showing the percentage; tapping the speaker again or anywhere else closes it. `M` also mutes and unmutes anywhere, with a short "Sound off" / "Sound on" note. Settings are kept in the browser apart from the save.
+- **Volume control, always there:** a small speaker button in the bottom-left corner of every screen (a red cross on it while muted). Tapping it opens a little panel with a **mute button** and a **volume slider** (0-100%, drag the knob or tap the track; 60% to start), showing the percentage. While muted the slider sits at 0 and says Off; unmuting brings back the level it had. Tapping the speaker again or anywhere else closes it. `M` also mutes and unmutes anywhere, with a short "Sound off" / "Sound on" note. Settings are kept in the browser apart from the save.
 - **Dev console:** `sound` lists the sounds; `sound <name>` plays one.
 
 ---
