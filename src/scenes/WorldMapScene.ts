@@ -93,14 +93,18 @@ export class WorldMapScene extends Phaser.Scene {
    */
   private showTutorial(): void {
     if (getGameState(this).tutorial !== 'map') return;
+    // Just above a sign; above its "You are here" label too, for the place the player is at.
     const signTop = (id: LocationId) => {
       const { x, y } = this.signPosition(id);
-      return { x, y: y - SIGN_HEIGHT / 2 - 2 };
+      return { x, y: y - SIGN_HEIGHT / 2 - (id === this.request.current ? 16 : 2) };
     };
     const guide = new StoryBox(this, {
       rect: { x: 36, y: 292, width: 568, height: 62 },
       step: TUTORIAL.map,
-      arrow: (line) => (line === 1 ? signTop('marketplace') : line === 2 ? signTop('forest') : null),
+      arrow: (line) => {
+        const place = TUTORIAL.map.pointsAt?.[line];
+        return place ? signTop(place) : null;
+      },
       onFinished: () => {
         tutorialEvent(this, 'next');
         guide.destroy();

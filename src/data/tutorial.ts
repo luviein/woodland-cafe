@@ -1,3 +1,4 @@
+import type { LocationId } from './locations';
 import type { RecipeId } from './recipes';
 
 // The tutorial's words and settings (GAME_DESIGN.md §5.9). Grandma Badger
@@ -15,6 +16,8 @@ export interface TutorialStepDef {
    * 'action': the last line stays up until the player does the thing.
    */
   waitsFor: 'next' | 'action';
+  /** On the map: whose signpost the arrow points at on each line (null: none). */
+  pointsAt?: readonly (LocationId | null)[];
 }
 
 export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
@@ -57,11 +60,14 @@ export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
   },
   map: {
     waitsFor: 'next',
+    pointsAt: [null, 'cafe', 'marketplace', 'marketplace', 'forest', null],
     lines: [
-      "This is Woodland Island. Tap a signpost to go somewhere.",
-      'Those 30 of each won\'t last forever: buy more stock at the Marketplace.',
-      'In the Forest you can pick up Leaves and gather mushrooms and berries.',
-      "The cafe's yours now, dear. I'll pop in for a cup now and then!",
+      'This is Woodland Island, dear. Tap a signpost to go somewhere.',
+      'The Cafe: tap it to open for the next day, or choose Decorate to arrange your tables and chairs.',
+      'The Marketplace: stock at the Pantry, new ingredients at Specialty, equipment at Tools, furniture at the Carpenter, staff at the Notice Board.',
+      "Those 30 of each won't last forever, so stock up at the Pantry before you run out!",
+      'The Forest: pick up Leaves and gather mushrooms and berries. They grow back every day.',
+      "The cafe's yours now. I'll pop in for a cup now and then! (Tap ? any time to read my notes.)",
     ],
   },
 };

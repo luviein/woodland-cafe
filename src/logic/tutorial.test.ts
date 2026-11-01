@@ -56,3 +56,9 @@ describe('the tutorial', () => {
     expect(RECIPES[TUTORIAL_RECIPE].layers.every((id) => STARTER_INGREDIENTS.includes(id))).toBe(true);
   });
 });
+
+describe('the map tour', () => {
+  it("names one place (or none) for each of Grandma's map lines", () => {
+    expect(TUTORIAL.map.pointsAt).toHaveLength(TUTORIAL.map.lines.length);
+  });
+});
