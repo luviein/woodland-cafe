@@ -20,6 +20,7 @@ import {
 import type { Order, ScoreResult } from '../logic/types';
 import type { CustomerArt } from '../art/spriteArt';
 import { addArt } from '../ui/art';
+import { popLeaves } from '../ui/effects';
 import { Button } from '../ui/Button';
 import { DishView, drawLayerStack } from '../ui/DishView';
 import { ToasterView } from '../ui/ToasterView';
@@ -329,6 +330,8 @@ export class PrepScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(40); // over the prep UI, under the recipe book (50)
     this.tweens.add({ targets: text, y: text.y - 16, duration: 900, ease: 'Sine.easeOut' });
+    // And the Leaves themselves, fluttering out of the customer's paws.
+    popLeaves(this, 64, COUNTER_TOP_Y - 40, payment.total, 2);
   }
 
   /** Shows the customer's last words, locks the counter, then closes. */

@@ -299,3 +299,12 @@ export const STORE_ICON: PixelSprite = {
     ],
   ],
 };
+
+/** A puff of dust when a table is wiped clean, 10x8: a cloud, then it breaking up. */
+export const PUFF: PixelSprite = {
+  legend: { c: 'cream', s: 'sand' },
+  frames: [
+    ['...cc.....', '.cccccc.c.', 'ccccsccccc', '.ccsscccc.', '..cccccc..', '....cc....', '..........', '..........'],
+    ['..........', 'c...c...c.', '..........', '.c...c..c.', '....c.....', '..c.....c.', '..........', '..........'],
+  ],
+};

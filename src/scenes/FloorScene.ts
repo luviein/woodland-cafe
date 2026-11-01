@@ -27,7 +27,8 @@ import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe, recordW
 import { payWages } from '../logic/employees';
 import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
-import { pointKey, tableById, type Layout, type Point } from '../logic/layout';
+import { pointKey, samePoint, tableById, type Layout, type Point } from '../logic/layout';
+import { puffOfDust } from '../ui/effects';
 import { createCleaner, stepCleaner, type CleanerState } from '../logic/cleaner';
 import { isHired } from '../logic/employees';
 import {
@@ -41,7 +42,7 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createCleanerSprite, createCritter, createPlayerSprite } from '../ui/sprites';
+import { createCleanerSprite, createCritter, createPlayerSprite, setBobbing } from '../ui/sprites';
 import { customerArt } from '../art/spriteArt';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, endCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
@@ -220,7 +221,7 @@ export class FloorScene extends Phaser.Scene {
     // Player first, so a table cleaned this frame can seat someone this frame.
     const { player, cleanedSeats } = stepPlayer(this.player, this.floor, seconds);
     this.player = player;
-    if (cleanedSeats.length > 0) this.floor = cleanSeats(this.floor, cleanedSeats);
+    if (cleanedSeats.length > 0) this.wiped(cleanedSeats);
 
     // Dev console "speed" command scales time for the critters (the Cleaner
     // too) and the day clock only; the player keeps walking at normal speed.
@@ -229,7 +230,7 @@ export class FloorScene extends Phaser.Scene {
       const playerTable = this.player.cleaning?.tableId ?? null;
       const worked = stepCleaner(this.cleaner.state, this.floor, this.layout, playerTable, floorSeconds);
       this.cleaner.state = worked.cleaner;
-      if (worked.cleanedSeats.length > 0) this.floor = cleanSeats(this.floor, worked.cleanedSeats);
+      if (worked.cleanedSeats.length > 0) this.wiped(worked.cleanedSeats);
       const at = this.walkerToPixel(worked.cleaner.walker);
       this.cleaner.sprite.setPosition(at.x, at.y);
     }
@@ -271,6 +272,17 @@ export class FloorScene extends Phaser.Scene {
     this.playerSprite.setPosition(pos.x, pos.y);
     if (!isMoving(this.player.walker) && !this.player.cleaning) {
       this.destinationMarker.setVisible(false);
+    }
+  }
+
+  /** Seats just wiped clean (by the player or the Cleaner): clean them, with a puff of dust where each mess was. */
+  private wiped(seats: readonly Point[]): void {
+    this.floor = cleanSeats(this.floor, seats);
+    for (const seat of seats) {
+      const table = this.layout.tables.find((t) => t.seats.some((s) => samePoint(s, seat)));
+      if (!table) continue;
+      const { x, y } = this.seatSideCenter(table.position, seat);
+      puffOfDust(this, x, y);
     }
   }
 
@@ -511,6 +523,9 @@ export class FloorScene extends Phaser.Scene {
       }
       const pos = this.walkerToPixel(c.walker);
       sprite.body.setPosition(pos.x, pos.y);
+      // A little bob while standing at the counter, so the queue looks alive.
+      const waiting = (c.phase === 'queued' || c.phase === 'ordered' || c.phase === 'served') && !isMoving(c.walker);
+      setBobbing(sprite.body, waiting);
       // Above the patience bar, which sits just over the head.
       sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 13);
 

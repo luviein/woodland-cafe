@@ -9,6 +9,7 @@ import {
   ORDER_RUG,
   PAW_PRINT,
   PLATE,
+  PUFF,
   STORE_ICON,
   TABLE,
   WALL,
@@ -32,6 +33,7 @@ export const SPRITE_ART = {
   pawPrint: PAW_PRINT,
   mess: MESS,
   plate: PLATE,
+  puff: PUFF,
   moveIcon: MOVE_ICON,
   storeIcon: STORE_ICON,
   // The cast: 16x24, frames 0 standing, 1-2 walking (GAME_DESIGN.md §8.2)

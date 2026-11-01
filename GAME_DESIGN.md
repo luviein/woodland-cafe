@@ -403,7 +403,8 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 8.3 Little animations
 
-- Customers bob while they wait; a coin-and-leaf pop when a dish is paid for; leaves flutter as they fall; a puff of dust when a table is wiped; buttons press down a pixel.
+- Customers bob while they wait at the counter; a burst of Leaves (one per Leaf earned, up to 8) flutters out of the customer when a dish is paid for; leaves on the ground drift down onto their spot, swaying, then rock gently; a puff of dust where each mess was wiped (by the player or the Cleaner); buttons press down 2px.
+- Effects live in `ui/effects.ts`: each makes its own objects and tidies them up, so scenes just call it.
 
 ### 8.4 Sound
 

@@ -55,6 +55,36 @@ function animateWalking(
   container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));
 }
 
+/** Data key on a critter's container for its bobbing tween. */
+const BOB = 'bob';
+
+/**
+ * Turns a critter's idle bob on or off: a 1px up-and-down while it stands
+ * waiting (GAME_DESIGN.md §8.3). Safe to call every frame; it only starts or
+ * stops the tween when the state changes. Each critter starts at a slightly
+ * different moment so a queue doesn't bob in step.
+ */
+export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): void {
+  const image = critter.list[0] as Phaser.GameObjects.Image;
+  const tween = critter.getData(BOB) as Phaser.Tweens.Tween | undefined;
+  if (on && !tween) {
+    const bob = critter.scene.tweens.add({
+      targets: image,
+      y: TILE_SIZE - 1,
+      duration: 380,
+      delay: Phaser.Math.Between(0, 300),
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    critter.setData(BOB, bob);
+  } else if (!on && tween) {
+    tween.remove();
+    critter.setData(BOB, undefined);
+    image.y = TILE_SIZE;
+  }
+}
+
 /** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). */
 export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
   // Depth: draw the player above customers and scenery when they overlap.
