@@ -300,7 +300,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - Tap **Table** or **Chair** in the tray, then tap a floor tile to place it there. It stays selected, so several can be placed in a row.
   - **Tap a placed piece** to open a small menu over it with two icon buttons: **Move** (four arrows) and **Put away** (a storage crate). Tapping anywhere else, or `Esc`, closes it.
     - **Move** lifts just that piece: its see-through copy follows the pointer, and the next tap on the floor puts it down there, by the same rules as dragging. `Esc` puts it back where it was.
-    - **Put away** returns it to storage. Putting a table away also puts away the chairs at it.
+    - **Put away** returns just that piece to storage, even a table: its chairs stay where they are (a chair with no table is allowed, just unused), the same as moving.
   - **Drag** a placed piece to another tile to move it. Only that piece moves, even a table: its chairs stay where they are. A see-through copy follows the pointer or finger, snapped to the tiles, and turns red where it can't go; a refused drop says why and leaves everything where it was. (A press without dragging is a tap, which opens the menu.)
   - Pieces can also be **dragged straight from the tray** onto the floor, as well as tap-then-tap.
   - **Moving is free.** Only buying costs Leaves.
