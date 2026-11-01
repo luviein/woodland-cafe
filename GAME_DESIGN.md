@@ -424,7 +424,8 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 8.2 Sprites
 
-- **Sizes:** tiles and props **16×16**; characters **16×24** (head and ears above the tile). Drawn at real size; the game scales them.
+- **Sizes:** the **cafe is built on 24×24 tiles** (floor, walls, counter, tables, stools: since the player's critters arrived, 16px furniture looked tiny next to them), so critters stand about 1.5 tiles tall. Outdoor ground and the map keep **16×16** art tiles. The code-drawn characters are **16×24**, the player's own 22-29 × 30-38. Drawn at real size; the game scales the whole screen.
+- **The cafe on screen:** the room is **24×12 tiles** (576×288), near the top of the screen; the wallet and clock sit on the top wall, and the strip below the room is free for Grandma's box and Decorate's storage tray.
 - **Cast** (can still change):
   | Who | Animal |
   | --- | --- |
