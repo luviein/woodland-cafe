@@ -26,7 +26,7 @@
         "arrow": "bubble"
       },
       {
-        "text": "Listen for little extras too, like 'toasted'. Get those right and they tip more!",
+        "text": "Listen for extras, like 'toasted'. Get them right for a bigger tip!",
         "arrow": "bubble"
       },
       {
@@ -67,7 +67,7 @@
         "arrow": "cafe"
       },
       {
-        "text": "The Marketplace: stock at the Pantry, new ingredients at Specialty, equipment at Tools, furniture at the Carpenter, staff at the Notice Board.",
+        "text": "The Marketplace: stock, new ingredients, equipment, furniture and staff, all in one place.",
         "arrow": "marketplace"
       },
       {
@@ -171,7 +171,7 @@
       "title": "Prep station",
       "lines": [
         "This is the prep station. Their order is in the speech bubble.",
-        "Listen for little extras too, like 'toasted'. Get those right and they tip more!",
+        "Listen for extras, like 'toasted'. Get them right for a bigger tip!",
         "Not sure what goes in a dish? The Recipe Book has every recipe.",
         "Tap the bins to stack the layers, bottom first, then Serve. A wrong layer? Press Reset."
       ]
@@ -195,7 +195,7 @@
       "title": "The island",
       "lines": [
         "The Cafe: tap it to open for the next day, or choose Decorate to arrange your tables and chairs.",
-        "The Marketplace: stock at the Pantry, new ingredients at Specialty, equipment at Tools, furniture at the Carpenter, staff at the Notice Board.",
+        "The Marketplace: stock, new ingredients, equipment, furniture and staff, all in one place.",
         "Those 30 of each won't last forever, so stock up at the Pantry before you run out!",
         "The Forest: pick up Leaves and gather mushrooms and berries. They grow back every day."
       ]

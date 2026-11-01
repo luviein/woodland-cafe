@@ -41,6 +41,23 @@ button next to the speaker (bottom-left, every screen) opens **Grandma's
 notes** to read it all again; the game pauses while they're open. Her lines
 and notes are in `src/data/tutorial.ts`.
 
+## Editing the game's texts
+
+All of Grandma Badger's words (tutorial, first-visit tips, notes) and the
+customers' lines (orders, extras, reactions) are in `src/data/texts/`. To edit
+them, run `npm run dev` and open **http://localhost:5173/editor.html**:
+
+- Pick a page on the left; every line has its own box. Add, remove (✕) and
+  move (↑ ↓) lines freely.
+- Grandma's lines can say what her arrow points at (the menu next to the line).
+- A line too long for where the game shows it gets an orange warning, and its
+  page a ⚠ in the list.
+- **Save** writes the files and the running game picks the new words up. It
+  won't save anything that would break the game (an empty step, an order
+  without hints, a line used for two orders): those are listed at the top.
+
+The editor only exists under `npm run dev`; a built game doesn't include it.
+
 ## Sound
 
 All sound effects are made in code (`src/audio/sounds.ts`, no audio files).
