@@ -412,6 +412,21 @@ The player can leave the counter **before taking an order** to clean messes; the
 - A real sound file with the same name can replace any effect later.
 - **Music:** a soft background loop, optional, last.
 - **Mute** with `M`, plus a volume setting. These are settings, not game progress: they're kept apart from the save and survive a New game.
+- **Each sound** is a tiny recipe of notes (pitch, length, wave shape, loudness) or a short burst of noise, played with a quick fade so nothing clicks. Soft and short, in keeping with the cosy mood:
+  | Sound | When |
+  | --- | --- |
+  | tap | any button (not the ingredient bins, which have their own) |
+  | add | an ingredient goes on the plate |
+  | order | an order is taken at the counter (a two-note ding-dong) |
+  | serve / servePerfect / wrong | the dish is handed over: a ding, a bright little run for a perfect one, a low "bwom" for a wrong one |
+  | upset | a customer gives up and leaves |
+  | toastIn / toastPop | the dish goes into the toaster / pops up |
+  | wipe | a mess is wiped (by the player or the Cleaner) |
+  | leaf / gather | a Leaf is picked up / a forage spot is gathered |
+  | buy | anything bought, unlocked or hired at a stall |
+  | dayEnd | the day summary opens (a short tune) |
+- **Volume** on the title screen: one button cycling **Off, 30%, 60%, 100%** (60% to start). `M` mutes and unmutes anywhere, with a short "Sound off" / "Sound on" note. Both are kept in the browser apart from the save.
+- **Dev console:** `sound` lists the sounds; `sound <name>` plays one.
 
 ---
 
