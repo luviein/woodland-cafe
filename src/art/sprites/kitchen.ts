@@ -172,7 +172,8 @@ function layer(a: PaletteName, b: PaletteName, h: PaletteName, d: PaletteName): 
 
 export const INGREDIENT_LAYERS: Record<IngredientId, PixelSprite> = {
   bread: layer('clay', 'cream', 'sand', 'clay'),
-  mushroom: layer('rust', 'cream', 'tan', 'tan'),
+  // Tan and brown, so a mushroom slice never reads as bread (cream with a crust).
+  mushroom: layer('wood', 'tan', 'cream', 'brown'),
   jam: layer('wine', 'red', 'pink', 'wine'),
   chilli: layer('orange', 'red', 'yellow', 'rust'),
   tuna: layer('silver', 'grey', 'white', 'slate'),

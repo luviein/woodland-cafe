@@ -35,8 +35,9 @@ export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
     waitsFor: 'action',
     lines: [
       'This is the prep station. Their order is in the speech bubble.',
+      "Listen for little extras too, like 'toasted'. Get those right and they tip more!",
       'Not sure what goes in a dish? The Recipe Book has every recipe.',
-      'Tap the bins to stack the layers, bottom first, then press Serve.',
+      'Jam Bread: bread first, then jam. Tap the bins in that order, then Serve.',
     ],
   },
   clean: {

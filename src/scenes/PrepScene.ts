@@ -31,7 +31,7 @@ import { ClockDisplay } from '../ui/ClockDisplay';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { getGameState, tutorialEvent, watchGameState } from './gameStore';
-import { StoryBox } from '../ui/StoryBox';
+import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
 import { TUTORIAL } from '../data/tutorial';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
@@ -201,15 +201,12 @@ export class PrepScene extends Phaser.Scene {
     this.guide = null;
     if (getGameState(this).tutorial !== 'prep') return;
     this.guide = new StoryBox(this, {
-      rect: { x: 8, y: COUNTER_TOP_Y + 6, width: 216, height: 116 },
+      // Short enough that the arrow can point down at a bin from just under it.
+      rect: { x: 8, y: COUNTER_TOP_Y + 6, width: 216, height: 96 },
       step: TUTORIAL.prep,
-      // One target per line: the speech bubble, the Recipes button, the first bin.
-      arrow: (line) =>
-        [
-          { x: 308, y: 22 },
-          { x: 568, y: 46, up: true },
-          { x: 64, y: 346, up: true },
-        ][line] ?? null,
+      // The bubble (the order, then its extras), the Recipes button, then
+      // whatever the dish needs next.
+      arrow: (line) => [{ x: 308, y: 22 }, { x: 308, y: 22 }, { x: 568, y: 46, up: true }][line] ?? this.nextStepArrow(),
       // Under the Recipe Book (50), so the open book covers her rather than the other way round.
       depth: 45,
       onFinished: () => {},
@@ -220,12 +217,29 @@ export class PrepScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Building the guided dish: the arrow on the bin of the next layer it
+   * needs, then on Serve once it's complete, or on Reset if a wrong layer
+   * went on.
+   */
+  private nextStepArrow(): ArrowTarget {
+    const layers = expectedPlate(this.request.order).layers;
+    const soFar = this.dish.every((id, i) => layers[i] === id);
+    if (!soFar) return { x: this.resetButton.x, y: this.resetButton.y - 20 };
+    const next = layers[this.dish.length];
+    if (!next) return { x: this.serveButton.x, y: this.serveButton.y - 20 };
+    const bin = this.binButtons[this.binIds.indexOf(next)];
+    // Just above the stock count over the bin.
+    return { x: bin.x, y: bin.y - 40 };
+  }
+
   private closeTutorial(): void {
     this.guide?.destroy();
     this.guide = null;
   }
 
   update(_time: number, deltaMs: number): void {
+    this.guide?.refreshArrow(); // follows the dish as it's built
     if (this.toast.place === 'toasting' && !this.busy) {
       this.toast = stepToasting(this.toast, deltaMs / 1000);
       this.toaster?.setProgress(toastingProgress(this.toast));

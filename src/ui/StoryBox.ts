@@ -87,11 +87,16 @@ export class StoryBox extends Phaser.GameObjects.Container {
       () => this.onNext(),
     );
     // A quiet text link, so it isn't pressed by mistake instead of Next.
+    // Skip goes just left of Next when the box is wide enough, else under
+    // the portrait (a narrow, taller box): never on top of Next. Measured
+    // with its longest text, "Skip tutorial".
     this.skip = scene.add
-      .text(textLeft, y + height - PAD, 'Skip tutorial', { ...TEXT.label, color: css(COLORS.disabled) })
-      .setOrigin(0, 1)
+      .text(0, y + height - PAD, 'Skip tutorial', { ...TEXT.label, color: css(COLORS.disabled) })
       .setInteractive({ useHandCursor: true })
       .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onSkipTapped());
+    const nextLeft = x + width - PAD - NEXT.width;
+    if (nextLeft - 8 - this.skip.width >= textLeft) this.skip.setOrigin(1, 1).setX(nextLeft - 8);
+    else this.skip.setOrigin(0, 1).setX(x + PAD);
 
     this.arrow = addArt(scene, 0, 0, 'pointerArrow').setOrigin(0.5, 1).setScale(2).setVisible(false);
 
