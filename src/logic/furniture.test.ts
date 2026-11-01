@@ -9,7 +9,6 @@ import {
   moveProblem,
   pieceAt,
   placePiece,
-  strandedChairs,
   placeProblem,
   removePiece,
   splitLayout,
@@ -103,8 +102,8 @@ describe('placing furniture', () => {
     expect(placeProblem(f, 'table', { x: 2, y: 3 }, ROOM)).toBe('Something is already there');
   });
 
-  it('a chair needs exactly one table next to it', () => {
-    expect(placeProblem(empty(), 'chair', { x: 2, y: 3 }, ROOM)).toBe('A chair needs a table next to it');
+  it('a chair can stand alone (unused), but not at two tables', () => {
+    expect(placeProblem(empty(), 'chair', { x: 2, y: 3 }, ROOM)).toBeNull();
     const twoTables = build([['table', 1, 3], ['table', 3, 3]]);
     expect(placeProblem(twoTables, 'chair', { x: 2, y: 3 }, ROOM)).toBe('A chair can only be at one table');
   });
@@ -126,7 +125,7 @@ describe('placing furniture', () => {
   });
 
   it('placePiece refuses what placeProblem refuses', () => {
-    expect(() => placePiece(empty(), 'chair', { x: 2, y: 3 }, ROOM)).toThrow(/needs a table/);
+    expect(() => placePiece(empty(), 'chair', { x: 0, y: 3 }, ROOM)).toThrow(/Keep the door/);
   });
 });
 
@@ -180,12 +179,15 @@ describe('dragging furniture', () => {
     expect(after.stored).toEqual(f.stored);
   });
 
-  it('chairs a table leaves with no table go into storage', () => {
+  it('chairs stay where they are when their table moves away', () => {
     const f = build([['table', 2, 3], ['chair', 1, 3], ['chair', 3, 3]]);
-    expect(strandedChairs(f, at(2, 3), at(4, 4))).toBe(2);
     const after = movePiece(f, at(2, 3), at(4, 4), ROOM);
-    expect(after.placed).toEqual([{ kind: 'table', x: 4, y: 4 }]);
-    expect(after.stored).toEqual({ table: 1, chair: f.stored.chair + 2 });
+    expect(after.placed).toEqual([
+      { kind: 'table', x: 4, y: 4 },
+      { kind: 'chair', x: 1, y: 3 },
+      { kind: 'chair', x: 3, y: 3 },
+    ]);
+    expect(after.stored).toEqual(f.stored);
   });
 
   it("a table can't land on its own chair", () => {
@@ -203,7 +205,7 @@ describe('dragging furniture', () => {
     const f = build([['table', 2, 3], ['chair', 1, 3], ['table', 4, 3]]);
     expect(moveProblem(f, at(1, 3), at(0, 3), ROOM)).toBe('Keep the door, counter and queue clear');
     expect(moveProblem(f, at(1, 3), at(4, 3), ROOM)).toBe('Something is already there');
-    expect(moveProblem(f, at(1, 3), at(1, 4), ROOM)).toBe('A chair needs a table next to it');
+    expect(moveProblem(f, at(1, 3), at(1, 4), ROOM)).toBeNull(); // away from tables: fine, just unused
     // The second table next to the first table's chair.
     expect(moveProblem(f, at(4, 3), at(1, 4), ROOM)).toBe('A chair can only be at one table');
     expect(moveProblem(f, at(5, 5), at(1, 4), ROOM)).toBe('Nothing there to move');

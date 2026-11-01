@@ -6,7 +6,6 @@ import {
   movePiece,
   moveProblem,
   pieceAt,
-  strandedChairs,
   placePiece,
   placeProblem,
   removePiece,
@@ -177,12 +176,14 @@ export class DecorateScene extends Phaser.Scene {
 
   /** Takes the pieces out of the drawn cafe and makes their see-through copy. */
   private lift(drag: Drag): void {
-    drag.ghost = this.createGhost(drag);
     if (drag.from) {
       // Show the cafe without the lifted pieces while they're in the air.
       const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
       drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }), this.origin);
     }
+    // Made last, so if anything above ever fails there's no copy left stuck
+    // at the top-left corner (where a not-yet-placed copy sits).
+    drag.ghost = this.createGhost(drag);
   }
 
   /** Snaps the see-through copy to `tile`, red if it couldn't be put down there. */
@@ -311,11 +312,9 @@ export class DecorateScene extends Phaser.Scene {
     }
   }
 
-  /** Moves a piece (already checked), saying so if a table left chairs behind for storage. */
+  /** Moves a piece (already checked). */
   private applyMove(from: Point, to: Point): void {
-    const stranded = strandedChairs(this.furniture(), from, to);
     this.setFurniture(movePiece(this.furniture(), from, to));
-    if (stranded > 0) this.showMessage(to, `${stranded} chair${stranded > 1 ? 's' : ''} put away`);
   }
 
   private furniture(): Furniture {

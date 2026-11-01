@@ -78,8 +78,10 @@ describe('parseLayout errors', () => {
     expect(() => parseLayout(withRow(4, 'WDDWWW'))).toThrow(/door/);
   });
 
-  it('rejects a seat that touches no table', () => {
-    expect(() => parseLayout(withRow(3, 'WS...W'))).toThrow(/touches 0 tables/);
+  it('allows a seat with no table, belonging to none (nobody sits there)', () => {
+    const layout = parseLayout(withRow(3, 'WS...W'));
+    expect(layout.tables.flatMap((t) => t.seats)).not.toContainEqual({ x: 1, y: 3 });
+    expect(isWalkable(layout, { x: 1, y: 3 })).toBe(false);
   });
 
   it('rejects a seat between two tables', () => {

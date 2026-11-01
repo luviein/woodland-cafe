@@ -10,7 +10,7 @@
 //   W  wall               .  floor
 //   D  door (customers enter and leave here)
 //   C  counter            O  order spot: where customers stand at the counter
-//   T  table              S  seat (must touch exactly one table)
+//   T  table              S  seat (touches at most one table; with none, nobody sits there)
 //   P  counter spot (floor): where the player stands to take orders, right
 //      across the counter from O. The player also starts the day here.
 //   1-9  counter queue (floor): where customers wait BEHIND the order spot O.

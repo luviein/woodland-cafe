@@ -127,8 +127,9 @@ export function parseLayout(rows: readonly string[]): Layout {
     return points[0];
   };
 
-  // Each seat belongs to the one table it touches. Zero tables = a chair with
-  // nothing to eat at; two = ambiguous which table it's for.
+  // Each seat belongs to the one table it touches. Two = ambiguous which
+  // table it's for. Zero = a chair standing on its own: allowed, but it
+  // belongs to no table, so nobody sits there (GAME_DESIGN.md §5.7).
   const tables: Table[] = tablePositions.map((position, i) => ({
     id: `table-${i}`,
     position,
@@ -136,12 +137,10 @@ export function parseLayout(rows: readonly string[]): Layout {
   }));
   for (const seat of seatPositions) {
     const touching = tables.filter((t) => neighbours(seat).some((n) => samePoint(n, t.position)));
-    if (touching.length !== 1) {
-      throw new Error(
-        `Seat at (${seat.x}, ${seat.y}) touches ${touching.length} tables, expected exactly 1`,
-      );
+    if (touching.length > 1) {
+      throw new Error(`Seat at (${seat.x}, ${seat.y}) touches ${touching.length} tables, expected at most 1`);
     }
-    touching[0].seats.push(seat);
+    touching[0]?.seats.push(seat);
   }
   // A table with no seats is fine: nobody sits there. (The player can place a
   // table before its chairs while decorating, GAME_DESIGN.md §5.7.)
