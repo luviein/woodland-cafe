@@ -5,6 +5,8 @@ import {
   buildLayout,
   CAFE_ROOM,
   furnishedRows,
+  movePiece,
+  moveProblem,
   pieceAt,
   placePiece,
   placeProblem,
@@ -151,5 +153,50 @@ describe('removing furniture', () => {
 
   it('bought pieces go into storage', () => {
     expect(storePieces(empty(0, 0), 'chair', 2).stored).toEqual({ table: 0, chair: 2 });
+  });
+});
+
+describe('dragging furniture', () => {
+  const at = (x: number, y: number) => ({ x, y });
+
+  it('moves a chair to another side of its table, storage untouched', () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3]]);
+    const after = movePiece(f, at(1, 3), at(2, 4), ROOM);
+    expect(after.placed).toEqual([
+      { kind: 'table', x: 2, y: 3 },
+      { kind: 'chair', x: 2, y: 4 },
+    ]);
+    expect(after.stored).toEqual(f.stored);
+  });
+
+  it('a table carries its chairs, even onto where its own chair was', () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3]]);
+    expect(movePiece(f, at(2, 3), at(3, 3), ROOM).placed).toEqual([
+      { kind: 'table', x: 3, y: 3 },
+      { kind: 'chair', x: 2, y: 3 },
+    ]);
+  });
+
+  it('dropping it where it was changes nothing', () => {
+    const f = build([['table', 2, 3]]);
+    expect(moveProblem(f, at(2, 3), at(2, 3), ROOM)).toBeNull();
+    expect(movePiece(f, at(2, 3), at(2, 3), ROOM).placed).toEqual(f.placed);
+  });
+
+  it('follows the same rules as placing', () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3], ['table', 4, 3]]);
+    expect(moveProblem(f, at(1, 3), at(0, 3), ROOM)).toBe('Keep the door, counter and queue clear');
+    expect(moveProblem(f, at(1, 3), at(4, 3), ROOM)).toBe('Something is already there');
+    expect(moveProblem(f, at(1, 3), at(1, 4), ROOM)).toBe('A chair needs a table next to it');
+    // The second table next to the first table's chair.
+    expect(moveProblem(f, at(4, 3), at(1, 4), ROOM)).toBe('A chair can only be at one table');
+    expect(moveProblem(f, at(5, 5), at(1, 4), ROOM)).toBe('Nothing there to move');
+    expect(() => movePiece(f, at(1, 3), at(0, 3), ROOM)).toThrow(/Keep the door/);
+  });
+
+  it("a table's chairs must fit too", () => {
+    // The table could go to (1, 3), but its chair at (1, 3) would land in the wall.
+    const f = build([['table', 2, 3], ['chair', 1, 3]]);
+    expect(moveProblem(f, at(2, 3), at(1, 3), ROOM)).toBe('Keep the door, counter and queue clear');
   });
 });

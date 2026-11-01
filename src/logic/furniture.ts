@@ -111,18 +111,74 @@ export function placeProblem(
   // '.' only: not walls or the counter, and not the door, the counter spot,
   // the order spot or queue spots (P, O, 1-9), which must stay clear.
   if (room[at.y]?.[at.x] !== '.') return 'Keep the door, counter and queue clear';
+  return arrangementProblem([...furniture.placed, { kind, ...at }], room);
+}
 
-  const placed = [...furniture.placed, { kind, ...at }];
-  if (kind === 'chair') {
-    const tables = tablesTouching(placed, at);
+/**
+ * The rules for the cafe as a whole, once pieces are on free '.' tiles:
+ * every chair touches exactly one table, and nothing blocks the way.
+ */
+function arrangementProblem(placed: readonly PlacedPiece[], room: readonly string[]): string | null {
+  for (const chair of placed.filter((p) => p.kind === 'chair')) {
+    const tables = tablesTouching(placed, chair);
     if (tables === 0) return 'A chair needs a table next to it';
     if (tables > 1) return 'A chair can only be at one table';
-  } else if (placed.some((q) => q.kind === 'chair' && touching(q, at) && tablesTouching(placed, q) > 1)) {
-    return 'A chair can only be at one table';
   }
   // The checks above are exactly what parseLayout() needs, so this can't throw.
   if (!staysConnected(parseLayout(furnishedRows(room, placed)))) return 'That would block the way';
   return null;
+}
+
+/**
+ * The pieces that go together with the one at `at`: just it, or for a
+ * table, it plus the chairs at it (they're put away and moved together).
+ */
+export function pieceGroup(furniture: Furniture, at: Point): PlacedPiece[] {
+  const piece = pieceAt(furniture, at);
+  if (!piece) return [];
+  return furniture.placed.filter(
+    (p) => p === piece || (piece.kind === 'table' && p.kind === 'chair' && touching(p, piece)),
+  );
+}
+
+/**
+ * Why the piece at `from` can't be dragged to `to` (its group moving by the
+ * same step, GAME_DESIGN.md §5.7), or null if it can. Judged with the group
+ * lifted out, so a table can shift onto where its own chair was.
+ */
+export function moveProblem(
+  furniture: Furniture,
+  from: Point,
+  to: Point,
+  room: readonly string[] = CAFE_ROOM,
+): string | null {
+  const group = pieceGroup(furniture, from);
+  if (group.length === 0) return 'Nothing there to move';
+  if (samePoint(from, to)) return null;
+  const staying = furniture.placed.filter((p) => !group.includes(p));
+  const moved = group.map((p) => ({ ...p, x: p.x + to.x - from.x, y: p.y + to.y - from.y }));
+  for (const p of moved) {
+    if (staying.some((q) => samePoint(q, p))) return 'Something is already there';
+    if (room[p.y]?.[p.x] !== '.') return 'Keep the door, counter and queue clear';
+  }
+  return arrangementProblem([...staying, ...moved], room);
+}
+
+/** Drags the piece at `from` (and a table's chairs) to `to`. Throws if moveProblem() says no: check first. */
+export function movePiece(
+  furniture: Furniture,
+  from: Point,
+  to: Point,
+  room: readonly string[] = CAFE_ROOM,
+): Furniture {
+  const problem = moveProblem(furniture, from, to, room);
+  if (problem) throw new Error(`movePiece: ${problem}`);
+  const group = pieceGroup(furniture, from);
+  return {
+    ...furniture,
+    // Same order as before, so a move changes only the positions.
+    placed: furniture.placed.map((p) => (group.includes(p) ? { ...p, x: p.x + to.x - from.x, y: p.y + to.y - from.y } : p)),
+  };
 }
 
 /** Moves one `kind` from storage to `at`. Throws if placeProblem() says no: check first. */
@@ -145,13 +201,11 @@ export function placePiece(
  * with it: a chair always needs its table. Nothing there: unchanged.
  */
 export function removePiece(furniture: Furniture, at: Point): Furniture {
-  const piece = pieceAt(furniture, at);
-  if (!piece) return furniture;
-  const goes = (p: PlacedPiece) => p === piece || (piece.kind === 'table' && p.kind === 'chair' && touching(p, piece));
-  const removed = furniture.placed.filter(goes);
+  const removed = pieceGroup(furniture, at);
+  if (removed.length === 0) return furniture;
   const stored = { ...furniture.stored };
   for (const p of removed) stored[p.kind] += 1;
-  return { placed: furniture.placed.filter((p) => !goes(p)), stored };
+  return { placed: furniture.placed.filter((p) => !removed.includes(p)), stored };
 }
 
 /** Adds bought pieces to storage. */
