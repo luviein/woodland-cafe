@@ -279,7 +279,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 5.6 Marketplace shops
 
-- The Marketplace has **five stalls**: the three below, plus the Carpenter (§5.7) and the Notice Board (§5.8). Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
+- The Marketplace has **five stalls**: the three below, plus the Carpenter (§5.7) and the Notice Board (§5.8). In December a sixth, the **Christmas stall** (§5.10), stands on its own below them. Tapping one walks the player to its counter and opens its **shop panel**; Close (or `Esc`) shuts it. The Marketplace keeps running under the panel (leaves keep falling); the player just stands at the stall.
 
   | Stall | Sells |
   | ----- | ----- |
@@ -358,6 +358,39 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **The place guides** are one-off tips like Decorate's: also shown to players who started before the tutorial existed, the first time they visit after it was added; skipped along with the tutorial.
 - The tutorial step is part of the game state, so it's saved; a reload during Day 1 starts Day 1 again (saves are between days only, §6.1), with the tutorial from its first cafe step.
 
+### 5.10 Christmas stall and catalogue
+
+- **A seasonal stall:** the **Christmas stall** (the player's own stall art: snowy roof, a wreath, a candy-striped awning, a red counter with stockings) stands in the open lower middle of the Marketplace. It's there from **1 December to 31 December** (the player's own date). **While testing it's always there** (a dev setting, on in the dev build; the release build goes by the date).
+- **The catalogue:** tapping the stall opens a **catalogue** instead of a shop list, in the cafe's own look (wood and cream paper, not copied from other games):
+  - **Cover:** "Woodland Cafe Catalogue", "Christmas Edition", a snowy picture and **Tap to open**. A close button in the corner; `Esc` closes it too.
+  - **Opened:** a **two-page book**. Each page holds **4 item cards**: the item's picture, its name, one line about it, and its **price button** (🍃). Page arrows and the wallet along the top; **tabs down the side** for the catalogue's sections (Christmas for now, more later).
+  - **Buying** is like the Carpenter: one tap buys one, straight into **storage**; the button is greyed out when the wallet can't pay.
+- **The Christmas edition** (the player's own item art, converted to the game's pixel grid like the critters):
+
+  | Item | Placed | Price |
+  | ---- | ------ | ----- |
+  | Christmas Tree | floor, one tile (drawn taller) | 🍃80 |
+  | Snowman | floor | 🍃60 |
+  | Table & Candle | floor, **a table** (customers eat at it) | 🍃50 |
+  | Chair with Bow | floor, **a chair** (customers sit on it) | 🍃20 |
+  | Gift Boxes | floor | 🍃35 |
+  | Poinsettia Plant | floor | 🍃20 |
+  | Snow Globe | floor | 🍃15 |
+  | Pine Garland | back wall | 🍃35 |
+  | Fairy Lights | back wall | 🍃25 |
+  | Stockings | back wall | 🍃20 |
+  | Bauble Ornaments | back wall | 🍃20 |
+  | Christmas Wreath | back wall | 🍃35 |
+  | Lantern | back wall | 🍃20 |
+  | Christmas Tree Picture | back wall | 🍃40 |
+
+- **Furniture designs:** a placed piece and a stored piece now say **which design** it is (e.g. the plain chair or the Chair with Bow), not only table or chair. Every design has a **kind**: table, chair, floor decoration or wall decoration. Tables and chairs follow the seating rules of §5.7 whatever their design.
+- **Floor decorations** take one floor tile, by the same rules as a table (only plain floor; the floor must stay connected), but nobody sits at them and a chair next to one isn't next to a table.
+- **Wall decorations** hang on the **back wall**, one wall tile each, on any free wall tile: not over a window or the clock. They don't touch the floor, so they never get in anyone's way.
+- **Decorate:** the storage tray shows **one card per design** owned (its picture and a count), so all the new pieces can be placed by tap or drag, and Move / Put away work on them like on tables. A **catalogue button** in Decorate opens the same catalogue (when it's on sale) to buy more without leaving.
+- **Bought Christmas pieces stay** after December: they're the player's to keep and place all year; only the stall goes away.
+- **In the game state** (§6) and the save: furniture records the design. Older saves load with the plain table and chair designs (a save version bump, §6.1).
+
 ## 6. Game State
 
 - All player state lives in **one central, serializable state object**, so it can be saved and loaded later:
@@ -365,7 +398,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - Inventory (ingredient stock, §3.6)
   - **Owned ingredients**
   - **Owned upgrades**
-  - Owned furniture: placed (where) and in storage (§5.7)
+  - Owned furniture: placed (where) and in storage, by design (§5.7, §5.10)
   - Hired employees (§5.8)
   - Cafe layout: the fixed room plus the placed furniture
   - Unlocked locations
@@ -393,7 +426,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ## 7. Later Features
 
-- More furniture kinds: bigger tables, decorations (plants, rugs), a bigger room
+- More furniture kinds: bigger tables, more decorations (rugs), a bigger room (decorations and designs started with the Christmas catalogue, §5.10)
 - **Furniture designs and a storage catalogue:** several designs of the same kind (e.g. a round oak table and a square birch one, or different chairs). The Decorate storage tray becomes a catalogue panel along the bottom: one **card per design** with its picture, its name and a **count badge** (cards with none in storage are faded), grouped by **category tabs** (e.g. Tables, Chairs, Decorations, Outdoor) with filter chips and counts. Tap or drag a card to place that design; tapping a placed piece keeps the Move / Put away menu. The panel can be folded away to see the whole cafe. Needs storage and placed pieces to record the design, not just the kind (a save version bump, §6.1).
 - More employee roles (e.g. a Server who carries dishes, a Greeter who takes orders), and more than one of a role
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
