@@ -172,9 +172,10 @@ export class DecorateScene extends Phaser.Scene {
       rect: { x: BOTTOM_BOX_LEFT, y: 294, width: 516 - BOTTOM_BOX_LEFT, height: 62 },
       step: TIPS.decorate,
       arrow: (line) => {
+        const target = TIPS.decorate.pointsAt[line];
         const tray = this.trayButtons.get('table');
-        if (line === 1 && tray) return { x: tray.x, y: tray.y - 18 };
-        if (line === 2 && firstTable) {
+        if (target === 'tray' && tray) return { x: tray.x, y: tray.y - 18 };
+        if (target === 'table' && firstTable) {
           return { x: this.origin.x + firstTable.x * TILE_SIZE + TILE_SIZE / 2, y: this.origin.y + firstTable.y * TILE_SIZE };
         }
         return null;

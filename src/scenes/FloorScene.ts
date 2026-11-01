@@ -348,7 +348,7 @@ export class FloorScene extends Phaser.Scene {
           rect: GUIDE_RECT,
           depth: OVERLAY + 100,
           step: TUTORIAL[step],
-          arrow: () => this.tutorialArrow(step),
+          arrow: (line) => this.tutorialArrow(TUTORIAL[step].pointsAt[line]),
           onFinished: () => tutorialEvent(this, 'next'),
           onSkip: () => tutorialEvent(this, 'skip'),
         });
@@ -357,14 +357,14 @@ export class FloorScene extends Phaser.Scene {
     this.guide?.refreshArrow();
   }
 
-  /** What Grandma Badger points at on the floor: the customer to serve, or the mess to wipe. */
-  private tutorialArrow(step: TutorialState): Point | null {
+  /** Where Grandma Badger's arrow points on the floor, by name (data/tutorial.ts ARROW_TARGETS). */
+  private tutorialArrow(target: string | null | undefined): Point | null {
     const atCounter = customerAtCounter(this.floor, this.layout);
-    if (step === 'takeOrder' && atCounter) {
+    if (target === 'customer' && atCounter) {
       const { x, y } = this.tileToPixel(this.layout.orderSpot);
       return { x: x + TILE_SIZE / 2, y: y - critterHeadroom(customerArt(atCounter.id)) - 14 }; // over their head and the "!"
     }
-    if (step === 'clean' && this.floor.messySeats.length > 0) {
+    if (target === 'mess' && this.floor.messySeats.length > 0) {
       const messy = this.floor.messySeats[0];
       const table = this.layout.tables.find((t) => t.seats.some((s) => pointKey(s) === messy));
       const seat = table?.seats.find((s) => pointKey(s) === messy);

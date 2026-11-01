@@ -1,0 +1,213 @@
+{
+  "tutorial": {
+    "intro": [
+      {
+        "text": "Oh, you made it! Welcome to Woodland Island, dear. I'm Grandma Badger."
+      },
+      {
+        "text": "I've run this little cafe for forty years. Now it's time for these old paws to rest."
+      },
+      {
+        "text": "Here are the keys, and 30 of each ingredient from my pantry: bread, mushrooms and jam."
+      },
+      {
+        "text": "I'll stay for your first morning and show you the ropes."
+      }
+    ],
+    "takeOrder": [
+      {
+        "text": "Here comes your very first customer! Tap them at the counter to take their order.",
+        "arrow": "customer"
+      }
+    ],
+    "prep": [
+      {
+        "text": "This is the prep station. Their order is in the speech bubble.",
+        "arrow": "bubble"
+      },
+      {
+        "text": "Listen for little extras too, like 'toasted'. Get those right and they tip more!",
+        "arrow": "bubble"
+      },
+      {
+        "text": "Not sure what goes in a dish? The Recipe Book has every recipe.",
+        "arrow": "recipes"
+      },
+      {
+        "text": "Jam Bread: bread first, then jam. Tap the bins in that order, then Serve.",
+        "arrow": "dish"
+      }
+    ],
+    "clean": [
+      {
+        "text": "Lovely! Customers leave a mess when they finish eating. Tap that table to wipe it clean.",
+        "arrow": "mess"
+      }
+    ],
+    "freePlay": [
+      {
+        "text": "That's all there is to it! Customers will keep coming until closing time."
+      },
+      {
+        "text": "Keep them happy and quick, and they tip in Leaves. Off you go, dear!"
+      }
+    ],
+    "summary": [
+      {
+        "text": "Well done! At the end of each day you see what you earned and what you used. Tap Exit cafe when you're ready.",
+        "arrow": "exit"
+      }
+    ],
+    "map": [
+      {
+        "text": "This is Woodland Island, dear. Tap a signpost to go somewhere."
+      },
+      {
+        "text": "The Cafe: tap it to open for the next day, or choose Decorate to arrange your tables and chairs.",
+        "arrow": "cafe"
+      },
+      {
+        "text": "The Marketplace: stock at the Pantry, new ingredients at Specialty, equipment at Tools, furniture at the Carpenter, staff at the Notice Board.",
+        "arrow": "marketplace"
+      },
+      {
+        "text": "Those 30 of each won't last forever, so stock up at the Pantry before you run out!",
+        "arrow": "marketplace"
+      },
+      {
+        "text": "The Forest: pick up Leaves and gather mushrooms and berries. They grow back every day.",
+        "arrow": "forest"
+      },
+      {
+        "text": "Now go and have a look around the Marketplace and the Forest. I'll meet you there!"
+      }
+    ],
+    "explore": [
+      {
+        "text": "Have a look around the Marketplace and the Forest, dear. I'll show you what's there."
+      }
+    ],
+    "farewell": [
+      {
+        "text": "You've seen it all now, dear. I'm so proud of you!"
+      },
+      {
+        "text": "If you ever forget something, tap ? down here to read my notes.",
+        "arrow": "notes"
+      },
+      {
+        "text": "The cafe's yours now. I'll pop in for a cup now and then!"
+      }
+    ]
+  },
+  "tips": {
+    "decorate": [
+      {
+        "text": "Decorating! Arrange the cafe however you like, dear. Moving things around is free."
+      },
+      {
+        "text": "Storage holds pieces you bought or put away. Tap one, then tap the floor, or drag it straight in.",
+        "arrow": "tray"
+      },
+      {
+        "text": "Tap a piece in the cafe for its menu: Move it somewhere else, or Put it away. Or just drag it.",
+        "arrow": "table"
+      },
+      {
+        "text": "A chair can only be at one table, and the way to the door must stay clear. If a spot won't do, I'll say why."
+      }
+    ],
+    "marketplace": [
+      {
+        "text": "Welcome to the Marketplace! Tap a stall to walk over and shop."
+      },
+      {
+        "text": "The Pantry sells stock for your bins, one or ten at a time.",
+        "arrow": "pantry"
+      },
+      {
+        "text": "Specialty sells new ingredients. Each one brings new recipes to the menu.",
+        "arrow": "specialty"
+      },
+      {
+        "text": "Tools sells equipment, like a Toaster for toasted orders.",
+        "arrow": "tools"
+      },
+      {
+        "text": "The Carpenter makes tables and chairs, for more seats in your cafe.",
+        "arrow": "carpenter"
+      },
+      {
+        "text": "The Notice Board is where you hire staff. They are paid every day.",
+        "arrow": "noticeBoard"
+      },
+      {
+        "text": "And keep an eye out for Leaves on the ground! Walk over them to pick them up."
+      }
+    ],
+    "forest": [
+      {
+        "text": "The Forest! Leaves fall here too: walk over them to pick them up. A few each day."
+      },
+      {
+        "text": "Mushroom patches and berry bushes can be gathered once a day. Tap one to gather it.",
+        "arrow": "forage"
+      },
+      {
+        "text": "They grow back by tomorrow. Free ingredients for your cafe, dear!"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "title": "Orders",
+      "lines": [
+        "Tap a customer waiting at the counter to take their order.",
+        "No clean seat free? They can't order until you wipe a table.",
+        "Their patience only starts running down once you take the order."
+      ]
+    },
+    {
+      "title": "Prep station",
+      "lines": [
+        "This is the prep station. Their order is in the speech bubble.",
+        "Listen for little extras too, like 'toasted'. Get those right and they tip more!",
+        "Not sure what goes in a dish? The Recipe Book has every recipe.",
+        "Tap the bins to stack the layers, bottom first, then Serve. A wrong layer? Press Reset."
+      ]
+    },
+    {
+      "title": "Cleaning",
+      "lines": [
+        "Customers leave a mess when they finish eating. Tap the table to wipe it clean.",
+        "Hire a Cleaner at the Notice Board and they will wipe tables for you."
+      ]
+    },
+    {
+      "title": "The day",
+      "lines": [
+        "That's all there is to it! Customers will keep coming until closing time.",
+        "Keep them happy and quick, and they tip in Leaves. Off you go, dear!",
+        "At the end of each day you see what you earned and what you used."
+      ]
+    },
+    {
+      "title": "The island",
+      "lines": [
+        "The Cafe: tap it to open for the next day, or choose Decorate to arrange your tables and chairs.",
+        "The Marketplace: stock at the Pantry, new ingredients at Specialty, equipment at Tools, furniture at the Carpenter, staff at the Notice Board.",
+        "Those 30 of each won't last forever, so stock up at the Pantry before you run out!",
+        "The Forest: pick up Leaves and gather mushrooms and berries. They grow back every day."
+      ]
+    },
+    {
+      "title": "Decorating",
+      "lines": [
+        "Decorating! Arrange the cafe however you like, dear. Moving things around is free.",
+        "Storage holds pieces you bought or put away. Tap one, then tap the floor, or drag it straight in.",
+        "Tap a piece in the cafe for its menu: Move it somewhere else, or Put it away. Or just drag it.",
+        "A chair can only be at one table, and the way to the door must stay clear. If a spot won't do, I'll say why."
+      ]
+    }
+  ]
+}

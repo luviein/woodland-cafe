@@ -115,7 +115,7 @@ export class WorldMapScene extends Phaser.Scene {
     const guide = new StoryBox(this, {
       rect: { x: BOTTOM_BOX_LEFT, y: 292, width: BASE_WIDTH - 36 - BOTTOM_BOX_LEFT, height: 62 },
       step: TUTORIAL[step],
-      arrow: (line) => (step === 'explore' ? target(unseen) : target(TUTORIAL[step].pointsAt?.[line])),
+      arrow: (line) => (step === 'explore' ? target(unseen) : target(TUTORIAL[step].pointsAt[line])),
       onFinished: () => {
         tutorialEvent(this, 'next');
         guide.destroy();

@@ -198,7 +198,7 @@ export class OutdoorScene extends Phaser.Scene {
     const guide = new StoryBox(this, {
       rect: { x: BOTTOM_BOX_LEFT, y: 292, width: BASE_WIDTH - 36 - BOTTOM_BOX_LEFT, height: 62 },
       step: def,
-      arrow: (line) => target(def.pointsAt?.[line]),
+      arrow: (line) => target(def.pointsAt[line]),
       // Over the y-sorted scenery and the HUD.
       depth: HUD_DEPTH + 10,
       onFinished: () => {

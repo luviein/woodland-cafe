@@ -205,9 +205,14 @@ export class PrepScene extends Phaser.Scene {
       // Short enough that the arrow can point down at a bin from just under it.
       rect: { x: 8, y: COUNTER_TOP_Y + 6, width: 216, height: 96 },
       step: TUTORIAL.prep,
-      // The bubble (the order, then its extras), the Recipes button, then
-      // whatever the dish needs next.
-      arrow: (line) => [{ x: 308, y: 22 }, { x: 308, y: 22 }, { x: 568, y: 46, up: true }][line] ?? this.nextStepArrow(),
+      // By name (texts/grandma.json): the speech bubble, the Recipes button,
+      // or the dish: whatever it needs next.
+      arrow: (line) => {
+        const target = TUTORIAL.prep.pointsAt[line];
+        if (target === 'bubble') return { x: 308, y: 22 };
+        if (target === 'recipes') return { x: 568, y: 46, up: true };
+        return target === 'dish' ? this.nextStepArrow() : null;
+      },
       // Under the Recipe Book (50), so the open book covers her rather than the other way round.
       depth: 45,
       onFinished: () => {},

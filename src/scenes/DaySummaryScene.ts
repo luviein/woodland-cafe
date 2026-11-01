@@ -72,7 +72,7 @@ export class DaySummaryScene extends Phaser.Scene {
       const guide = new StoryBox(this, {
         rect: { x: 64, y: 4, width: 512, height: 60 },
         step: TUTORIAL.summary,
-        arrow: () => ({ x: cx, y: exit.y - 18 }),
+        arrow: (line) => (TUTORIAL.summary.pointsAt[line] === 'exit' ? { x: cx, y: exit.y - 18 } : null),
         onFinished: () => {},
         onSkip: () => {
           tutorialEvent(this, 'skip');
