@@ -255,3 +255,47 @@ export const PLATE: PixelSprite = {
     ],
   ],
 };
+
+/** Decorate menu icon: Move, four arrows. 13x13 (shown at 2x). */
+export const MOVE_ICON: PixelSprite = {
+  legend: { o: 'darkBrown', w: 'cream' },
+  frames: [
+    [
+      '......o......',
+      '.....owo.....',
+      '....owwwo....',
+      '...ooowooo...',
+      '..o..owo..o..',
+      '.ow..owo..wo.',
+      'owwwwwwwwwwwo',
+      '.ow..owo..wo.',
+      '..o..owo..o..',
+      '...ooowooo...',
+      '....owwwo....',
+      '.....owo.....',
+      '......o......',
+    ],
+  ],
+};
+
+/** Decorate menu icon: Put away, a storage crate. 13x13 (shown at 2x). */
+export const STORE_ICON: PixelSprite = {
+  legend: { o: 'darkBrown', t: 'sand', b: 'wood' },
+  frames: [
+    [
+      '.............',
+      '..ooooooooo..',
+      '.ottttttttto.',
+      '.ooooooooooo.',
+      '..obbbbbbbo..',
+      '..obbbbbbbo..',
+      '..obooooobo..',
+      '..obbbbbbbo..',
+      '..obbbbbbbo..',
+      '..obbbbbbbo..',
+      '..ooooooooo..',
+      '.............',
+      '.............',
+    ],
+  ],
+};

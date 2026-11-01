@@ -1,5 +1,18 @@
 import type { PixelSprite } from './pixelSprite';
-import { CHAIR, COUNTER, DOOR, FLOOR, MESS, ORDER_RUG, PAW_PRINT, PLATE, TABLE, WALL } from './sprites/cafe';
+import {
+  CHAIR,
+  COUNTER,
+  DOOR,
+  FLOOR,
+  MESS,
+  MOVE_ICON,
+  ORDER_RUG,
+  PAW_PRINT,
+  PLATE,
+  STORE_ICON,
+  TABLE,
+  WALL,
+} from './sprites/cafe';
 import { FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
@@ -19,6 +32,8 @@ export const SPRITE_ART = {
   pawPrint: PAW_PRINT,
   mess: MESS,
   plate: PLATE,
+  moveIcon: MOVE_ICON,
+  storeIcon: STORE_ICON,
   // The cast: 16x24, frames 0 standing, 1-2 walking (GAME_DESIGN.md §8.2)
   hedgehog: HEDGEHOG,
   raccoon: RACCOON,

@@ -77,8 +77,8 @@ Between days only (from the map). The cafe is empty while you arrange it.
 | Place it            | Tap a floor tile. Refused taps say why: chairs need exactly one table next to them, the door, counter and queue stay clear, and nothing may block the way |
 | Move one            | Drag a placed piece to another tile. A table brings its chairs along. The copy you drag turns red where it can't go; letting go there says why and leaves it where it was |
 | Drag from storage   | Drag **Table** or **Chair** from Storage straight onto the floor |
-| Put one away        | Tap a placed piece (free). A table takes its chairs with it |
-| Finish              | **Done** (or `Esc` / `Enter`) goes back to the map |
+| Piece menu          | Tap a placed piece: **Move** (arrows) lifts it, then tap where it should go; **Put away** (crate) returns it to storage, a table with its chairs. Tap elsewhere or `Esc` to close; `Esc` while moving puts it back |
+| Finish              | **Done** (or `Esc` / `Enter`, when no menu is open and nothing is being moved) goes back to the map |
 
 ## Controls (prep station)
 

@@ -14,7 +14,7 @@ import {
   type PlacedPiece,
 } from '../logic/furniture';
 import type { Point } from '../logic/layout';
-import { artKey } from '../ui/art';
+import { addArt, artKey } from '../ui/art';
 import { Button } from '../ui/Button';
 import { addCafeCanvas, cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
 import { COLORS, TEXT, css } from '../ui/theme';
@@ -42,9 +42,10 @@ interface Drag {
 /**
  * Arranging the cafe's tables and chairs between days (GAME_DESIGN.md §5.7).
  * Opened from the map's Cafe panel. The empty cafe (no customers, no clock)
- * with a storage tray on the left: pick a piece, tap the floor to place it;
- * tap a placed piece to put it away. Every change goes straight into the
- * game state, so Done just goes back to the map.
+ * with a storage tray on the left: pick a piece and tap the floor (or drag
+ * it there) to place it; drag a placed piece to move it, or tap it for the
+ * Move / Put away menu. Every change goes straight into the game state, so
+ * Done just goes back to the map.
  */
 export class DecorateScene extends Phaser.Scene {
   private origin!: Point;
@@ -56,6 +57,10 @@ export class DecorateScene extends Phaser.Scene {
   private selected: FurnitureKind | null = null;
   /** A press that may turn into a drag; null when the pointer is up. */
   private drag: Drag | null = null;
+  /** Pieces lifted with the menu's Move: they follow the pointer until the next tap on the floor. */
+  private carrying: Drag | null = null;
+  /** The Move / Put away menu over a tapped piece (its objects), or null. */
+  private menu: Phaser.GameObjects.GameObject[] | null = null;
 
   constructor() {
     super('DecorateScene');
@@ -64,6 +69,8 @@ export class DecorateScene extends Phaser.Scene {
   create(): void {
     this.selected = null;
     this.drag = null;
+    this.carrying = null;
+    this.menu = null;
     this.trayButtons = new Map();
     this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.wall).setOrigin(0);
     this.origin = cafeOrigin(buildLayout(this.furniture()));
@@ -71,7 +78,7 @@ export class DecorateScene extends Phaser.Scene {
 
     this.add.text(BASE_WIDTH / 2, 10, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0.5, 0);
     this.add
-      .text(BASE_WIDTH / 2, BASE_HEIGHT - 8, 'Drag pieces to move or place them. Tap a piece to put it away.', TEXT.label)
+      .text(BASE_WIDTH / 2, BASE_HEIGHT - 8, 'Drag pieces to move or place them. Tap a piece for more.', TEXT.label)
       .setOrigin(0.5, 1);
 
     // The storage tray, left of the cafe.
@@ -86,8 +93,11 @@ export class DecorateScene extends Phaser.Scene {
       this.trayButtons.set(kind, button);
     });
     new Button(this, BASE_WIDTH - 64, BASE_HEIGHT - 40, 100, 30, 'Done', COLORS.serve, () => this.done());
+    // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' || event.key === 'Enter') this.done();
+      if (event.key === 'Escape' && this.carrying) this.cancelCarrying();
+      else if (event.key === 'Escape' && this.menu) this.closeMenu();
+      else if ((event.key === 'Escape' || event.key === 'Enter') && !this.carrying && !this.menu) this.done();
     };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
@@ -95,11 +105,12 @@ export class DecorateScene extends Phaser.Scene {
     );
 
     // A press on a placed piece may become a drag (moving it); one that
-    // doesn't move is a tap (putting it away), as before dragging existed.
+    // doesn't move is a tap (opening its menu).
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
         if (over.length > 0) return; // a button: the tray handles its own
+        if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
         const piece = pieceAt(this.furniture(), tile);
         if (piece) {
@@ -108,7 +119,7 @@ export class DecorateScene extends Phaser.Scene {
         }
       },
     );
-    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.onDragMove(pointer));
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.onPointerMove(pointer));
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
@@ -118,7 +129,16 @@ export class DecorateScene extends Phaser.Scene {
           this.drop(drag, this.tileUnder(pointer), over.length > 0);
           return;
         }
-        if (over.length > 0) return; // a button's tap
+        if (over.length > 0) return; // a button's tap (menu buttons close the menu themselves)
+        if (this.carrying) {
+          this.putDownCarried(this.tileUnder(pointer));
+          return;
+        }
+        // A tap anywhere else closes the menu, and does only that.
+        if (this.menu) {
+          this.closeMenu();
+          return;
+        }
         this.onTileTapped(this.tileUnder(pointer));
       },
     );
@@ -126,7 +146,7 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => {
       this.drag?.ghost?.destroy();
       this.drag = null;
-      this.refresh();
+      if (!this.carrying) this.refresh();
     });
     this.refresh();
   }
@@ -140,29 +160,118 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   /**
-   * Moving 4px or more turns a press into a drag: the pieces are lifted
-   * out of the cafe and a see-through copy follows the pointer, snapped to
-   * the tiles, red where they can't go.
+   * Carried pieces follow the pointer. A press that moves 4px or more
+   * becomes a drag: the pieces are lifted and follow it too.
    */
-  private onDragMove(pointer: Phaser.Input.Pointer): void {
+  private onPointerMove(pointer: Phaser.Input.Pointer): void {
+    if (this.carrying) {
+      this.moveGhost(this.carrying, this.tileUnder(pointer));
+      return;
+    }
     const drag = this.drag;
     if (!drag || !pointer.isDown) return;
     if (!drag.ghost) {
       if (Phaser.Math.Distance.BetweenPoints(drag.start, pointer.position) < DRAG_THRESHOLD) return;
-      drag.ghost = this.createGhost(drag);
-      if (drag.from) {
-        // Show the cafe without the lifted pieces while they're in the air.
-        const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
-        drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }), this.origin);
-      }
+      this.closeMenu();
+      this.lift(drag);
     }
-    const tile = this.tileUnder(pointer);
+    this.moveGhost(drag, this.tileUnder(pointer));
+  }
+
+  /** Takes the pieces out of the drawn cafe and makes their see-through copy. */
+  private lift(drag: Drag): void {
+    drag.ghost = this.createGhost(drag);
+    if (drag.from) {
+      // Show the cafe without the lifted pieces while they're in the air.
+      const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
+      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }), this.origin);
+    }
+  }
+
+  /** Snaps the see-through copy to `tile`, red if it couldn't be put down there. */
+  private moveGhost(drag: Drag, tile: Point): void {
+    if (!drag.ghost) return;
     drag.ghost.setPosition(this.origin.x + tile.x * TILE_SIZE, this.origin.y + tile.y * TILE_SIZE);
     const ok = this.dropProblem(drag, tile) === null;
     for (const image of drag.ghost.list as Phaser.GameObjects.Image[]) {
       if (ok) image.clearTint();
       else image.setTint(COLORS.statusUpset);
     }
+  }
+
+  /**
+   * The menu over a tapped piece: Move and Put away, as icon buttons on a
+   * small paper panel, just above the piece (below it on the top row).
+   */
+  private openMenu(tile: Point): void {
+    this.closeMenu();
+    const tileX = this.origin.x + tile.x * TILE_SIZE + TILE_SIZE / 2;
+    const tileTop = this.origin.y + tile.y * TILE_SIZE;
+    const y = tile.y <= 1 ? tileTop + TILE_SIZE + 26 : tileTop - 26;
+    const x = Phaser.Math.Clamp(tileX, 50, BASE_WIDTH - 50);
+    // Interactive only so a tap on the panel between the buttons doesn't count as "elsewhere".
+    const panel = this.add.rectangle(x, y, 84, 44, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
+    // An outline around the tapped piece, so it's clear which one the menu is for.
+    const outline = this.add
+      .rectangle(tileX, tileTop + TILE_SIZE / 2, TILE_SIZE + 2, TILE_SIZE + 2)
+      .setStrokeStyle(2, COLORS.paper);
+    const move = new Button(this, x - 19, y, 34, 34, '', COLORS.book, () => this.startCarrying(tile)).setIcon(
+      addArt(this, 0, 0, 'moveIcon').setScale(2),
+    );
+    const store = new Button(this, x + 19, y, 34, 34, '', COLORS.reset, () => this.putAway(tile)).setIcon(
+      addArt(this, 0, 0, 'storeIcon').setScale(2),
+    );
+    const parts = [panel, outline, move, store];
+    for (const o of parts) o.setDepth(60);
+    this.menu = parts;
+  }
+
+  private closeMenu(): void {
+    for (const o of this.menu ?? []) o.destroy();
+    this.menu = null;
+  }
+
+  /** Menu: Move. The piece (a table with its chairs) lifts and follows the pointer. */
+  private startCarrying(tile: Point): void {
+    this.closeMenu();
+    const piece = pieceAt(this.furniture(), tile);
+    if (!piece) return;
+    const pieces = pieceGroup(this.furniture(), tile);
+    // `start` is only used to tell a press from a drag, which doesn't apply here.
+    const carrying: Drag = { kind: piece.kind, from: tile, pieces, start: new Phaser.Math.Vector2(), ghost: null };
+    this.lift(carrying);
+    this.moveGhost(carrying, tile);
+    this.carrying = carrying;
+    this.showMessage(tile, 'Tap where it should go');
+  }
+
+  /** The tap after Move: put the pieces down if they fit; if not, say why and keep carrying. */
+  private putDownCarried(tile: Point): void {
+    const carrying = this.carrying;
+    if (!carrying?.from) return;
+    const layout = buildLayout(this.furniture());
+    if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
+    const problem = moveProblem(this.furniture(), carrying.from, tile);
+    if (problem) {
+      this.showMessage(tile, problem);
+      return;
+    }
+    carrying.ghost?.destroy();
+    this.carrying = null;
+    this.setFurniture(movePiece(this.furniture(), carrying.from, tile));
+  }
+
+  /** Esc while carrying: everything goes back where it was. */
+  private cancelCarrying(): void {
+    this.carrying?.ghost?.destroy();
+    this.carrying = null;
+    this.refresh();
+  }
+
+  /** Menu: Put away. Into storage (a table takes its chairs). */
+  private putAway(tile: Point): void {
+    this.closeMenu();
+    this.setFurniture(removePiece(this.furniture(), tile));
   }
 
   /** The dragged pieces as images, placed relative to the tile being dragged (the ghost's origin). */
@@ -215,6 +324,8 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private select(kind: FurnitureKind): void {
+    this.closeMenu();
+    if (this.carrying) this.cancelCarrying();
     this.selected = this.selected === kind ? null : kind; // tap again to put it down
     this.refresh();
   }
@@ -224,7 +335,7 @@ export class DecorateScene extends Phaser.Scene {
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
 
     if (pieceAt(this.furniture(), tile)) {
-      this.setFurniture(removePiece(this.furniture(), tile));
+      this.openMenu(tile);
       return;
     }
     if (!this.selected) {
