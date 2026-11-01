@@ -78,6 +78,8 @@ All of these are **data-driven**, each in its **own data file**.
 
 ### 3.1 Ingredients
 
+(Each ingredient's dish layer has its own colours, so stacks read at a glance, e.g. bread is cream with a crust, mushroom tan and brown.)
+
 | Ingredient | How it's obtained |
 | ---------- | ----------------- |
 | Bread      | Starter |
@@ -338,13 +340,16 @@ The player can leave the counter **before taking an order** to clean messes; the
   | --- | --- | --- | --- |
   | intro | cafe, Day 1 | welcome, the keys, the 30 of each ingredient | Next on the last line |
   | takeOrder | cafe | a customer is here: tap them at the counter (arrow on them) | their order is taken |
-  | prep | prep station | what they want, the Recipe Book, layers go bottom to top, Serve | the dish is served |
+  | prep | prep station | what they want, **listen for little extras** (e.g. toasted: getting them right earns a bigger tip), the Recipe Book, then build it: the arrow goes to each bin in turn (Bread, then Jam) and then to Serve | the dish is served |
   | clean | cafe | they ate and left a mess: tap the table to wipe it | that mess is wiped |
   | freePlay | cafe | customers will keep coming until closing: off you go! | Next |
   | summary | day summary | how the day went: takings, stock used, wages later on | Exit cafe |
-  | map | world map | the Marketplace (buy stock before the starter 30 run out), the Forest (Leaves and foraging) | Next on the last line: the tutorial is done |
-- **The guided start of Day 1:** during intro, takeOrder, prep and clean, the **day clock is paused** and only **one** customer comes: they arrive once the intro is over, always order **Jam Bread**, and their **patience doesn't run out**. From freePlay on, Day 1 runs as normal (the clock starts, customers arrive as usual).
-- **Skip tutorial** ends it at once: Day 1 just carries on as a normal day.
+  | map | world map | every place, with the arrow on its sign: the **Cafe** (opens the next day; **Decorate** to arrange tables and chairs), the **Marketplace** (Pantry: stock; Specialty: new ingredients; Tools: equipment; Carpenter: furniture; Notice Board: staff), the **Forest** (Leaves and foraging) | Next on the last line: the tutorial is done |
+- **The guided start of Day 1:** during intro, takeOrder, prep and clean, the **day clock is paused** and only **one** customer comes: they arrive once the intro is over, are always the same critter (the mouse), always order **Jam Bread**, and their **patience doesn't run out**. From freePlay on, Day 1 runs as normal (the clock starts, customers arrive as usual).
+- **Skip tutorial** ends it at once: Day 1 just carries on as a normal day. It also skips the Decorate tips below.
+- **Decorate tips, the first time only:** the first time the player opens Decorate, Grandma explains the storage tray, placing a piece (tap or drag), the Move / Put away menu on a placed piece, dragging, and the rules (chairs at one table at most, keep the way clear). Seen once (or skipped), never again. Remembered in the game state with any other one-off tips.
+- **Grandma's notes:** a **?** button next to the speaker, on every screen, opens a notebook of everything she explained, by topic (the cafe, the prep station and extras, cleaning, the day summary, the map and its places, decorating, staff), to read again any time. The game pauses while it's open.
+- **The story box layout:** Skip tutorial sits under the portrait and Next at the right, so they never overlap, whatever the box's width.
 - The tutorial step is part of the game state, so it's saved; a reload during Day 1 starts Day 1 again (saves are between days only, §6.1), with the tutorial from its first cafe step.
 
 ## 6. Game State
