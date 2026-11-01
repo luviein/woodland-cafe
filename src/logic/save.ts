@@ -1,8 +1,8 @@
 import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
-import { FURNITURE_KINDS, type FurnitureKind } from '../data/furniture';
+import { DESIGN_IDS, kindOf, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, type IngredientId } from '../data/ingredients';
 import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
-import { CAFE_ROOM, buildLayout, type Furniture, type PlacedPiece } from './furniture';
+import { CAFE_ROOM, buildLayout, isWallSpot, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
@@ -19,7 +19,8 @@ import { TIP_IDS, type TipId } from '../data/tutorial';
  * (like `employees` was) don't need a bump: a missing field gets its new-game
  * default anyway.
  */
-export const SAVE_VERSION = 1;
+// 2: furniture records its design (the Christmas edition, GAME_DESIGN.md §5.10).
+export const SAVE_VERSION = 2;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -128,7 +129,9 @@ function countsById<T extends string>(
 }
 
 /**
- * Placed and stored furniture. If the placed pieces no longer make a valid
+ * Placed and stored furniture, by design. Version 1 saves wrote `kind`
+ * ('table' or 'chair') where `design` is now; those are the plain designs'
+ * ids, so they read straight in. If the placed pieces no longer make a valid
  * cafe (e.g. the room was changed in an update), they're all moved into
  * storage instead of refusing the save: the player can put them back with
  * Decorate.
@@ -136,18 +139,26 @@ function countsById<T extends string>(
 function readFurniture(value: unknown, fallback: Furniture): Furniture {
   if (value === undefined) return fallback;
   if (!isObject(value) || !Array.isArray(value.placed)) throw new BadSave('furniture');
-  const stored = countsById<FurnitureKind>(value.stored, 'furniture.stored', fallback.stored, FURNITURE_KINDS);
+  const stored = countsById<DesignId>(value.stored, 'furniture.stored', fallback.stored, DESIGN_IDS);
   const placed: PlacedPiece[] = value.placed.map((p: unknown) => {
-    const ok = isObject(p) && FURNITURE_KINDS.includes(p.kind as FurnitureKind) && isWhole(p.x) && isWhole(p.y);
+    const design = isObject(p) ? (p.design ?? p.kind) : undefined;
+    const ok = isObject(p) && DESIGN_IDS.includes(design as DesignId) && isWhole(p.x) && isWhole(p.y);
     if (!ok) throw new BadSave('furniture.placed');
-    return { kind: p.kind as FurnitureKind, x: p.x as number, y: p.y as number };
+    return { design: design as DesignId, x: p.x as number, y: p.y as number };
   });
-  const onFloor = placed.every((p) => CAFE_ROOM[p.y]?.[p.x] === '.');
   const furniture = { placed, stored };
-  if (onFloor && buildsValidCafe(furniture)) return furniture;
+  if (allPlacedOk(furniture)) return furniture;
   const allStored = { ...stored };
-  for (const p of placed) allStored[p.kind] += 1;
+  for (const p of placed) allStored[p.design] += 1;
   return { placed: [], stored: allStored };
+}
+
+/** Every piece on a spot it may stand on, one per spot, making a valid cafe. */
+function allPlacedOk(furniture: Furniture): boolean {
+  const spots = new Set(furniture.placed.map((p) => `${p.x},${p.y}`));
+  if (spots.size !== furniture.placed.length) return false;
+  const onItsSpot = (p: PlacedPiece) => (kindOf(p.design) === 'wallDecor' ? isWallSpot(CAFE_ROOM, p) : CAFE_ROOM[p.y]?.[p.x] === '.');
+  return furniture.placed.every(onItsSpot) && buildsValidCafe(furniture);
 }
 
 function buildsValidCafe(furniture: Furniture): boolean {

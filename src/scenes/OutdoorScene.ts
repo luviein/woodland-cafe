@@ -8,7 +8,7 @@ import { INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
 import { SHOPS, STOCK_BUY_AMOUNTS, TOOLS_ON_SALE, type ShopId } from '../data/shops';
 import { UPGRADES } from '../data/upgrades';
-import { FURNITURE, FURNITURE_KINDS } from '../data/furniture';
+import { FURNITURE, designsSoldBy } from '../data/furniture';
 import { EMPLOYEE_ROLES, EMPLOYEES } from '../data/employees';
 import { hire, isHired, letGo } from '../logic/employees';
 import { leavesLeftToday, pickUpLeaves } from '../logic/gameState';
@@ -379,14 +379,14 @@ export class OutdoorScene extends Phaser.Scene {
       });
     }
     if (id === 'carpenter') {
-      return FURNITURE_KINDS.map((kind) => ({
-        name: FURNITURE[kind].name,
-        detail: `🍃${FURNITURE[kind].price}   stored: ${state.furniture.stored[kind]}`,
+      return designsSoldBy('carpenter').map((design) => ({
+        name: FURNITURE[design].name,
+        detail: `🍃${FURNITURE[design].price}   stored: ${state.furniture.stored[design]}`,
         buttons: [
           {
             label: '+1',
-            enabled: canBuyFurniture(state, kind),
-            onPress: () => setGameState(this, buyFurniture(getGameState(this), kind)),
+            enabled: canBuyFurniture(state, design),
+            onPress: () => setGameState(this, buyFurniture(getGameState(this), design)),
           },
         ],
       }));

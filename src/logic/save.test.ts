@@ -76,11 +76,33 @@ describe('older saves', () => {
     const state = loaded(
       savedWith((s) => {
         const f = s.furniture as { placed: unknown[] };
-        f.placed = [...f.placed, { kind: 'table', x: 0, y: 0 }];
+        f.placed = [...f.placed, { design: 'table', x: 0, y: 0 }];
       }),
     );
     expect(state.furniture.placed).toEqual([]);
-    expect(state.furniture.stored).toEqual({ table: 5, chair: 10 }); // 4+1 tables, 8 placed + 2 stored chairs
+    expect(state.furniture.stored).toMatchObject({ table: 5, chair: 10 }); // 4+1 tables, 8 placed + 2 stored chairs
+  });
+
+  it('version 1: furniture by kind (table, chair) is the plain designs', () => {
+    const state = loaded(
+      savedWith((s) => {
+        const f = s.furniture as { placed: { design?: string; kind?: string }[]; stored: Record<string, number> };
+        f.placed = f.placed.map(({ design, ...rest }) => ({ ...rest, kind: design }));
+        f.stored = { table: f.stored.table, chair: f.stored.chair };
+      }, 1),
+    );
+    expect(state.furniture).toEqual(playedGame().furniture);
+  });
+
+  it('move a wall decoration that is off the back wall into storage', () => {
+    const state = loaded(
+      savedWith((s) => {
+        const f = s.furniture as { placed: unknown[] };
+        f.placed = [...f.placed, { design: 'wreath', x: 2, y: 0 }]; // a window
+      }),
+    );
+    expect(state.furniture.placed).toEqual([]);
+    expect(state.furniture.stored.wreath).toBe(1);
   });
 
   it('keep a valid rearranged cafe as it is', () => {

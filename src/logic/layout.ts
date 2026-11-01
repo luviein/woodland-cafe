@@ -2,7 +2,8 @@
 // use. Pure: text in, data out, so it's easy to test. The day's cafe is the
 // room plus the player's furniture, written into rows (logic/furniture.ts).
 
-export type TileKind = 'wall' | 'floor' | 'door' | 'counter' | 'table' | 'seat';
+/** 'decor': a floor decoration (a tree, a snowman): it blocks the way, nobody sits at it. */
+export type TileKind = 'wall' | 'floor' | 'door' | 'counter' | 'table' | 'seat' | 'decor';
 
 /** A tile position on the grid (not pixels). x = column, y = row. */
 export interface Point {
@@ -38,6 +39,7 @@ const CHAR_TO_TILE: Record<string, TileKind> = {
   C: 'counter',
   T: 'table',
   S: 'seat',
+  X: 'decor',
   P: 'floor',
   O: 'floor',
   // Digits 1-9 are counter queue spots, also floor (handled in parseLayout).

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
-import { FURNITURE, FURNITURE_KINDS, type FurnitureKind } from '../data/furniture';
+import { FURNITURE, kindOf, type DesignId } from '../data/furniture';
 import {
   buildLayout,
   movePiece,
@@ -30,12 +30,12 @@ const TRAY = { x: 64, y: BASE_HEIGHT - 42, firstButton: 196, buttonWidth: 104 };
 /** How far (px) a press must move to count as a drag rather than a tap. */
 const DRAG_THRESHOLD = 4;
 
-/** Each furniture kind's sprite (art/sprites/cafe.ts). */
-const FURNITURE_ART = { table: 'table', chair: 'chair' } as const satisfies Record<FurnitureKind, string>;
+/** The designs with a button in the tray. */
+const TRAY_DESIGNS: readonly DesignId[] = ['table', 'chair'];
 
 /** A press that may become a drag: of a placed piece, or one from storage (`from` null). */
 interface Drag {
-  kind: FurnitureKind;
+  design: DesignId;
   from: Point | null;
   /** The placed piece being moved, as a list for the ghost (empty when dragging from storage). */
   pieces: readonly PlacedPiece[];
@@ -56,11 +56,11 @@ interface Drag {
 export class DecorateScene extends Phaser.Scene {
   private origin!: Point;
   private tiles!: Phaser.GameObjects.RenderTexture;
-  /** The tray: one button per kind, showing how many are in storage. */
-  private trayButtons = new Map<FurnitureKind, Button>();
+  /** The tray: one button per design, showing how many are in storage. */
+  private trayButtons = new Map<DesignId, Button>();
   private selectedOutline!: Phaser.GameObjects.Rectangle;
   /** What the next floor tap places; null = nothing picked yet. */
-  private selected: FurnitureKind | null = null;
+  private selected: DesignId | null = null;
   /** A press that may turn into a drag; null when the pointer is up. */
   private drag: Drag | null = null;
   /** Pieces lifted with the menu's Move: they follow the pointer until the next tap on the floor. */
@@ -93,15 +93,15 @@ export class DecorateScene extends Phaser.Scene {
     // The storage tray, in the strip under the cafe (right of the corner buttons).
     this.add.text(TRAY.x, TRAY.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0, 0.5);
     this.selectedOutline = this.add.rectangle(0, 0, 112, 38).setStrokeStyle(3, COLORS.paper).setVisible(false);
-    FURNITURE_KINDS.forEach((kind, i) => {
+    TRAY_DESIGNS.forEach((design, i) => {
       const button = new Button(this, TRAY.firstButton + i * (TRAY.buttonWidth + 12), TRAY.y, TRAY.buttonWidth, 30, '', COLORS.book, () =>
-        this.select(kind),
+        this.select(design),
       );
       // Pressing a tray button may also start dragging one out of storage.
       button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-        if (this.furniture().stored[kind] > 0) this.drag = { kind, from: null, pieces: [], start: pointer.position.clone(), ghost: null };
+        if (this.furniture().stored[design] > 0) this.drag = { design, from: null, pieces: [], start: pointer.position.clone(), ghost: null };
       });
-      this.trayButtons.set(kind, button);
+      this.trayButtons.set(design, button);
     });
     new Button(this, BASE_WIDTH - 64, TRAY.y, 100, 30, 'Done', COLORS.serve, () => this.done());
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
@@ -124,7 +124,7 @@ export class DecorateScene extends Phaser.Scene {
         if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
         const piece = pieceAt(this.furniture(), tile);
-        if (piece) this.drag = { kind: piece.kind, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null };
+        if (piece) this.drag = { design: piece.design, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null };
       },
     );
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.onPointerMove(pointer));
@@ -166,7 +166,7 @@ export class DecorateScene extends Phaser.Scene {
    */
   private showTips(): void {
     if (getGameState(this).tipsSeen.includes('decorate')) return;
-    const firstTable = this.furniture().placed.find((p) => p.kind === 'table');
+    const firstTable = this.furniture().placed.find((p) => kindOf(p.design) === 'table');
     const guide = new StoryBox(this, {
       // Clear of the corner buttons on the left and Done on the right.
       rect: { x: BOTTOM_BOX_LEFT, y: 294, width: 516 - BOTTOM_BOX_LEFT, height: 62 },
@@ -223,7 +223,7 @@ export class DecorateScene extends Phaser.Scene {
     if (drag.from) {
       // Show the cafe without the lifted pieces while they're in the air.
       const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
-      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }), this.origin);
+      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }), this.origin, lifted);
     }
     // Made last, so if anything above ever fails there's no copy left stuck
     // at the top-left corner (where a not-yet-placed copy sits).
@@ -280,7 +280,7 @@ export class DecorateScene extends Phaser.Scene {
     const piece = pieceAt(this.furniture(), tile);
     if (!piece) return;
     // `start` is only used to tell a press from a drag, which doesn't apply here.
-    const carrying: Drag = { kind: piece.kind, from: tile, pieces: [piece], start: new Phaser.Math.Vector2(), ghost: null };
+    const carrying: Drag = { design: piece.design, from: tile, pieces: [piece], start: new Phaser.Math.Vector2(), ghost: null };
     this.lift(carrying);
     this.moveGhost(carrying, tile);
     this.carrying = carrying;
@@ -318,11 +318,11 @@ export class DecorateScene extends Phaser.Scene {
 
   /** The dragged pieces as images, placed relative to the tile being dragged (the ghost's origin). */
   private createGhost(drag: Drag): Phaser.GameObjects.Container {
-    const pieces: readonly PlacedPiece[] = drag.from ? drag.pieces : [{ kind: drag.kind, x: 0, y: 0 }];
+    const pieces: readonly PlacedPiece[] = drag.from ? drag.pieces : [{ design: drag.design, x: 0, y: 0 }];
     const from = drag.from ?? { x: 0, y: 0 };
     const images = pieces.map((p) =>
       this.add
-        .image((p.x - from.x) * TILE_SIZE, (p.y - from.y) * TILE_SIZE, artKey(FURNITURE_ART[p.kind]))
+        .image((p.x - from.x) * TILE_SIZE, (p.y - from.y) * TILE_SIZE, artKey(FURNITURE[p.design].art))
         .setOrigin(0),
     );
     return this.add.container(0, 0, images).setAlpha(0.75).setDepth(50);
@@ -332,7 +332,7 @@ export class DecorateScene extends Phaser.Scene {
   private dropProblem(drag: Drag, tile: Point): string | null {
     return drag.from
       ? moveProblem(this.furniture(), drag.from, tile)
-      : placeProblem(this.furniture(), drag.kind, tile);
+      : placeProblem(this.furniture(), drag.design, tile);
   }
 
   /** Let go: move (or place) the pieces if they fit, else say why and put everything back. */
@@ -352,7 +352,7 @@ export class DecorateScene extends Phaser.Scene {
     } else if (drag.from) {
       this.applyMove(drag.from, tile);
     } else {
-      this.setFurniture(placePiece(this.furniture(), drag.kind, tile));
+      this.setFurniture(placePiece(this.furniture(), drag.design, tile));
     }
   }
 
@@ -370,10 +370,10 @@ export class DecorateScene extends Phaser.Scene {
     this.refresh();
   }
 
-  private select(kind: FurnitureKind): void {
+  private select(design: DesignId): void {
     this.closeMenu();
     if (this.carrying) this.cancelCarrying();
-    this.selected = this.selected === kind ? null : kind; // tap again to put it down
+    this.selected = this.selected === design ? null : design; // tap again to put it down
     this.refresh();
   }
 
@@ -397,11 +397,11 @@ export class DecorateScene extends Phaser.Scene {
   /** Redraws the cafe and the tray from the game state. */
   private refresh(): void {
     const furniture = this.furniture();
-    drawCafeTiles(this.tiles, buildLayout(furniture), this.origin);
+    drawCafeTiles(this.tiles, buildLayout(furniture), this.origin, furniture.placed);
     // Ran out of the picked piece: nothing left to place, so let go of it.
     if (this.selected && furniture.stored[this.selected] === 0) this.selected = null;
-    for (const [kind, button] of this.trayButtons) {
-      button.setText(`${FURNITURE[kind].name} x${furniture.stored[kind]}`).setEnabled(furniture.stored[kind] > 0);
+    for (const [design, button] of this.trayButtons) {
+      button.setText(`${FURNITURE[design].name} x${furniture.stored[design]}`).setEnabled(furniture.stored[design] > 0);
     }
     const picked = this.selected && this.trayButtons.get(this.selected);
     this.selectedOutline.setVisible(Boolean(picked));

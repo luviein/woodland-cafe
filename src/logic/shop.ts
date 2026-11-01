@@ -1,4 +1,4 @@
-import { FURNITURE, type FurnitureKind } from '../data/furniture';
+import { FURNITURE, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { SHOP_IDS, SHOPS, type ShopId } from '../data/shops';
 import type { OutdoorLocationId } from '../data/outdoorAreas';
@@ -60,14 +60,14 @@ export function addUpgrade(state: GameState, id: UpgradeId): GameState {
   return state.upgrades.includes(id) ? state : { ...state, upgrades: [...state.upgrades, id] };
 }
 
-export function canBuyFurniture(state: GameState, kind: FurnitureKind): boolean {
-  return FURNITURE[kind].price <= state.leaves;
+export function canBuyFurniture(state: GameState, design: DesignId): boolean {
+  return FURNITURE[design].price <= state.leaves;
 }
 
 /** Buys one piece into storage; it's placed from the map's Decorate (GAME_DESIGN.md §5.7). */
-export function buyFurniture(state: GameState, kind: FurnitureKind): GameState {
-  const paid = spendLeaves(state, FURNITURE[kind].price);
-  return { ...paid, furniture: storePieces(paid.furniture, kind, 1) };
+export function buyFurniture(state: GameState, design: DesignId): GameState {
+  const paid = spendLeaves(state, FURNITURE[design].price);
+  return { ...paid, furniture: storePieces(paid.furniture, design, 1) };
 }
 
 /** Ingredients the Specialty stall sells: everything with an unlock price, owned or not. */

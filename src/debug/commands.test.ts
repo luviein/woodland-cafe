@@ -217,14 +217,15 @@ describe('serve / mess / clean / time / endday', () => {
       ...noDevActions(),
       game: { get: () => state, set: (s) => (state = s) },
     });
-    expect(runCommand(commands, 'furniture')).toBe('table: stored 0, in the cafe 4\nchair: stored 0, in the cafe 8');
+    expect(runCommand(commands, 'furniture')).toMatch(/^table: stored 0, in the cafe 4\nchair: stored 0, in the cafe 8\nchristmasTree: stored 0, in the cafe 0\n/);
     const placed = state.furniture.placed;
-    expect(runCommand(commands, 'furniture Table 3')).toMatch(/Tables in storage = 3/);
-    expect(state.furniture.stored).toEqual({ table: 3, chair: 0 });
+    expect(runCommand(commands, 'furniture Table 3')).toMatch(/Table in storage = 3/);
+    expect(state.furniture.stored).toMatchObject({ table: 3, chair: 0 });
+    expect(runCommand(commands, 'furniture christmastree 2')).toMatch(/Christmas Tree in storage = 2/);
     expect(state.furniture.placed).toBe(placed); // the cafe itself is untouched
     expect(state.leaves).toBe(3);
     expect(runCommand(commands, 'furniture table 0')).toMatch(/= 0/);
-    expect(runCommand(commands, 'furniture sofa 2')).toMatch(/Usage: furniture \[table\|chair n\]/);
+    expect(runCommand(commands, 'furniture sofa 2')).toMatch(/Usage: furniture \[design n\], designs: table, chair, christmasTree/);
     expect(runCommand(commands, 'furniture chair -1')).toMatch(/Usage/);
   });
 

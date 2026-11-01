@@ -1,4 +1,4 @@
-import { FURNITURE, FURNITURE_KINDS } from '../data/furniture';
+import { DESIGN_IDS, FURNITURE } from '../data/furniture';
 import { EMPLOYEE_ROLES, EMPLOYEES, type EmployeeRole } from '../data/employees';
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
 import { LOCATION_IDS } from '../data/locations';
@@ -217,23 +217,23 @@ export function createDevCommands(
     },
 
     furniture: {
-      usage: `furniture [${FURNITURE_KINDS.join('|')} n]`,
-      description: "Show stored and placed furniture, or set how many are in storage, e.g. 'furniture table 3'",
+      usage: 'furniture [design n]',
+      description: "Show stored and placed furniture, or set how many of a design are in storage, e.g. 'furniture christmasTree 2'",
       run: ([name, value]) => {
         const state = game().get();
         const { placed, stored } = state.furniture;
         if (name === undefined) {
-          return FURNITURE_KINDS.map((kind) => {
-            const inCafe = placed.filter((p) => p.kind === kind).length;
-            return `${kind}: stored ${stored[kind]}, in the cafe ${inCafe}`;
+          return DESIGN_IDS.map((design) => {
+            const inCafe = placed.filter((p) => p.design === design).length;
+            return `${design}: stored ${stored[design]}, in the cafe ${inCafe}`;
           }).join('\n');
         }
-        const kind = FURNITURE_KINDS.find((k) => k === name.toLowerCase());
-        if (!kind) throw new Error(`Usage: furniture [${FURNITURE_KINDS.join('|')} n]`);
-        const n = count(value, `furniture ${kind} <n>`);
+        const design = DESIGN_IDS.find((d) => d.toLowerCase() === name.toLowerCase());
+        if (!design) throw new Error(`Usage: furniture [design n], designs: ${DESIGN_IDS.join(', ')}`);
+        const n = count(value, `furniture ${design} <n>`);
         // Only storage changes: pieces are placed from Decorate, which checks the rules.
-        game().set({ ...state, furniture: { placed, stored: { ...stored, [kind]: n } } });
-        return `${FURNITURE[kind].name}s in storage = ${n} (place them from the map: Cafe > Decorate)`;
+        game().set({ ...state, furniture: { placed, stored: { ...stored, [design]: n } } });
+        return `${FURNITURE[design].name} in storage = ${n} (place them from the map: Cafe > Decorate)`;
       },
     },
 

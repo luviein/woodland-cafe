@@ -87,7 +87,7 @@ describe('buying furniture', () => {
     const before = rich();
     const after = buyFurniture(buyFurniture(before, 'chair'), 'table');
     expect(after.leaves).toBe(10);
-    expect(after.furniture.stored).toEqual({ table: 1, chair: 1 });
+    expect(after.furniture.stored).toMatchObject({ table: 1, chair: 1, chairWithBow: 0 });
     expect(after.furniture.placed).toEqual(before.furniture.placed);
   });
 
