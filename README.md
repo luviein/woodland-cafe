@@ -33,8 +33,8 @@ during a cafe day, so reloading mid-day goes back to just before that day.
 ## Sound
 
 All sound effects are made in code (`src/audio/sounds.ts`, no audio files).
-Press `M` anywhere to mute or unmute. The **Sound** button on the title
-screen cycles Off, 30%, 60% and 100%. Sound settings are kept in the browser,
+The speaker button in the bottom-left corner (on every screen) opens a
+volume slider and a mute button; `M` also mutes or unmutes anywhere. Sound settings are kept in the browser,
 separately from the save, so a New game keeps them.
 
 ## Drawing your own sprites

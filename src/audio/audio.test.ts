@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SOUND_NAMES, SOUNDS, soundLength } from './sounds';
-import { DEFAULT_SOUND_SETTINGS, cycleVolume, parseSoundSettings, volumeLabel } from './soundSettings';
+import { DEFAULT_SOUND_SETTINGS, parseSoundSettings, volumeLabel } from './soundSettings';
 
 describe('sound recipes', () => {
   it.each(SOUND_NAMES)('%s is short, audible and not too loud', (name) => {
@@ -30,13 +30,9 @@ describe('sound settings', () => {
     expect(parseSoundSettings('not json')).toEqual(DEFAULT_SOUND_SETTINGS);
   });
 
-  it('the button cycles Off, 30%, 60%, 100%, Off', () => {
-    let s = { volume: 0.6, muted: false };
-    const labels = [volumeLabel(s)];
-    for (let i = 0; i < 4; i++) {
-      s = cycleVolume(s);
-      labels.push(volumeLabel(s));
-    }
-    expect(labels).toEqual(['60%', '100%', 'Off', '30%', '60%']);
+  it('the control says Off when muted, else the percentage', () => {
+    expect(volumeLabel({ volume: 0.6, muted: false })).toBe('60%');
+    expect(volumeLabel({ volume: 0.35, muted: false })).toBe('35%');
+    expect(volumeLabel({ volume: 0.6, muted: true })).toBe('Off');
   });
 });

@@ -10,9 +10,6 @@ export interface SoundSettings {
 
 export const DEFAULT_SOUND_SETTINGS: SoundSettings = { volume: 0.6, muted: false };
 
-/** The volume button's steps after Off. */
-export const VOLUME_STEPS = [0.3, 0.6, 1] as const;
-
 /** Reads stored settings; anything missing or odd falls back to the defaults. */
 export function parseSoundSettings(text: string | null): SoundSettings {
   if (!text) return DEFAULT_SOUND_SETTINGS;
@@ -26,14 +23,7 @@ export function parseSoundSettings(text: string | null): SoundSettings {
   }
 }
 
-/** The title screen's button: Off -> 30% -> 60% -> 100% -> Off. */
-export function cycleVolume(settings: SoundSettings): SoundSettings {
-  if (settings.muted) return { muted: false, volume: VOLUME_STEPS[0] };
-  const next = VOLUME_STEPS.find((step) => step > settings.volume + 0.001);
-  return next === undefined ? { ...settings, muted: true } : { ...settings, volume: next };
-}
-
-/** What the button says: "Off" or e.g. "60%". */
+/** What the volume control says: "Off" (muted) or e.g. "60%". */
 export function volumeLabel(settings: SoundSettings): string {
   return settings.muted ? 'Off' : `${Math.round(settings.volume * 100)}%`;
 }

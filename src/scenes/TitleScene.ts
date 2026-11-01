@@ -1,8 +1,6 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import type { GameState } from '../logic/gameState';
-import { getSoundSettings, onSoundSettings, setSoundSettings } from '../audio/audio';
-import { cycleVolume, volumeLabel } from '../audio/soundSettings';
 import { addArt } from '../ui/art';
 import { Button } from '../ui/Button';
 import { addGround, addStanding, addTree } from '../ui/sprites';
@@ -62,16 +60,6 @@ export class TitleScene extends Phaser.Scene {
       }
       primary = new Button(this, cx, 220, 180, 34, 'New game', COLORS.serve, () => this.newGame());
     }
-
-    // Sound volume: Off, 30%, 60%, 100% (GAME_DESIGN.md §8.4). The label
-    // also follows M, which can change the setting from anywhere.
-    const soundButton = new Button(this, BASE_WIDTH - 70, 24, 120, 26, '', COLORS.book, () =>
-      setSoundSettings(cycleVolume(getSoundSettings())),
-    );
-    const showVolume = () => soundButton.setText(`Sound ${volumeLabel(getSoundSettings())}`);
-    showVolume();
-    const stopWatching = onSoundSettings(showVolume);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, stopWatching);
 
     // Enter presses the main button, through the button like other shortcuts.
     const onKey = (event: KeyboardEvent) => {

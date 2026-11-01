@@ -308,3 +308,12 @@ export const PUFF: PixelSprite = {
     ['..........', 'c...c...c.', '..........', '.c...c..c.', '....c.....', '..c.....c.', '..........', '..........'],
   ],
 };
+
+/** The volume button's speaker, 11x9: frame 0 with sound waves, frame 1 muted (a red cross). */
+export const SPEAKER: PixelSprite = {
+  legend: { o: 'darkBrown', c: 'cream', r: 'red' },
+  frames: [
+    ['....o......', '...oo....c.', 'oooco..c..c', 'occco...c.c', 'occco...c.c', 'occco...c.c', 'oooco..c..c', '...oo....c.', '....o......'],
+    ['....o......', '...oo......', 'oooco.r...r', 'occco..r.r.', 'occco...r..', 'occco..r.r.', 'oooco.r...r', '...oo......', '....o......'],
+  ],
+};
