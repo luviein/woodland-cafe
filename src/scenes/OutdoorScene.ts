@@ -43,6 +43,7 @@ import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import { STALL_HEIGHT, TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
 import { addArt } from '../ui/art';
+import { playSound } from '../audio/audio';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
@@ -194,6 +195,7 @@ export class OutdoorScene extends Phaser.Scene {
     this.leafField = picked.field;
     if (picked.collected.length > 0) {
       setGameState(this, pickUpLeaves(getGameState(this), picked.collected.length));
+      playSound('leaf');
       for (const leaf of picked.collected) this.showFloatingText(leaf.position, '+1 🍃');
     }
     this.syncLeafSprites();
@@ -373,6 +375,7 @@ export class OutdoorScene extends Phaser.Scene {
 
   private finishGathering(spot: ForageSpotDef): void {
     setGameState(this, forage(getGameState(this), spot));
+    playSound('gather');
     this.showFloatingText(spot.position, `+${spot.amount} ${INGREDIENTS[spot.ingredient].name}`);
   }
 

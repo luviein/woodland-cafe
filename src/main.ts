@@ -12,6 +12,8 @@ import { TitleScene } from './scenes/TitleScene';
 import { BootScene } from './scenes/BootScene';
 import { PALETTE } from './art/palette';
 import { css } from './ui/theme';
+import { getSoundSettings, setSoundSettings } from './audio/audio';
+import { showSoundNote } from './ui/soundNote';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO, // WebGL when available, Canvas otherwise
@@ -37,6 +39,17 @@ const game = new Phaser.Game({
 // The registry exists as soon as the game is constructed, before any
 // scene's create() runs, so the state is ready for every scene.
 initGameState(game);
+
+// M mutes and unmutes in every scene (GAME_DESIGN.md §8.4). A plain window
+// listener rather than one per scene, so no scene can forget it. Not while
+// typing in a text box (the dev console), where "m" is just a letter.
+window.addEventListener('keydown', (event) => {
+  if (event.repeat || (event.key !== 'm' && event.key !== 'M')) return;
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+  const muted = !getSoundSettings().muted;
+  setSoundSettings({ ...getSoundSettings(), muted });
+  showSoundNote(muted ? 'Sound off' : 'Sound on');
+});
 
 // The Scale Manager's parent size is only known once the game has booted.
 game.events.once(Phaser.Core.Events.READY, () => enableIntegerScaling(game));

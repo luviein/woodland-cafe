@@ -8,6 +8,7 @@ import type { GameState } from '../logic/gameState';
 import { addIngredient, addUpgrade, unlockableIngredients } from '../logic/shop';
 import { hire, letGo } from '../logic/employees';
 import type { Score } from '../logic/types';
+import { isSoundName, SOUND_NAMES } from '../audio/sounds';
 import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
@@ -293,6 +294,18 @@ export function createDevCommands(
         if (!actions.save) throw new Error('The game is not running yet');
         actions.save.wipe();
         return 'Save deleted (anything you do between days saves again)';
+      },
+    },
+
+    sound: {
+      usage: 'sound [name]',
+      description: 'List the sound effects, or play one (M mutes; the title screen sets the volume)',
+      run: ([name]) => {
+        if (!name) return `Sounds: ${SOUND_NAMES.join(', ')}`;
+        if (!isSoundName(name)) throw new Error(`No sound "${name}". Sounds: ${SOUND_NAMES.join(', ')}`);
+        if (!actions.playSound) throw new Error('The game is not running yet');
+        actions.playSound(name);
+        return `Played ${name}`;
       },
     },
 

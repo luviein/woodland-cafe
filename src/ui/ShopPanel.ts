@@ -66,9 +66,10 @@ export class ShopPanel extends Phaser.GameObjects.Container {
       this.buttons.push(
         row.buttons.map((_, j) => {
           const x = left + WIDTH - 16 - BUTTON_WIDTH / 2 - (count - 1 - j) * (BUTTON_WIDTH + BUTTON_GAP);
+          // Every stall button buys, unlocks or hires: one cheerful sound for all.
           const button = new Button(scene, x, y, BUTTON_WIDTH, 24, '', COLORS.serve, () =>
             this.rows[i].buttons[j].onPress(),
-          );
+          ).setSound('buy');
           this.add(button);
           return button;
         }),

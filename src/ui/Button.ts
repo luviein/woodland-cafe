@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { playSound } from '../audio/audio';
+import type { SoundName } from '../audio/sounds';
 import { COLORS, TEXT } from './theme';
 
 /**
@@ -16,6 +18,8 @@ export class Button extends Phaser.GameObjects.Container {
   /** Where the label sits when not pressed (pressing moves it down from here). */
   private labelY = 0;
   private icon: Phaser.GameObjects.Image | null = null;
+  /** Played on every click (GAME_DESIGN.md §8.4); null for buttons whose action makes its own sound. */
+  private sound: SoundName | null = 'tap';
   private pressed = false;
   private enabled = true;
 
@@ -47,7 +51,7 @@ export class Button extends Phaser.GameObjects.Container {
     this.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
       const wasPressed = this.pressed;
       this.setPressed(false);
-      if (this.enabled && wasPressed) this.onClick();
+      if (this.enabled && wasPressed) this.click();
     });
 
     scene.add.existing(this);
@@ -63,7 +67,18 @@ export class Button extends Phaser.GameObjects.Container {
     if (!this.enabled) return;
     this.setPressed(true);
     this.scene.time.delayedCall(80, () => this.setPressed(false));
+    this.click();
+  }
+
+  private click(): void {
+    if (this.sound) playSound(this.sound);
     this.onClick();
+  }
+
+  /** The click sound, or null for none (when the action plays its own, e.g. an ingredient bin). */
+  setSound(sound: SoundName | null): this {
+    this.sound = sound;
+    return this;
   }
 
   setText(text: string): this {

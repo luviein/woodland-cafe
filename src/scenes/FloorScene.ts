@@ -29,6 +29,7 @@ import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
 import { pointKey, samePoint, tableById, type Layout, type Point } from '../logic/layout';
 import { puffOfDust } from '../ui/effects';
+import { playSound } from '../audio/audio';
 import { createCleaner, stepCleaner, type CleanerState } from '../logic/cleaner';
 import { isHired } from '../logic/employees';
 import {
@@ -240,7 +241,10 @@ export class FloorScene extends Phaser.Scene {
     const before = this.floor;
     this.floor = stepFloor(this.floor, this.layout, floorSeconds);
     const gaveUp = countGaveUp(before, this.floor);
-    if (gaveUp > 0) this.day = { ...this.day, stats: recordGaveUp(this.day.stats, gaveUp) };
+    if (gaveUp > 0) {
+      this.day = { ...this.day, stats: recordGaveUp(this.day.stats, gaveUp) };
+      playSound('upset');
+    }
     this.clock.show(clockText(this.day), this.floor.doorsOpen);
 
     // Closed and empty: the day is done. (Not while prep is still showing a
@@ -255,7 +259,10 @@ export class FloorScene extends Phaser.Scene {
     this.floor = taken.floor;
     if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');
     if (taken.result === 'outOfStock') this.onOutOfStock(frontId);
-    if (taken.result === 'ordered') this.openPrep(this.floor.queue[0]);
+    if (taken.result === 'ordered') {
+      playSound('order');
+      this.openPrep(this.floor.queue[0]);
+    }
 
     // Ran out of patience while their order was cooking? Prep closes on them.
     if (this.prepCustomerId !== null && this.customer(this.prepCustomerId)?.phase !== 'ordered') {
@@ -278,6 +285,7 @@ export class FloorScene extends Phaser.Scene {
   /** Seats just wiped clean (by the player or the Cleaner): clean them, with a puff of dust where each mess was. */
   private wiped(seats: readonly Point[]): void {
     this.floor = cleanSeats(this.floor, seats);
+    playSound('wipe');
     for (const seat of seats) {
       const table = this.layout.tables.find((t) => t.seats.some((s) => samePoint(s, seat)));
       if (!table) continue;
@@ -324,6 +332,7 @@ export class FloorScene extends Phaser.Scene {
    */
   private openSummary(): void {
     this.summaryOpen = true;
+    playSound('dayEnd');
     this.destinationMarker.setVisible(false);
     // Wages come out at the end of the day, after the day's takings are in.
     const wages = payWages(getGameState(this));

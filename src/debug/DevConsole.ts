@@ -8,6 +8,7 @@ import { LOCATIONS } from '../data/locations';
 import { STOCK_CONFIG } from '../data/stockConfig';
 import { TOASTER_CONFIG } from '../data/toasterConfig';
 import { deleteSave, getGameState, saveNow, setGameState } from '../scenes/gameStore';
+import { playSound } from '../audio/audio';
 import type { LocationRequest, WorldMapRequest } from '../scenes/WorldMapScene';
 import { createDevCommands, runCommand } from './commands';
 import { devActions } from './devActions';
@@ -26,6 +27,7 @@ export function mountDevConsole(game: Phaser.Game): void {
   // by their scene while it runs).
   devActions.game = { get: () => getGameState(game), set: (state) => setGameState(game, state) };
   devActions.save = { now: () => saveNow(game), wipe: deleteSave };
+  devActions.playSound = playSound;
   devActions.goto = (place) => {
     // Overlays included (prep, summary): a clean jump, like a fresh visit.
     for (const scene of game.scene.getScenes(true)) game.scene.stop(scene.scene.key);

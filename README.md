@@ -30,6 +30,13 @@ There's one save slot, in the browser's local storage, and it saves itself
 on the map, in the Forest or Marketplace, or while decorating. Nothing is saved
 during a cafe day, so reloading mid-day goes back to just before that day.
 
+## Sound
+
+All sound effects are made in code (`src/audio/sounds.ts`, no audio files).
+Press `M` anywhere to mute or unmute. The **Sound** button on the title
+screen cycles Off, 30%, 60% and 100%. Sound settings are kept in the browser,
+separately from the save, so a New game keeps them.
+
 ## Drawing your own sprites
 
 Every sprite is drawn in code first (`src/art/sprites/`, listed by name in
@@ -130,6 +137,7 @@ It isn't included in production builds.
 | `unlock <chilli\|tuna\|tomato\|toaster>` | Own it for free, no Leaves spent (works anywhere). Ingredients come with 0 stock. A new toaster or bin shows from the next order you take |
 | `furniture [table\|chair n]` | Show stored and placed furniture, or set how many are in storage, e.g. `furniture table 3` (works anywhere, free). Place them from the map: Cafe > Decorate |
 | `hire <mascot\|cleaner>` / `fire <mascot\|cleaner>` | Hire or let go an employee, free (works anywhere). A hired Mascot dances next to the cafe on the map straight away; the faster arrivals and the Cleaner start the next time the cafe opens (`goto cafe` to see them now) |
+| `sound [name]` | List the sound effects, or play one by name |
 | `save`      | Save now, even mid-day (normally only between days) |
 | `wipesave`  | Delete the save; reload to see the title screen with no save |
 | `time`      | Show the day number and the cafe clock |

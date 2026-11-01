@@ -256,6 +256,18 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(createDevCommands({ floorTimeScale: 1 }, []), 'save')).toMatch(/not running/);
   });
 
+  it('sound lists the sounds and plays a named one', () => {
+    const played: string[] = [];
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      playSound: (name) => played.push(name),
+    });
+    expect(runCommand(commands, 'sound')).toMatch(/Sounds: .*servePerfect/);
+    expect(runCommand(commands, 'sound order')).toBe('Played order');
+    expect(runCommand(commands, 'sound kazoo')).toMatch(/No sound "kazoo"/);
+    expect(played).toEqual(['order']);
+  });
+
   it('goto accepts the map and every place, and nothing else', () => {
     const went: string[] = [];
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {

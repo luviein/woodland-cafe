@@ -19,6 +19,7 @@ import {
 } from '../logic/toasting';
 import type { Order, ScoreResult } from '../logic/types';
 import type { CustomerArt } from '../art/spriteArt';
+import { playSound } from '../audio/audio';
 import { addArt } from '../ui/art';
 import { popLeaves } from '../ui/effects';
 import { Button } from '../ui/Button';
@@ -147,7 +148,8 @@ export class PrepScene extends Phaser.Scene {
     if (getGameState(this).upgrades.includes('toaster')) this.createToaster();
 
     this.createIngredientBins();
-    this.serveButton = new Button(this, 544, 260, 112, 36, 'Serve', COLORS.serve, () => this.serve());
+    // Silent: serving plays the customer's verdict (a ding, or a "bwom").
+    this.serveButton = new Button(this, 544, 260, 112, 36, 'Serve', COLORS.serve, () => this.serve()).setSound(null);
     this.resetButton = new Button(this, 544, 308, 112, 36, 'Reset', COLORS.reset, () =>
       this.resetDish(),
     );
@@ -190,6 +192,7 @@ export class PrepScene extends Phaser.Scene {
       this.toaster?.setProgress(toastingProgress(this.toast));
       if (this.toast.place === 'ready') {
         this.toaster?.popUp(this.dish);
+        playSound('toastPop');
         this.refreshDish();
       }
     }
@@ -210,6 +213,7 @@ export class PrepScene extends Phaser.Scene {
   private addIngredient(id: IngredientId): void {
     if (this.busy || this.dish.length >= MAX_DISH_LAYERS || this.binStatus(id).kind === 'out') return;
     this.dish.push(id);
+    playSound('add');
     this.refreshDish();
   }
 
@@ -285,6 +289,7 @@ export class PrepScene extends Phaser.Scene {
     if (this.busy || !this.toaster || !canToast(this.toast, this.dish.length)) return;
     this.toast = startToasting(this.toast);
     this.toaster.startToasting();
+    playSound('toastIn');
     this.refreshDish();
   }
 
@@ -310,6 +315,7 @@ export class PrepScene extends Phaser.Scene {
     // Pays when served, tipping by the patience left right now.
     const payment = computePayment(this.request.order, result, this.request.patience());
     this.request.onServe(result, payment, plate);
+    playSound(result.score === 'perfect' ? 'servePerfect' : result.score === 'close' ? 'serve' : 'wrong');
     // No result pop-up: the customer's reaction (and their Leaves) is the feedback.
     this.finish(buildReaction(result.score));
     if (payment.total > 0) this.showPayment(payment);
@@ -422,7 +428,9 @@ export class PrepScene extends Phaser.Scene {
       // A cream bin with the ingredient's picture at 2x (32px in the 48px bin).
       const bin = new Button(this, x, y, size, size, String(i + 1), COLORS.paper, () =>
         this.addIngredient(id),
-      ).setIcon(addArt(this, 0, 0, id).setScale(2));
+      )
+        .setIcon(addArt(this, 0, 0, id).setScale(2))
+        .setSound(null); // addIngredient plays its own
       this.binButtons.push(bin);
       this.binIds.push(id);
       this.add

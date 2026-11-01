@@ -1,6 +1,7 @@
 import type { LocationId } from '../data/locations';
 import type { GameState } from '../logic/gameState';
 import type { Score } from '../logic/types';
+import type { SoundName } from '../audio/sounds';
 
 /**
  * Shortcuts that only make sense while a certain scene is running. Each
@@ -24,11 +25,13 @@ export interface DevActions {
   goto: ((place: LocationId | 'map') => void) | null;
   /** Any time: write the save slot now, or empty it. */
   save: { now: () => void; wipe: () => void } | null;
+  /** Any time: play a sound effect by name (the name is checked first). */
+  playSound: ((name: SoundName) => void) | null;
 }
 
 /** Nothing registered: every scene-specific command says "not available". */
 export function noDevActions(): DevActions {
-  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null, save: null };
+  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null, save: null, playSound: null };
 }
 
 export const devActions: DevActions = noDevActions();
