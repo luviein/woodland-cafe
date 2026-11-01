@@ -40,8 +40,8 @@ const NEXT = { width: 96, height: 20 };
 /**
  * Grandma Badger talking (GAME_DESIGN.md §5.9): her portrait, one line at a
  * time, Next, and Skip tutorial (which asks first). A step that waits for
- * an action keeps its last line up, without Next, until the scene moves the
- * tutorial on and closes the box. Everything is in screen pixels, in one
+ * an action keeps its waiting line up, without Next, until the player does
+ * it: the scene then calls actionDone(), which shows any lines after it. Everything is in screen pixels, in one
  * container at (0, 0), so destroying the box tidies up the arrow too.
  */
 export class StoryBox extends Phaser.GameObjects.Container {
@@ -113,12 +113,12 @@ export class StoryBox extends Phaser.GameObjects.Container {
   }
 
   private showLine(): void {
-    const { lines, waitsFor } = this.options.step;
+    const { lines, waitsAt } = this.options.step;
     const last = this.line === lines.length - 1;
     this.text.setText(lines[this.line]);
-    this.nextButton.setText(last && waitsFor === 'next' ? 'OK' : 'Next');
-    // On an action step's last line, the player does the thing instead.
-    this.nextButton.setVisible(!(last && waitsFor === 'action'));
+    this.nextButton.setText(last ? 'OK' : 'Next');
+    // On the waiting line the player does the thing instead (actionDone).
+    this.nextButton.setVisible(this.line !== waitsAt);
     this.skip.setText('Skip tutorial');
 
     this.refreshArrow();
@@ -142,6 +142,23 @@ export class StoryBox extends Phaser.GameObjects.Container {
       this.arrow.setPosition(target.x, target.y).setFlipY(Boolean(target.up)).setOrigin(0.5, target.up ? 0 : 1);
       this.arrowBob = this.scene.tweens.add({ targets: this.arrow, y: target.y + (target.up ? 5 : -5), duration: 400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
+  }
+
+  /**
+   * The player did what the step waits for. If there are lines after the
+   * waiting line, they show now (even if the player acted before reaching
+   * it) and true is returned: the step ends with Next on the last of them.
+   * False: nothing more to say, the step can end now.
+   */
+  actionDone(): boolean {
+    const { waitsAt, lines } = this.options.step;
+    if (waitsAt === null || waitsAt >= lines.length - 1) return false;
+    if (this.line <= waitsAt) {
+      this.line = waitsAt + 1;
+      this.confirming = false;
+      this.showLine();
+    }
+    return true;
   }
 
   private onNext(): void {

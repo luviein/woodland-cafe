@@ -53,8 +53,9 @@ them, run `npm run dev` and open **http://localhost:5173/editor.html**:
 - A line too long for where the game shows it gets an orange warning, and its
   page a ⚠ in the list; it has to be shortened before saving.
 - For steps that wait for the player (the first customer, the prep station,
-  cleaning, the day summary), the **last** line stays up without Next until
-  the player does it: make the instruction the last line.
+  cleaning, the day summary), the **Next / ⏳ Waits** switch on each line picks
+  the line that stays up without Next until the player does it. On Cleaning,
+  lines after it show once they have; elsewhere it has to be the last line.
 - **Save** writes the files and the running game picks the new words up. It
   won't save anything that would break the game (an empty step, an order
   without hints, a line used for two orders): those are listed at the top.

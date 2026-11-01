@@ -32,7 +32,7 @@ import { puffOfDust } from '../ui/effects';
 import { StoryBox, type BoxRect } from '../ui/StoryBox';
 import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
 import { TUTORIAL, type TutorialStep } from '../data/tutorial';
-import { floorGuide, isGuidedStart, tutorialOrder, type TutorialState } from '../logic/tutorial';
+import { finishedBy, floorGuide, isGuidedStart, tutorialOrder, type TutorialEvent, type TutorialState } from '../logic/tutorial';
 import { playSound } from '../audio/audio';
 import { createCleaner, stepCleaner, type CleanerState } from '../logic/cleaner';
 import { isHired } from '../logic/employees';
@@ -153,6 +153,8 @@ export class FloorScene extends Phaser.Scene {
   private guide: StoryBox | null = null;
   /** The tutorial step `guide` was made for, to notice when it moves on. */
   private guideStep: TutorialState | null = null;
+  /** The step's action happened, but Grandma has more to say first: sent when she's done. */
+  private pendingEvent: TutorialEvent | null = null;
 
   constructor() {
     super('FloorScene');
@@ -191,6 +193,7 @@ export class FloorScene extends Phaser.Scene {
     this.summaryOpen = false;
     this.guide = null;
     this.guideStep = null;
+    this.pendingEvent = null;
     this.day = createDay();
     // Side by side on the top wall, clear of the floor.
     this.clock = new ClockDisplay(this, 88, 8);
@@ -299,7 +302,7 @@ export class FloorScene extends Phaser.Scene {
     if (taken.result === 'outOfStock') this.onOutOfStock(frontId);
     if (taken.result === 'ordered') {
       playSound('order');
-      tutorialEvent(this, 'orderTaken');
+      this.tutorialAction('orderTaken');
       this.openPrep(this.floor.queue[0]);
     }
 
@@ -334,8 +337,8 @@ export class FloorScene extends Phaser.Scene {
 
     // A dish served wrong means they leave without eating, so no mess: with
     // the floor empty and clean there's nothing to wipe, so move on anyway.
-    if (step === 'clean' && this.floor.customers.length === 0 && this.floor.messySeats.length === 0) {
-      tutorialEvent(this, 'wiped');
+    if (step === 'clean' && !this.pendingEvent && this.floor.customers.length === 0 && this.floor.messySeats.length === 0) {
+      this.tutorialAction('wiped');
       return; // the box changes next frame
     }
 
@@ -343,18 +346,32 @@ export class FloorScene extends Phaser.Scene {
       this.guide?.destroy();
       this.guide = null;
       this.guideStep = step;
+      this.pendingEvent = null;
       if (step !== 'done' && FLOOR_STEPS.has(step)) {
         this.guide = new StoryBox(this, {
           rect: GUIDE_RECT,
           depth: OVERLAY + 100,
           step: TUTORIAL[step],
           arrow: (line) => this.tutorialArrow(TUTORIAL[step].pointsAt[line]),
-          onFinished: () => tutorialEvent(this, 'next'),
+          // Next on the last line: the step's own event if it was waiting on Grandma, else Next.
+          onFinished: () => tutorialEvent(this, this.pendingEvent ?? 'next'),
           onSkip: () => tutorialEvent(this, 'skip'),
         });
       }
     }
     this.guide?.refreshArrow();
+  }
+
+  /**
+   * The player did something a tutorial step may wait for. If it's this
+   * step's action and Grandma has lines after the waiting one, she says those
+   * first and the step ends on her last Next; otherwise it ends now.
+   */
+  private tutorialAction(event: TutorialEvent): void {
+    const step = this.guideStep;
+    const waitsHere = step && step !== 'done' && finishedBy(step) === event;
+    if (waitsHere && this.guide?.actionDone()) this.pendingEvent = event;
+    else tutorialEvent(this, event);
   }
 
   /** Where Grandma Badger's arrow points on the floor, by name (data/tutorial.ts ARROW_TARGETS). */
@@ -379,7 +396,7 @@ export class FloorScene extends Phaser.Scene {
   private wiped(seats: readonly Point[]): void {
     this.floor = cleanSeats(this.floor, seats);
     playSound('wipe');
-    tutorialEvent(this, 'wiped');
+    this.tutorialAction('wiped');
     for (const seat of seats) {
       const table = this.layout.tables.find((t) => t.seats.some((s) => samePoint(s, seat)));
       if (!table) continue;

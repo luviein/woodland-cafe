@@ -8,6 +8,8 @@ import {
   TIP_IDS,
   TUTORIAL_STEPS,
   WAITS_FOR,
+  FOLLOW_UPS_SHOWN,
+  waitingLine,
   type CustomerTexts,
   type GrandmaTexts,
   type TextLine,
@@ -82,8 +84,11 @@ function pages(): Page[] {
       about:
         `Shown in ${STEP_FIT[step].where}, one line at a time.` +
         (WAITS_FOR[step] === 'action'
-          ? ' The last line stays up without Next until the player does what it asks, so make the instruction the last line.'
-          : ''),
+          ? ' One line waits for the player (no Next) until they do what it asks: pick it with the Next / Waits switch.' +
+            (FOLLOW_UPS_SHOWN.has(step)
+              ? ' Lines after it show once they have, each with Next.'
+              : ' The screen changes as soon as they do, so the waiting line has to be the last.')
+          : ' Nothing to wait for here: every line has Next.'),
       build: (into) => into.append(grandmaLines(step, grandma.tutorial[step])),
       tooLong: () => stepTooLong(step, grandma.tutorial[step]),
     });
@@ -235,10 +240,23 @@ function grandmaLines(key: TutorialStep | TipId, lines: TextLine[]): HTMLElement
       };
       tools.push(pick);
     }
+    // Action steps: Next, or wait for the player, chosen per line (one line waits).
+    const waitsOn = waitingLine(key, lines);
+    if (waitsOn >= 0) {
+      const mode = el('select', { title: 'Next, or wait for the player to do it' });
+      mode.append(el('option', { value: 'next' }, 'Next ▶'), el('option', { value: 'wait' }, '⏳ Waits'));
+      mode.value = i === waitsOn ? 'wait' : 'next';
+      mode.onchange = () => {
+        for (const l of lines) delete l.waits;
+        if (mode.value === 'wait') line.waits = true;
+        changed(true);
+      };
+      tools.push(mode);
+    }
     tools.push(...rowTools(lines, i));
-    const waits = WAITS_FOR[key] === 'action' && i === lines.length - 1;
     const r = row(i, line.text, STEP_FIT[key], (v) => (line.text = v), tools);
-    if (waits) r.append(el('div', { className: 'waits' }, '⏳ Waits for the player here (no Next): the instruction goes on this line.'));
+    if (i === waitsOn) r.append(el('div', { className: 'waits' }, '⏳ Shows without Next until the player does it.'));
+    if (waitsOn >= 0 && i > waitsOn) r.append(el('div', { className: 'waits' }, 'Shown after the player has done it, with Next.'));
     group.append(r);
   });
   group.append(el('button', { className: 'add', onclick: () => (lines.push({ text: '' }), changed(true)) }, '+ Add a line'));

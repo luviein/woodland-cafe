@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import CUSTOMERS from './customers.json';
 import GRANDMA from './grandma.json';
-import { customerProblems, grandmaProblems, type CustomerTexts, type GrandmaTexts } from './rules';
+import { customerProblems, grandmaProblems, waitingLine, type CustomerTexts, type GrandmaTexts } from './rules';
 
 // structuredClone: a copy to break, leaving the real texts alone.
 const grandma = (): GrandmaTexts => structuredClone(GRANDMA) as GrandmaTexts;
@@ -28,6 +28,27 @@ describe('the rules catch', () => {
       'Tutorial "prep", line 1: is empty',
       `Tutorial "clean", line 1: the arrow can't point at "pantry" here`,
     ]);
+  });
+
+  it('waiting where there is nothing to wait for, two waiting lines, and lines nobody would see', () => {
+    const t = grandma();
+    t.tutorial.intro[0].waits = true;
+    t.tutorial.clean = [{ text: 'Tap the table.', waits: true }, { text: 'Lovely!', waits: true }];
+    t.tutorial.summary = [{ text: 'Tap Exit cafe.', waits: true }, { text: 'Never seen.' }];
+    expect(grandmaProblems(t)).toEqual([
+      'Tutorial "intro", line 1: nothing to wait for in this step, so every line needs Next',
+      'Tutorial "clean": only one line can wait for the player',
+      'Tutorial "summary": the screen changes as soon as the player does it, so lines after the waiting line (1) would never be seen; move them above it',
+    ]);
+  });
+
+  it('lines after the waiting line are fine where the screen stays put (cleaning)', () => {
+    const t = grandma();
+    t.tutorial.clean = [{ text: 'Tap that table.', arrow: 'mess', waits: true }, { text: 'You can hire help later.' }];
+    expect(grandmaProblems(t)).toEqual([]);
+    expect(waitingLine('clean', t.tutorial.clean)).toBe(0);
+    expect(waitingLine('clean', [{ text: 'a' }, { text: 'b' }])).toBe(1); // none marked: the last
+    expect(waitingLine('intro', t.tutorial.intro)).toBe(-1);
   });
 
   it('a notes topic without a title or lines', () => {

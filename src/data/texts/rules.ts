@@ -30,8 +30,8 @@ export type TipId = (typeof TIP_IDS)[number];
 
 /**
  * How a step (or tip) ends. 'next': the player reads the lines and presses
- * Next. 'action': the LAST line stays up, without Next, until the player does
- * the thing it asks (so the last line should be the instruction).
+ * Next. 'action': it waits for the player to do something; one line (the
+ * waiting line, see waitingLine) shows without Next until they do.
  */
 export type WaitsFor = 'next' | 'action';
 
@@ -69,10 +69,30 @@ export const ARROW_TARGETS: Record<TutorialStep | TipId, readonly string[]> = {
   forest: ['forage'],
 };
 
-/** A line of Grandma's: the words, and maybe what her arrow points at. */
+/** A line of Grandma's: the words, maybe what her arrow points at, and whether she waits on it. */
 export interface TextLine {
   text: string;
   arrow?: string;
+  /** The waiting line of an action step: no Next until the player does it. */
+  waits?: boolean;
+}
+
+/**
+ * Action steps whose screen stays put after the action, so lines after the
+ * waiting line can be shown then (with Next). Elsewhere the screen changes
+ * straight away (prep opens, prep closes, the summary closes...), so the
+ * waiting line has to be the last.
+ */
+export const FOLLOW_UPS_SHOWN: ReadonlySet<TutorialStep | TipId> = new Set(['clean']);
+
+/**
+ * Which line an action step waits on: the one marked `waits`, else the last.
+ * -1 for a step with nothing to wait for (every line has Next).
+ */
+export function waitingLine(key: TutorialStep | TipId, lines: readonly TextLine[]): number {
+  if (WAITS_FOR[key] !== 'action') return -1;
+  const marked = lines.findIndex((l) => l.waits);
+  return marked >= 0 ? marked : lines.length - 1;
 }
 
 export interface GrandmaTexts {
@@ -106,7 +126,15 @@ export function grandmaProblems(t: GrandmaTexts): string[] {
       if (line.arrow && !ARROW_TARGETS[key].includes(line.arrow)) {
         problems.push(`${where}, line ${i + 1}: the arrow can't point at "${line.arrow}" here`);
       }
+      if (line.waits && WAITS_FOR[key] !== 'action') {
+        problems.push(`${where}, line ${i + 1}: nothing to wait for in this step, so every line needs Next`);
+      }
     });
+    if (lines.filter((l) => l.waits).length > 1) problems.push(`${where}: only one line can wait for the player`);
+    const waits = waitingLine(key, lines);
+    if (waits >= 0 && waits < lines.length - 1 && !FOLLOW_UPS_SHOWN.has(key)) {
+      problems.push(`${where}: the screen changes as soon as the player does it, so lines after the waiting line (${waits + 1}) would never be seen; move them above it`);
+    }
   };
   for (const step of TUTORIAL_STEPS) checkLines(`Tutorial "${step}"`, step, t.tutorial?.[step]);
   for (const tip of TIP_IDS) checkLines(`Tip "${tip}"`, tip, t.tips?.[tip]);

@@ -1,6 +1,6 @@
 import GRANDMA from './texts/grandma.json';
 import type { RecipeId } from './recipes';
-import { TIP_IDS, TUTORIAL_STEPS, WAITS_FOR, type WaitsFor, type TextLine, type TipId, type TutorialStep } from './texts/rules';
+import { TIP_IDS, TUTORIAL_STEPS, WAITS_FOR, waitingLine, type WaitsFor, type TextLine, type TipId, type TutorialStep } from './texts/rules';
 
 // The tutorial's settings (GAME_DESIGN.md §5.9). Grandma Badger's WORDS are in
 // texts/grandma.json, edited with the text editor (npm run dev, then
@@ -17,13 +17,21 @@ export interface TutorialStepDef {
    * 'action': the last line stays up until the player does the thing.
    */
   waitsFor: WaitsFor;
+  /** The line shown without Next until the player acts (null: every line has Next). Lines after it show once they have. */
+  waitsAt: number | null;
   /** What the arrow points at on each line (null: nothing); one of ARROW_TARGETS. */
   pointsAt: readonly (string | null)[];
 }
 
 
 function stepDef(key: TutorialStep | TipId, lines: readonly TextLine[]): TutorialStepDef {
-  return { waitsFor: WAITS_FOR[key], lines: lines.map((l) => l.text), pointsAt: lines.map((l) => l.arrow ?? null) };
+  const waits = waitingLine(key, lines);
+  return {
+    waitsFor: WAITS_FOR[key],
+    waitsAt: waits >= 0 ? waits : null,
+    lines: lines.map((l) => l.text),
+    pointsAt: lines.map((l) => l.arrow ?? null),
+  };
 }
 
 // The JSON's keys are checked here: a step or tip missing from it is a compile error.

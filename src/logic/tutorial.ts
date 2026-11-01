@@ -33,6 +33,11 @@ const FINISHED_BY: Record<TutorialStep, TutorialEvent> = {
   farewell: 'next',
 };
 
+/** The event that finishes a step. */
+export function finishedBy(step: TutorialStep): TutorialEvent {
+  return FINISHED_BY[step];
+}
+
 /** The tutorial after `event`: on to the next step if it finishes this one, else unchanged. */
 export function advanceTutorial(state: TutorialState, event: TutorialEvent): TutorialState {
   if (state === 'done') return 'done';
