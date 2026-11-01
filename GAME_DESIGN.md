@@ -367,6 +367,8 @@ The player can leave the counter **before taking an order** to clean messes; the
 - More employee roles (e.g. a Server who carries dishes, a Greeter who takes orders), and more than one of a role
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
 - **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
+- **Background music:** a soft, cosy loop (made in code like the effects, or a music file), with its own volume next to the effects.
+- **A pixel font** for all text, to match the art.
 - **Choose your animal:** at the start of a new game the player picks which critter they are (the cafe owner is a hedgehog until then, §8.2).
 - **Tutorial with a mini story** at the start of a new game. Part of the story: the player is given **30 of each starter ingredient** to open the cafe with, so they learn about ingredient stock (§3.6) from the start. Story and steps still to be designed.
 
@@ -377,7 +379,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - Pixel art with Phaser `pixelArt: true` (no texture smoothing).
 - Fixed **16×16 tile size**.
 - **Integer scaling** only, so pixels stay crisp.
-- **Colored placeholder shapes** until the art milestone; real art comes last (including the illustrated island map).
+- Pixel art since milestone 10 (§8.1-8.3), replacing the coloured placeholder shapes.
 
 ### 8.1 Look and feel (milestone 10)
 
@@ -410,7 +412,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 - **Sound effects, made in code** (Web Audio, no files at first): button tap, leaf pickup, order taken, ingredient added, serve (a ding; brighter for a perfect dish), angry customer, toaster tick and pop, wiping, a purchase, day end.
 - A real sound file with the same name can replace any effect later.
-- **Music:** a soft background loop, optional, last.
+- **Music:** a soft background loop: not built yet (later features).
 - **Mute** with `M`, plus a volume setting. These are settings, not game progress: they're kept apart from the save and survive a New game.
 - **Each sound** is a tiny recipe of notes (pitch, length, wave shape, loudness) or a short burst of noise, played with a quick fade so nothing clicks. Soft and short, in keeping with the cosy mood:
   | Sound | When |
@@ -554,3 +556,13 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Title screen** (`TitleScene`, first scene): Continue ("Day N done · 🍃X", opens the map) or New game (asks first when a save exists; deletes it straight away). An unreadable save is explained there and only New game is offered.
 - **Dev console:** `save` (save now, even mid-day) and `wipesave`.
 - **Not yet:** more than one slot; the desktop build's file storage (milestone 11).
+
+### Milestone 10 scope: Pixel art, animation, sound (as built)
+
+- **Palette:** Endesga 32 (`art/palette.ts`), and UI colours moved onto it.
+- **Art pipeline:** sprites are text grids, one letter per palette colour (`art/sprites/`, listed in `art/spriteArt.ts`), checked by tests. `BootScene` turns them into textures; a PNG with the same name in `src/art/drawn/` replaces one.
+- **Art:** the cafe (planks, log walls with windows, door mat, counter, tables, stools, order rug, queue paw prints, messes, plates); the cast (hedgehog player, raccoon Cleaner, frog Mascot, fox, rabbit, squirrel and mouse customers) with walk cycles and facing; the prep station (bin icons, dish layers built from end and middle pieces, toaster); outdoors (grass and forest ground, oaks and pines, mushroom patches, berry bushes, stalls); the island map drawn into a canvas so its shore is whole pixels; the title scene. Round shapes were laid out with a script, then kept as plain grids.
+- **Animation** (`ui/effects.ts`, `setBobbing`): waiting customers bob slowly, Leaves burst out on payment, leaves drift down onto the ground, dust puffs on wiping.
+- **Sound** (`audio/`): code-made effects for every main action, one Web Audio context with a master volume. A volume control on every screen (`SoundScene`: speaker button, slider, mute) and `M` to mute; settings kept apart from the save. Dev command `sound [name]`.
+- **Also during this milestone:** Decorate gained dragging, a Move / Put away menu on a tapped piece, single-piece moves, and chairs allowed without a table (§5.7).
+- **Not yet:** background music (later features); a pixel font (text is still the browser's monospace).
