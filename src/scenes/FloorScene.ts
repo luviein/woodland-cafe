@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config/display';
 import { buildLayout } from '../logic/furniture';
-import { cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
+import { addCafeCanvas, cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
+import { artKey } from '../ui/art';
 import { DAY_CONFIG } from '../data/dayConfig';
 import { INGREDIENTS } from '../data/ingredients';
 import { FLOOR_CONFIG } from '../data/floorConfig';
@@ -104,7 +105,7 @@ export class FloorScene extends Phaser.Scene {
   private day!: DayState;
   private clock!: ClockDisplay;
   /** Messes and plates on tables; redrawn every frame from the floor state. */
-  private tableOverlay!: Phaser.GameObjects.Graphics;
+  private tableOverlay!: Phaser.GameObjects.RenderTexture;
   /** Drawn above all characters (depth 20) so nobody can cover it. */
   private progressBar!: Phaser.GameObjects.Graphics;
   /** Patience bars over waiting customers, above all characters (depth 15). */
@@ -137,10 +138,10 @@ export class FloorScene extends Phaser.Scene {
     this.layout = buildLayout(getGameState(this).furniture);
     this.origin = cafeOrigin(this.layout);
 
-    // One Graphics object for the whole static floor: far cheaper than
-    // hundreds of separate rectangle objects, and it never changes.
-    drawCafeTiles(this.add.graphics(), this.layout, this.origin);
-    this.tableOverlay = this.add.graphics();
+    // One canvas for the whole static floor (it never changes during a day),
+    // and one for the messes and plates on top, redrawn every frame.
+    drawCafeTiles(addCafeCanvas(this), this.layout, this.origin);
+    this.tableOverlay = addCafeCanvas(this);
     this.progressBar = this.add.graphics().setDepth(20);
     this.patienceBars = this.add.graphics().setDepth(15);
 
@@ -420,19 +421,13 @@ export class FloorScene extends Phaser.Scene {
    * the other.
    */
   private drawTableOverlay(): void {
-    const g = this.tableOverlay;
-    g.clear(); // cheap: a handful of tables, redrawn from scratch each frame
-
+    const canvas = this.tableOverlay;
+    canvas.clear(); // cheap: a handful of tables, redrawn from scratch each frame
+    // Both sprites are 8x8, so -4 centres them on the spot.
     for (const table of this.layout.tables) {
       for (const seat of messySeatsAt(this.floor, table)) {
         const { x, y } = this.seatSideCenter(table.position, seat);
-        // Placeholder crumbs-and-spill splat, about 6x6 px.
-        g.fillStyle(COLORS.mess);
-        g.fillRect(x - 3, y - 2, 5, 4);
-        g.fillRect(x, y - 3, 3, 3);
-        g.fillStyle(COLORS.messLight);
-        g.fillRect(x + 1, y + 1, 2, 2);
-        g.fillRect(x - 3, y + 2, 1, 1);
+        canvas.drawFrame(artKey('mess'), 0, x - 4, y - 4);
       }
     }
 
@@ -440,8 +435,7 @@ export class FloorScene extends Phaser.Scene {
       if (c.phase !== 'eating' || !c.seat) continue;
       const table = tableById(this.layout, c.seat.tableId);
       const { x, y } = this.seatSideCenter(table.position, c.seat.seat);
-      g.fillStyle(COLORS.plate);
-      g.fillRect(x - 3, y - 3, 6, 6);
+      canvas.drawFrame(artKey('plate'), 0, x - 4, y - 4);
     }
   }
 

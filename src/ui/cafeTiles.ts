@@ -1,18 +1,25 @@
 import type Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
+import type { ArtName } from '../art/spriteArt';
 import type { Layout, Point, TileKind } from '../logic/layout';
-import { COLORS } from './theme';
+import { artKey } from './art';
 
 // The cafe's tiles, drawn the same way on the floor (FloorScene) and while
-// decorating (DecorateScene). Placeholder colours until real art.
+// decorating (DecorateScene), from the sprites in art/sprites/cafe.ts.
 
-const TILE_COLORS: Record<Exclude<TileKind, 'floor'>, number> = {
-  wall: COLORS.wallTile,
-  door: COLORS.doorTile,
-  counter: COLORS.counterTop,
-  table: COLORS.tableTop,
-  seat: COLORS.seatTile,
+const TILE_ART: Record<Exclude<TileKind, 'floor'>, ArtName> = {
+  wall: 'wall',
+  door: 'door',
+  counter: 'counter',
+  table: 'table',
+  seat: 'chair',
 };
+
+/** Tiles drawn over the floor (they have see-through parts), not instead of it. */
+const ON_FLOOR: ReadonlySet<TileKind> = new Set(['floor', 'table', 'seat']);
+
+/** Every few tiles along the back wall gets a window. */
+const WINDOW_EVERY = 5;
 
 /**
  * Top-left pixel of the grid, centring it on the screen. Math.floor keeps the
@@ -25,28 +32,35 @@ export function cafeOrigin(layout: Layout): Point {
   };
 }
 
-/** Draws every tile into `g` (cleared first), plus the order spot and queue marks. */
-export function drawCafeTiles(g: Phaser.GameObjects.Graphics, layout: Layout, origin: Point): void {
+/**
+ * A screen-sized canvas to draw the cafe into. One RenderTexture (a texture
+ * you can draw on) is far cheaper than hundreds of separate tile images, and
+ * the floor only changes when the furniture does.
+ */
+export function addCafeCanvas(scene: Phaser.Scene): Phaser.GameObjects.RenderTexture {
+  return scene.add.renderTexture(0, 0, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
+}
+
+/** Draws every tile into `canvas` (cleared first), plus the order rug and the queue's paw prints. */
+export function drawCafeTiles(canvas: Phaser.GameObjects.RenderTexture, layout: Layout, origin: Point): void {
   const px = (p: Point): Point => ({ x: origin.x + p.x * TILE_SIZE, y: origin.y + p.y * TILE_SIZE });
-  g.clear();
+  canvas.clear();
   layout.tiles.forEach((row, y) => {
     row.forEach((tile, x) => {
       const p = px({ x, y });
-      // Checkerboard floor makes the tile grid readable before real art.
-      const checker = (x + y) % 2 === 0 ? COLORS.floorA : COLORS.floorB;
-      g.fillStyle(tile === 'floor' ? checker : TILE_COLORS[tile]);
-      g.fillRect(p.x, p.y, TILE_SIZE, TILE_SIZE);
+      // Plank pattern picked from the position, so it's mixed but never changes.
+      if (ON_FLOOR.has(tile)) canvas.drawFrame(artKey('floor'), (x * 3 + y * 2) % 2, p.x, p.y);
+      if (tile === 'floor') return;
+      const window = tile === 'wall' && y === 0 && x % WINDOW_EVERY === 2 && x < row.length - 2;
+      canvas.drawFrame(artKey(TILE_ART[tile]), window ? 1 : 0, p.x, p.y);
     });
   });
 
-  // Mark where customers stand to order.
   const spot = px(layout.orderSpot);
-  g.fillStyle(COLORS.orderSpot);
-  g.fillRect(spot.x + 3, spot.y + 3, TILE_SIZE - 6, TILE_SIZE - 6);
-
-  // Small dots where the counter queue forms.
+  canvas.drawFrame(artKey('orderRug'), 0, spot.x, spot.y);
+  // Paw prints (5x4) in the middle of each queue spot.
   for (const linePoint of layout.queueSpots) {
     const p = px(linePoint);
-    g.fillRect(p.x + 6, p.y + 6, 4, 4);
+    canvas.drawFrame(artKey('pawPrint'), 0, p.x + 5, p.y + 6);
   }
 }

@@ -4,7 +4,7 @@ import { FURNITURE, FURNITURE_KINDS, type FurnitureKind } from '../data/furnitur
 import { buildLayout, pieceAt, placePiece, placeProblem, removePiece, type Furniture } from '../logic/furniture';
 import type { Point } from '../logic/layout';
 import { Button } from '../ui/Button';
-import { cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
+import { addCafeCanvas, cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { getGameState, setGameState } from './gameStore';
 import type { WorldMapRequest } from './WorldMapScene';
@@ -18,7 +18,7 @@ import type { WorldMapRequest } from './WorldMapScene';
  */
 export class DecorateScene extends Phaser.Scene {
   private origin!: Point;
-  private tiles!: Phaser.GameObjects.Graphics;
+  private tiles!: Phaser.GameObjects.RenderTexture;
   /** The tray: one button per kind, showing how many are in storage. */
   private trayButtons = new Map<FurnitureKind, Button>();
   private selectedOutline!: Phaser.GameObjects.Rectangle;
@@ -34,7 +34,7 @@ export class DecorateScene extends Phaser.Scene {
     this.trayButtons = new Map();
     this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.wall).setOrigin(0);
     this.origin = cafeOrigin(buildLayout(this.furniture()));
-    this.tiles = this.add.graphics();
+    this.tiles = addCafeCanvas(this);
 
     this.add.text(BASE_WIDTH / 2, 10, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0.5, 0);
     this.add
