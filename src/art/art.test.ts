@@ -44,9 +44,9 @@ describe('the cast', () => {
   });
 
   it('customers come as every animal, mixed up', () => {
-    const firstFive = [1, 2, 3, 4, 5].map(customerArt);
-    expect(new Set(firstFive).size).toBe(5);
-    expect(customerArt(6)).toBe(customerArt(1));
+    const firstFour = [1, 2, 3, 4].map(customerArt);
+    expect(new Set(firstFour).size).toBe(CUSTOMER_ART.length);
+    expect(customerArt(5)).toBe(customerArt(1));
     expect(customerArt(1)).toBe('mouse'); // the tutorial's guided customer
   });
 });

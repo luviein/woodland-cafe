@@ -16,7 +16,7 @@ import {
   TABLE,
   WALL,
 } from './sprites/cafe';
-import { BADGER, FOX, FROG, RACCOON, SQUIRREL } from './sprites/sheetCritters2';
+import { BADGER, FOX, FROG, RACCOON } from './sprites/sheetCritters2';
 import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sprites/sheetCritters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
@@ -41,13 +41,12 @@ export const SPRITE_ART = {
   speaker: SPEAKER,
   moveIcon: MOVE_ICON,
   storeIcon: STORE_ICON,
-  // The cast: 16x24, frames 0 standing, 1-2 walking (GAME_DESIGN.md §8.2)
+  // The cast, four views each (GAME_DESIGN.md §8.2)
   hedgehog: HEDGEHOG,
   raccoon: RACCOON,
   frog: FROG,
   fox: FOX,
   rabbit: RABBIT,
-  squirrel: SQUIRREL,
   mouse: MOUSE,
   deer: DEER,
   badger: BADGER,
@@ -95,17 +94,16 @@ export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>([
   'raccoon',
   'frog',
   'fox',
-  'squirrel',
 ]);
 
 /** The animals customers can be (GAME_DESIGN.md §8.2). */
-export const CUSTOMER_ART = ['fox', 'rabbit', 'squirrel', 'mouse', 'deer'] as const satisfies readonly ArtName[];
+export const CUSTOMER_ART = ['fox', 'rabbit', 'deer', 'mouse'] as const satisfies readonly ArtName[];
 export type CustomerArt = (typeof CUSTOMER_ART)[number];
 
 /**
  * Which animal a customer is, from their id: the same on the floor and at
- * the prep station. Stepping by 3 (which shares no factor with 5) mixes
- * them up, so customers in a row aren't always fox, rabbit, squirrel, mouse.
+ * the prep station. Stepping by 3 (which shares no factor with 4) mixes
+ * them up, so customers in a row aren't always fox, rabbit, deer, mouse.
  */
 export function customerArt(id: number): CustomerArt {
   return CUSTOMER_ART[(id * 3) % CUSTOMER_ART.length];

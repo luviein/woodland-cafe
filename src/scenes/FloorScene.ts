@@ -694,7 +694,7 @@ export class FloorScene extends Phaser.Scene {
     return null;
   }
 
-  /** A customer: a fox, rabbit, squirrel or mouse, picked by id. */
+  /** A customer: a fox, rabbit, deer or mouse, picked by id. */
   private createCustomerSprite(id: number): CustomerSprite {
     // Its depth follows its feet every frame (syncCustomerSprites).
     const body = createCritter(this, customerArt(id));
