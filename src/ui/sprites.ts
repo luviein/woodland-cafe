@@ -71,8 +71,12 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
     const bob = critter.scene.tweens.add({
       targets: image,
       y: TILE_SIZE - 1,
-      duration: 380,
-      delay: Phaser.Math.Between(0, 300),
+      // A 1px move can't glide (pixels snap to whole steps), so instead of a
+      // constant wobble it's a slow rhythm: up, rest, down, rest.
+      duration: 700,
+      hold: 400,
+      repeatDelay: 400,
+      delay: Phaser.Math.Between(0, 800),
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',

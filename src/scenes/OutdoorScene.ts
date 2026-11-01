@@ -404,9 +404,11 @@ export class OutdoorScene extends Phaser.Scene {
       if (this.leafSprites.has(leaf.id)) continue;
       const { x, y } = leaf.position;
       // Drifts down onto its spot, swaying side to side, then lies there.
-      const sprite = addArt(this, x - 6, y - 28, 'leaf').setAlpha(0);
-      this.tweens.add({ targets: sprite, y, alpha: 1, duration: 1100, ease: 'Sine.easeOut' });
-      this.tweens.add({ targets: sprite, x: x + 6, duration: 275, yoyo: true, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => sprite.setX(x) });
+      // About 2.6s: two slow sways (650ms each way) while it sinks.
+      const sprite = addArt(this, x - 6, y - 36, 'leaf').setAlpha(0);
+      this.tweens.add({ targets: sprite, y, duration: 2600, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: sprite, alpha: 1, duration: 600 });
+      this.tweens.add({ targets: sprite, x: x + 6, duration: 650, yoyo: true, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => sprite.setX(x) });
       // Lying flat on the ground: under anything standing near it. Plus a
       // little rocking, so it catches the eye on the grass.
       sprite.setDepth(2).setAngle(-15);

@@ -21,15 +21,16 @@ export function popLeaves(scene: Phaser.Scene, x: number, y: number, count: numb
       x: x + Math.cos(angle) * distance,
       y: y + Math.sin(angle) * distance,
       angle: leaf.angle + Phaser.Math.Between(-180, 180),
-      duration: 450,
+      duration: 600,
       ease: 'Quad.easeOut',
       onComplete: () =>
         // Then drift down a little while fading, like a leaf in the air.
         scene.tweens.add({
           targets: leaf,
-          y: leaf.y + 10 * scale,
+          y: leaf.y + 16 * scale,
           alpha: 0,
-          duration: 500,
+          duration: 1100,
+          ease: 'Sine.easeIn',
           onComplete: () => leaf.destroy(),
         }),
     });
