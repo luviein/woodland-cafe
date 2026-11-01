@@ -62,6 +62,25 @@ them, run `npm run dev` and open **http://localhost:5173/editor.html**:
 
 The editor only exists under `npm run dev`; a built game doesn't include it.
 
+## Sprite gallery
+
+Run `npm run dev` and open **http://localhost:5173/sprites.html** to see every
+sprite in the game, grouped (critters, cafe, kitchen, outdoors, icons; each
+group folds away):
+
+- each sprite's size, frames and where it comes from (drawn in code, your PNG
+  in `src/art/drawn/`, or converted from your critter sheet);
+- critters walking in every direction;
+- **quality checks** (the same ones the tests run): holes inside the outline,
+  stray single pixels, front/back views that aren't symmetrical, broken grids.
+  A sprite that fails gets an orange border and the reason;
+- **side by side**: every critter next to a table, stools and the counter at
+  real proportions.
+
+It's read-only: change a sprite's file (or drop a PNG into `src/art/drawn/`)
+and the page and the game both update. Like the text editor, it only exists
+under `npm run dev`.
+
 ## Sound
 
 All sound effects are made in code (`src/audio/sounds.ts`, no audio files).

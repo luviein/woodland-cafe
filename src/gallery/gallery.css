@@ -1,0 +1,126 @@
+/* The sprite gallery's look: the game's cream and wood, like the text editor. */
+:root {
+  --paper: #ead4aa;
+  --paper-light: #f6ead2;
+  --ink: #3e2731;
+  --wood: #b86f50;
+  --wood-dark: #733e39;
+  --amber: #d77643;
+  --muted: #8b7a6a;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font: 15px/1.45 system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--ink);
+  color: var(--paper);
+}
+header h1 {
+  font-size: 18px;
+  margin: 0 auto 0 0;
+}
+main {
+  padding: 16px 24px 60px;
+}
+canvas {
+  image-rendering: pixelated;
+  display: block;
+}
+details.group {
+  margin-bottom: 16px;
+  background: var(--paper-light);
+  border: 2px solid var(--wood);
+  border-radius: 8px;
+}
+details.group > summary {
+  cursor: pointer;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 16px;
+  background: var(--wood);
+  color: var(--paper-light);
+  list-style: none;
+  user-select: none;
+}
+details.group > summary::-webkit-details-marker {
+  display: none;
+}
+details.group > summary::before {
+  content: '▸ ';
+}
+details.group[open] > summary::before {
+  content: '▾ ';
+}
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+}
+.card {
+  background: var(--paper);
+  border: 2px solid var(--wood);
+  border-radius: 6px;
+  padding: 10px 12px;
+  max-width: 100%;
+}
+.card.warn {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px var(--amber);
+}
+.card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.card .meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.card .frames {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-end;
+}
+.card .frame {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.card .frame canvas {
+  background: repeating-conic-gradient(#efe2c8 0 25%, #f8efdc 0 50%) 0 0 / 12px 12px;
+  border: 1px solid #d9c6a0;
+}
+.card .walk {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.card .problems {
+  color: var(--amber);
+  font-size: 13px;
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.flag {
+  color: var(--amber);
+  margin-left: 6px;
+}
+.scale-view {
+  padding: 12px;
+  overflow-x: auto;
+}

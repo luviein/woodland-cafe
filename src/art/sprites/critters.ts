@@ -108,7 +108,7 @@ export const SQUIRREL = critter({ ...FACE, f: 'clay', l: 'cream' }, [
   '..ooo......ooo..',
   '..ofo......ofo..',
   ...HEAD,
-  '....offffffo.ooo',
+  '....offffffooooo',
   '...offllllffoffo',
   '..offllllllffffo',
   '.offfllllllffffo',

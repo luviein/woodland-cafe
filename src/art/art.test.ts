@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PALETTE } from './palette';
 import { framePixels, spriteProblems, spriteSize, type PixelSprite } from './pixelSprite';
 import { ART_NAMES, CUSTOMER_ART, customerArt, SPRITE_ART, VIEW_ART } from './spriteArt';
-import { VIEW, viewFrame } from './sprites/sheetCritters';
+import { holes, mirrored, spriteQuality, strayPixels } from './checks';
 
 describe('the palette', () => {
   it('is Endesga 32: 32 different colours', () => {
@@ -16,41 +16,16 @@ describe('every code-drawn sprite', () => {
   });
 });
 
-/** See-through pixels that can't reach the frame's edge: holes inside the outline. */
-function holes(frame: readonly string[]): number {
-  const H = frame.length, W = frame[0].length;
-  const outside = new Set<number>();
-  const todo: [number, number][] = [];
-  for (let x = 0; x < W; x++) todo.push([x, 0], [x, H - 1]);
-  for (let y = 0; y < H; y++) todo.push([0, y], [W - 1, y]);
-  while (todo.length) {
-    const [x, y] = todo.pop()!;
-    if (x < 0 || y < 0 || x >= W || y >= H || frame[y][x] !== '.' || outside.has(y * W + x)) continue;
-    outside.add(y * W + x);
-    todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
-  }
-  return frame.reduce((n, row, y) => n + [...row].filter((c, x) => c === '.' && !outside.has(y * W + x)).length, 0);
-}
-
-/** A frame mirrored around its own drawn middle. */
-function mirrored(frame: readonly string[]): string[] {
-  const cols = frame.flatMap((row) => [...row].flatMap((c, x) => (c === '.' ? [] : [x])));
-  const sum = Math.min(...cols) + Math.max(...cols);
-  return frame.map((row) => [...row].map((_, x) => row[sum - x] ?? '.').join(''));
-}
-
-describe("the player's own critter art (quality checks)", () => {
-  const views = [...VIEW_ART];
-
-  it.each(views)('%s has no see-through holes inside its outline, in any frame', (name) => {
-    SPRITE_ART[name].frames.forEach((frame) => expect(holes(frame)).toBe(0));
+describe('sprite quality (the same checks as the sprite gallery)', () => {
+  it.each(ART_NAMES)('%s passes', (name) => {
+    expect(spriteQuality(name)).toEqual([]);
   });
 
-  it.each(views)('%s looks the same mirrored from the front and the back (so both eyes match)', (name) => {
-    for (const view of [VIEW.front, VIEW.back]) {
-      const frame = SPRITE_ART[name].frames[viewFrame(view)];
-      expect(mirrored(frame)).toEqual([...frame]);
-    }
+  it('catches holes, stray pixels and an uneven front view', () => {
+    expect(holes(['ooo', 'o.o', 'ooo'])).toBe(1);
+    expect(holes(['o.o', 'ooo'])).toBe(0); // open to the edge: not a hole
+    expect(strayPixels(['o..', '...', '.oo'])).toBe(1);
+    expect(mirrored(['oo.', '.o.'])).toEqual(['oo.', 'o..']); // around the drawn middle (between columns 0 and 1)
   });
 });
 
