@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { PALETTE } from '../art/palette';
-import { spriteSize } from '../art/pixelSprite';
-import { SPRITE_ART, type ArtName } from '../art/spriteArt';
+import type { ArtName } from '../art/spriteArt';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { FURNITURE, type DesignId } from '../data/furniture';
 import { addArt } from './art';
@@ -35,16 +34,22 @@ export interface CatalogueShop {
   buy: (design: DesignId) => void;
 }
 
-const CARDS_PER_PAGE = 4;
+/** Two tall cards side by side on each page, so every picture fits at the same scale. */
+const CARDS_PER_PAGE = 2;
 // The open book: two pages either side of the spine, tabs down the right edge.
 const BOOK = { left: 20, top: 30, width: 572, height: 300 };
 const PAGE_WIDTH = (BOOK.width - 24) / 2;
-const CARD = { width: 124, height: 118, gap: 8 };
+const CARD = { width: 124, height: 226, gap: 8 };
 const HEADER = 34;
 const TAB = { x: BOOK.left + BOOK.width + 14, width: 26, height: 84, gap: 6 };
 const COVER = { width: 260, height: 300 };
-/** Art in a card fits a box this tall (whole-number scales only: pixel art stays crisp). */
-const ART_BOX = 52;
+/**
+ * Every picture at the same scale, so sizes compare as they do in the cafe
+ * (the tree taller than the poinsettia). 2x keeps pixel art crisp, and the
+ * tallest piece (the tree, 36) fits the picture box.
+ */
+const ART_SCALE = 2;
+const ART_BOX = 84;
 const SMALL = { ...TEXT.body, fontSize: '10px', color: css(COLORS.counterEdge) };
 const NAME = { ...TEXT.heading, fontSize: '12px' };
 
@@ -62,7 +67,8 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
   private cards: Phaser.GameObjects.GameObject[] = [];
   private cardViews: { design: DesignId; button: Button; owned: Phaser.GameObjects.Text }[] = [];
   private tabButtons: Button[] = [];
-  private wallet!: Phaser.GameObjects.Text;
+  /** "Your leaves:", the leaf, the amount: laid out right to left from the page's edge on each refresh. */
+  private wallet!: { label: Phaser.GameObjects.Text; leaf: Phaser.GameObjects.Image; amount: Phaser.GameObjects.Text; right: number };
   private pageLabel!: Phaser.GameObjects.Text;
   private sectionLabel!: Phaser.GameObjects.Text;
   private prevPage!: Button;
@@ -98,7 +104,10 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
 
   /** The wallet, counts and price buttons, from the game as it is now. */
   refresh(): void {
-    this.wallet.setText(`🍃${this.shop.leaves()}`);
+    const { label, leaf, amount, right } = this.wallet;
+    amount.setText(String(this.shop.leaves())).setX(right);
+    leaf.setX(right - amount.width - 3);
+    label.setX(leaf.x - leaf.displayWidth - 3);
     for (const { design, button, owned } of this.cardViews) {
       button.setEnabled(this.shop.canBuy(design));
       const n = this.shop.owned(design);
@@ -199,9 +208,15 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     this.pageLabel = s.add.text(...this.at(arrowsX, headerY), '', { ...TEXT.body, color: css(COLORS.paper) }).setOrigin(0.5);
     b.add([this.prevPage, this.nextPage, this.pageLabel]);
     const rightPageLeft = left + width - 8 - PAGE_WIDTH;
-    b.add(s.add.rectangle(...this.at(rightPageLeft + PAGE_WIDTH - 50, headerY), 84, 24, COLORS.counterEdge).setStrokeStyle(2, COLORS.ink));
-    this.wallet = s.add.text(...this.at(rightPageLeft + PAGE_WIDTH - 50, headerY), '', { ...TEXT.heading, color: css(PALETTE.gold) }).setOrigin(0.5);
-    b.add(this.wallet);
+    // The wallet, plain on the paper in dark ink: "Your leaves: (leaf) 120".
+    const [walletRight, walletY] = this.at(rightPageLeft + PAGE_WIDTH - 12, headerY);
+    this.wallet = {
+      label: s.add.text(0, walletY, 'Your leaves:', TEXT.body).setOrigin(1, 0.5),
+      leaf: addArt(s, 0, walletY, 'leaf').setOrigin(1, 0.5),
+      amount: s.add.text(0, walletY, '', TEXT.heading).setOrigin(1, 0.5),
+      right: walletRight,
+    };
+    b.add([this.wallet.label, this.wallet.leaf, this.wallet.amount]);
     b.add(this.closeButton(...this.at(left + width - 2, top + 2)));
     // A tab per section down the right edge, its name running down it.
     this.tabButtons = this.catalogue.tabs.map((tab, i) => {
@@ -249,9 +264,9 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
       const page = Math.floor(i / CARDS_PER_PAGE);
       const slot = i % CARDS_PER_PAGE;
       const pageLeft = page === 0 ? BOOK.left + 8 : BOOK.left + BOOK.width - 8 - PAGE_WIDTH;
-      const gridWidth = 2 * CARD.width + CARD.gap;
-      const x = pageLeft + (PAGE_WIDTH - gridWidth) / 2 + (slot % 2) * (CARD.width + CARD.gap);
-      const y = BOOK.top + 8 + HEADER + 8 + Math.floor(slot / 2) * (CARD.height + CARD.gap);
+      const rowWidth = CARDS_PER_PAGE * CARD.width + (CARDS_PER_PAGE - 1) * CARD.gap;
+      const x = pageLeft + (PAGE_WIDTH - rowWidth) / 2 + slot * (CARD.width + CARD.gap);
+      const y = BOOK.top + 8 + HEADER + 8;
       this.createCard(design, x, y);
     });
     this.refresh();
@@ -264,18 +279,17 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     const midX = x + CARD.width / 2;
     const parts: Phaser.GameObjects.GameObject[] = [];
     parts.push(s.add.rectangle(...this.at(midX, y + CARD.height / 2), CARD.width, CARD.height, PALETTE.white).setStrokeStyle(2, COLORS.paperEdge));
-    // The picture, as big as fits at a whole-number scale, standing on the art box's bottom.
-    const { width, height } = spriteSize(SPRITE_ART[def.art]);
-    const scale = Phaser.Math.Clamp(Math.floor(ART_BOX / Math.max(width, height)), 1, 3);
-    parts.push(addArt(s, ...this.at(midX, y + 6 + ART_BOX), def.art).setOrigin(0.5, 1).setScale(scale));
-    const name = s.add.text(...this.at(midX, y + ART_BOX + 10), def.name, { ...NAME, align: 'center', wordWrap: { width: CARD.width - 8 } }).setOrigin(0.5, 0);
+    // The picture standing on the picture box's bottom, at the same scale as every other.
+    parts.push(addArt(s, ...this.at(midX, y + 10 + ART_BOX), def.art).setOrigin(0.5, 1).setScale(ART_SCALE));
+    const name = s.add.text(...this.at(midX, y + ART_BOX + 20), def.name, { ...NAME, align: 'center', wordWrap: { width: CARD.width - 8 } }).setOrigin(0.5, 0);
     parts.push(name);
     // Right under the name, however many lines it took.
     parts.push(s.add.text(name.x, name.y + name.height + 1, def.blurb, { ...SMALL, align: 'center', wordWrap: { width: CARD.width - 10 } }).setOrigin(0.5, 0));
-    const button = new Button(s, ...this.at(x + 40, y + CARD.height - 14), 64, 20, `🍃${def.price}`, COLORS.serve, () => {
+    // The price and the count along the bottom, clear of the text above.
+    const button = new Button(s, ...this.at(x + 40, y + CARD.height - 18), 64, 22, `🍃${def.price}`, COLORS.serve, () => {
       if (this.shop.canBuy(design)) this.shop.buy(design);
     });
-    const owned = s.add.text(...this.at(x + CARD.width - 8, y + CARD.height - 14), '', SMALL).setOrigin(1, 0.5);
+    const owned = s.add.text(...this.at(x + CARD.width - 8, y + CARD.height - 18), '', SMALL).setOrigin(1, 0.5);
     parts.push(button, owned);
     this.book.add(parts);
     this.cards.push(...parts);
