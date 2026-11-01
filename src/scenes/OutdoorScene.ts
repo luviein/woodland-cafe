@@ -136,7 +136,7 @@ export class OutdoorScene extends Phaser.Scene {
     this.playerSprite = createPlayerSprite(this);
     // Small ring where the player is heading; hidden when standing still.
     // Depth 1: on the ground, under everything standing on it.
-    this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.apron).setVisible(false).setDepth(1);
+    this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.paper).setVisible(false).setDepth(1);
 
     // Top strip: wallet, place name, and the way back.
     const wallet = new WalletDisplay(this, 8, 8).setDepth(HUD_DEPTH);

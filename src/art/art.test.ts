@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PALETTE } from './palette';
 import { framePixels, spriteProblems, spriteSize, type PixelSprite } from './pixelSprite';
-import { ART_NAMES, SPRITE_ART } from './spriteArt';
+import { ART_NAMES, CUSTOMER_ART, customerArt, SPRITE_ART } from './spriteArt';
 
 describe('the palette', () => {
   it('is Endesga 32: 32 different colours', () => {
@@ -12,6 +12,19 @@ describe('the palette', () => {
 describe('every code-drawn sprite', () => {
   it.each(ART_NAMES)('%s is well formed', (name) => {
     expect(spriteProblems(SPRITE_ART[name])).toEqual([]);
+  });
+});
+
+describe('the cast', () => {
+  it.each(['hedgehog', 'raccoon', 'frog', ...CUSTOMER_ART] as const)('%s is 16x24, standing plus two steps', (name) => {
+    expect(spriteSize(SPRITE_ART[name])).toEqual({ width: 16, height: 24 });
+    expect(SPRITE_ART[name].frames).toHaveLength(3);
+  });
+
+  it('customers come as every animal, mixed up', () => {
+    const firstFour = [1, 2, 3, 4].map(customerArt);
+    expect(new Set(firstFour).size).toBe(4);
+    expect(customerArt(5)).toBe(customerArt(1));
   });
 });
 

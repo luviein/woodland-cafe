@@ -19,19 +19,10 @@ export const COLORS = {
   reset: PALETTE.rust,
   book: PALETTE.blue,
   disabled: PALETTE.grey,
-  player: 0x5a7a9c,
-  apron: 0xf4e9d8,
-  // Employees (GAME_DESIGN.md §5.8): their own colours so they never look like customers.
-  mascot: 0xe07a30,
-  mascotBelly: 0xf4e9d8,
-  cleaner: 0x7f9b6a,
-  bandana: 0x4f86a8,
   // Customer status label colours, so mood reads at a glance.
   statusCalm: PALETTE.cream,
   statusImpatient: PALETTE.orange,
   statusUpset: PALETTE.red,
-  /** Customer fur colours; each customer gets one, picked by id. */
-  customerFur: [0x9c6b45, 0xc98a4b, 0x8a817a, 0xd9b38c, 0x6e4a2f],
   overlay: PALETTE.black,
   // World map (placeholder shapes until the illustrated island, milestone 10)
   water: 0x4f86a8,

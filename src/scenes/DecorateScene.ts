@@ -43,7 +43,7 @@ export class DecorateScene extends Phaser.Scene {
 
     // The storage tray, left of the cafe.
     this.add.text(64, 90, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0.5, 0);
-    this.selectedOutline = this.add.rectangle(0, 0, 112, 38).setStrokeStyle(3, COLORS.apron).setVisible(false);
+    this.selectedOutline = this.add.rectangle(0, 0, 112, 38).setStrokeStyle(3, COLORS.paper).setVisible(false);
     FURNITURE_KINDS.forEach((kind, i) => {
       const button = new Button(this, 64, 130 + i * 44, 104, 30, '', COLORS.book, () => this.select(kind));
       this.trayButtons.set(kind, button);

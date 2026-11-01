@@ -18,6 +18,8 @@ import {
   type DishToast,
 } from '../logic/toasting';
 import type { Order, ScoreResult } from '../logic/types';
+import type { CustomerArt } from '../art/spriteArt';
+import { addArt } from '../ui/art';
 import { Button } from '../ui/Button';
 import { DishView, drawLayerStack } from '../ui/DishView';
 import { ToasterView } from '../ui/ToasterView';
@@ -52,8 +54,8 @@ const PLATE_AREA = new Phaser.Geom.Rectangle(PLATE_X - 88, PLATE_Y - 84, 176, 11
  */
 export interface PrepRequest {
   order: Order;
-  /** So the customer behind the counter looks like the one on the floor. */
-  fur: number;
+  /** So the customer behind the counter is the same animal as on the floor. */
+  art: CustomerArt;
   /** Patience left, 0..1, read every frame for the bar. The floor keeps it ticking. */
   patience: () => number;
   /** The day clock, read every frame: the day keeps going while the player cooks. */
@@ -490,17 +492,12 @@ export class PrepScene extends Phaser.Scene {
     this.add.rectangle(0, COUNTER_TOP_Y, BASE_WIDTH, 4, COLORS.counterEdge).setOrigin(0);
   }
 
-  /** Placeholder woodland customer peeking over the counter. (x, y) = body centre. */
+  /**
+   * The customer peeking over the counter: their floor sprite at 4x (a whole
+   * number, so the pixels stay square), standing still. (x, y) = body centre;
+   * the counter, drawn after, hides the legs.
+   */
   private drawCustomer(x: number, y: number): void {
-    const g = this.add.graphics();
-    g.fillStyle(this.request.fur);
-    // Ears
-    g.fillTriangle(x - 20, y - 22, x - 8, y - 22, x - 16, y - 40);
-    g.fillTriangle(x + 8, y - 22, x + 20, y - 22, x + 16, y - 40);
-    g.fillRoundedRect(x - 24, y - 28, 48, 64, 12);
-    // Eyes
-    g.fillStyle(COLORS.ink);
-    g.fillRect(x - 12, y - 12, 4, 4);
-    g.fillRect(x + 8, y - 12, 4, 4);
+    addArt(this, x, y - 40, this.request.art).setOrigin(0.5, 0).setScale(4);
   }
 }

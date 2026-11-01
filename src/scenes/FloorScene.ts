@@ -41,7 +41,8 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createCleanerSprite, createPlayerSprite } from '../ui/sprites';
+import { createCleanerSprite, createCritter, createPlayerSprite } from '../ui/sprites';
+import { customerArt } from '../art/spriteArt';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, endCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
@@ -77,9 +78,6 @@ function statusLabel(c: Customer, counter: CounterStatus): { text: string; color
   if (c.phase === 'leaving' && c.upset) return { text: '!!', color: COLORS.statusUpset };
   return { text: '', color: calm };
 }
-
-/** Each customer's fur colour, picked by id, so they look the same on the floor and at prep. */
-const furColor = (id: number): number => COLORS.customerFur[id % COLORS.customerFur.length];
 
 /**
  * Top-down cafe floor. Drawn entirely from the layout data, so editing
@@ -167,7 +165,7 @@ export class FloorScene extends Phaser.Scene {
     this.destinationMarker = this.add
       .rectangle(0, 0, TILE_SIZE - 2, TILE_SIZE - 2)
       .setOrigin(0)
-      .setStrokeStyle(2, COLORS.apron)
+      .setStrokeStyle(2, COLORS.paper)
       .setVisible(false);
 
     this.player = createPlayer(this.layout);
@@ -348,7 +346,7 @@ export class FloorScene extends Phaser.Scene {
 
     const request: PrepRequest = {
       order,
-      fur: furColor(customerId),
+      art: customerArt(customerId),
       clock: () => ({ text: clockText(this.day), open: this.floor.doorsOpen }),
       patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
       onServe: (result, payment, plate) => {
@@ -411,10 +409,6 @@ export class FloorScene extends Phaser.Scene {
     };
   }
 
-  /**
-   * Placeholder player: a blue critter with a cream apron. Drawn once inside
-   * a Container at local (0, 0)-(16, 16), so moving it is just setPosition.
-   */
   /**
    * Messes and plates, each drawn on the half of the table facing its seat.
    * Messes are per seat, so a table can be messy on one side and in use on
@@ -490,10 +484,11 @@ export class FloorScene extends Phaser.Scene {
       const fraction = Phaser.Math.Clamp(c.patience / FLOOR_CONFIG.patienceSeconds, 0, 1);
       const { x, y } = this.walkerToPixel(c.walker);
       g.fillStyle(COLORS.ink);
-      g.fillRect(x + 2, y - 4, width, 3);
+      // Just over the head, which pokes 8px above the tile.
+      g.fillRect(x + 2, y - 12, width, 3);
       g.fillStyle(patienceColor(fraction));
       // Math.ceil so a nearly-empty bar still shows one pixel until it hits 0.
-      g.fillRect(x + 3, y - 3, Math.ceil((width - 2) * fraction), 1);
+      g.fillRect(x + 3, y - 11, Math.ceil((width - 2) * fraction), 1);
     }
   }
 
@@ -517,7 +512,7 @@ export class FloorScene extends Phaser.Scene {
       const pos = this.walkerToPixel(c.walker);
       sprite.body.setPosition(pos.x, pos.y);
       // Above the patience bar, which sits just over the head.
-      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 5);
+      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 13);
 
       // Changing a Phaser Text's colour redraws its texture, so only touch
       // it when the status actually changes, not every frame.
@@ -535,17 +530,9 @@ export class FloorScene extends Phaser.Scene {
     }
   }
 
-  /** Placeholder customer: a round-eared critter, fur colour picked by id. */
+  /** A customer: a fox, rabbit, squirrel or mouse, picked by id. */
   private createCustomerSprite(id: number): CustomerSprite {
-    const g = this.add.graphics();
-    g.fillStyle(furColor(id));
-    g.fillRect(2, 0, 4, 4); // ears
-    g.fillRect(10, 0, 4, 4);
-    g.fillRect(3, 3, 10, 12); // body
-    g.fillStyle(COLORS.ink);
-    g.fillRect(5, 6, 2, 2); // eyes
-    g.fillRect(9, 6, 2, 2);
-    const body = this.add.container(0, 0, [g]).setDepth(5);
+    const body = createCritter(this, customerArt(id)).setDepth(5);
     // Status text above the head (see statusLabel), on a layer above every
     // character (depth 15: over the player at 10, under the progress bar at
     // 20), with a dark outline so it reads on any floor colour.

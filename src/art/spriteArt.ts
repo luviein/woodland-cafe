@@ -1,5 +1,6 @@
 import type { PixelSprite } from './pixelSprite';
 import { CHAIR, COUNTER, DOOR, FLOOR, MESS, ORDER_RUG, PAW_PRINT, PLATE, TABLE, WALL } from './sprites/cafe';
+import { FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
 import { LEAF } from './sprites/outdoor';
 
 // Every code-drawn sprite, by name. The name is also the file name a
@@ -17,6 +18,14 @@ export const SPRITE_ART = {
   pawPrint: PAW_PRINT,
   mess: MESS,
   plate: PLATE,
+  // The cast: 16x24, frames 0 standing, 1-2 walking (GAME_DESIGN.md §8.2)
+  hedgehog: HEDGEHOG,
+  raccoon: RACCOON,
+  frog: FROG,
+  fox: FOX,
+  rabbit: RABBIT,
+  squirrel: SQUIRREL,
+  mouse: MOUSE,
   // Outdoors
   leaf: LEAF,
 } satisfies Record<string, PixelSprite>;
@@ -27,4 +36,17 @@ export const ART_NAMES = Object.keys(SPRITE_ART) as ArtName[];
 
 export function isArtName(name: string): name is ArtName {
   return name in SPRITE_ART;
+}
+
+/** The animals customers can be (GAME_DESIGN.md §8.2). */
+export const CUSTOMER_ART = ['fox', 'rabbit', 'squirrel', 'mouse'] as const satisfies readonly ArtName[];
+export type CustomerArt = (typeof CUSTOMER_ART)[number];
+
+/**
+ * Which animal a customer is, from their id: the same on the floor and at
+ * the prep station. Stepping by 3 (which shares no factor with 4) mixes
+ * them up, so customers in a row aren't always fox, rabbit, squirrel, mouse.
+ */
+export function customerArt(id: number): CustomerArt {
+  return CUSTOMER_ART[(id * 3) % CUSTOMER_ART.length];
 }

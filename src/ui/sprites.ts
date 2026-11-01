@@ -1,57 +1,82 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
+import type { ArtName } from '../art/spriteArt';
+import { TILE_SIZE } from '../config/display';
+import { artKey } from './art';
 import { COLORS } from './theme';
 
-// Placeholder drawings shared by several scenes (cafe floor, world map,
-// outdoor areas), so they look the same everywhere until real art
-// (milestone 10) replaces them in one place.
+// Drawings shared by several scenes (cafe floor, world map, outdoor areas),
+// so they look the same everywhere. The critters are pixel art; the scenery
+// below them is still placeholder shapes until its milestone 10 step.
 
-/** The player: a 16x16 critter in an apron. Origin is its top-left corner. */
+/** How long each walking step shows, in ms. */
+const STEP_MS = 140;
+/** Standing still this long (ms) counts as stopped: back to the standing frame. */
+const STOP_MS = 100;
+
+/**
+ * A 16x24 critter (art/sprites/critters.ts) inside a Container whose origin
+ * is the top-left of the 16x16 tile it stands on: the feet are at the
+ * tile's bottom and the head pokes 8px above it. Moving it is just
+ * setPosition, as before the art; it notices the moves itself to walk (and
+ * face left or right), so no scene needs walking code.
+ */
+export function createCritter(scene: Phaser.Scene, art: ArtName): Phaser.GameObjects.Container {
+  const image = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(art), 0).setOrigin(0.5, 1);
+  const container = scene.add.container(0, 0, [image]);
+  animateWalking(scene, container, image);
+  return container;
+}
+
+/** Each frame: if the container moved, play the walking steps and face the way it went. */
+function animateWalking(
+  scene: Phaser.Scene,
+  container: Phaser.GameObjects.Container,
+  image: Phaser.GameObjects.Image,
+): void {
+  let last = { x: container.x, y: container.y };
+  let stillFor = STOP_MS;
+  let walkedFor = 0;
+  const onUpdate = (_time: number, delta: number) => {
+    const dx = container.x - last.x;
+    const dy = container.y - last.y;
+    last = { x: container.x, y: container.y };
+    // A jump of over a tile is being placed somewhere (e.g. its first
+    // position), not walking.
+    const walked = (dx !== 0 || dy !== 0) && Math.abs(dx) + Math.abs(dy) <= TILE_SIZE;
+    if (walked) {
+      stillFor = 0;
+      walkedFor += delta;
+      if (dx !== 0) image.setFlipX(dx < 0); // the art faces right
+    } else {
+      stillFor += delta;
+    }
+    const step = Math.floor(walkedFor / STEP_MS) % 2;
+    image.setFrame(stillFor < STOP_MS ? 1 + step : 0);
+  };
+  scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
+  container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));
+}
+
+/** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). */
 export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  const g = scene.add.graphics();
-  g.fillStyle(COLORS.player);
-  g.fillRect(3, 1, 10, 14);
-  g.fillStyle(COLORS.apron);
-  g.fillRect(5, 8, 6, 6);
-  g.fillStyle(COLORS.ink);
-  g.fillRect(5, 4, 2, 2);
-  g.fillRect(9, 4, 2, 2);
   // Depth: draw the player above customers and scenery when they overlap.
-  return scene.add.container(0, 0, [g]).setDepth(10);
+  return createCritter(scene, 'hedgehog').setDepth(10);
 }
 
 /**
- * The Mascot: a 16x16 orange fox-ish critter with its paws up. Unlike the
- * other critters, its origin is its FEET (bottom middle), so a dance that
- * sways it (rotation) pivots on the ground rather than on its top-left corner.
+ * The Mascot: the frog in its leaf costume. Unlike the other critters, its
+ * origin is its FEET (bottom middle), so a dance that sways it (rotation)
+ * pivots on the ground rather than on a corner.
  */
 export function createMascotSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  const g = scene.add.graphics().setPosition(-8, -16);
-  g.fillStyle(COLORS.mascot);
-  g.fillRect(3, 3, 10, 12);
-  g.fillRect(3, 1, 3, 2); // ears
-  g.fillRect(10, 1, 3, 2);
-  g.fillRect(0, 2, 3, 3); // paws up, waving
-  g.fillRect(13, 2, 3, 3);
-  g.fillStyle(COLORS.mascotBelly);
-  g.fillRect(6, 9, 4, 5);
-  g.fillStyle(COLORS.ink);
-  g.fillRect(5, 5, 2, 2);
-  g.fillRect(9, 5, 2, 2);
-  return scene.add.container(0, 0, [g]);
+  const image = scene.add.image(0, 0, artKey('frog'), 0).setOrigin(0.5, 1);
+  return scene.add.container(0, 0, [image]);
 }
 
-/** The Cleaner: a 16x16 critter in a blue bandana. Origin is its top-left corner. */
+/** The Cleaner: the raccoon in a bandana. */
 export function createCleanerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  const g = scene.add.graphics();
-  g.fillStyle(COLORS.cleaner);
-  g.fillRect(3, 1, 10, 14);
-  g.fillStyle(COLORS.bandana);
-  g.fillRect(3, 1, 10, 3);
-  g.fillStyle(COLORS.ink);
-  g.fillRect(5, 5, 2, 2);
-  g.fillRect(9, 5, 2, 2);
   // Just under the player, so the player stays on top when they overlap.
-  return scene.add.container(0, 0, [g]).setDepth(9);
+  return createCritter(scene, 'raccoon').setDepth(9);
 }
 
 /** Height of a tree's trunk at `size` 1; its base (y + this * size) is where it stands. */
