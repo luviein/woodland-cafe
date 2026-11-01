@@ -1,14 +1,39 @@
 import Phaser from 'phaser';
+import { LAYER_LEFT, LAYER_MIDDLE, LAYER_RIGHT } from '../art/sprites/kitchen';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
+import { artKey, layerArt } from './art';
 import { COLORS, TEXT } from './theme';
 
 const LAYER_WIDTH = 112;
 const LAYER_HEIGHT = 12;
+/** Layer art (art/sprites/kitchen.ts): 6px tall, with 4px-wide ends. */
+const LAYER_ART_HEIGHT = 6;
+const LAYER_END = 4;
 
-/** How a layer looks: toasted bread is browner; fillings look the same. */
-function layerColor(id: IngredientId, toasted: boolean): number {
-  const color = INGREDIENTS[id].color;
-  return toasted && id === 'bread' ? Phaser.Display.Color.ValueToColor(color).darken(25).color : color;
+/**
+ * One dish layer, `width` wide, centred on (x, y), at a whole-number
+ * `scale`. Built from three pieces (left end, a middle repeated to fit,
+ * right end) so the same small sprite works at any width: a TileSprite
+ * repeats a texture across its size instead of stretching it.
+ */
+export function addLayerArt(
+  scene: Phaser.Scene,
+  id: IngredientId,
+  toasted: boolean,
+  x: number,
+  y: number,
+  width: number,
+  scale: number,
+): Phaser.GameObjects.Container {
+  const key = artKey(layerArt(id, toasted));
+  const half = width / 2;
+  const left = scene.add.image(-half, 0, key, LAYER_LEFT).setOrigin(0, 0.5).setScale(scale);
+  const middle = scene.add
+    .tileSprite(-half + LAYER_END * scale, 0, width / scale - 2 * LAYER_END, LAYER_ART_HEIGHT, key, LAYER_MIDDLE)
+    .setOrigin(0, 0.5)
+    .setScale(scale);
+  const right = scene.add.image(half, 0, key, LAYER_RIGHT).setOrigin(1, 0.5).setScale(scale);
+  return scene.add.container(x, y, [left, middle, right]);
 }
 
 /**
@@ -27,12 +52,10 @@ export function drawLayerStack(
   // Simple approach: throw away the old layers and redraw. A dish has at
   // most a handful of layers, so this is cheap and avoids syncing bugs.
   into.removeAll(true);
+  // The art is drawn at whatever whole-number scale makes it `height` tall.
+  const scale = Math.max(1, Math.round(height / LAYER_ART_HEIGHT));
   dish.forEach((id, i) => {
-    into.add(
-      into.scene.add
-        .rectangle(0, bottomY - i * height, width, height, layerColor(id, toasted))
-        .setStrokeStyle(2, COLORS.ink),
-    );
+    into.add(addLayerArt(into.scene, id, toasted, 0, bottomY - i * height, width, scale));
   });
 }
 

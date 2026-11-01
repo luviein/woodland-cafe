@@ -3,6 +3,7 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS } from '../data/ingredients';
 import { RECIPES, type RecipeId } from '../data/recipes';
 import { Button } from './Button';
+import { addLayerArt } from './DishView';
 import { COLORS, TEXT } from './theme';
 
 const PANEL_WIDTH = 576;
@@ -89,14 +90,10 @@ export class RecipeBook extends Phaser.GameObjects.Container {
     const recipe = RECIPES[id];
     const row = this.scene.add.container(x, y);
 
-    // Icon: one 5px-tall bar per layer, drawn upward from the row's bottom.
+    // Icon: the dish's layers at 1x (6px each), stacked upward from the row's bottom.
     const iconBottom = 30;
     recipe.layers.forEach((ing, i) => {
-      row.add(
-        this.scene.add
-          .rectangle(0, iconBottom - i * 6, 28, 5, INGREDIENTS[ing].color)
-          .setOrigin(0, 1),
-      );
+      row.add(addLayerArt(this.scene, ing, false, 14, iconBottom - 3 - i * 6, 28, 1));
     });
 
     row.add(this.scene.add.text(38, 2, recipe.name, { ...TEXT.body, fontStyle: 'bold' }));

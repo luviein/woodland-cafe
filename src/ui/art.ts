@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { framePixels, spriteSize } from '../art/pixelSprite';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
+import type { IngredientId } from '../data/ingredients';
 import { css } from './theme';
 
 // Turning sprite art into Phaser textures, and putting it on screen. The
@@ -29,6 +30,11 @@ export function buildArtTexture(textures: Phaser.Textures.TextureManager, name: 
     texture.add(frame, 0, frame * width, 0, width, height);
   });
   texture.refresh(); // upload the drawn pixels to the GPU
+}
+
+/** A dish layer's art. Toasting only changes how bread looks (GAME_DESIGN.md §3.4). */
+export function layerArt(id: IngredientId, toasted: boolean): ArtName {
+  return toasted && id === 'bread' ? 'breadToastedLayer' : `${id}Layer`;
 }
 
 /** Adds a sprite's art, centred on (x, y). */

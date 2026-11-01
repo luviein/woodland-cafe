@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { IngredientId } from '../data/ingredients';
+import { addArt } from './art';
 import { drawLayerStack } from './DishView';
 import { COLORS } from './theme';
 
@@ -12,7 +13,7 @@ const TOP_LAYER_HEIGHT = 6;
 const TOP_ROOM = 6 * TOP_LAYER_HEIGHT + 10;
 
 /**
- * The Toaster on the prep counter (placeholder shapes until real art).
+ * The Toaster on the prep counter: its 28x18 sprite at 2x.
  * Only draws: the prep scene decides when it toasts, shakes and pops, from
  * logic/toasting.ts. (x, y) is the centre of the toaster's body.
  */
@@ -28,14 +29,7 @@ export class ToasterView extends Phaser.GameObjects.Container {
     // The dish on top is added first, so it's drawn behind the body: when it
     // pops up from inside, the body hides its bottom like real toast.
     this.top = scene.add.container(0, 0);
-    this.shell = scene.add.container(0, 0, [
-      scene.add.rectangle(0, 0, WIDTH, HEIGHT, COLORS.toaster).setStrokeStyle(2, COLORS.ink),
-      scene.add.rectangle(0, HEIGHT / 2 - 4, WIDTH - 4, 6, COLORS.toasterShade),
-      // Two slots on top, and the lever on the side.
-      scene.add.rectangle(-12, -HEIGHT / 2 + 2, 18, 4, COLORS.ink),
-      scene.add.rectangle(12, -HEIGHT / 2 + 2, 18, 4, COLORS.ink),
-      scene.add.rectangle(-WIDTH / 2 - 3, -4, 6, 4, COLORS.ink),
-    ]);
+    this.shell = scene.add.container(0, 0, [addArt(scene, 0, 0, 'toaster').setScale(2)]);
     this.progress = scene.add.graphics();
     this.add([this.top, this.shell, this.progress]);
     scene.add.existing(this);
@@ -59,7 +53,7 @@ export class ToasterView extends Phaser.GameObjects.Container {
     this.shake = this.scene.tweens.add({ targets: this.shell, x: 1, duration: 50, yoyo: true, repeat: -1 });
   }
 
-  /** 0..1, as a thin bar across the front. */
+  /** 0..1, as a thin bar across the grey band at the bottom of the front. */
   setProgress(fraction: number): void {
     this.progress.clear();
     if (fraction <= 0) return;

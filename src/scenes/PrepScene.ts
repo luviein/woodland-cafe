@@ -416,9 +416,10 @@ export class PrepScene extends Phaser.Scene {
     getGameState(this).ingredients.forEach((id, i) => {
       const x = startX + i * spacing;
       // The number on the bin is its keyboard shortcut.
-      const bin = new Button(this, x, y, size, size, String(i + 1), INGREDIENTS[id].color, () =>
+      // A cream bin with the ingredient's picture at 2x (32px in the 48px bin).
+      const bin = new Button(this, x, y, size, size, String(i + 1), COLORS.paper, () =>
         this.addIngredient(id),
-      );
+      ).setIcon(addArt(this, 0, 0, id).setScale(2));
       this.binButtons.push(bin);
       this.binIds.push(id);
       this.add

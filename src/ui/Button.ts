@@ -13,6 +13,9 @@ export class Button extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly label: Phaser.GameObjects.Text;
   private readonly color: number;
+  /** Where the label sits when not pressed (pressing moves it down from here). */
+  private labelY = 0;
+  private icon: Phaser.GameObjects.Image | null = null;
   private pressed = false;
   private enabled = true;
 
@@ -68,9 +71,27 @@ export class Button extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /**
+   * Puts a picture in the middle (e.g. an ingredient on its bin). It presses
+   * and fades with the button, and the label becomes a small number in the
+   * top-left corner, so the picture can be seen.
+   */
+  setIcon(icon: Phaser.GameObjects.Image): this {
+    this.icon = icon.setPosition(0, 0);
+    this.addAt(icon, 1); // above the background, under the label
+    this.labelY = -this.height / 2 + 2;
+    this.label
+      .setOrigin(0, 0)
+      .setPosition(-this.width / 2 + 4, this.labelY)
+      .setFontSize(12)
+      .setColor(TEXT.body.color);
+    return this;
+  }
+
   setEnabled(enabled: boolean): this {
     this.enabled = enabled;
     this.bg.setFillStyle(enabled ? this.color : COLORS.disabled);
+    this.icon?.setAlpha(enabled ? 1 : 0.4);
     if (!enabled) this.setPressed(false);
     return this;
   }
@@ -82,7 +103,8 @@ export class Button extends Phaser.GameObjects.Container {
     // fraction would blur pixel art, while whole-pixel moves stay crisp.
     const offset = pressed ? 2 : 0;
     this.bg.y = offset;
-    this.label.y = offset;
+    this.label.y = this.labelY + offset;
+    if (this.icon) this.icon.y = offset;
     const base = this.enabled ? this.color : COLORS.disabled;
     this.bg.setFillStyle(pressed ? Phaser.Display.Color.ValueToColor(base).darken(15).color : base);
   }

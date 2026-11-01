@@ -8,8 +8,6 @@
 
 export interface IngredientDef {
   name: string;
-  /** Placeholder colour until real art (milestone 10). */
-  color: number;
   /** Owned from the very first day. */
   starter: boolean;
   /**
@@ -28,12 +26,13 @@ export interface IngredientDef {
 }
 
 export const INGREDIENTS = {
-  bread: { name: 'Bread', color: 0xd9a25f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
-  mushroom: { name: 'Mushroom', color: 0xa68a7b, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
-  jam: { name: 'Jam', color: 0xb5384f, starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
-  chilli: { name: 'Chilli', color: 0xe0502f, starter: false, unlockPrice: 15, unitPrice: 2, startingStock: 0 },
-  tuna: { name: 'Tuna', color: 0x7f9bb3, starter: false, unlockPrice: 20, unitPrice: 3, startingStock: 0 },
-  tomato: { name: 'Tomato', color: 0xd94a3a, starter: false, unlockPrice: 10, unitPrice: 2, startingStock: 0 },
+  // Each also needs its art: a bin icon and a dish layer (art/sprites/kitchen.ts).
+  bread: { name: 'Bread', starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
+  mushroom: { name: 'Mushroom', starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
+  jam: { name: 'Jam', starter: true, unlockPrice: null, unitPrice: 1, startingStock: 30 },
+  chilli: { name: 'Chilli', starter: false, unlockPrice: 15, unitPrice: 2, startingStock: 0 },
+  tuna: { name: 'Tuna', starter: false, unlockPrice: 20, unitPrice: 3, startingStock: 0 },
+  tomato: { name: 'Tomato', starter: false, unlockPrice: 10, unitPrice: 2, startingStock: 0 },
 } satisfies Record<string, IngredientDef>;
 
 export type IngredientId = keyof typeof INGREDIENTS;

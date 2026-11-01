@@ -7,9 +7,9 @@ import { PALETTE } from '../art/palette';
 // area gets its art.
 
 export const COLORS = {
-  wall: 0x4a3a33,
-  counter: 0xa0704a,
-  counterEdge: 0x7a5236,
+  wall: PALETTE.brown,
+  counter: PALETTE.wood,
+  counterEdge: PALETTE.darkBrown,
   paper: PALETTE.cream,
   paperEdge: PALETTE.sand,
   ink: PALETTE.darkBrown,
@@ -43,9 +43,7 @@ export const COLORS = {
   mushroomCap: 0xa0503a,
   bush: 0x4f8a3a,
   berry: 0xc0304a,
-  // Prep station equipment
-  toaster: 0xc9cfd2,
-  toasterShade: 0x8f999e,
+  // Prep station equipment: the Toaster is pixel art (art/sprites/kitchen.ts).
 } as const;
 
 /**

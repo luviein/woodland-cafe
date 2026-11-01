@@ -1,6 +1,7 @@
 import type { PixelSprite } from './pixelSprite';
 import { CHAIR, COUNTER, DOOR, FLOOR, MESS, ORDER_RUG, PAW_PRINT, PLATE, TABLE, WALL } from './sprites/cafe';
 import { FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
+import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { LEAF } from './sprites/outdoor';
 
 // Every code-drawn sprite, by name. The name is also the file name a
@@ -26,6 +27,16 @@ export const SPRITE_ART = {
   rabbit: RABBIT,
   squirrel: SQUIRREL,
   mouse: MOUSE,
+  // Prep station: bin icons are named after their ingredient
+  ...INGREDIENT_ICONS,
+  breadLayer: INGREDIENT_LAYERS.bread,
+  breadToastedLayer: TOASTED_BREAD_LAYER,
+  mushroomLayer: INGREDIENT_LAYERS.mushroom,
+  jamLayer: INGREDIENT_LAYERS.jam,
+  chilliLayer: INGREDIENT_LAYERS.chilli,
+  tunaLayer: INGREDIENT_LAYERS.tuna,
+  tomatoLayer: INGREDIENT_LAYERS.tomato,
+  toaster: TOASTER,
   // Outdoors
   leaf: LEAF,
 } satisfies Record<string, PixelSprite>;
