@@ -9,6 +9,7 @@ import {
   moveProblem,
   pieceAt,
   placePiece,
+  strandedChairs,
   placeProblem,
   removePiece,
   splitLayout,
@@ -169,12 +170,27 @@ describe('dragging furniture', () => {
     expect(after.stored).toEqual(f.stored);
   });
 
-  it('a table carries its chairs, even onto where its own chair was', () => {
+  it('a table moves on its own; chairs still beside it stay', () => {
     const f = build([['table', 2, 3], ['chair', 1, 3]]);
-    expect(movePiece(f, at(2, 3), at(3, 3), ROOM).placed).toEqual([
-      { kind: 'table', x: 3, y: 3 },
-      { kind: 'chair', x: 2, y: 3 },
+    const after = movePiece(f, at(2, 3), at(1, 4), ROOM);
+    expect(after.placed).toEqual([
+      { kind: 'table', x: 1, y: 4 },
+      { kind: 'chair', x: 1, y: 3 },
     ]);
+    expect(after.stored).toEqual(f.stored);
+  });
+
+  it('chairs a table leaves with no table go into storage', () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3], ['chair', 3, 3]]);
+    expect(strandedChairs(f, at(2, 3), at(4, 4))).toBe(2);
+    const after = movePiece(f, at(2, 3), at(4, 4), ROOM);
+    expect(after.placed).toEqual([{ kind: 'table', x: 4, y: 4 }]);
+    expect(after.stored).toEqual({ table: 1, chair: f.stored.chair + 2 });
+  });
+
+  it("a table can't land on its own chair", () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3]]);
+    expect(moveProblem(f, at(2, 3), at(1, 3), ROOM)).toBe('Something is already there');
   });
 
   it('dropping it where it was changes nothing', () => {
@@ -194,9 +210,8 @@ describe('dragging furniture', () => {
     expect(() => movePiece(f, at(1, 3), at(0, 3), ROOM)).toThrow(/Keep the door/);
   });
 
-  it("a table's chairs must fit too", () => {
-    // The table could go to (1, 3), but its chair at (1, 3) would land in the wall.
-    const f = build([['table', 2, 3], ['chair', 1, 3]]);
-    expect(moveProblem(f, at(2, 3), at(1, 3), ROOM)).toBe('Keep the door, counter and queue clear');
+  it('a moved chair still needs exactly one table', () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3], ['table', 4, 3]]);
+    expect(moveProblem(f, at(1, 3), at(3, 3), ROOM)).toBe('A chair can only be at one table');
   });
 });

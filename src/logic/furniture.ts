@@ -130,8 +130,8 @@ function arrangementProblem(placed: readonly PlacedPiece[], room: readonly strin
 }
 
 /**
- * The pieces that go together with the one at `at`: just it, or for a
- * table, it plus the chairs at it (they're put away and moved together).
+ * The pieces that are put away together with the one at `at`: just it, or
+ * for a table, it plus the chairs at it (a chair can't stand alone).
  */
 export function pieceGroup(furniture: Furniture, at: Point): PlacedPiece[] {
   const piece = pieceAt(furniture, at);
@@ -142,9 +142,28 @@ export function pieceGroup(furniture: Furniture, at: Point): PlacedPiece[] {
 }
 
 /**
- * Why the piece at `from` can't be dragged to `to` (its group moving by the
- * same step, GAME_DESIGN.md §5.7), or null if it can. Judged with the group
- * lifted out, so a table can shift onto where its own chair was.
+ * The cafe with just the piece at `from` moved to `to` (unchecked), and the
+ * chairs that leaves with no table next to them: moving a table away from
+ * its chairs strands them, and they go to storage (GAME_DESIGN.md §5.7).
+ */
+function afterMove(
+  furniture: Furniture,
+  from: Point,
+  to: Point,
+): { placed: PlacedPiece[]; stranded: PlacedPiece[] } | null {
+  const piece = pieceAt(furniture, from);
+  if (!piece) return null;
+  // Same order as before, so a move changes only the position.
+  const placed = furniture.placed.map((p) => (p === piece ? { ...p, x: to.x, y: to.y } : p));
+  const stranded =
+    piece.kind === 'table' ? placed.filter((p) => p.kind === 'chair' && tablesTouching(placed, p) === 0) : [];
+  return { placed: placed.filter((p) => !stranded.includes(p)), stranded };
+}
+
+/**
+ * Why the piece at `from` can't be moved to `to`, or null if it can. Only
+ * that piece moves, even a table; chairs it strands don't count against it
+ * (they're put away). The same rules as placing otherwise.
  */
 export function moveProblem(
   furniture: Furniture,
@@ -152,19 +171,24 @@ export function moveProblem(
   to: Point,
   room: readonly string[] = CAFE_ROOM,
 ): string | null {
-  const group = pieceGroup(furniture, from);
-  if (group.length === 0) return 'Nothing there to move';
+  const after = afterMove(furniture, from, to);
+  if (!after) return 'Nothing there to move';
   if (samePoint(from, to)) return null;
-  const staying = furniture.placed.filter((p) => !group.includes(p));
-  const moved = group.map((p) => ({ ...p, x: p.x + to.x - from.x, y: p.y + to.y - from.y }));
-  for (const p of moved) {
-    if (staying.some((q) => samePoint(q, p))) return 'Something is already there';
-    if (room[p.y]?.[p.x] !== '.') return 'Keep the door, counter and queue clear';
-  }
-  return arrangementProblem([...staying, ...moved], room);
+  const other = pieceAt(furniture, to);
+  if (other) return 'Something is already there';
+  if (room[to.y]?.[to.x] !== '.') return 'Keep the door, counter and queue clear';
+  return arrangementProblem(after.placed, room);
 }
 
-/** Drags the piece at `from` (and a table's chairs) to `to`. Throws if moveProblem() says no: check first. */
+/** How many chairs moving the piece at `from` to `to` would put away. */
+export function strandedChairs(furniture: Furniture, from: Point, to: Point): number {
+  return afterMove(furniture, from, to)?.stranded.length ?? 0;
+}
+
+/**
+ * Moves the piece at `from` to `to`; chairs a table leaves alone go into
+ * storage. Throws if moveProblem() says no: check first.
+ */
 export function movePiece(
   furniture: Furniture,
   from: Point,
@@ -173,12 +197,8 @@ export function movePiece(
 ): Furniture {
   const problem = moveProblem(furniture, from, to, room);
   if (problem) throw new Error(`movePiece: ${problem}`);
-  const group = pieceGroup(furniture, from);
-  return {
-    ...furniture,
-    // Same order as before, so a move changes only the positions.
-    placed: furniture.placed.map((p) => (group.includes(p) ? { ...p, x: p.x + to.x - from.x, y: p.y + to.y - from.y } : p)),
-  };
+  const { placed, stranded } = afterMove(furniture, from, to)!;
+  return { placed, stored: { ...furniture.stored, chair: furniture.stored.chair + stranded.length } };
 }
 
 /** Moves one `kind` from storage to `at`. Throws if placeProblem() says no: check first. */

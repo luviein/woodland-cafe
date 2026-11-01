@@ -6,7 +6,7 @@ import {
   movePiece,
   moveProblem,
   pieceAt,
-  pieceGroup,
+  strandedChairs,
   placePiece,
   placeProblem,
   removePiece,
@@ -27,11 +27,11 @@ const DRAG_THRESHOLD = 4;
 /** Each furniture kind's sprite (art/sprites/cafe.ts). */
 const FURNITURE_ART = { table: 'table', chair: 'chair' } as const satisfies Record<FurnitureKind, string>;
 
-/** A press that may become a drag: of a placed piece (with a table's chairs), or one from storage (`from` null). */
+/** A press that may become a drag: of a placed piece, or one from storage (`from` null). */
 interface Drag {
   kind: FurnitureKind;
   from: Point | null;
-  /** The placed pieces that move together (empty when dragging from storage). */
+  /** The placed piece being moved, as a list for the ghost (empty when dragging from storage). */
   pieces: readonly PlacedPiece[];
   /** Where the press started, in screen pixels. */
   start: Phaser.Math.Vector2;
@@ -113,10 +113,7 @@ export class DecorateScene extends Phaser.Scene {
         if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
         const piece = pieceAt(this.furniture(), tile);
-        if (piece) {
-          const pieces = pieceGroup(this.furniture(), tile);
-          this.drag = { kind: piece.kind, from: tile, pieces, start: pointer.position.clone(), ghost: null };
-        }
+        if (piece) this.drag = { kind: piece.kind, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null };
       },
     );
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.onPointerMove(pointer));
@@ -207,19 +204,20 @@ export class DecorateScene extends Phaser.Scene {
     this.closeMenu();
     const tileX = this.origin.x + tile.x * TILE_SIZE + TILE_SIZE / 2;
     const tileTop = this.origin.y + tile.y * TILE_SIZE;
-    const y = tile.y <= 1 ? tileTop + TILE_SIZE + 26 : tileTop - 26;
-    const x = Phaser.Math.Clamp(tileX, 50, BASE_WIDTH - 50);
+    const y = tile.y <= 1 ? tileTop + TILE_SIZE + 16 : tileTop - 16;
+    const x = Phaser.Math.Clamp(tileX, 32, BASE_WIDTH - 32);
     // Interactive only so a tap on the panel between the buttons doesn't count as "elsewhere".
-    const panel = this.add.rectangle(x, y, 84, 44, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
+    const panel = this.add.rectangle(x, y, 56, 30, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
     // An outline around the tapped piece, so it's clear which one the menu is for.
     const outline = this.add
       .rectangle(tileX, tileTop + TILE_SIZE / 2, TILE_SIZE + 2, TILE_SIZE + 2)
       .setStrokeStyle(2, COLORS.paper);
-    const move = new Button(this, x - 19, y, 34, 34, '', COLORS.book, () => this.startCarrying(tile)).setIcon(
-      addArt(this, 0, 0, 'moveIcon').setScale(2),
+    // Small buttons with the 13x13 icons at 1x: about a tile and a half each.
+    const move = new Button(this, x - 13, y, 22, 22, '', COLORS.book, () => this.startCarrying(tile)).setIcon(
+      addArt(this, 0, 0, 'moveIcon'),
     );
-    const store = new Button(this, x + 19, y, 34, 34, '', COLORS.reset, () => this.putAway(tile)).setIcon(
-      addArt(this, 0, 0, 'storeIcon').setScale(2),
+    const store = new Button(this, x + 13, y, 22, 22, '', COLORS.reset, () => this.putAway(tile)).setIcon(
+      addArt(this, 0, 0, 'storeIcon'),
     );
     const parts = [panel, outline, move, store];
     for (const o of parts) o.setDepth(60);
@@ -231,14 +229,13 @@ export class DecorateScene extends Phaser.Scene {
     this.menu = null;
   }
 
-  /** Menu: Move. The piece (a table with its chairs) lifts and follows the pointer. */
+  /** Menu: Move. Just that piece lifts and follows the pointer. */
   private startCarrying(tile: Point): void {
     this.closeMenu();
     const piece = pieceAt(this.furniture(), tile);
     if (!piece) return;
-    const pieces = pieceGroup(this.furniture(), tile);
     // `start` is only used to tell a press from a drag, which doesn't apply here.
-    const carrying: Drag = { kind: piece.kind, from: tile, pieces, start: new Phaser.Math.Vector2(), ghost: null };
+    const carrying: Drag = { kind: piece.kind, from: tile, pieces: [piece], start: new Phaser.Math.Vector2(), ghost: null };
     this.lift(carrying);
     this.moveGhost(carrying, tile);
     this.carrying = carrying;
@@ -258,7 +255,7 @@ export class DecorateScene extends Phaser.Scene {
     }
     carrying.ghost?.destroy();
     this.carrying = null;
-    this.setFurniture(movePiece(this.furniture(), carrying.from, tile));
+    this.applyMove(carrying.from, tile);
   }
 
   /** Esc while carrying: everything goes back where it was. */
@@ -308,10 +305,17 @@ export class DecorateScene extends Phaser.Scene {
       this.showMessage(tile, problem);
       this.refresh();
     } else if (drag.from) {
-      this.setFurniture(movePiece(this.furniture(), drag.from, tile));
+      this.applyMove(drag.from, tile);
     } else {
       this.setFurniture(placePiece(this.furniture(), drag.kind, tile));
     }
+  }
+
+  /** Moves a piece (already checked), saying so if a table left chairs behind for storage. */
+  private applyMove(from: Point, to: Point): void {
+    const stranded = strandedChairs(this.furniture(), from, to);
+    this.setFurniture(movePiece(this.furniture(), from, to));
+    if (stranded > 0) this.showMessage(to, `${stranded} chair${stranded > 1 ? 's' : ''} put away`);
   }
 
   private furniture(): Furniture {
