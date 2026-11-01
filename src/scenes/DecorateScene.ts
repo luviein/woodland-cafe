@@ -17,7 +17,10 @@ import { addArt, artKey } from '../ui/art';
 import { Button } from '../ui/Button';
 import { addCafeCanvas, cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
 import { COLORS, TEXT, css } from '../ui/theme';
-import { getGameState, setGameState } from './gameStore';
+import { getGameState, setGameState, tutorialEvent } from './gameStore';
+import { seeTip } from '../logic/gameState';
+import { StoryBox } from '../ui/StoryBox';
+import { TIPS } from '../data/tutorial';
 import type { WorldMapRequest } from './WorldMapScene';
 
 /** How far (px) a press must move to count as a drag rather than a tap. */
@@ -145,6 +148,36 @@ export class DecorateScene extends Phaser.Scene {
       if (!this.carrying) this.refresh();
     });
     this.refresh();
+    this.showTips();
+  }
+
+  /**
+   * Grandma's Decorate tips, the first time only (GAME_DESIGN.md §5.9):
+   * along the bottom, clear of Done, pointing at the tray and then a table.
+   */
+  private showTips(): void {
+    if (getGameState(this).tipsSeen.includes('decorate')) return;
+    const firstTable = this.furniture().placed.find((p) => p.kind === 'table');
+    const guide = new StoryBox(this, {
+      rect: { x: 36, y: 294, width: 480, height: 62 },
+      step: TIPS.decorate,
+      arrow: (line) => {
+        const tray = this.trayButtons.get('table');
+        if (line === 1 && tray) return { x: tray.x, y: tray.y - 18 };
+        if (line === 2 && firstTable) {
+          return { x: this.origin.x + firstTable.x * TILE_SIZE + TILE_SIZE / 2, y: this.origin.y + firstTable.y * TILE_SIZE };
+        }
+        return null;
+      },
+      onFinished: () => {
+        setGameState(this, seeTip(getGameState(this), 'decorate'));
+        guide.destroy();
+      },
+      onSkip: () => {
+        tutorialEvent(this, 'skip');
+        guide.destroy();
+      },
+    });
   }
 
   /** The cafe tile under the pointer (it may be outside the grid). */

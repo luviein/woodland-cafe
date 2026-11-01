@@ -72,5 +72,24 @@ export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
   },
 };
 
+/**
+ * One-off tips: Grandma explains a part of the game the first time the
+ * player opens it, then never again (GAME_DESIGN.md §5.9).
+ */
+export const TIP_IDS = ['decorate'] as const;
+export type TipId = (typeof TIP_IDS)[number];
+
+export const TIPS: Record<TipId, TutorialStepDef> = {
+  decorate: {
+    waitsFor: 'next',
+    lines: [
+      "Decorating! Arrange the cafe however you like, dear. Moving things around is free.",
+      'Storage holds pieces you bought or put away. Tap one, then tap the floor, or drag it straight in.',
+      'Tap a piece in the cafe for its menu: Move it somewhere else, or Put it away. Or just drag it.',
+      "A chair can only be at one table, and the way to the door must stay clear. If a spot won't do, I'll say why.",
+    ],
+  },
+};
+
 /** What the guided first customer always orders: simple, with starter ingredients only. */
 export const TUTORIAL_RECIPE: RecipeId = 'jamBread';

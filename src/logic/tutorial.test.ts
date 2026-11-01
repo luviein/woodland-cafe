@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RECIPES } from '../data/recipes';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
 import { TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
-import { createNewGame } from './gameState';
+import { createNewGame, seeTip, skipTutorial } from './gameState';
 import {
   advanceTutorial,
   floorGuide,
@@ -54,6 +54,20 @@ describe('the tutorial', () => {
 
   it('the guided order can be made from the starter ingredients', () => {
     expect(RECIPES[TUTORIAL_RECIPE].layers.every((id) => STARTER_INGREDIENTS.includes(id))).toBe(true);
+  });
+});
+
+describe('one-off tips', () => {
+  it('are unseen on a new game, and once seen stay seen', () => {
+    const fresh = createNewGame();
+    expect(fresh.tipsSeen).toEqual([]);
+    const seen = seeTip(fresh, 'decorate');
+    expect(seen.tipsSeen).toEqual(['decorate']);
+    expect(seeTip(seen, 'decorate')).toBe(seen);
+  });
+
+  it('are all skipped along with the tutorial', () => {
+    expect(skipTutorial(createNewGame())).toMatchObject({ tutorial: 'done', tipsSeen: ['decorate'] });
   });
 });
 

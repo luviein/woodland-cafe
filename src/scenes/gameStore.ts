@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { createNewGame, type GameState } from '../logic/gameState';
+import { createNewGame, skipTutorial, type GameState } from '../logic/gameState';
 import { loadGame, saveGame, type LoadResult } from '../logic/save';
 import { advanceTutorial, type TutorialEvent, type TutorialState } from '../logic/tutorial';
 import { browserSaveSlot, type SaveSlot } from '../storage/saveSlot';
@@ -88,6 +88,10 @@ type HasRegistry = { registry: Phaser.Data.DataManager };
  */
 export function tutorialEvent(owner: HasRegistry, event: TutorialEvent): TutorialState {
   const state = getGameState(owner);
+  if (event === 'skip') {
+    setGameState(owner, skipTutorial(state));
+    return 'done';
+  }
   const tutorial = advanceTutorial(state.tutorial, event);
   if (tutorial !== state.tutorial) setGameState(owner, { ...state, tutorial });
   return tutorial;

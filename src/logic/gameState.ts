@@ -5,6 +5,7 @@ import type { EmployeeRole } from '../data/employees';
 import { startingFurniture, type Furniture } from './furniture';
 import { startingStock, type Stock } from './stock';
 import type { TutorialState } from './tutorial';
+import { TIP_IDS, type TipId } from '../data/tutorial';
 
 /**
  * Everything about the player's progress, in one place (GAME_DESIGN.md §6).
@@ -39,6 +40,8 @@ export interface GameState {
   employees: readonly EmployeeRole[];
   /** Where the player is in Grandma Badger's tutorial (tutorial.ts); 'done' once over. */
   tutorial: TutorialState;
+  /** One-off tips already shown (or skipped), e.g. Decorate's (data/tutorial.ts). */
+  tipsSeen: readonly TipId[];
 }
 
 export function createNewGame(): GameState {
@@ -53,7 +56,18 @@ export function createNewGame(): GameState {
     furniture: startingFurniture(),
     employees: [],
     tutorial: 'intro',
+    tipsSeen: [],
   };
+}
+
+/** Marks a one-off tip as shown, so it never shows again. */
+export function seeTip(state: GameState, tip: TipId): GameState {
+  return state.tipsSeen.includes(tip) ? state : { ...state, tipsSeen: TIP_IDS.filter((t) => t === tip || state.tipsSeen.includes(t)) };
+}
+
+/** Skip tutorial: the tutorial is over, and the one-off tips are skipped too (GAME_DESIGN.md §5.9). */
+export function skipTutorial(state: GameState): GameState {
+  return { ...state, tutorial: 'done', tipsSeen: [...TIP_IDS] };
 }
 
 /**

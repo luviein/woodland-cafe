@@ -18,6 +18,7 @@ describe('createNewGame', () => {
       furniture: startingFurniture(),
       employees: [],
       tutorial: 'intro',
+      tipsSeen: [],
     });
   });
 

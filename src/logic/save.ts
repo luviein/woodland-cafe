@@ -5,6 +5,7 @@ import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
 import { CAFE_ROOM, buildLayout, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
+import { TIP_IDS, type TipId } from '../data/tutorial';
 
 // Turning the game state into text for the save slot and back
 // (GAME_DESIGN.md §6.1). Saved text is untrusted: it may come from an older
@@ -83,6 +84,7 @@ function readState(raw: Record<string, unknown>): GameState {
     // tutorial existed (GAME_DESIGN.md §5.9). A step the game no longer
     // has also counts as done, like other unknown ids being dropped.
     tutorial: isTutorialState(raw.tutorial) ? raw.tutorial : 'done',
+    tipsSeen: idList<TipId>(raw, 'tipsSeen', fresh.tipsSeen, TIP_IDS),
   };
 }
 
