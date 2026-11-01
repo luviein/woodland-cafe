@@ -126,18 +126,6 @@ function arrangementProblem(placed: readonly PlacedPiece[], room: readonly strin
   return null;
 }
 
-/**
- * The pieces that are put away together with the one at `at`: just it, or
- * for a table, it plus the chairs at it (a chair can't stand alone).
- */
-export function pieceGroup(furniture: Furniture, at: Point): PlacedPiece[] {
-  const piece = pieceAt(furniture, at);
-  if (!piece) return [];
-  return furniture.placed.filter(
-    (p) => p === piece || (piece.kind === 'table' && p.kind === 'chair' && touching(p, piece)),
-  );
-}
-
 /** `placed` with the piece at `from` moved to `to`, in the same order (so only its position changes). */
 function withMoved(placed: readonly PlacedPiece[], from: Point, to: Point): PlacedPiece[] {
   return placed.map((p) => (samePoint(p, from) ? { ...p, x: to.x, y: to.y } : p));
@@ -189,15 +177,17 @@ export function placePiece(
 }
 
 /**
- * Puts the piece at `at` back into storage (free). A table takes its chairs
- * with it: a chair always needs its table. Nothing there: unchanged.
+ * Puts the piece at `at` back into storage (free). Only that piece, even a
+ * table: its chairs stay where they are (a chair with no table is allowed,
+ * just unused), the same as moving it. Nothing there: unchanged.
  */
 export function removePiece(furniture: Furniture, at: Point): Furniture {
-  const removed = pieceGroup(furniture, at);
-  if (removed.length === 0) return furniture;
-  const stored = { ...furniture.stored };
-  for (const p of removed) stored[p.kind] += 1;
-  return { placed: furniture.placed.filter((p) => !removed.includes(p)), stored };
+  const piece = pieceAt(furniture, at);
+  if (!piece) return furniture;
+  return {
+    placed: furniture.placed.filter((p) => p !== piece),
+    stored: { ...furniture.stored, [piece.kind]: furniture.stored[piece.kind] + 1 },
+  };
 }
 
 /** Adds bought pieces to storage. */

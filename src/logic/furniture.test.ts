@@ -136,14 +136,14 @@ describe('removing furniture', () => {
     expect(f.stored).toEqual({ table: 1, chair: 4 });
   });
 
-  it('a table takes its chairs with it, but not chairs at other tables', () => {
-    const f = build([['table', 2, 3], ['chair', 1, 3], ['chair', 3, 3], ['table', 5, 3], ['chair', 5, 4]]);
+  it('a table goes on its own: its chairs stay where they are', () => {
+    const f = build([['table', 2, 3], ['chair', 1, 3], ['chair', 3, 3]]);
     const after = removePiece(f, { x: 2, y: 3 });
     expect(after.placed).toEqual([
-      { kind: 'table', x: 5, y: 3 },
-      { kind: 'chair', x: 5, y: 4 },
+      { kind: 'chair', x: 1, y: 3 },
+      { kind: 'chair', x: 3, y: 3 },
     ]);
-    expect(after.stored).toEqual({ table: 1, chair: 3 });
+    expect(after.stored).toEqual({ table: 2, chair: f.stored.chair });
   });
 
   it('an empty tile changes nothing', () => {

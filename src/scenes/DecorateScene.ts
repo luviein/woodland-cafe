@@ -310,7 +310,7 @@ export class DecorateScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Menu: Put away. Into storage (a table takes its chairs). */
+  /** Menu: Put away. Just that piece into storage (a table's chairs stay put). */
   private putAway(tile: Point): void {
     this.closeMenu();
     this.setFurniture(removePiece(this.furniture(), tile));
