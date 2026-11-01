@@ -473,6 +473,14 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Display:** a fixed base resolution of **640×360** (40×22.5 tiles; scales by whole numbers to 1280×720, 1920×1080 and 2560×1440) with Phaser's Scale Manager (`FIT` mode, centered), using integer scaling where possible, so the game fits any window size and pixels stay crisp.
 - **Later milestone:** package as a downloadable desktop app (Tauri or Electron).
 
+### 9.1 Text editor (dev only)
+
+- **All the game's words in one place:** Grandma's tutorial lines, tips and notes, and the customers' lines (orders direct and hint, extras, double orders, reactions, giving up) live in JSON files under `src/data/texts/`, not in code. Each of Grandma's lines can name what her arrow points at.
+- **An editor page** at `/editor.html` while `npm run dev` runs: sections on the left, every line in its own text box, lines can be added and removed. **Save** writes the JSON files and the running game picks the new words up.
+- **Fit check:** a line too long for where it's shown (Grandma's box on that screen, a speech bubble) gets a warning before saving.
+- **Safety:** saving is refused if it would break the game: an empty step or topic, a recipe or extra without lines, or a customer hint that no longer points to exactly one recipe. The tests check the same.
+- **Dev only:** the page and its save route exist only under `npm run dev`, never in a built game. Names (recipes, ingredients, stalls) and button labels aren't in the editor (yet).
+
 ---
 
 ## 10. Milestones
