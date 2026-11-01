@@ -426,8 +426,9 @@ The player can leave the counter **before taking an order** to clean messes; the
   | Player (cafe owner) | Hedgehog in an apron |
   | Cleaner | Raccoon with a bandana |
   | Mascot | Frog in a leaf costume |
-  | Customers | Fox, rabbit, squirrel and mouse (picked at random per customer) |
-- **Animations:** a 2-frame walk for everyone who moves, mirrored for left/right; an idle bob while waiting; the Mascot's dance stays a hop and sway.
+  | Customers | Rabbit, mouse and deer (the player's own art), plus fox and squirrel (picked per customer) |
+- **The player's own critter art** (hedgehog, rabbit, mouse, deer, from their sheet): **24x32**, in **four views**: front, back, facing left, facing right. They face the way they walk (back when walking up, front walking down) and **hop** while moving; standing still, they keep facing the way they last went. Converted from the sheet into letter grids by a script (scaled onto the pixel grid, colours snapped to the palette), so they can be touched up like any sprite. The others (raccoon, frog, badger, fox, squirrel) keep their 16x24 code-drawn art until there's new art for them.
+- **Animations:** a 2-frame walk for the 16x24 critters, mirrored for left/right; an idle bob while waiting; the Mascot's dance stays a hop and sway.
 - **Where art comes from:** each sprite is first drawn **in code** as a small text grid (one letter per palette colour). A hand-drawn **PNG** with the same name in `src/art/drawn/` (e.g. `leaf.png`) replaces it: same size, and for animations a horizontal strip of frames that size. So any sprite can be redrawn later, one at a time.
 - **Covered:** cafe floor, walls, door, counter, tables, chairs, messes; the cast; ingredient bins, bread and fillings, dishes, toaster; the island map, the Forest, the Marketplace stalls, leaves, mushroom patches and berry bushes; the title screen.
 
