@@ -1,19 +1,17 @@
 import Phaser from 'phaser';
 import { SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
-import { VIEW } from '../art/sprites/sheetCritters';
+import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
 // so they look the same everywhere.
 
-/** How long each walking step shows, in ms. */
+/** How long each walking step shows, in ms (both kinds of critter). */
 const STEP_MS = 140;
 /** Standing still this long (ms) counts as stopped: back to the standing frame. */
 const STOP_MS = 100;
-/** How high (px) a four-view critter hops on every other step. */
-const HOP = 2;
 
 /** How far above its tile a critter's head reaches (8px for 16x24 art, 16px for 24x32). */
 export function critterHeadroom(art: ArtName): number {
@@ -37,8 +35,8 @@ export function createCritter(scene: Phaser.Scene, art: ArtName): Phaser.GameObj
 /**
  * Each frame: if the container moved, walk and face the way it went. A
  * 16x24 critter plays its two steps, mirrored to face left. A four-view
- * critter (VIEW_ART) shows its front, back, left or right view and hops;
- * standing still, it keeps facing the way it last went.
+ * critter (VIEW_ART) shows its front, back, left or right view, with that
+ * view's two steps; standing still, it keeps facing the way it last went.
  */
 function animateWalking(
   scene: Phaser.Scene,
@@ -50,7 +48,6 @@ function animateWalking(
   let stillFor = STOP_MS;
   let walkedFor = 0;
   let facing: number = VIEW.front;
-  let hopping = false;
   const onUpdate = (_time: number, delta: number) => {
     const dx = container.x - last.x;
     const dy = container.y - last.y;
@@ -71,18 +68,8 @@ function animateWalking(
     } else {
       stillFor += delta;
     }
-    const moving = stillFor < STOP_MS;
-    const step = Math.floor(walkedFor / STEP_MS) % 2;
-    if (!views) {
-      image.setFrame(moving ? 1 + step : 0);
-      return;
-    }
-    image.setFrame(facing);
-    // The hop: up on every other step. Put back on the ground when it stops
-    // (only then, so a waiting critter's bob, setBobbing, isn't fought).
-    if (moving) image.y = TILE_SIZE - (step === 1 ? HOP : 0);
-    else if (hopping) image.y = TILE_SIZE;
-    hopping = moving;
+    const pose = stillFor < STOP_MS ? 1 + (Math.floor(walkedFor / STEP_MS) % 2) : 0;
+    image.setFrame(views ? viewFrame(facing, pose) : pose);
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));

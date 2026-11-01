@@ -83,8 +83,8 @@ export function isArtName(name: string): name is ArtName {
 
 /**
  * Critters drawn in four views (front, back, left, right: VIEW in
- * sheetCritters.ts), 24x32, who face the way they walk and hop. The rest
- * are 16x24 with a standing frame and two steps, facing right.
+ * sheetCritters.ts), each standing plus two steps, who face the way they
+ * walk. The rest are 16x24 with a standing frame and two steps, facing right.
  */
 export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>(['hedgehog', 'rabbit', 'mouse', 'deer']);
 

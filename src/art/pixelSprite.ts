@@ -9,8 +9,24 @@ import { PALETTE, type PaletteName } from './palette';
 /** The letter for a see-through pixel, in every sprite. */
 export const CLEAR = '.';
 
+/** A colour of the player's own art, outside the palette, e.g. '#c9a98b'. */
+export type HexColour = `#${string}`;
+export type LegendColour = PaletteName | HexColour;
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** The colour as a number, or null if it's neither a palette name nor #rrggbb. */
+export function colourValue(colour: string): number | null {
+  if (Object.hasOwn(PALETTE, colour)) return PALETTE[colour as PaletteName];
+  return HEX.test(colour) ? parseInt(colour.slice(1), 16) : null;
+}
+
 export interface PixelSprite {
-  readonly legend: Readonly<Record<string, PaletteName>>;
+  /**
+   * Letter -> colour: a palette name for code-drawn art, or '#rrggbb' for
+   * the player's own art, which keeps its own colours (GAME_DESIGN.md §8.1).
+   */
+  readonly legend: Readonly<Record<string, LegendColour>>;
   /** One grid per animation frame; every frame is the same size. */
   readonly frames: readonly (readonly string[])[];
 }
@@ -33,7 +49,7 @@ export function spriteProblems(sprite: PixelSprite): string[] {
   for (const [letter, color] of Object.entries(sprite.legend)) {
     if (letter.length !== 1) problems.push(`legend key "${letter}" must be one letter`);
     if (letter === CLEAR) problems.push(`"${CLEAR}" is always see-through and can't be in the legend`);
-    if (!(color in PALETTE)) problems.push(`"${letter}" is "${color}", which isn't a palette colour`);
+    if (colourValue(color) === null) problems.push(`"${letter}" is "${color}", which isn't a palette colour or #rrggbb`);
   }
   if (sprite.frames.length === 0) return [...problems, 'no frames'];
 
@@ -59,7 +75,8 @@ export function framePixels(sprite: PixelSprite, frame: number): Pixel[] {
   (sprite.frames[frame] ?? []).forEach((row, y) => {
     [...row].forEach((letter, x) => {
       const name = sprite.legend[letter];
-      if (letter !== CLEAR && name) pixels.push({ x, y, color: PALETTE[name] });
+      const color = letter !== CLEAR && name ? colourValue(name) : null;
+      if (color !== null) pixels.push({ x, y, color });
     });
   });
   return pixels;

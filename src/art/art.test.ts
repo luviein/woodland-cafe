@@ -18,9 +18,10 @@ describe('every code-drawn sprite', () => {
 describe('the cast', () => {
   const cast = ['hedgehog', 'raccoon', 'frog', 'badger', ...CUSTOMER_ART] as const;
 
-  it.each(cast.filter((n) => VIEW_ART.has(n)))('%s is 24x32, in four views', (name) => {
-    expect(spriteSize(SPRITE_ART[name])).toEqual({ width: 24, height: 32 });
-    expect(SPRITE_ART[name].frames).toHaveLength(4);
+  it.each(cast.filter((n) => VIEW_ART.has(n)))('%s has four views, each standing plus two steps', (name) => {
+    // Each keeps its own size from the sheet, but always taller than a tile.
+    expect(spriteSize(SPRITE_ART[name]).height).toBeGreaterThan(24);
+    expect(SPRITE_ART[name].frames).toHaveLength(12);
   });
 
   it.each(cast.filter((n) => !VIEW_ART.has(n)))('%s is 16x24, standing plus two steps', (name) => {
@@ -39,6 +40,12 @@ describe('the cast', () => {
 const tiny: PixelSprite = { legend: { o: 'darkBrown', a: 'orange' }, frames: [['.o', 'ao']] };
 
 describe('pixel sprites', () => {
+  it('take #rrggbb colours too (the player\'s own art)', () => {
+    const own: PixelSprite = { legend: { m: '#c9a98b' }, frames: [['m']] };
+    expect(spriteProblems(own)).toEqual([]);
+    expect(framePixels(own, 0)).toEqual([{ x: 0, y: 0, color: 0xc9a98b }]);
+  });
+
   it('know their frame size', () => {
     expect(spriteSize(tiny)).toEqual({ width: 2, height: 2 });
   });
@@ -57,6 +64,7 @@ describe('pixel sprites', () => {
     ['frames of different sizes', { legend: { o: 'darkBrown' }, frames: [['oo'], ['oo', 'oo']] }, /frame 1 is 2 rows tall/],
     ['a letter missing from the legend', { legend: { o: 'darkBrown' }, frames: [['ox']] }, /"x", which isn't in the legend/],
     ['a colour outside the palette', { legend: { o: 'beige' as 'tan' }, frames: [['o']] }, /isn't a palette colour/],
+    ['a broken #rrggbb', { legend: { o: '#12345' }, frames: [['o']] }, /isn't a palette colour or #rrggbb/],
     ['"." in the legend', { legend: { '.': 'tan' }, frames: [['.']] }, /always see-through/],
   ])('report %s', (_name, sprite, problem) => {
     expect(spriteProblems(sprite).join('\n')).toMatch(problem);

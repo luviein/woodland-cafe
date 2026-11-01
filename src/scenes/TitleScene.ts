@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import type { GameState } from '../logic/gameState';
 import { addArt } from '../ui/art';
-import { VIEW } from '../art/sprites/sheetCritters';
+import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { Button } from '../ui/Button';
 import { addGround, addStanding, addTree } from '../ui/sprites';
 import { COLORS, TEXT, css } from '../ui/theme';
@@ -87,7 +87,7 @@ export class TitleScene extends Phaser.Scene {
     addTree(this, 586, ground + 8, 'oak');
     // The fox faces right (the art's way), toward the hedgehog, who faces it back with its left view.
     addArt(this, 460, ground, 'fox').setOrigin(0.5, 1).setScale(2);
-    addArt(this, 520, ground, 'hedgehog', VIEW.left).setOrigin(0.5, 1).setScale(2);
+    addArt(this, 520, ground, 'hedgehog', viewFrame(VIEW.left)).setOrigin(0.5, 1).setScale(2);
   }
 
   /** True while "Start a new game?" is showing, so Enter doesn't press Continue behind it. */
