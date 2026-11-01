@@ -55,6 +55,16 @@ import type { DaySummaryRequest } from './DaySummaryScene';
 import type { PrepRequest, PrepScene } from './PrepScene';
 import type { WorldMapRequest } from './WorldMapScene';
 
+/**
+ * Depth sorting on the floor: every critter's depth is the y of its feet,
+ * so whoever stands lower on the screen (nearer the viewer) is drawn in
+ * front, like outdoors. Feet are never below the screen, so anything that
+ * must stay on top of every critter (labels, bars, messages, Grandma's box)
+ * goes from OVERLAY up.
+ */
+const feetDepth = (pixelY: number): number => pixelY + TILE_SIZE;
+const OVERLAY = 1000;
+
 /** The tutorial steps Grandma Badger talks through here on the floor. */
 const FLOOR_STEPS: ReadonlySet<TutorialStep> = new Set(['intro', 'takeOrder', 'clean', 'freePlay']);
 /** Her box: under the cafe, clear of the corner buttons. */
@@ -155,8 +165,8 @@ export class FloorScene extends Phaser.Scene {
     // and one for the messes and plates on top, redrawn every frame.
     drawCafeTiles(addCafeCanvas(this), this.layout, this.origin);
     this.tableOverlay = addCafeCanvas(this);
-    this.progressBar = this.add.graphics().setDepth(20);
-    this.patienceBars = this.add.graphics().setDepth(15);
+    this.progressBar = this.add.graphics().setDepth(OVERLAY + 20);
+    this.patienceBars = this.add.graphics().setDepth(OVERLAY + 15);
 
     // Employees hired at the Notice Board work from the day the cafe opens.
     // (The Mascot dances outside, so it's drawn on the world map, not here.)
@@ -249,7 +259,7 @@ export class FloorScene extends Phaser.Scene {
       this.cleaner.state = worked.cleaner;
       if (worked.cleanedSeats.length > 0) this.wiped(worked.cleanedSeats);
       const at = this.walkerToPixel(worked.cleaner.walker);
-      this.cleaner.sprite.setPosition(at.x, at.y);
+      this.cleaner.sprite.setPosition(at.x, at.y).setDepth(feetDepth(at.y) + 0.1);
     }
     // The clock waits while Grandma Badger guides the start of Day 1.
     if (!isGuidedStart(getGameState(this).tutorial)) this.day = stepDay(this.day, floorSeconds);
@@ -296,7 +306,8 @@ export class FloorScene extends Phaser.Scene {
     this.drawPatienceBars();
 
     const pos = this.walkerToPixel(this.player.walker);
-    this.playerSprite.setPosition(pos.x, pos.y);
+    // A hair in front of anyone on exactly the same row.
+    this.playerSprite.setPosition(pos.x, pos.y).setDepth(feetDepth(pos.y) + 0.2);
     if (!isMoving(this.player.walker) && !this.player.cleaning) {
       this.destinationMarker.setVisible(false);
     }
@@ -325,6 +336,7 @@ export class FloorScene extends Phaser.Scene {
       if (step !== 'done' && FLOOR_STEPS.has(step)) {
         this.guide = new StoryBox(this, {
           rect: GUIDE_RECT,
+          depth: OVERLAY + 100,
           step: TUTORIAL[step],
           arrow: () => this.tutorialArrow(step),
           onFinished: () => tutorialEvent(this, 'next'),
@@ -374,7 +386,7 @@ export class FloorScene extends Phaser.Scene {
     const text = this.add
       .text(x + TILE_SIZE / 2, y - 8, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
       .setOrigin(0.5, 1)
-      .setDepth(25);
+      .setDepth(OVERLAY + 25);
     this.tweens.add({
       targets: text,
       y: text.y - 12,
@@ -606,7 +618,7 @@ export class FloorScene extends Phaser.Scene {
         this.customerSprites.set(c.id, sprite);
       }
       const pos = this.walkerToPixel(c.walker);
-      sprite.body.setPosition(pos.x, pos.y);
+      sprite.body.setPosition(pos.x, pos.y).setDepth(feetDepth(pos.y));
       // A little bob while standing at the counter, so the queue looks alive.
       const waiting = (c.phase === 'queued' || c.phase === 'ordered' || c.phase === 'served') && !isMoving(c.walker);
       setBobbing(sprite.body, waiting);
@@ -631,14 +643,15 @@ export class FloorScene extends Phaser.Scene {
 
   /** A customer: a fox, rabbit, squirrel or mouse, picked by id. */
   private createCustomerSprite(id: number): CustomerSprite {
-    const body = createCritter(this, customerArt(id)).setDepth(5);
+    // Its depth follows its feet every frame (syncCustomerSprites).
+    const body = createCritter(this, customerArt(id));
     // Status text above the head (see statusLabel), on a layer above every
-    // character (depth 15: over the player at 10, under the progress bar at
-    // 20), with a dark outline so it reads on any floor colour.
+    // character (with the patience bars, under the progress bar), with a
+    // dark outline so it reads on any floor colour.
     const label = this.add
       .text(0, 0, '', { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
       .setOrigin(0.5, 1)
-      .setDepth(15);
+      .setDepth(OVERLAY + 15);
     return { body, label };
   }
 }

@@ -89,10 +89,9 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
   }
 }
 
-/** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). */
+/** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). Scenes sort its depth by its feet. */
 export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  // Depth: draw the player above customers and scenery when they overlap.
-  return createCritter(scene, 'hedgehog').setDepth(10);
+  return createCritter(scene, 'hedgehog');
 }
 
 /**
@@ -105,10 +104,9 @@ export function createMascotSprite(scene: Phaser.Scene): Phaser.GameObjects.Cont
   return scene.add.container(0, 0, [image]);
 }
 
-/** The Cleaner: the raccoon in a bandana. */
+/** The Cleaner: the raccoon in a bandana. The floor sorts its depth by its feet. */
 export function createCleanerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  // Just under the player, so the player stays on top when they overlap.
-  return createCritter(scene, 'raccoon').setDepth(9);
+  return createCritter(scene, 'raccoon');
 }
 
 /** How far below its (x, y) an outdoor tree stands: the scenes place trees by the top of the trunk. */

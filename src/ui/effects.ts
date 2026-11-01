@@ -37,9 +37,13 @@ export function popLeaves(scene: Phaser.Scene, x: number, y: number, count: numb
   }
 }
 
-/** A puff of dust at (x, y): a cloud, then breaking up and fading. A table was just wiped. */
+/**
+ * A puff of dust at (x, y): a cloud, then breaking up and fading. A table
+ * was just wiped. Depth sorted by its y, like the critters, so someone
+ * standing in front of the table stays in front of the puff.
+ */
 export function puffOfDust(scene: Phaser.Scene, x: number, y: number): void {
-  const puff = addArt(scene, x, y, 'puff').setDepth(19);
+  const puff = addArt(scene, x, y, 'puff').setDepth(y);
   scene.time.delayedCall(140, () => puff.setFrame(1));
   scene.tweens.add({ targets: puff, y: y - 4, alpha: 0, delay: 140, duration: 300, onComplete: () => puff.destroy() });
 }
