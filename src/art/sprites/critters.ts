@@ -158,3 +158,28 @@ export const MOUSE = critter({ ...FACE, f: 'silver', l: 'white' }, [
   ...HEAD,
   ...BODY,
 ]);
+
+/** Grandma Badger, who hands over the cafe (GAME_DESIGN.md §5.9): striped face, plum shawl. */
+export const BADGER = critter({ ...FACE, f: 'grey', l: 'white', k: 'darkSlate', a: 'plum' }, [
+  '................',
+  '................',
+  '..ooo......ooo..',
+  '..ofo......ofo..',
+  '...oooooooooo...',
+  '..okkllllllkko..',
+  '.okkkllllllkkko.',
+  '.ofkkllllllkkfo.',
+  '.ofkkowllowkkfo.',
+  '.ofkkoollookkfo.',
+  '.opffllnnllffpo.',
+  '..offllllllffo..',
+  '...offffffffo...',
+  '....oaaaaaao....',
+  '...oaaaaaaaao...',
+  '..oaaaallaaaao..',
+  '.ofaaallllaaafo.',
+  '.offfllllllfffo.',
+  '..offllllllffo..',
+  '...offffffffo...',
+  '....oooooooo....',
+]);

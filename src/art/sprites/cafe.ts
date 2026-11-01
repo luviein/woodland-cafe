@@ -317,3 +317,9 @@ export const SPEAKER: PixelSprite = {
     ['....o......', '...oo......', 'oooco.r...r', 'occco..r.r.', 'occco...r..', 'occco..r.r.', 'oooco.r...r', '...oo......', '....o......'],
   ],
 };
+
+/** The tutorial's bouncing arrow, 9x8, pointing down at what Grandma Badger means. */
+export const POINTER_ARROW: PixelSprite = {
+  legend: { o: 'darkBrown', y: 'gold' },
+  frames: [['..ooooo..', '..oyyyo..', '..oyyyo..', 'oooyyyooo', '.oyyyyyo.', '..oyyyo..', '...oyo...', '....o....']],
+};

@@ -9,13 +9,14 @@ import {
   ORDER_RUG,
   PAW_PRINT,
   PLATE,
+  POINTER_ARROW,
   PUFF,
   SPEAKER,
   STORE_ICON,
   TABLE,
   WALL,
 } from './sprites/cafe';
-import { FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
+import { BADGER, FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
 
@@ -35,6 +36,7 @@ export const SPRITE_ART = {
   mess: MESS,
   plate: PLATE,
   puff: PUFF,
+  pointerArrow: POINTER_ARROW,
   speaker: SPEAKER,
   moveIcon: MOVE_ICON,
   storeIcon: STORE_ICON,
@@ -46,6 +48,7 @@ export const SPRITE_ART = {
   rabbit: RABBIT,
   squirrel: SQUIRREL,
   mouse: MOUSE,
+  badger: BADGER,
   // Prep station: bin icons are named after their ingredient
   ...INGREDIENT_ICONS,
   breadLayer: INGREDIENT_LAYERS.bread,
