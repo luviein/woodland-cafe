@@ -41,15 +41,7 @@ import {
 } from '../logic/shop';
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
-import {
-  STALL_HEIGHT,
-  TREE_TRUNK_HEIGHT,
-  createPlayerSprite,
-  drawBerryBush,
-  drawMushroomPatch,
-  drawStall,
-  drawTree,
-} from '../ui/sprites';
+import { STALL_HEIGHT, TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
 import { addArt } from '../ui/art';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
@@ -58,7 +50,6 @@ import type { LocationRequest, WorldMapRequest } from './WorldMapScene';
 
 /** Half the player sprite (16x16): the mover's position is the sprite's centre. */
 const HALF = TILE_SIZE / 2;
-const TREE_SIZE = 1.4;
 /** Above all the y-sorted scenery (whose depths are at most the screen height). */
 const HUD_DEPTH = 1000;
 /**
@@ -83,7 +74,7 @@ export class OutdoorScene extends Phaser.Scene {
   private leafSprites = new Map<number, Phaser.GameObjects.Image>();
   /** Forage spots here, their sprites (by spot id), and what the player is gathering. */
   private spots: ForageSpotDef[] = [];
-  private spotSprites = new Map<string, Phaser.GameObjects.Graphics>();
+  private spotSprites = new Map<string, Phaser.GameObjects.Image>();
   private gathering: Gathering | null = null;
   private progressBar!: Phaser.GameObjects.Graphics;
   /** Shop stalls here, the one the player is walking to, and the open panel. */
@@ -105,15 +96,17 @@ export class OutdoorScene extends Phaser.Scene {
 
   create(): void {
     const area = OUTDOOR_AREAS[this.location];
-    this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS[area.ground]).setOrigin(0);
+    addGround(this, area.ground);
     // Depth sorting by y: everything's depth is the y of its base, where it
     // touches the ground, and higher depths draw on top. Something lower on
     // the screen is nearer the viewer, so the player walking behind a tree
     // (feet above its base) is hidden by it, and in front of it covers it.
-    // That needs one Graphics per tree (and stall) rather than one for all of them.
-    for (const t of area.trees) {
-      drawTree(this.add.graphics().setDepth(t.y + TREE_TRUNK_HEIGHT * TREE_SIZE), t.x, t.y, TREE_SIZE);
-    }
+    // The Forest mixes oaks and pines; the Marketplace has oaks.
+    area.trees.forEach((t, i) => {
+      const base = t.y + TREE_TRUNK_HEIGHT;
+      const kind = this.location === 'forest' && i % 2 === 1 ? 'pine' : 'oak';
+      addTree(this, t.x, base, kind).setDepth(base);
+    });
     this.createForageSpots();
     this.createShops();
     this.progressBar = this.add.graphics().setDepth(HUD_DEPTH);
@@ -122,7 +115,7 @@ export class OutdoorScene extends Phaser.Scene {
     this.leafGround = {
       area: OUTDOOR_WALK_AREA,
       keepClear: [
-        ...area.trees.map((t) => ({ x: t.x, y: t.y + TREE_TRUNK_HEIGHT * TREE_SIZE })),
+        ...area.trees.map((t) => ({ x: t.x, y: t.y + TREE_TRUNK_HEIGHT })),
         ...this.shops.map((id) => ({ x: SHOPS[id].stall.x, y: SHOPS[id].stall.y + STALL_HEIGHT })),
         ...this.spots.map((s) => s.position),
       ],
@@ -221,7 +214,7 @@ export class OutdoorScene extends Phaser.Scene {
     for (const spot of this.spots) {
       const { x, y } = spot.position;
       // Depth sorted by its base, like the trees.
-      this.spotSprites.set(spot.id, this.add.graphics({ x, y }).setDepth(y));
+      this.spotSprites.set(spot.id, addStanding(this, x, y, spot.kind).setDepth(y));
       // A bit bigger than the drawing, so it's easy to tap on a phone.
       this.add
         .zone(x, y - 8, 32, 28)
@@ -235,12 +228,10 @@ export class OutdoorScene extends Phaser.Scene {
   private redrawSpots(): void {
     const state = getGameState(this);
     for (const spot of this.spots) {
-      const g = this.spotSprites.get(spot.id);
-      if (!g) continue; // watchGameState fires once before the spots exist
-      g.clear();
-      const full = !gatheredToday(state, spot);
-      if (spot.kind === 'mushroomPatch') drawMushroomPatch(g, full);
-      else drawBerryBush(g, full);
+      const sprite = this.spotSprites.get(spot.id);
+      if (!sprite) continue; // watchGameState fires once before the spots exist
+      // Frame 0 is full, 1 bare.
+      sprite.setFrame(gatheredToday(state, spot) ? 1 : 0);
     }
   }
 
@@ -261,7 +252,7 @@ export class OutdoorScene extends Phaser.Scene {
     this.shop = null;
     for (const id of this.shops) {
       const { x, y } = SHOPS[id].stall;
-      drawStall(this.add.graphics().setDepth(y + STALL_HEIGHT), x, y);
+      addStanding(this, x, y + STALL_HEIGHT, 'stall').setDepth(y + STALL_HEIGHT);
       this.add
         .text(x, y - 12, SHOPS[id].name, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
         .setOrigin(0.5, 1)

@@ -4,9 +4,10 @@ import type { OutdoorLocationId } from './outdoorAreas';
 
 // Spots outdoors where ingredients can be gathered (GAME_DESIGN.md §5.5).
 // Each can be gathered once a day and grows back the next. Adding a spot is
-// adding an entry here; a new `kind` also needs a drawing in ui/sprites.ts.
+// adding an entry here; a new `kind` also needs a sprite of that name in
+// art/spriteArt.ts (frame 0 full, frame 1 bare).
 
-/** How a spot looks (until real art): what's drawn, full and bare. */
+/** How a spot looks: the name of its sprite. */
 export type ForageKind = 'mushroomPatch' | 'berryBush';
 
 export interface ForageSpotDef {

@@ -1,12 +1,10 @@
 import Phaser from 'phaser';
 import type { ArtName } from '../art/spriteArt';
-import { TILE_SIZE } from '../config/display';
+import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
-import { COLORS } from './theme';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
-// so they look the same everywhere. The critters are pixel art; the scenery
-// below them is still placeholder shapes until its milestone 10 step.
+// so they look the same everywhere.
 
 /** How long each walking step shows, in ms. */
 const STEP_MS = 140;
@@ -79,40 +77,46 @@ export function createCleanerSprite(scene: Phaser.Scene): Phaser.GameObjects.Con
   return createCritter(scene, 'raccoon').setDepth(9);
 }
 
-/** Height of a tree's trunk at `size` 1; its base (y + this * size) is where it stands. */
-export const TREE_TRUNK_HEIGHT = 8;
+/** How far below its (x, y) an outdoor tree stands: the scenes place trees by the top of the trunk. */
+export const TREE_TRUNK_HEIGHT = 11;
 /** Height of a stall's counter; its base (y + this) is where it stands. */
 export const STALL_HEIGHT = 16;
 
-/** A round tree; (x, y) is the top of the trunk. `size` 1 is about 20px wide. */
-export function drawTree(g: Phaser.GameObjects.Graphics, x: number, y: number, size = 1): void {
-  g.fillStyle(COLORS.treeTrunk).fillRect(x - 2 * size, y, 4 * size, TREE_TRUNK_HEIGHT * size);
-  g.fillStyle(COLORS.treeLeaf).fillCircle(x, y - 4 * size, 10 * size);
+/** Tree kinds: the frames of the tree sprites. */
+export type TreeKind = 'oak' | 'pine';
+const TREE_FRAME: Record<TreeKind, number> = { oak: 0, pine: 1 };
+
+/**
+ * A tree standing with the bottom of its trunk at (x, baseY): the big 32x40
+ * one outdoors, or the 16x20 one on the world map.
+ */
+export function addTree(scene: Phaser.Scene, x: number, baseY: number, kind: TreeKind, small = false): Phaser.GameObjects.Image {
+  return scene.add.image(x, baseY, artKey(small ? 'mapTree' : 'tree'), TREE_FRAME[kind]).setOrigin(0.5, 1);
 }
 
-/** A patch of mushrooms on a dirt mound; bare (just the mound) once gathered. Base centre at (0, 0). */
-export function drawMushroomPatch(g: Phaser.GameObjects.Graphics, full: boolean): void {
-  g.fillStyle(COLORS.dirt).fillEllipse(0, -2, 24, 8);
-  if (!full) return;
-  for (const [dx, h] of [[-7, 6], [0, 9], [7, 5]]) {
-    g.fillStyle(COLORS.mushroomStem).fillRect(dx - 1, -2 - h, 3, h);
-    g.fillStyle(COLORS.mushroomCap).fillEllipse(dx, -2 - h, 9, 5);
+/** Something standing on the ground with its base centre at (x, y): a stall, a bush, the cafe. */
+export function addStanding(scene: Phaser.Scene, x: number, y: number, art: ArtName, frame = 0): Phaser.GameObjects.Image {
+  return scene.add.image(x, y, artKey(art), frame).setOrigin(0.5, 1);
+}
+
+/**
+ * Fills the whole screen with ground tiles (art/sprites/outdoor.ts), mostly
+ * plain with tufts and flowers mixed in. The mix comes from each tile's
+ * position, so it looks random but is the same every visit. One canvas,
+ * like the cafe floor.
+ */
+export function addGround(scene: Phaser.Scene, art: 'grass' | 'forestFloor'): Phaser.GameObjects.RenderTexture {
+  const canvas = scene.add.renderTexture(0, 0, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
+  for (let y = 0; y < BASE_HEIGHT; y += TILE_SIZE) {
+    for (let x = 0; x < BASE_WIDTH; x += TILE_SIZE) {
+      canvas.drawFrame(artKey(art), groundFrame(x / TILE_SIZE, y / TILE_SIZE), x, y);
+    }
   }
+  return canvas;
 }
 
-/** A round bush with berries; just the bush once gathered. Base centre at (0, 0). */
-export function drawBerryBush(g: Phaser.GameObjects.Graphics, full: boolean): void {
-  g.fillStyle(COLORS.bush);
-  g.fillCircle(-7, -6, 7).fillCircle(7, -6, 7).fillCircle(0, -11, 9);
-  if (!full) return;
-  g.fillStyle(COLORS.berry);
-  for (const [x, y] of [[-8, -7], [-2, -13], [4, -8], [8, -4], [1, -3], [-5, -2]]) g.fillRect(x, y, 2, 2);
-}
-
-/** A market stall with a striped awning; (x, y) is the top-middle of the counter. */
-export function drawStall(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
-  g.fillStyle(COLORS.counter).fillRect(x - 16, y, 32, STALL_HEIGHT);
-  g.fillStyle(COLORS.awning).fillRect(x - 18, y - 10, 36, 10);
-  g.fillStyle(COLORS.roof);
-  for (let s = 0; s < 36; s += 12) g.fillRect(x - 18 + s, y - 10, 6, 10);
+/** Which ground tile goes at a tile position: about 5 in 8 plain, the rest tufts or flowers. */
+export function groundFrame(x: number, y: number): number {
+  const hash = (x * 73 + y * 151 + x * y * 17) % 8;
+  return hash < 5 ? 0 : hash - 4;
 }

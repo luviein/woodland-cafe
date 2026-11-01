@@ -2,7 +2,7 @@ import type { PixelSprite } from './pixelSprite';
 import { CHAIR, COUNTER, DOOR, FLOOR, MESS, ORDER_RUG, PAW_PRINT, PLATE, TABLE, WALL } from './sprites/cafe';
 import { FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
-import { LEAF } from './sprites/outdoor';
+import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
 
 // Every code-drawn sprite, by name. The name is also the file name a
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
@@ -37,8 +37,16 @@ export const SPRITE_ART = {
   tunaLayer: INGREDIENT_LAYERS.tuna,
   tomatoLayer: INGREDIENT_LAYERS.tomato,
   toaster: TOASTER,
-  // Outdoors
+  // Outdoors and the world map
   leaf: LEAF,
+  grass: GRASS,
+  forestFloor: FOREST_FLOOR,
+  tree: TREE,
+  mapTree: MAP_TREE,
+  mushroomPatch: MUSHROOM_PATCH,
+  berryBush: BERRY_BUSH,
+  stall: STALL,
+  cafeHouse: CAFE_HOUSE,
 } satisfies Record<string, PixelSprite>;
 
 export type ArtName = keyof typeof SPRITE_ART;

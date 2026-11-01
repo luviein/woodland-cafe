@@ -3,12 +3,12 @@ import type { Rect } from '../logic/outdoor';
 import type { LocationId } from './locations';
 
 // The outdoor places (Forest, Marketplace), all drawn by one OutdoorScene.
-// Placeholder scenery until real art (milestone 10). Forage spots
-// (forageSpots.ts) and shop stalls (shops.ts) have their own data files.
+// Forage spots (forageSpots.ts) and shop stalls (shops.ts) have their own
+// data files.
 
 export interface OutdoorAreaDef {
-  /** Ground colour, a COLORS key in ui/theme.ts. */
-  ground: 'grass' | 'grassDark';
+  /** Ground tiles: a sprite name in art/spriteArt.ts. */
+  ground: 'grass' | 'forestFloor';
   /** Decorative trees; each point is the top of the trunk. */
   trees: readonly Point[];
 }
@@ -24,7 +24,7 @@ export const OUTDOOR_ENTRY: Point = { x: 320, y: 330 };
 
 export const OUTDOOR_AREAS = {
   forest: {
-    ground: 'grassDark',
+    ground: 'forestFloor',
     trees: [
       { x: 60, y: 90 }, { x: 140, y: 70 }, { x: 250, y: 100 }, { x: 420, y: 80 }, { x: 540, y: 110 },
       { x: 600, y: 200 }, { x: 80, y: 220 }, { x: 180, y: 290 }, { x: 470, y: 270 }, { x: 330, y: 180 },

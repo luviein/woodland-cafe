@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
+import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS, type LocationId } from '../data/locations';
 import { startNextDay } from '../logic/gameState';
 import type { Point } from '../logic/layout';
 import { chooseLocation, dotsAlong } from '../logic/worldMap';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT, css } from '../ui/theme';
-import { createMascotSprite, drawStall, drawTree } from '../ui/sprites';
+import { STALL_HEIGHT, addStanding, addTree, createMascotSprite, groundFrame, type TreeKind } from '../ui/sprites';
+import { artKey } from '../ui/art';
 import { isHired } from '../logic/employees';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
@@ -28,7 +29,15 @@ const MASCOT_SPOT: Point = { x: LOCATIONS.cafe.position.x + 36, y: LOCATIONS.caf
 const SIGN_OFFSET_Y = 44;
 const SIGN_HEIGHT = 22;
 
-/** Purely decorative trees around the island (the forest draws its own). */
+/** The island's shape: a grass ellipse inside a sandy shore. */
+const ISLAND = { x: BASE_WIDTH / 2, y: BASE_HEIGHT / 2 + 4, grassWidth: 536, grassHeight: 276, shore: 12 };
+/** The darker patch of grass under the forest. */
+const FOREST_PATCH = { x: LOCATIONS.forest.position.x, y: LOCATIONS.forest.position.y + 6, width: 150, height: 90 };
+
+/** Small map trees stand this far below their point (which is the top of the trunk). */
+const MAP_TRUNK = 8;
+
+/** Purely decorative trees around the island (the forest draws its own). Each point is the top of the trunk. */
 const TREES: readonly Point[] = [
   { x: 96, y: 228 }, { x: 120, y: 262 }, { x: 226, y: 288 }, { x: 410, y: 292 },
   { x: 540, y: 236 }, { x: 566, y: 196 }, { x: 392, y: 84 }, { x: 266, y: 70 },
@@ -39,8 +48,7 @@ const TREES: readonly Point[] = [
  * (GAME_DESIGN.md §5.2). Opened with "Exit cafe" at the end of a day.
  * Tapping a signpost goes there; the Cafe starts the next day.
  *
- * Placeholder shapes for now: the illustrated island arrives with the art
- * (milestone 10). Places come from data/locations.ts.
+ * Places come from data/locations.ts; their landmarks are pixel art.
  */
 export class WorldMapScene extends Phaser.Scene {
   private request!: WorldMapRequest;
@@ -56,8 +64,7 @@ export class WorldMapScene extends Phaser.Scene {
   create(): void {
     this.drawIsland();
     this.drawPaths();
-    const trees = this.add.graphics();
-    for (const point of TREES) drawTree(trees, point.x, point.y);
+    TREES.forEach((point, i) => this.addMapTree(point.x, point.y + MAP_TRUNK, i % 3 === 2 ? 'pine' : 'oak'));
     for (const id of LOCATION_IDS) {
       this.drawLandmark(id);
       this.createSignpost(id);
@@ -142,24 +149,61 @@ export class WorldMapScene extends Phaser.Scene {
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
   }
 
-  /** Water, a sandy shore, then grass on top. */
+  /**
+   * Water, a sandy shore, grass, and grass tufts and flowers on top. Drawn
+   * into a canvas at the game's own resolution, so even the curved shore is
+   * made of whole pixels like the sprites (shapes drawn straight to the
+   * screen would get smooth, finer edges once the game is scaled up).
+   */
   private drawIsland(): void {
-    const cx = BASE_WIDTH / 2;
-    const cy = BASE_HEIGHT / 2 + 4;
-    this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.water).setOrigin(0);
+    const { x: cx, y: cy, grassWidth, grassHeight, shore } = ISLAND;
+    const g = this.make.graphics({}, false); // drawn into the canvas, never shown itself
+    g.fillStyle(COLORS.water).fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
     // A few lighter ripples, so the water doesn't read as a flat background.
-    const ripples = this.add.graphics().fillStyle(COLORS.waterLight);
-    for (const [x, y] of [[40, 40], [590, 60], [60, 320], [600, 316], [300, 20]]) ripples.fillRect(x, y, 14, 2);
+    g.fillStyle(COLORS.waterLight);
+    for (const [x, y] of [[40, 40], [590, 60], [60, 320], [600, 316], [300, 20], [20, 180], [612, 150]]) {
+      g.fillRect(x, y, 10, 1).fillRect(x + 4, y + 2, 8, 1);
+    }
+    // Foam just off the shore, then sand, then grass.
+    g.fillStyle(COLORS.foam).fillEllipse(cx, cy, grassWidth + shore * 2 + 4, grassHeight + shore * 2 + 4);
+    g.fillStyle(COLORS.sand).fillEllipse(cx, cy, grassWidth + shore * 2, grassHeight + shore * 2);
+    g.fillStyle(COLORS.grass).fillEllipse(cx, cy, grassWidth, grassHeight);
+    const patch = FOREST_PATCH;
+    g.fillStyle(COLORS.grassDark).fillEllipse(patch.x, patch.y, patch.width, patch.height);
 
-    this.add.ellipse(cx, cy, 560, 300, COLORS.sand);
-    this.add.ellipse(cx, cy, 536, 276, COLORS.grass);
-    // A darker patch under the forest.
-    const { x, y } = LOCATIONS.forest.position;
-    this.add.ellipse(x, y + 6, 150, 90, COLORS.grassDark);
+    const canvas = this.add.renderTexture(0, 0, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
+    canvas.draw(g);
+    g.destroy();
+
+    // Tufts and flowers: the grass tiles that have some, wherever a whole
+    // tile fits on the light grass (their plain parts match it exactly).
+    const inEllipse = (x: number, y: number, ex: number, ey: number, w: number, h: number) =>
+      ((x - ex) / (w / 2)) ** 2 + ((y - ey) / (h / 2)) ** 2 <= 1;
+    for (let y = 0; y < BASE_HEIGHT; y += TILE_SIZE) {
+      for (let x = 0; x < BASE_WIDTH; x += TILE_SIZE) {
+        const frame = groundFrame(x / TILE_SIZE, y / TILE_SIZE);
+        const corners = [[x, y], [x + TILE_SIZE, y], [x, y + TILE_SIZE], [x + TILE_SIZE, y + TILE_SIZE]];
+        const fits = corners.every(
+          ([px, py]) =>
+            inEllipse(px, py, cx, cy, grassWidth - 4, grassHeight - 4) &&
+            !inEllipse(px, py, patch.x, patch.y, patch.width + 4, patch.height + 4),
+        );
+        if (frame !== 0 && fits) canvas.drawFrame(artKey('grass'), frame, x, y);
+      }
+    }
+  }
+
+  /**
+   * A small map tree. No depth sorting here (unlike outdoors): nothing walks
+   * on the map, so creation order is enough, and the map's panels (depth
+   * 100) must stay on top of everything.
+   */
+  private addMapTree(x: number, baseY: number, kind: TreeKind): void {
+    addTree(this, x, baseY, kind, true);
   }
 
   private drawPaths(): void {
-    const g = this.add.graphics().fillStyle(COLORS.paper);
+    const g = this.add.graphics().fillStyle(COLORS.sand);
     for (const [a, b] of MAP_PATHS) {
       for (const dot of dotsAlong(LOCATIONS[a].position, LOCATIONS[b].position, 10, 30)) {
         g.fillRect(Math.round(dot.x) - 1, Math.round(dot.y) - 1, 3, 3);
@@ -167,25 +211,22 @@ export class WorldMapScene extends Phaser.Scene {
     }
   }
 
-  /** Placeholder landmark for each place; real art replaces these later. */
+  /** Each place's landmark, standing on the map around its position. */
   private drawLandmark(id: LocationId): void {
     const { x, y } = LOCATIONS[id].position;
-    const g = this.add.graphics();
     switch (id) {
       case 'cafe':
-        // A little house: walls, door, roof.
-        g.fillStyle(COLORS.paper).fillRect(x - 22, y - 8, 44, 28);
-        g.fillStyle(COLORS.treeTrunk).fillRect(x - 5, y + 6, 10, 14);
-        g.fillStyle(COLORS.roof).fillTriangle(x - 28, y - 6, x + 28, y - 6, x, y - 28);
+        // The cottage's doorstep is 20px below the centre (where the Mascot dances).
+        addStanding(this, x, y + 20, 'cafeHouse');
         break;
       case 'forest':
-        for (const [dx, dy, size] of [[-30, 4, 1.2], [0, -10, 1.4], [28, 6, 1.2], [-12, 18, 1], [14, 20, 1]]) {
-          drawTree(g, x + dx, y + dy, size);
+        // A little wood: each [dx, dy] is the top of a trunk, back ones first so front ones overlap them.
+        for (const [dx, dy, kind] of [[0, -10, 'pine'], [-30, 4, 'oak'], [28, 6, 'pine'], [-12, 18, 'oak'], [14, 20, 'oak']] as const) {
+          this.addMapTree(x + dx, y + dy + MAP_TRUNK, kind);
         }
         break;
       case 'marketplace':
-        drawStall(g, x - 22, y);
-        drawStall(g, x + 22, y);
+        for (const dx of [-22, 22]) addStanding(this, x + dx, y + STALL_HEIGHT, 'stall');
         break;
     }
   }

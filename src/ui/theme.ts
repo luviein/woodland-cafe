@@ -24,26 +24,17 @@ export const COLORS = {
   statusImpatient: PALETTE.orange,
   statusUpset: PALETTE.red,
   overlay: PALETTE.black,
-  // World map (placeholder shapes until the illustrated island, milestone 10)
-  water: 0x4f86a8,
-  waterLight: 0x6a9cbc,
-  sand: 0xe3cf9a,
-  grass: 0x7fae5a,
-  grassDark: 0x6a9a4a,
-  treeLeaf: 0x3f7a3a,
-  treeTrunk: 0x6e4a2f,
-  roof: 0xb0705a,
-  awning: 0xd9b38c,
-  signpost: 0x9c6b45,
+  // World map and outdoors (the scenery itself is pixel art)
+  water: PALETTE.blue,
+  waterLight: PALETTE.sky,
+  foam: PALETTE.white,
+  sand: PALETTE.sand,
+  grass: PALETTE.lime,
+  grassDark: PALETTE.green,
+  treeTrunk: PALETTE.brown,
+  signpost: PALETTE.wood,
   /** The signpost of the place the player is at. */
-  signpostHere: 0x6f9e5a,
-  // Forage spots
-  dirt: 0x7a5a3a,
-  mushroomStem: 0xeae4da,
-  mushroomCap: 0xa0503a,
-  bush: 0x4f8a3a,
-  berry: 0xc0304a,
-  // Prep station equipment: the Toaster is pixel art (art/sprites/kitchen.ts).
+  signpostHere: PALETTE.green,
 } as const;
 
 /**
