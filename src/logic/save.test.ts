@@ -46,6 +46,12 @@ describe('older saves', () => {
     expect(state.leaves).toBe(120);
   });
 
+  it('count as past the tutorial (they were made before it existed)', () => {
+    expect(loaded(savedWith((s) => delete s.tutorial)).tutorial).toBe('done');
+    expect(loaded(savedWith((s) => (s.tutorial = 'juggling'))).tutorial).toBe('done');
+    expect(loaded(savedWith((s) => (s.tutorial = 'map'))).tutorial).toBe('map');
+  });
+
   it('get default stock for ingredients added since', () => {
     const state = loaded(savedWith((s) => delete (s.stock as Record<string, number>).bread));
     expect(state.stock.bread).toBe(createNewGame().stock.bread);

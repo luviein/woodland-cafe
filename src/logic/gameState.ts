@@ -4,6 +4,7 @@ import type { UpgradeId } from '../data/upgrades';
 import type { EmployeeRole } from '../data/employees';
 import { startingFurniture, type Furniture } from './furniture';
 import { startingStock, type Stock } from './stock';
+import type { TutorialState } from './tutorial';
 
 /**
  * Everything about the player's progress, in one place (GAME_DESIGN.md §6).
@@ -36,6 +37,8 @@ export interface GameState {
   furniture: Furniture;
   /** Roles hired at the Notice Board; each works every day until let go (employees.ts). */
   employees: readonly EmployeeRole[];
+  /** Where the player is in Grandma Badger's tutorial (tutorial.ts); 'done' once over. */
+  tutorial: TutorialState;
 }
 
 export function createNewGame(): GameState {
@@ -49,7 +52,13 @@ export function createNewGame(): GameState {
     foragedToday: [],
     furniture: startingFurniture(),
     employees: [],
+    tutorial: 'intro',
   };
+}
+
+/** The game state after a tutorial event (see advanceTutorial). */
+export function withTutorial(state: GameState, tutorial: TutorialState): GameState {
+  return state.tutorial === tutorial ? state : { ...state, tutorial };
 }
 
 /**
