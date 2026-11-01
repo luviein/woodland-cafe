@@ -219,24 +219,32 @@ export class PrepScene extends Phaser.Scene {
       onSkip: () => {
         tutorialEvent(this, 'skip');
         this.closeTutorial();
+        this.refreshDish(); // skipped: every bin opens up
       },
     });
   }
 
   /**
    * Building the guided dish: the arrow on the bin of the next layer it
-   * needs, then on Serve once it's complete, or on Reset if a wrong layer
-   * went on.
+   * needs, then on Serve once it's complete (only the right bins can be
+   * tapped, so the dish can't go wrong).
    */
   private nextStepArrow(): ArrowTarget {
-    const layers = expectedPlate(this.request.order).layers;
-    const soFar = this.dish.every((id, i) => layers[i] === id);
-    if (!soFar) return { x: this.resetButton.x, y: this.resetButton.y - 20 };
-    const next = layers[this.dish.length];
+    const next = this.guidedNextLayer();
     if (!next) return { x: this.serveButton.x, y: this.serveButton.y - 20 };
     const bin = this.binButtons[this.binIds.indexOf(next)];
     // Just above the stock count over the bin.
     return { x: bin.x, y: bin.y - 40 };
+  }
+
+  /**
+   * During the tutorial's guided first order: the next layer the dish needs
+   * (only that bin can be tapped), or null once it's complete (Serve). At
+   * any other time undefined: every bin is open as usual.
+   */
+  private guidedNextLayer(): IngredientId | null | undefined {
+    if (getGameState(this).tutorial !== 'prep') return undefined;
+    return expectedPlate(this.request.order).layers[this.dish.length] ?? null;
   }
 
   private closeTutorial(): void {
@@ -437,7 +445,8 @@ export class PrepScene extends Phaser.Scene {
     // prevent accidental misclicks rather than punish them. Same while the
     // dish is in the toaster: there's nothing on the plate.
     const hasItems = onPlate && this.dish.length > 0 && !this.busy;
-    this.serveButton.setEnabled(hasItems);
+    // The guided first order can only be served once it's complete.
+    this.serveButton.setEnabled(hasItems && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === null));
     this.resetButton.setEnabled(hasItems);
     this.refreshBins();
   }
@@ -447,7 +456,9 @@ export class PrepScene extends Phaser.Scene {
     const full = this.busy || this.toast.place !== 'plate' || this.dish.length >= MAX_DISH_LAYERS;
     this.binIds.forEach((id, i) => {
       const status = this.binStatus(id);
-      this.binButtons[i].setEnabled(!full && status.kind !== 'out');
+      // The guided first order: only the next right layer (GAME_DESIGN.md §5.9).
+      const allowed = this.guidedNextLayer() === undefined || this.guidedNextLayer() === id;
+      this.binButtons[i].setEnabled(!full && status.kind !== 'out' && allowed);
       this.binCounts[i].setText(
         status.kind === 'stock' ? `x${status.left}` : status.kind === 'rush' ? `🍃${status.price}` : 'Out',
       );
