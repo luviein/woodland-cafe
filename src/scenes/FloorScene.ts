@@ -47,7 +47,8 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createCleanerSprite, createCritter, createPlayerSprite, critterHeadroom, setBobbing } from '../ui/sprites';
+import { createCleanerSprite, createCritter, createPlayerSprite, critterHeadroom, setBobbing, setFacing } from '../ui/sprites';
+import type { View } from '../art/sprites/sheetCritters';
 import { customerArt } from '../art/spriteArt';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, endCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
@@ -308,6 +309,8 @@ export class FloorScene extends Phaser.Scene {
     const pos = this.walkerToPixel(this.player.walker);
     // A hair in front of anyone on exactly the same row.
     this.playerSprite.setPosition(pos.x, pos.y).setDepth(feetDepth(pos.y) + 0.2);
+    // Behind the counter, the player faces forward, toward the customers.
+    setFacing(this.playerSprite, samePoint(this.player.walker.tile, this.layout.counterSpot) ? 'front' : null);
     if (!isMoving(this.player.walker) && !this.player.cleaning) {
       this.destinationMarker.setVisible(false);
     }
@@ -624,6 +627,7 @@ export class FloorScene extends Phaser.Scene {
       // A little bob while standing at the counter, so the queue looks alive.
       const waiting = (c.phase === 'queued' || c.phase === 'ordered' || c.phase === 'served') && !isMoving(c.walker);
       setBobbing(sprite.body, waiting);
+      setFacing(sprite.body, this.customerFacing(c));
       // Above the patience bar, which sits just over the head.
       sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - critterHeadroom(customerArt(c.id)) - 5);
 
@@ -641,6 +645,23 @@ export class FloorScene extends Phaser.Scene {
         this.customerSprites.delete(id);
       }
     }
+  }
+
+  /**
+   * Which way a standing customer faces: the counter (their back to the
+   * player) while queuing and ordering, their table while eating, else the
+   * way they last walked.
+   */
+  private customerFacing(c: Customer): View | null {
+    if (c.phase === 'queued' || c.phase === 'ordered' || c.phase === 'served') return 'back';
+    if (c.phase === 'eating' && c.seat) {
+      const table = tableById(this.layout, c.seat.tableId).position;
+      const { x, y } = c.seat.seat;
+      if (table.x > x) return 'right';
+      if (table.x < x) return 'left';
+      return table.y < y ? 'back' : 'front';
+    }
+    return null;
   }
 
   /** A customer: a fox, rabbit, squirrel or mouse, picked by id. */

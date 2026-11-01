@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
-import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
+import { VIEW, viewFrame, type View } from '../art/sprites/sheetCritters';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
 
@@ -68,11 +68,28 @@ function animateWalking(
     } else {
       stillFor += delta;
     }
-    const pose = stillFor < STOP_MS ? 1 + (Math.floor(walkedFor / STEP_MS) % 2) : 0;
+    const moving = stillFor < STOP_MS;
+    // Standing still, the scene may say which way to face (setFacing).
+    const face = moving ? undefined : (container.getData(FACE) as View | undefined);
+    if (face && views) facing = VIEW[face];
+    else if (face === 'left' || face === 'right') image.setFlipX(face === 'left'); // 16x24 art has no front or back
+    const pose = moving ? 1 + (Math.floor(walkedFor / STEP_MS) % 2) : 0;
     image.setFrame(views ? viewFrame(facing, pose) : pose);
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));
+}
+
+/** Data key on a critter's container: which way it faces while standing still (setFacing). */
+const FACE = 'face';
+
+/**
+ * Which way a critter faces while it stands still, e.g. a customer at the
+ * counter (back to the player) or eating (toward their table); null lets it
+ * keep facing the way it last walked. Safe to call every frame.
+ */
+export function setFacing(critter: Phaser.GameObjects.Container, view: View | null): void {
+  critter.setData(FACE, view ?? undefined);
 }
 
 /** Data key on a critter's container for its bobbing tween. */
