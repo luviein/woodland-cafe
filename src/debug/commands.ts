@@ -9,6 +9,7 @@ import { addIngredient, addUpgrade, unlockableIngredients } from '../logic/shop'
 import { hire, letGo } from '../logic/employees';
 import type { Score } from '../logic/types';
 import { isSoundName, SOUND_NAMES } from '../audio/sounds';
+import { TUTORIAL_STEPS } from '../data/tutorial';
 import { noDevActions, type DevActions } from './devActions';
 import type { DevSettings } from './devSettings';
 
@@ -254,6 +255,20 @@ export function createDevCommands(
           return `${UPGRADES[upgrade].name} unlocked (the prep station shows it from the next order)`;
         }
         throw new Error(`Usage: unlock <${UNLOCKABLE.join('|')}>`);
+      },
+    },
+
+    tutorial: {
+      usage: `tutorial [restart|skip|${TUTORIAL_STEPS.join('|')}]`,
+      description: "Show the tutorial step, or set it (restart = the intro). Takes effect right away on the floor; 'goto cafe' to see the intro",
+      run: ([value]) => {
+        const current = game().get().tutorial;
+        if (!value) return `Tutorial: ${current}`;
+        const word = value.toLowerCase();
+        const step = word === 'restart' ? 'intro' : word === 'skip' ? 'done' : TUTORIAL_STEPS.find((s) => s.toLowerCase() === word);
+        if (!step) throw new Error(`Usage: tutorial [restart|skip|${TUTORIAL_STEPS.join('|')}]`);
+        game().set({ ...game().get(), tutorial: step });
+        return `Tutorial: ${step}`;
       },
     },
 

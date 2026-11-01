@@ -256,6 +256,20 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(createDevCommands({ floorTimeScale: 1 }, []), 'save')).toMatch(/not running/);
   });
 
+  it('tutorial shows the step, and sets it', () => {
+    let state = createNewGame();
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(),
+      game: { get: () => state, set: (s) => (state = s) },
+    });
+    expect(runCommand(commands, 'tutorial')).toBe('Tutorial: intro');
+    expect(runCommand(commands, 'tutorial skip')).toBe('Tutorial: done');
+    expect(runCommand(commands, 'tutorial restart')).toBe('Tutorial: intro');
+    expect(runCommand(commands, 'tutorial freePlay')).toBe('Tutorial: freePlay');
+    expect(state.tutorial).toBe('freePlay');
+    expect(runCommand(commands, 'tutorial juggling')).toMatch(/Usage/);
+  });
+
   it('sound lists the sounds and plays a named one', () => {
     const played: string[] = [];
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {

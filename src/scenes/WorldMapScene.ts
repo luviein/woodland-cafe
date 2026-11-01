@@ -10,7 +10,9 @@ import { STALL_HEIGHT, addStanding, addTree, createMascotSprite, groundFrame, ty
 import { artKey } from '../ui/art';
 import { isHired } from '../logic/employees';
 import { WalletDisplay } from '../ui/WalletDisplay';
-import { beginCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
+import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
+import { StoryBox } from '../ui/StoryBox';
+import { TUTORIAL } from '../data/tutorial';
 
 /** What a location's scene is started with. */
 export interface LocationRequest {
@@ -80,6 +82,34 @@ export class WorldMapScene extends Phaser.Scene {
         strokeThickness: 3,
       })
       .setOrigin(0.5, 1);
+
+    this.showTutorial();
+  }
+
+  /**
+   * The tutorial's last step (GAME_DESIGN.md §5.9): Grandma Badger at the
+   * bottom of the map, pointing at the Marketplace, then the Forest. OK on
+   * her last line ends the tutorial.
+   */
+  private showTutorial(): void {
+    if (getGameState(this).tutorial !== 'map') return;
+    const signTop = (id: LocationId) => {
+      const { x, y } = this.signPosition(id);
+      return { x, y: y - SIGN_HEIGHT / 2 - 2 };
+    };
+    const guide = new StoryBox(this, {
+      rect: { x: 36, y: 292, width: 568, height: 62 },
+      step: TUTORIAL.map,
+      arrow: (line) => (line === 1 ? signTop('marketplace') : line === 2 ? signTop('forest') : null),
+      onFinished: () => {
+        tutorialEvent(this, 'next');
+        guide.destroy();
+      },
+      onSkip: () => {
+        tutorialEvent(this, 'skip');
+        guide.destroy();
+      },
+    });
   }
 
   private go(id: LocationId): void {

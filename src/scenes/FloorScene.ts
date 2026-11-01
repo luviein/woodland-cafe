@@ -402,6 +402,9 @@ export class FloorScene extends Phaser.Scene {
    */
   private openSummary(): void {
     this.summaryOpen = true;
+    // The day ended with "Off you go!" still up: that's read enough, so the
+    // tutorial carries on with the summary (GAME_DESIGN.md §5.9).
+    if (getGameState(this).tutorial === 'freePlay') tutorialEvent(this, 'next');
     playSound('dayEnd');
     this.destinationMarker.setVisible(false);
     // Wages come out at the end of the day, after the day's takings are in.

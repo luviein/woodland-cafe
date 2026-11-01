@@ -586,3 +586,11 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Sound** (`audio/`): code-made effects for every main action, one Web Audio context with a master volume. A volume control on every screen (`SoundScene`: speaker button, slider, mute) and `M` to mute; settings kept apart from the save. Dev command `sound [name]`.
 - **Also during this milestone:** Decorate gained dragging, a Move / Put away menu on a tapped piece, single-piece moves, and chairs allowed without a table (§5.7).
 - **Not yet:** background music (later features); a pixel font (text is still the browser's monospace).
+
+### Milestone 11 scope: Tutorial and mini story (as built)
+
+- **Rules** (`logic/tutorial.ts`): the steps in order and the event that finishes each (`advanceTutorial`); `floorGuide` holds the floor during the intro and lets one customer in until the first wipe; `tutorialOrder` is always Jam Bread. The step is in the game state and the save; saves from before load as done.
+- **Words** (`data/tutorial.ts`): Grandma Badger's lines per step, and whether a step waits for Next or for the player to act.
+- **The floor during the guided start:** no arrivals while held, then one; that customer's patience is frozen; the day clock waits. A wrong dish (no mess to wipe) moves on once the floor is empty. If the day ends with "off you go" still up, the tutorial carries on with the summary.
+- **The story box** (`ui/StoryBox.ts`): portrait, one line at a time, Next / OK, a quiet "Skip tutorial" link that asks first, and a bouncing arrow (pointing down, or up from below) that follows its target. Placed per screen so it never covers what the step needs: under the cafe, left of the plate, over the summary's title, under the map.
+- **Dev console:** `tutorial [restart|skip|<step>]`.

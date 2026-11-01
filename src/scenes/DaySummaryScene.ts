@@ -3,7 +3,9 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { ingredientLines, summaryLines, type DayStats } from '../logic/dayStats';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT } from '../ui/theme';
-import { getGameState } from './gameStore';
+import { getGameState, tutorialEvent } from './gameStore';
+import { StoryBox } from '../ui/StoryBox';
+import { TUTORIAL } from '../data/tutorial';
 
 const PANEL_WIDTH = 520;
 // Tall enough for the two wage lines too (dayStats.ts summaryLines).
@@ -63,9 +65,26 @@ export class DaySummaryScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
     });
+
+    // The tutorial's summary step (GAME_DESIGN.md §5.9): Grandma Badger over
+    // the panel's title, pointing at Exit cafe.
+    if (state.tutorial === 'summary') {
+      const guide = new StoryBox(this, {
+        rect: { x: 64, y: 4, width: 512, height: 60 },
+        step: TUTORIAL.summary,
+        arrow: () => ({ x: cx, y: exit.y - 18 }),
+        onFinished: () => {},
+        onSkip: () => {
+          tutorialEvent(this, 'skip');
+          guide.destroy();
+        },
+      });
+    }
   }
 
   private exit(): void {
+    // Before leaving: the day's end saves the game, tutorial step included.
+    tutorialEvent(this, 'exitCafe');
     this.scene.stop();
     this.request.onExit();
   }
