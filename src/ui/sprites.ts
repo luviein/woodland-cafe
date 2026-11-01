@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import type { ArtName } from '../art/spriteArt';
+import { SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
+import { spriteSize } from '../art/pixelSprite';
+import { VIEW } from '../art/sprites/sheetCritters';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
 
@@ -10,30 +12,45 @@ import { artKey } from './art';
 const STEP_MS = 140;
 /** Standing still this long (ms) counts as stopped: back to the standing frame. */
 const STOP_MS = 100;
+/** How high (px) a four-view critter hops on every other step. */
+const HOP = 2;
+
+/** How far above its tile a critter's head reaches (8px for 16x24 art, 16px for 24x32). */
+export function critterHeadroom(art: ArtName): number {
+  return spriteSize(SPRITE_ART[art]).height - TILE_SIZE;
+}
 
 /**
- * A 16x24 critter (art/sprites/critters.ts) inside a Container whose origin
- * is the top-left of the 16x16 tile it stands on: the feet are at the
- * tile's bottom and the head pokes 8px above it. Moving it is just
+ * A critter inside a Container whose origin is the top-left of the 16x16
+ * tile it stands on: the feet are at the tile's bottom and the head pokes
+ * above it (critterHeadroom). Moving it is just
  * setPosition, as before the art; it notices the moves itself to walk (and
  * face left or right), so no scene needs walking code.
  */
 export function createCritter(scene: Phaser.Scene, art: ArtName): Phaser.GameObjects.Container {
   const image = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(art), 0).setOrigin(0.5, 1);
   const container = scene.add.container(0, 0, [image]);
-  animateWalking(scene, container, image);
+  animateWalking(scene, container, image, VIEW_ART.has(art));
   return container;
 }
 
-/** Each frame: if the container moved, play the walking steps and face the way it went. */
+/**
+ * Each frame: if the container moved, walk and face the way it went. A
+ * 16x24 critter plays its two steps, mirrored to face left. A four-view
+ * critter (VIEW_ART) shows its front, back, left or right view and hops;
+ * standing still, it keeps facing the way it last went.
+ */
 function animateWalking(
   scene: Phaser.Scene,
   container: Phaser.GameObjects.Container,
   image: Phaser.GameObjects.Image,
+  views: boolean,
 ): void {
   let last = { x: container.x, y: container.y };
   let stillFor = STOP_MS;
   let walkedFor = 0;
+  let facing: number = VIEW.front;
+  let hopping = false;
   const onUpdate = (_time: number, delta: number) => {
     const dx = container.x - last.x;
     const dy = container.y - last.y;
@@ -44,12 +61,28 @@ function animateWalking(
     if (walked) {
       stillFor = 0;
       walkedFor += delta;
-      if (dx !== 0) image.setFlipX(dx < 0); // the art faces right
+      if (views) {
+        // Whichever way it moved most: sideways, else up (back) or down (front).
+        if (Math.abs(dx) >= Math.abs(dy)) facing = dx > 0 ? VIEW.right : VIEW.left;
+        else facing = dy > 0 ? VIEW.front : VIEW.back;
+      } else if (dx !== 0) {
+        image.setFlipX(dx < 0); // the art faces right
+      }
     } else {
       stillFor += delta;
     }
+    const moving = stillFor < STOP_MS;
     const step = Math.floor(walkedFor / STEP_MS) % 2;
-    image.setFrame(stillFor < STOP_MS ? 1 + step : 0);
+    if (!views) {
+      image.setFrame(moving ? 1 + step : 0);
+      return;
+    }
+    image.setFrame(facing);
+    // The hop: up on every other step. Put back on the ground when it stops
+    // (only then, so a waiting critter's bob, setBobbing, isn't fought).
+    if (moving) image.y = TILE_SIZE - (step === 1 ? HOP : 0);
+    else if (hopping) image.y = TILE_SIZE;
+    hopping = moving;
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));

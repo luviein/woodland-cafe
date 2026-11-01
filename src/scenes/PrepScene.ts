@@ -18,7 +18,8 @@ import {
   type DishToast,
 } from '../logic/toasting';
 import type { Order, ScoreResult } from '../logic/types';
-import type { CustomerArt } from '../art/spriteArt';
+import { SPRITE_ART, type CustomerArt } from '../art/spriteArt';
+import { spriteSize } from '../art/pixelSprite';
 import { playSound } from '../audio/audio';
 import { addArt } from '../ui/art';
 import { popLeaves } from '../ui/effects';
@@ -559,11 +560,13 @@ export class PrepScene extends Phaser.Scene {
   }
 
   /**
-   * The customer peeking over the counter: their floor sprite at 4x (a whole
-   * number, so the pixels stay square), standing still. (x, y) = body centre;
-   * the counter, drawn after, hides the legs.
+   * The customer peeking over the counter: their floor sprite, facing the
+   * player, scaled to about 96px tall (4x for 16x24 art, 3x for 24x32: whole
+   * numbers, so the pixels stay square). (x, y) = body centre; the counter,
+   * drawn after, hides the legs.
    */
   private drawCustomer(x: number, y: number): void {
-    addArt(this, x, y - 40, this.request.art).setOrigin(0.5, 0).setScale(4);
+    const scale = Math.max(1, Math.round(96 / spriteSize(SPRITE_ART[this.request.art]).height));
+    addArt(this, x, y - 40, this.request.art, 0).setOrigin(0.5, 0).setScale(scale);
   }
 }

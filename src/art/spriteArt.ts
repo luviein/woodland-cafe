@@ -16,7 +16,8 @@ import {
   TABLE,
   WALL,
 } from './sprites/cafe';
-import { BADGER, FOX, FROG, HEDGEHOG, MOUSE, RABBIT, RACCOON, SQUIRREL } from './sprites/critters';
+import { BADGER, FOX, FROG, RACCOON, SQUIRREL } from './sprites/critters';
+import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sprites/sheetCritters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
 
@@ -48,6 +49,7 @@ export const SPRITE_ART = {
   rabbit: RABBIT,
   squirrel: SQUIRREL,
   mouse: MOUSE,
+  deer: DEER,
   badger: BADGER,
   // Prep station: bin icons are named after their ingredient
   ...INGREDIENT_ICONS,
@@ -79,13 +81,20 @@ export function isArtName(name: string): name is ArtName {
   return name in SPRITE_ART;
 }
 
+/**
+ * Critters drawn in four views (front, back, left, right: VIEW in
+ * sheetCritters.ts), 24x32, who face the way they walk and hop. The rest
+ * are 16x24 with a standing frame and two steps, facing right.
+ */
+export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>(['hedgehog', 'rabbit', 'mouse', 'deer']);
+
 /** The animals customers can be (GAME_DESIGN.md §8.2). */
-export const CUSTOMER_ART = ['fox', 'rabbit', 'squirrel', 'mouse'] as const satisfies readonly ArtName[];
+export const CUSTOMER_ART = ['fox', 'rabbit', 'squirrel', 'mouse', 'deer'] as const satisfies readonly ArtName[];
 export type CustomerArt = (typeof CUSTOMER_ART)[number];
 
 /**
  * Which animal a customer is, from their id: the same on the floor and at
- * the prep station. Stepping by 3 (which shares no factor with 4) mixes
+ * the prep station. Stepping by 3 (which shares no factor with 5) mixes
  * them up, so customers in a row aren't always fox, rabbit, squirrel, mouse.
  */
 export function customerArt(id: number): CustomerArt {

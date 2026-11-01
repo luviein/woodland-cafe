@@ -47,7 +47,7 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createCleanerSprite, createCritter, createPlayerSprite, setBobbing } from '../ui/sprites';
+import { createCleanerSprite, createCritter, createPlayerSprite, critterHeadroom, setBobbing } from '../ui/sprites';
 import { customerArt } from '../art/spriteArt';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, endCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
@@ -349,9 +349,10 @@ export class FloorScene extends Phaser.Scene {
 
   /** What Grandma Badger points at on the floor: the customer to serve, or the mess to wipe. */
   private tutorialArrow(step: TutorialState): Point | null {
-    if (step === 'takeOrder' && customerAtCounter(this.floor, this.layout)) {
+    const atCounter = customerAtCounter(this.floor, this.layout);
+    if (step === 'takeOrder' && atCounter) {
       const { x, y } = this.tileToPixel(this.layout.orderSpot);
-      return { x: x + TILE_SIZE / 2, y: y - 22 }; // over their head and the "!"
+      return { x: x + TILE_SIZE / 2, y: y - critterHeadroom(customerArt(atCounter.id)) - 14 }; // over their head and the "!"
     }
     if (step === 'clean' && this.floor.messySeats.length > 0) {
       const messy = this.floor.messySeats[0];
@@ -591,12 +592,13 @@ export class FloorScene extends Phaser.Scene {
       // Clamp: if `set patienceSeconds` lowers the max mid-game, don't overflow.
       const fraction = Phaser.Math.Clamp(c.patience / FLOOR_CONFIG.patienceSeconds, 0, 1);
       const { x, y } = this.walkerToPixel(c.walker);
+      // Just over the head, however far it pokes above the tile.
+      const top = y - critterHeadroom(customerArt(c.id)) - 4;
       g.fillStyle(COLORS.ink);
-      // Just over the head, which pokes 8px above the tile.
-      g.fillRect(x + 2, y - 12, width, 3);
+      g.fillRect(x + 2, top, width, 3);
       g.fillStyle(patienceColor(fraction));
       // Math.ceil so a nearly-empty bar still shows one pixel until it hits 0.
-      g.fillRect(x + 3, y - 11, Math.ceil((width - 2) * fraction), 1);
+      g.fillRect(x + 3, top + 1, Math.ceil((width - 2) * fraction), 1);
     }
   }
 
@@ -623,7 +625,7 @@ export class FloorScene extends Phaser.Scene {
       const waiting = (c.phase === 'queued' || c.phase === 'ordered' || c.phase === 'served') && !isMoving(c.walker);
       setBobbing(sprite.body, waiting);
       // Above the patience bar, which sits just over the head.
-      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - 13);
+      sprite.label.setPosition(pos.x + TILE_SIZE / 2, pos.y - critterHeadroom(customerArt(c.id)) - 5);
 
       // Changing a Phaser Text's colour redraws its texture, so only touch
       // it when the status actually changes, not every frame.

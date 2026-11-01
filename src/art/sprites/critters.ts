@@ -1,7 +1,8 @@
 import type { PixelSprite } from '../pixelSprite';
 import type { PaletteName } from '../palette';
 
-// The cast (GAME_DESIGN.md §8.2): 16x24 critters, big round heads, dot eyes,
+// The code-drawn cast (GAME_DESIGN.md §8.2; the hedgehog, rabbit, mouse and
+// deer are the player's own art, in sheetCritters.ts): 16x24 critters, big round heads, dot eyes,
 // rosy cheeks. They're built from shared pieces so they all look like one
 // family and a change to, say, the eyes is made once:
 //
@@ -55,29 +56,6 @@ function critter(legend: Record<string, PaletteName>, top: readonly string[]): P
 
 const FACE = { o: 'darkBrown', w: 'white', n: 'darkBrown', p: 'pink' } as const;
 
-/** The player, the cafe owner: a hedgehog in an apron. */
-export const HEDGEHOG = critter({ ...FACE, f: 'tan', l: 'peach', s: 'brown', a: 'cream' }, [
-  '................',
-  '....o.o.o.o.....',
-  '...ososososo....',
-  '..osssssssssso..',
-  '.osssssssssssso.',
-  '.ossssffffsssso.',
-  '.osssffffffssso.',
-  '.ossffffffffsso.',
-  '.osffowfffowfso.',
-  '.osffoofffoofso.',
-  ...CHIN,
-  '....offffffo....',
-  '...ofaaaaaafo...',
-  '..offaaaaaaffo..',
-  '.offfaaaaaafffo.',
-  '.offfaaaaaafffo.',
-  '..offaaaaaaffo..',
-  '...ofaaaaaafo...',
-  '....oooooooo....',
-]);
-
 /** The Cleaner: a raccoon with a blue bandana (knot on the right) and a mask. */
 export const RACCOON = critter({ ...FACE, f: 'grey', l: 'white', m: 'darkSlate', b: 'blue' }, [
   '................',
@@ -123,15 +101,6 @@ export const FOX = critter({ ...FACE, f: 'orange', l: 'white' }, [
   ...BODY,
 ]);
 
-export const RABBIT = critter({ ...FACE, f: 'cream', l: 'white' }, [
-  '....oo....oo....',
-  '...opo....opo...',
-  '...opo....opo...',
-  '...opo....opo...',
-  ...HEAD,
-  ...BODY,
-]);
-
 /** A red squirrel, with its bushy tail curling up on the right. */
 export const SQUIRREL = critter({ ...FACE, f: 'clay', l: 'cream' }, [
   '................',
@@ -147,16 +116,6 @@ export const SQUIRREL = critter({ ...FACE, f: 'clay', l: 'cream' }, [
   '..offllllllfffo.',
   '...offffffffo...',
   '....oooooooo....',
-]);
-
-/** A mouse with big round pink ears. */
-export const MOUSE = critter({ ...FACE, f: 'silver', l: 'white' }, [
-  '.oooo......oooo.',
-  'ofppfo....ofppfo',
-  'ofppfo....ofppfo',
-  '.offo......offo.',
-  ...HEAD,
-  ...BODY,
 ]);
 
 /** Grandma Badger, who hands over the cafe (GAME_DESIGN.md §5.9): striped face, plum shawl. */
