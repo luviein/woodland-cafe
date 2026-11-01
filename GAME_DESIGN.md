@@ -363,6 +363,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 ## 7. Later Features
 
 - More furniture kinds: bigger tables, decorations (plants, rugs), a bigger room
+- **Furniture designs and a storage catalogue:** several designs of the same kind (e.g. a round oak table and a square birch one, or different chairs). The Decorate storage tray becomes a catalogue panel along the bottom: one **card per design** with its picture, its name and a **count badge** (cards with none in storage are faded), grouped by **category tabs** (e.g. Tables, Chairs, Decorations, Outdoor) with filter chips and counts. Tap or drag a card to place that design; tapping a placed piece keeps the Move / Put away menu. The panel can be folded away to see the whole cafe. Needs storage and placed pieces to record the design, not just the kind (a save version bump, §6.1).
 - More employee roles (e.g. a Server who carries dishes, a Greeter who takes orders), and more than one of a role
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
 - **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
