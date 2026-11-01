@@ -22,11 +22,11 @@
     ],
     "prep": [
       {
-        "text": "This is the prep station. Their order is in the speech bubble.",
+        "text": "This is the prep station. Prepare the order according to what customer wants.",
         "arrow": "bubble"
       },
       {
-        "text": "Listen for extras, like 'toasted'. Get them right for a bigger tip!",
+        "text": "Sometimes they want a little extra. Get it right for a bigger tip!",
         "arrow": "bubble"
       },
       {
@@ -34,14 +34,18 @@
         "arrow": "recipes"
       },
       {
-        "text": "Jam Bread: bread first, then jam. Tap the bins in that order, then Serve.",
+        "text": "Jam Bread: bread first, then jam. Once you're done, serve up your tasty food!",
         "arrow": "dish"
       }
     ],
     "clean": [
       {
         "text": "Lovely! Customers leave a mess when they finish eating. Tap that table to wipe it clean.",
-        "arrow": "mess"
+        "arrow": "mess",
+        "waits": true
+      },
+      {
+        "text": "You can hire someone later to do the dirty work for you."
       }
     ],
     "freePlay": [
@@ -49,7 +53,7 @@
         "text": "That's all there is to it! Customers will keep coming until closing time."
       },
       {
-        "text": "Keep them happy and quick, and they tip in Leaves. Off you go, dear!"
+        "text": "Keep them happy and serve them quick, they will tip you with more Leaves. Off you go, dear!"
       }
     ],
     "summary": [
@@ -63,7 +67,7 @@
         "text": "This is Woodland Island, dear. Tap a signpost to go somewhere."
       },
       {
-        "text": "The Cafe: tap it to open for the next day, or choose Decorate to arrange your tables and chairs.",
+        "text": "The Cafe: tap it to open for the next day, or choose Decorate to arrange your furniture.",
         "arrow": "cafe"
       },
       {
@@ -79,7 +83,7 @@
         "arrow": "forest"
       },
       {
-        "text": "Now go and have a look around the Marketplace and the Forest. I'll meet you there!"
+        "text": "Now, have a look around the Marketplace and the Forest. I'll meet you there!"
       }
     ],
     "explore": [
@@ -96,6 +100,9 @@
         "arrow": "notes"
       },
       {
+        "text": "Before I forget, cafe opening hours are from 08:00 to 17:00."
+      },
+      {
         "text": "The cafe's yours now. I'll pop in for a cup now and then!"
       }
     ]
@@ -103,7 +110,7 @@
   "tips": {
     "decorate": [
       {
-        "text": "Decorating! Arrange the cafe however you like, dear. Moving things around is free."
+        "text": "Arrange the furniture however you like, dear. Moving things around is free."
       },
       {
         "text": "Storage holds pieces you bought or put away. Tap one, then tap the floor, or drag it straight in.",
@@ -114,7 +121,7 @@
         "arrow": "table"
       },
       {
-        "text": "A chair can only be at one table, and the way to the door must stay clear. If a spot won't do, I'll say why."
+        "text": "Happy decorating! Remember, the door must stay clear. If a spot won't do, you will be notified."
       }
     ],
     "marketplace": [
@@ -130,24 +137,24 @@
         "arrow": "specialty"
       },
       {
-        "text": "Tools sells equipment, like a Toaster for toasted orders.",
+        "text": "Tools sells equipment, it will unlock new variations to your recipes.",
         "arrow": "tools"
       },
       {
-        "text": "The Carpenter makes tables and chairs, for more seats in your cafe.",
+        "text": "The Carpenter makes furniture.",
         "arrow": "carpenter"
       },
       {
-        "text": "The Notice Board is where you hire staff. They are paid every day.",
+        "text": "The Notice Board is where you hire staff. You pay them every day. ",
         "arrow": "noticeBoard"
       },
       {
-        "text": "And keep an eye out for Leaves on the ground! Walk over them to pick them up."
+        "text": "Oh right! Keep an eye out for Leaves on the ground! Walk over them to pick them up."
       }
     ],
     "forest": [
       {
-        "text": "The Forest! Leaves fall here too: walk over them to pick them up. A few each day."
+        "text": "Ah the forest... reminds me of the good ol' days. Leaves fall here too, walk over them to pick them up. "
       },
       {
         "text": "Mushroom patches and berry bushes can be gathered once a day. Tap one to gather it.",

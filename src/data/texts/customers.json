@@ -4,7 +4,8 @@
       "direct": [
         "Just plain bread, please.",
         "One plain bread, thank you!",
-        "Plain bread for me. Nothing fancy."
+        "Plain bread for me. Nothing fancy.",
+        "I desire something plain... something bready..."
       ],
       "hint": [
         "Just bread. I like to keep things simple.",
@@ -21,7 +22,8 @@
       "hint": [
         "Something sweet on soft bread, please.",
         "A slice with something sticky and berry-sweet on top.",
-        "Bread with a smear of something sweet, please."
+        "Bread with a smear of something sweet, please.",
+        "I'm really craving for sweet gooey paste on bread."
       ]
     },
     "extraJammyBread": {
@@ -33,7 +35,8 @@
       "hint": [
         "Bread, and jam... and then more jam!",
         "A slice with twice the sweet, sticky stuff!",
-        "Something sweet on bread. No, sweeter. Double it!"
+        "Something sweet on bread. No, sweeter. Double it!",
+        "JAM the bread. I mean really give the jam to me!"
       ]
     },
     "mushroomBread": {
@@ -212,7 +215,7 @@
     ],
     "wrong": [
       "This isn't what I ordered!",
-      "Hmph! My whiskers are twitching.",
+      "Ew? How could you!",
       "What is this?! I asked for something else!",
       "I'm not paying for this!"
     ]
