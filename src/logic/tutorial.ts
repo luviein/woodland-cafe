@@ -1,4 +1,5 @@
 import { TUTORIAL_RECIPE, TUTORIAL_STEPS, type TutorialStep } from '../data/tutorial';
+import type { LocationId } from '../data/locations';
 import type { FloorGuide } from './floor';
 import type { Order } from './types';
 
@@ -58,6 +59,16 @@ export function floorGuide(state: TutorialState): FloorGuide {
 /** The guided customer's order: always the same simple dish, no modifiers. */
 export function tutorialOrder(): Order {
   return { recipeId: TUTORIAL_RECIPE, modifiers: [], quantity: 1 };
+}
+
+/**
+ * Places other than the Cafe stay locked until Grandma's map tour is
+ * finished (GAME_DESIGN.md §5.9), so new players hear what each is for
+ * first. The Cafe stays open: the next day can always start.
+ */
+export function lockedForTour(state: TutorialState, place: LocationId): boolean {
+  if (place === 'cafe' || state === 'done') return false;
+  return TUTORIAL_STEPS.indexOf(state) <= TUTORIAL_STEPS.indexOf('map');
 }
 
 export function isTutorialState(value: unknown): value is TutorialState {

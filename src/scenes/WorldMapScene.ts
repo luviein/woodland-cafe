@@ -14,6 +14,7 @@ import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
 import { BOTTOM_BOX_LEFT, NOTES_BUTTON } from '../ui/hudLayout';
 import { exploredAll } from '../logic/gameState';
+import { lockedForTour } from '../logic/tutorial';
 import { TUTORIAL } from '../data/tutorial';
 
 /** What a location's scene is started with. */
@@ -118,9 +119,10 @@ export class WorldMapScene extends Phaser.Scene {
       onFinished: () => {
         tutorialEvent(this, 'next');
         guide.destroy();
-        // Map lines done: if both places were already seen, the farewell (or
-        // the explore reminder) follows straight away.
-        this.showTutorial();
+        // The tour is over: redraw the map, so the places unlock and the
+        // explore reminder (or, if both places were already seen, the
+        // farewell) shows.
+        if (step === 'map') this.scene.restart(this.request);
       },
       onSkip: () => {
         tutorialEvent(this, 'skip');
@@ -133,6 +135,7 @@ export class WorldMapScene extends Phaser.Scene {
     const choice = chooseLocation(id);
     const sign = this.signPosition(id);
     if (choice === 'locked') return this.showFloatingText(sign, 'Locked');
+    if (lockedForTour(getGameState(this).tutorial, id)) return this.showFloatingText(sign, "Finish Grandma's tour first");
     if (choice === 'notBuilt') return this.showFloatingText(sign, 'Coming soon!');
 
     // The cafe starts a new day, which can't be undone: ask first.
@@ -296,7 +299,8 @@ export class WorldMapScene extends Phaser.Scene {
     const location = LOCATIONS[id];
     const here = id === this.request.current;
     const { x, y } = this.signPosition(id);
-    const text = location.locked ? `🔒 ${location.name}` : location.name;
+    const locked = location.locked || lockedForTour(getGameState(this).tutorial, id);
+    const text = locked ? `🔒 ${location.name}` : location.name;
     // About 8px per character in the 16px button font, plus some padding.
     const width = text.length * 9 + 16;
 

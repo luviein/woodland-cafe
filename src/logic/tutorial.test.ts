@@ -7,6 +7,7 @@ import {
   advanceTutorial,
   floorGuide,
   isGuidedStart,
+  lockedForTour,
   tutorialOrder,
   type TutorialEvent,
   type TutorialState,
@@ -54,6 +55,16 @@ describe('the tutorial', () => {
 
   it('the guided order can be made from the starter ingredients', () => {
     expect(RECIPES[TUTORIAL_RECIPE].layers.every((id) => STARTER_INGREDIENTS.includes(id))).toBe(true);
+  });
+});
+
+describe('places during the tutorial', () => {
+  it('everywhere but the Cafe is locked until the map tour is done', () => {
+    expect(lockedForTour('map', 'forest')).toBe(true);
+    expect(lockedForTour('map', 'marketplace')).toBe(true);
+    expect(lockedForTour('map', 'cafe')).toBe(false);
+    expect(lockedForTour('explore', 'forest')).toBe(false);
+    expect(lockedForTour('done', 'marketplace')).toBe(false);
   });
 });
 
