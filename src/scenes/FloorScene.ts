@@ -66,6 +66,13 @@ import type { WorldMapRequest } from './WorldMapScene';
 const feetDepth = (pixelY: number): number => pixelY + TILE_SIZE;
 const OVERLAY = 1000;
 
+/** The view that faces from one tile toward a next-door one: sideways, else up (back) or down (front). */
+function facingToward(from: Point, to: Point): View {
+  if (to.x > from.x) return 'right';
+  if (to.x < from.x) return 'left';
+  return to.y < from.y ? 'back' : 'front';
+}
+
 /** The tutorial steps Grandma Badger talks through here on the floor. */
 const FLOOR_STEPS: ReadonlySet<TutorialStep> = new Set(['intro', 'takeOrder', 'clean', 'freePlay']);
 /** Her box: under the cafe, clear of the corner buttons. */
@@ -310,8 +317,7 @@ export class FloorScene extends Phaser.Scene {
     const pos = this.walkerToPixel(this.player.walker);
     // A hair in front of anyone on exactly the same row.
     this.playerSprite.setPosition(pos.x, pos.y).setDepth(feetDepth(pos.y) + 0.2);
-    // Behind the counter, the player faces forward, toward the customers.
-    setFacing(this.playerSprite, samePoint(this.player.walker.tile, this.layout.counterSpot) ? 'front' : null);
+    setFacing(this.playerSprite, this.playerFacing());
     if (!isMoving(this.player.walker) && !this.player.cleaning) {
       this.destinationMarker.setVisible(false);
     }
@@ -650,19 +656,24 @@ export class FloorScene extends Phaser.Scene {
   }
 
   /**
+   * Which way the player faces while standing: toward the table they're
+   * wiping, forward (toward the customers) behind the counter, else the way
+   * they last walked.
+   */
+  private playerFacing(): View | null {
+    const tile = this.player.walker.tile;
+    if (this.player.cleaning) return facingToward(tile, tableById(this.layout, this.player.cleaning.tableId).position);
+    return samePoint(tile, this.layout.counterSpot) ? 'front' : null;
+  }
+
+  /**
    * Which way a standing customer faces: the counter (their back to the
    * player) while queuing and ordering, their table while eating, else the
    * way they last walked.
    */
   private customerFacing(c: Customer): View | null {
     if (c.phase === 'queued' || c.phase === 'ordered' || c.phase === 'served') return 'back';
-    if (c.phase === 'eating' && c.seat) {
-      const table = tableById(this.layout, c.seat.tableId).position;
-      const { x, y } = c.seat.seat;
-      if (table.x > x) return 'right';
-      if (table.x < x) return 'left';
-      return table.y < y ? 'back' : 'front';
-    }
+    if (c.phase === 'eating' && c.seat) return facingToward(c.seat.seat, tableById(this.layout, c.seat.tableId).position);
     return null;
   }
 
