@@ -398,6 +398,11 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
 - **Background music:** a soft, cosy loop (made in code like the effects, or a music file), with its own volume next to the effects.
 - **A pixel font** for all text, to match the art.
+- **Multiplayer places (a big later step):** the outdoor places (the Forest, the Marketplace, and places added later) become shared spaces where players meet: everyone there sees the others walking around as their critters, with their name over their head, and can **chat** (a chat box along the bottom; messages also show as speech bubbles over the speaker for a few seconds). A "N critters on the island right now" counter. Each player's own cafe stays their own (single-player).
+  - **Needs:** a game server (keeps who is where, and passes on moves and chat), player accounts and names, and saves kept on the server instead of the browser.
+  - **Safety, from the start:** a word filter on chat and names, block and report buttons, and limits on how fast messages can be sent. Worth deciding early who the game is for (e.g. younger players need stricter chat rules).
+  - **Fairness:** the server decides what counts (Leaves picked up, purchases), so a changed copy of the game can't cheat in shared places.
+- **Appearance and wardrobe:** the player changes how their critter looks from a **profile and inventory menu**: a portrait of their critter on a backdrop, their name, and an inventory of cosmetic items in **category tabs** (e.g. Hats, Clothes, Held items, Colours, Backs), shown as cards, paged. Items are bought or earned in the game and are cosmetic only. Drawn as layers on top of the critter, so each item needs a version for each of the four views (§8.2), lined up with the critter's head and body. Shown to other players in the multiplayer places. Pairs with **choose your animal** below.
 - **Choose your animal:** at the start of a new game the player picks which critter they are (the cafe owner is a hedgehog until then, §8.2).
 
 ---
