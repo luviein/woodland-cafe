@@ -2,7 +2,7 @@ import './gallery.css';
 import { CRITTER_ART, spriteQuality } from '../art/checks';
 import { DRAWN_ART } from '../art/drawnArt';
 import { framePixels, spriteSize } from '../art/pixelSprite';
-import { ART_NAMES, SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
+import { ART_NAMES, CHRISTMAS_ART, SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
 import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { INGREDIENT_IDS } from '../data/ingredients';
 
@@ -21,6 +21,7 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Critters', (n) => CRITTER_ART.includes(n)],
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
+  ['Christmas', (n) => (CHRISTMAS_ART as readonly ArtName[]).includes(n)],
   ['Outdoors and map', (n) => ['leaf', 'grass', 'forestFloor', 'tree', 'mapTree', 'mushroomPatch', 'berryBush', 'stall', 'cafeHouse'].includes(n)],
   ['Icons and effects', () => true], // everything else
 ];
@@ -32,6 +33,7 @@ function groupOf(name: ArtName): string {
 function source(name: ArtName): string {
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
   if (VIEW_ART.has(name)) return 'converted from your critter sheet';
+  if ((CHRISTMAS_ART as readonly ArtName[]).includes(name)) return 'converted from your Christmas drawings';
   return 'drawn in code';
 }
 

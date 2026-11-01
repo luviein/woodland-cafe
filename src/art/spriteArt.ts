@@ -17,6 +17,23 @@ import {
   WALL,
 } from './sprites/cafe';
 import { BADGER, FOX, FROG, RACCOON } from './sprites/sheetCritters2';
+import {
+  BAUBLES,
+  CHAIR_WITH_BOW,
+  CHRISTMAS_STALL,
+  CHRISTMAS_TREE,
+  FAIRY_LIGHTS,
+  GIFT_BOXES,
+  LANTERN,
+  PINE_GARLAND,
+  POINSETTIA,
+  SNOWMAN,
+  SNOW_GLOBE,
+  STOCKINGS,
+  TABLE_AND_CANDLE,
+  TREE_PICTURE,
+  WREATH,
+} from './sprites/christmas';
 import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sprites/sheetCritters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
@@ -70,6 +87,22 @@ export const SPRITE_ART = {
   berryBush: BERRY_BUSH,
   stall: STALL,
   cafeHouse: CAFE_HOUSE,
+  // The Christmas edition (GAME_DESIGN.md §5.10)
+  christmasTree: CHRISTMAS_TREE,
+  snowman: SNOWMAN,
+  chairWithBow: CHAIR_WITH_BOW,
+  tableAndCandle: TABLE_AND_CANDLE,
+  pineGarland: PINE_GARLAND,
+  fairyLights: FAIRY_LIGHTS,
+  stockings: STOCKINGS,
+  baubles: BAUBLES,
+  giftBoxes: GIFT_BOXES,
+  wreath: WREATH,
+  lantern: LANTERN,
+  treePicture: TREE_PICTURE,
+  snowGlobe: SNOW_GLOBE,
+  poinsettia: POINSETTIA,
+  christmasStall: CHRISTMAS_STALL,
 } satisfies Record<string, PixelSprite>;
 
 export type ArtName = keyof typeof SPRITE_ART;
@@ -83,7 +116,7 @@ export function isArtName(name: string): name is ArtName {
 /**
  * Critters drawn in four views (front, back, left, right: VIEW in
  * sheetCritters.ts), each standing plus two steps, who face the way they
- * walk. The rest are 16x24 with a standing frame and two steps, facing right.
+ * walk.
  */
 export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>([
   'hedgehog',
@@ -95,6 +128,25 @@ export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>([
   'frog',
   'fox',
 ]);
+
+/** The Christmas edition's art (GAME_DESIGN.md §5.10), converted from the player's drawings. */
+export const CHRISTMAS_ART = [
+  'christmasTree',
+  'snowman',
+  'chairWithBow',
+  'tableAndCandle',
+  'pineGarland',
+  'fairyLights',
+  'stockings',
+  'baubles',
+  'giftBoxes',
+  'wreath',
+  'lantern',
+  'treePicture',
+  'snowGlobe',
+  'poinsettia',
+  'christmasStall',
+] as const satisfies readonly ArtName[];
 
 /** The animals customers can be (GAME_DESIGN.md §8.2). */
 export const CUSTOMER_ART = ['fox', 'rabbit', 'deer', 'mouse'] as const satisfies readonly ArtName[];
