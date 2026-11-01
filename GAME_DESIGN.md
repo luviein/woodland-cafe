@@ -363,7 +363,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **A seasonal stall:** the **Christmas stall** (the player's own stall art: snowy roof, a wreath, a candy-striped awning, a red counter with stockings) stands in the open lower middle of the Marketplace. It's there from **1 December to 31 December** (the player's own date). **While testing it's always there** (a dev setting, on in the dev build; the release build goes by the date).
 - **The catalogue:** tapping the stall opens a **catalogue** instead of a shop list, in the cafe's own look (wood and cream paper, not copied from other games):
   - **Cover:** "Woodland Cafe Catalogue", "Christmas Edition", a snowy picture and **Tap to open**. A close button in the corner; `Esc` closes it too.
-  - **Opened:** a **two-page book**. Each page holds **4 item cards**: the item's picture, its name, one line about it, and its **price button** (🍃). Page arrows and the wallet along the top; **tabs down the side** for the catalogue's sections (Christmas for now, more later).
+  - **Opened:** a **two-page book**. Each page holds **4 item cards**: the item's picture, its name, one line about it, and its **price button** (🍃). Page arrows and the wallet along the top; **tabs down the side** for the catalogue's sections: **Furniture** (its tables and chairs), **Decor** (floor decorations) and **Wall** (wall decorations). How many of each you have shows on its card. Left/right arrow keys turn the pages.
   - **Buying** is like the Carpenter: one tap buys one, straight into **storage**; the button is greyed out when the wallet can't pay.
 - **The Christmas edition** (the player's own item art, converted to the game's pixel grid like the critters):
 
