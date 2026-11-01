@@ -131,10 +131,67 @@ export const SNOWMAN: PixelSprite = {
   ],
 };
 
-/** Chair with Bow: a chair (customers sit on it). 18x25. */
+/** Chair with Bow: a chair (customers sit on it). Three views, facing the way the sitter faces: front, left, right. 18x25. */
 export const CHAIR_WITH_BOW: PixelSprite = {
   legend: LEGEND,
   frames: [
+    // front
+    [
+      '...fff......fff...',
+      '...fBffffffffBf...',
+      '...fBgDDffDDgBf...',
+      '...fBgyhDDhygBf...',
+      '...fBggyffyggBf...',
+      '...fBffffffffBf...',
+      '...fBf......fBf...',
+      '...fmf......fmf...',
+      '...fBf......fBf...',
+      '...fBf......fBf...',
+      '...fmf......fmf...',
+      '..ffffffffffffff..',
+      '..fhtttttttttthf..',
+      '..fhtttttttttthf..',
+      '..ffhhhhhhhhhhff..',
+      '..fBuBBBuuBBBuBf..',
+      '..ffffffffffffff..',
+      '...fBf......fBf...',
+      '...fBf......fBf...',
+      '...fmf......fmf...',
+      '...fBf......fBf...',
+      '...fBf......fBf...',
+      '...fBf......fBf...',
+      '...fBf......fBf...',
+      '...fff......fff...',
+    ],
+    // facing left
+    [
+      '.....ff........ff.',
+      '....fBffff.aff.fEf',
+      '....fBgfHDffDfffjf',
+      '....fBgfyffhyfgBmf',
+      '....fBgmfffffmgBf.',
+      '....fBfffzfzfffBf.',
+      '....fBf..f.ff.fBf.',
+      '....fBf.......fmf.',
+      '....fBf.......fBf.',
+      '....fBf.......fBf.',
+      '....fBf.......fmf.',
+      '...ffffffffffffjf.',
+      '.ffttttttttttthff.',
+      '.fttttttttttthfff.',
+      'fffffffffffhhfjjf.',
+      'fBuuuBBBuBEfjjjff.',
+      'fffffffuuBuujffjf.',
+      '.fjffjf..ffff.fjf.',
+      '.fjffjf...fjf.fmf.',
+      '.fjffjf...fBf.fjf.',
+      '.fjffjf...fBf.fjf.',
+      '.fjf.f....fBf.fff.',
+      '.fjf......fBf.....',
+      '.ff.......fBf.....',
+      '...........fo.....',
+    ],
+    // facing right
     [
       '.ff........ff.....',
       'fEf.ffa.ffffBf....',
