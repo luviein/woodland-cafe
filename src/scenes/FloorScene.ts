@@ -30,6 +30,7 @@ import { missingIngredient, orderIngredients, plateIngredients, useIngredients }
 import { pointKey, samePoint, tableById, type Layout, type Point } from '../logic/layout';
 import { puffOfDust } from '../ui/effects';
 import { StoryBox, type BoxRect } from '../ui/StoryBox';
+import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
 import { TUTORIAL, type TutorialStep } from '../data/tutorial';
 import { floorGuide, isGuidedStart, tutorialOrder, type TutorialState } from '../logic/tutorial';
 import { playSound } from '../audio/audio';
@@ -56,8 +57,8 @@ import type { WorldMapRequest } from './WorldMapScene';
 
 /** The tutorial steps Grandma Badger talks through here on the floor. */
 const FLOOR_STEPS: ReadonlySet<TutorialStep> = new Set(['intro', 'takeOrder', 'clean', 'freePlay']);
-/** Her box: under the cafe, clear of the speaker button in the corner. */
-const GUIDE_RECT: BoxRect = { x: 36, y: 294, width: 568, height: 62 };
+/** Her box: under the cafe, clear of the corner buttons. */
+const GUIDE_RECT: BoxRect = { x: BOTTOM_BOX_LEFT, y: 294, width: 604 - BOTTOM_BOX_LEFT, height: 62 };
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;

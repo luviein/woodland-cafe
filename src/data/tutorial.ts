@@ -1,4 +1,3 @@
-import type { LocationId } from './locations';
 import type { RecipeId } from './recipes';
 
 // The tutorial's words and settings (GAME_DESIGN.md §5.9). Grandma Badger
@@ -6,7 +5,17 @@ import type { RecipeId } from './recipes';
 // The order of the steps and what finishes each one live in
 // logic/tutorial.ts.
 
-export const TUTORIAL_STEPS = ['intro', 'takeOrder', 'prep', 'clean', 'freePlay', 'summary', 'map'] as const;
+export const TUTORIAL_STEPS = [
+  'intro',
+  'takeOrder',
+  'prep',
+  'clean',
+  'freePlay',
+  'summary',
+  'map',
+  'explore',
+  'farewell',
+] as const;
 export type TutorialStep = (typeof TUTORIAL_STEPS)[number];
 
 export interface TutorialStepDef {
@@ -16,8 +25,13 @@ export interface TutorialStepDef {
    * 'action': the last line stays up until the player does the thing.
    */
   waitsFor: 'next' | 'action';
-  /** On the map: whose signpost the arrow points at on each line (null: none). */
-  pointsAt?: readonly (LocationId | null)[];
+  /**
+   * What the arrow points at on each line (null: nothing). The scene
+   * showing the lines knows what the names mean: places on the map
+   * (LocationId), stalls in the Marketplace (ShopId), 'forage' in the
+   * Forest, 'notes' for the ? button.
+   */
+  pointsAt?: readonly (string | null)[];
 }
 
 export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
@@ -67,7 +81,23 @@ export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
       'The Marketplace: stock at the Pantry, new ingredients at Specialty, equipment at Tools, furniture at the Carpenter, staff at the Notice Board.',
       "Those 30 of each won't last forever, so stock up at the Pantry before you run out!",
       'The Forest: pick up Leaves and gather mushrooms and berries. They grow back every day.',
-      "The cafe's yours now. I'll pop in for a cup now and then! (Tap ? any time to read my notes.)",
+      "Now go and have a look around the Marketplace and the Forest. I'll meet you there!",
+    ],
+  },
+  explore: {
+    // A reminder on the map until both places have been seen; the guides
+    // themselves are the one-off tips below, shown in each place.
+    waitsFor: 'action',
+    pointsAt: [null],
+    lines: ['Have a look around the Marketplace and the Forest, dear. I\'ll show you what\'s there.'],
+  },
+  farewell: {
+    waitsFor: 'next',
+    pointsAt: [null, 'notes', null],
+    lines: [
+      "You've seen it all now, dear. I'm so proud of you!",
+      'If you ever forget something, tap ? down here to read my notes.',
+      "The cafe's yours now. I'll pop in for a cup now and then!",
     ],
   },
 };
@@ -76,7 +106,7 @@ export const TUTORIAL: Record<TutorialStep, TutorialStepDef> = {
  * One-off tips: Grandma explains a part of the game the first time the
  * player opens it, then never again (GAME_DESIGN.md §5.9).
  */
-export const TIP_IDS = ['decorate'] as const;
+export const TIP_IDS = ['decorate', 'marketplace', 'forest'] as const;
 export type TipId = (typeof TIP_IDS)[number];
 
 export const TIPS: Record<TipId, TutorialStepDef> = {
@@ -87,6 +117,28 @@ export const TIPS: Record<TipId, TutorialStepDef> = {
       'Storage holds pieces you bought or put away. Tap one, then tap the floor, or drag it straight in.',
       'Tap a piece in the cafe for its menu: Move it somewhere else, or Put it away. Or just drag it.',
       "A chair can only be at one table, and the way to the door must stay clear. If a spot won't do, I'll say why.",
+    ],
+  },
+  marketplace: {
+    waitsFor: 'next',
+    pointsAt: [null, 'pantry', 'specialty', 'tools', 'carpenter', 'noticeBoard', null],
+    lines: [
+      'Welcome to the Marketplace! Tap a stall to walk over and shop.',
+      'The Pantry sells stock for your bins, one or ten at a time.',
+      'Specialty sells new ingredients. Each one brings new recipes to the menu.',
+      'Tools sells equipment, like a Toaster for toasted orders.',
+      'The Carpenter makes tables and chairs, for more seats in your cafe.',
+      'The Notice Board is where you hire staff. They are paid every day.',
+      'And keep an eye out for Leaves on the ground! Walk over them to pick them up.',
+    ],
+  },
+  forest: {
+    waitsFor: 'next',
+    pointsAt: [null, 'forage', null],
+    lines: [
+      'The Forest! Leaves fall here too: walk over them to pick them up. A few each day.',
+      'Mushroom patches and berry bushes can be gathered once a day. Tap one to gather it.',
+      "They grow back by tomorrow. Free ingredients for your cafe, dear!",
     ],
   },
 };

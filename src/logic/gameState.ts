@@ -65,6 +65,11 @@ export function seeTip(state: GameState, tip: TipId): GameState {
   return state.tipsSeen.includes(tip) ? state : { ...state, tipsSeen: TIP_IDS.filter((t) => t === tip || state.tipsSeen.includes(t)) };
 }
 
+/** Both place guides seen: the tutorial's explore step is done (GAME_DESIGN.md §5.9). */
+export function exploredAll(state: GameState): boolean {
+  return state.tipsSeen.includes('marketplace') && state.tipsSeen.includes('forest');
+}
+
 /** Skip tutorial: the tutorial is over, and the one-off tips are skipped too (GAME_DESIGN.md §5.9). */
 export function skipTutorial(state: GameState): GameState {
   return { ...state, tutorial: 'done', tipsSeen: [...TIP_IDS] };

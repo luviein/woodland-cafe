@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { RECIPES } from '../data/recipes';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
-import { NOTES, TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
-import { createNewGame, seeTip, skipTutorial } from './gameState';
+import { NOTES, TIPS, TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
+import { createNewGame, exploredAll, seeTip, skipTutorial } from './gameState';
 import {
   advanceTutorial,
   floorGuide,
@@ -18,7 +18,7 @@ describe('the tutorial', () => {
   });
 
   it('goes through every step in order, each finished by its own event', () => {
-    const events: TutorialEvent[] = ['next', 'orderTaken', 'served', 'wiped', 'next', 'exitCafe', 'next'];
+    const events: TutorialEvent[] = ['next', 'orderTaken', 'served', 'wiped', 'next', 'exitCafe', 'next', 'explored', 'next'];
     const visited: TutorialState[] = ['intro'];
     for (const event of events) visited.push(advanceTutorial(visited[visited.length - 1], event));
     expect(visited).toEqual([...TUTORIAL_STEPS, 'done']);
@@ -67,13 +67,21 @@ describe('one-off tips', () => {
   });
 
   it('are all skipped along with the tutorial', () => {
-    expect(skipTutorial(createNewGame())).toMatchObject({ tutorial: 'done', tipsSeen: ['decorate'] });
+    expect(skipTutorial(createNewGame())).toMatchObject({ tutorial: 'done', tipsSeen: ['decorate', 'marketplace', 'forest'] });
   });
 });
 
 describe('the map tour', () => {
-  it("names one place (or none) for each of Grandma's map lines", () => {
-    expect(TUTORIAL.map.pointsAt).toHaveLength(TUTORIAL.map.lines.length);
+  it('every pointsAt list has one target (or none) per line', () => {
+    for (const def of [...Object.values(TUTORIAL), ...Object.values(TIPS)]) {
+      if (def.pointsAt) expect(def.pointsAt).toHaveLength(def.lines.length);
+    }
+  });
+
+  it('the explore step is done once both place guides are seen', () => {
+    const one = seeTip(createNewGame(), 'marketplace');
+    expect(exploredAll(one)).toBe(false);
+    expect(exploredAll(seeTip(one, 'forest'))).toBe(true);
   });
 });
 

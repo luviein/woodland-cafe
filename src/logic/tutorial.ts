@@ -16,6 +16,7 @@ export type TutorialEvent =
   | 'served'
   | 'wiped'
   | 'exitCafe'
+  | 'explored' // both place guides (Marketplace, Forest) seen
   | 'skip';
 
 /** What finishes each step. (freePlay's Next leads to waiting for the day's summary.) */
@@ -27,6 +28,8 @@ const FINISHED_BY: Record<TutorialStep, TutorialEvent> = {
   freePlay: 'next',
   summary: 'exitCafe',
   map: 'next',
+  explore: 'explored',
+  farewell: 'next',
 };
 
 /** The tutorial after `event`: on to the next step if it finishes this one, else unchanged. */

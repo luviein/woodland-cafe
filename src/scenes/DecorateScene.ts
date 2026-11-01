@@ -20,6 +20,7 @@ import { COLORS, TEXT, css } from '../ui/theme';
 import { getGameState, setGameState, tutorialEvent } from './gameStore';
 import { seeTip } from '../logic/gameState';
 import { StoryBox } from '../ui/StoryBox';
+import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
 import { TIPS } from '../data/tutorial';
 import type { WorldMapRequest } from './WorldMapScene';
 
@@ -159,7 +160,8 @@ export class DecorateScene extends Phaser.Scene {
     if (getGameState(this).tipsSeen.includes('decorate')) return;
     const firstTable = this.furniture().placed.find((p) => p.kind === 'table');
     const guide = new StoryBox(this, {
-      rect: { x: 36, y: 294, width: 480, height: 62 },
+      // Clear of the corner buttons on the left and Done on the right.
+      rect: { x: BOTTOM_BOX_LEFT, y: 294, width: 516 - BOTTOM_BOX_LEFT, height: 62 },
       step: TIPS.decorate,
       arrow: (line) => {
         const tray = this.trayButtons.get('table');

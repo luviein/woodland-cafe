@@ -5,12 +5,12 @@ import { BASE_HEIGHT } from '../config/display';
 import { addArt } from '../ui/art';
 import { Button } from '../ui/Button';
 import { NotesPanel } from '../ui/NotesPanel';
+import { NOTES_BUTTON, SPEAKER_BUTTON } from '../ui/hudLayout';
+import { watchGameState } from './gameStore';
 import { COLORS, TEXT } from '../ui/theme';
 
-/** The speaker button's centre: the bottom-left corner, clear of every screen's own buttons. */
-const ICON = { x: 16, y: BASE_HEIGHT - 16, size: 22 };
-/** Grandma's notes button, just right of the speaker. */
-const NOTES_ICON = { x: ICON.x + ICON.size + 4, y: ICON.y };
+const ICON = SPEAKER_BUTTON;
+const NOTES_ICON = NOTES_BUTTON;
 const PANEL = { x: 34, y: BASE_HEIGHT - 48, width: 176, height: 30 };
 const TRACK = { x: PANEL.x + 34, width: 100 };
 
@@ -41,7 +41,12 @@ export class HudScene extends Phaser.Scene {
       this.panel.setVisible(!this.panel.visible),
     ).setIcon(this.speakerIcon);
 
-    new Button(this, NOTES_ICON.x, NOTES_ICON.y, ICON.size, ICON.size, '?', COLORS.book, () => this.toggleNotes());
+    // Only once Grandma has shown it at her farewell (GAME_DESIGN.md §5.9):
+    // during the tutorial she does the explaining, and it would sit on her box.
+    const notesButton = new Button(this, NOTES_ICON.x, NOTES_ICON.y, NOTES_ICON.size, NOTES_ICON.size, '?', COLORS.book, () =>
+      this.toggleNotes(),
+    );
+    watchGameState(this, (state) => notesButton.setVisible(state.tutorial === 'farewell' || state.tutorial === 'done'));
     // Esc closes the notes (the game underneath is paused, so it won't hear it).
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && this.notes) this.toggleNotes();

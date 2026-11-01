@@ -46,7 +46,11 @@ import { addArt } from '../ui/art';
 import { playSound } from '../audio/audio';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
-import { getGameState, setGameState, watchGameState } from './gameStore';
+import { getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
+import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
+import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
+import { TIPS } from '../data/tutorial';
+import { exploredAll, seeTip } from '../logic/gameState';
 import type { LocationRequest, WorldMapRequest } from './WorldMapScene';
 
 /** Half the player sprite (16x16): the mover's position is the sprite's centre. */
@@ -167,6 +171,47 @@ export class OutdoorScene extends Phaser.Scene {
         this.walkTo({ x: pointer.worldX, y: pointer.worldY });
       },
     );
+    this.showGuide();
+  }
+
+  /**
+   * Grandma's guide to this place, the first time the player walks in
+   * (GAME_DESIGN.md §5.9), whatever step the tutorial is at: a one-off tip,
+   * pointing at each stall or at a forage spot. Seeing both places' guides
+   * finishes the tutorial's explore step.
+   */
+  private showGuide(): void {
+    const tip = this.location;
+    if (getGameState(this).tipsSeen.includes(tip)) return;
+    const def = TIPS[tip];
+    const target = (name: string | null | undefined): ArrowTarget | null => {
+      if (name === 'forage') {
+        const spot = this.spots[0];
+        return spot ? { x: spot.position.x, y: spot.position.y - 20 } : null;
+      }
+      if (name && name in SHOPS) {
+        const { x, y } = SHOPS[name as ShopId].stall;
+        return { x, y: y - 26 }; // over the stall's name sign
+      }
+      return null;
+    };
+    const guide = new StoryBox(this, {
+      rect: { x: BOTTOM_BOX_LEFT, y: 292, width: BASE_WIDTH - 36 - BOTTOM_BOX_LEFT, height: 62 },
+      step: def,
+      arrow: (line) => target(def.pointsAt?.[line]),
+      // Over the y-sorted scenery and the HUD.
+      depth: HUD_DEPTH + 10,
+      onFinished: () => {
+        setGameState(this, seeTip(getGameState(this), tip));
+        const state = getGameState(this);
+        if (state.tutorial === 'explore' && exploredAll(state)) tutorialEvent(this, 'explored');
+        guide.destroy();
+      },
+      onSkip: () => {
+        tutorialEvent(this, 'skip');
+        guide.destroy();
+      },
+    });
   }
 
   update(_time: number, deltaMs: number): void {

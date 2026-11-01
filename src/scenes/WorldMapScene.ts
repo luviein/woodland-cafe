@@ -11,7 +11,9 @@ import { artKey } from '../ui/art';
 import { isHired } from '../logic/employees';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
-import { StoryBox } from '../ui/StoryBox';
+import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
+import { BOTTOM_BOX_LEFT, NOTES_BUTTON } from '../ui/hudLayout';
+import { exploredAll } from '../logic/gameState';
 import { TUTORIAL } from '../data/tutorial';
 
 /** What a location's scene is started with. */
@@ -92,22 +94,33 @@ export class WorldMapScene extends Phaser.Scene {
    * her last line ends the tutorial.
    */
   private showTutorial(): void {
-    if (getGameState(this).tutorial !== 'map') return;
+    // Both place guides seen (maybe on an earlier day): on to the farewell.
+    if (getGameState(this).tutorial === 'explore' && exploredAll(getGameState(this))) tutorialEvent(this, 'explored');
+    const step = getGameState(this).tutorial;
+    if (step !== 'map' && step !== 'explore' && step !== 'farewell') return;
+
     // Just above a sign; above its "You are here" label too, for the place the player is at.
     const signTop = (id: LocationId) => {
       const { x, y } = this.signPosition(id);
       return { x, y: y - SIGN_HEIGHT / 2 - (id === this.request.current ? 16 : 2) };
     };
+    const target = (name: string | null | undefined): ArrowTarget | null => {
+      if (name === 'notes') return { x: NOTES_BUTTON.x, y: NOTES_BUTTON.y - NOTES_BUTTON.size / 2 - 2 };
+      return name && name in LOCATIONS ? signTop(name as LocationId) : null;
+    };
+    // The explore reminder points at whichever place is still to be seen.
+    const seen = getGameState(this).tipsSeen;
+    const unseen = (['marketplace', 'forest'] as const).find((place) => !seen.includes(place)) ?? null;
     const guide = new StoryBox(this, {
-      rect: { x: 36, y: 292, width: 568, height: 62 },
-      step: TUTORIAL.map,
-      arrow: (line) => {
-        const place = TUTORIAL.map.pointsAt?.[line];
-        return place ? signTop(place) : null;
-      },
+      rect: { x: BOTTOM_BOX_LEFT, y: 292, width: BASE_WIDTH - 36 - BOTTOM_BOX_LEFT, height: 62 },
+      step: TUTORIAL[step],
+      arrow: (line) => (step === 'explore' ? target(unseen) : target(TUTORIAL[step].pointsAt?.[line])),
       onFinished: () => {
         tutorialEvent(this, 'next');
         guide.destroy();
+        // Map lines done: if both places were already seen, the farewell (or
+        // the explore reminder) follows straight away.
+        this.showTutorial();
       },
       onSkip: () => {
         tutorialEvent(this, 'skip');
