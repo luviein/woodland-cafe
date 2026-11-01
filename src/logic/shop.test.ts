@@ -13,6 +13,7 @@ import {
   newRecipesWith,
   shopStandPoint,
   shopsAt,
+  inSeason,
   stockCost,
   unlockableIngredients,
   unlockIngredient,
@@ -22,8 +23,26 @@ const rich = () => earnLeaves(createNewGame(), 50);
 
 describe('shopsAt', () => {
   it('lists the five Marketplace stalls, and none in the Forest', () => {
-    expect(shopsAt('marketplace')).toEqual(['pantry', 'specialty', 'tools', 'carpenter', 'noticeBoard']);
-    expect(shopsAt('forest')).toEqual([]);
+    const november = new Date(2026, 10, 30);
+    expect(shopsAt('marketplace', november)).toEqual(['pantry', 'specialty', 'tools', 'carpenter', 'noticeBoard']);
+    expect(shopsAt('forest', november)).toEqual([]);
+  });
+
+  it('the Christmas stall only in December, or all year while testing', () => {
+    const at = (month: number, day: number) => shopsAt('marketplace', new Date(2026, month - 1, day)).includes('christmas');
+    expect(at(11, 30)).toBe(false);
+    expect(at(12, 1)).toBe(true);
+    expect(at(12, 31)).toBe(true);
+    expect(at(1, 1)).toBe(false);
+    expect(shopsAt('marketplace', new Date(2026, 5, 1), true)).toContain('christmas');
+  });
+
+  it('a season can run over New Year', () => {
+    const winter = { ...SHOPS.pantry, season: { from: { month: 12, day: 20 }, to: { month: 1, day: 6 } } };
+    expect(inSeason(winter, new Date(2026, 11, 25))).toBe(true);
+    expect(inSeason(winter, new Date(2027, 0, 6))).toBe(true);
+    expect(inSeason(winter, new Date(2027, 0, 7))).toBe(false);
+    expect(inSeason(winter, new Date(2026, 11, 19))).toBe(false);
   });
 
   it('the stand point is in front of (below) the counter', () => {

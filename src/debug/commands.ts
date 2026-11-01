@@ -216,6 +216,17 @@ export function createDevCommands(
       },
     },
 
+    season: {
+      usage: 'season [all|date]',
+      description: 'Seasonal shops (the Christmas stall): open all year, or only in their season by the date',
+      run: ([mode]) => {
+        if (mode === 'all') settings.allSeasons = true;
+        else if (mode === 'date') settings.allSeasons = false;
+        else if (mode !== undefined) throw new Error('Usage: season [all|date]');
+        return settings.allSeasons ? 'Seasonal shops: open all year (go back to the map and in again)' : 'Seasonal shops: only in their season';
+      },
+    },
+
     furniture: {
       usage: 'furniture [design n]',
       description: "Show stored and placed furniture, or set how many of a design are in storage, e.g. 'furniture christmasTree 2'",

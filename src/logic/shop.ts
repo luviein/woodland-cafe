@@ -1,6 +1,6 @@
 import { FURNITURE, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
-import { SHOP_IDS, SHOPS, type ShopId } from '../data/shops';
+import { SHOP_IDS, SHOPS, STALL_COUNTER_HEIGHT, type MonthDay, type ShopDef, type ShopId } from '../data/shops';
 import type { OutdoorLocationId } from '../data/outdoorAreas';
 import { UPGRADES, type UpgradeId } from '../data/upgrades';
 import { storePieces } from './furniture';
@@ -12,17 +12,37 @@ import { availableRecipes } from './orders';
 // these take a state and return a new one; the shop panel only shows what
 // they allow and calls them.
 
-/** The player stands this far below a stall's counter to shop there. */
-const STAND_BELOW = 26;
+/** The player stands this far below a stall's base to shop there. */
+const STAND_BELOW_BASE = 10;
 
-export function shopsAt(location: OutdoorLocationId): ShopId[] {
-  return SHOP_IDS.filter((id) => SHOPS[id].location === location);
+/**
+ * The shops open at `location` on `today`. A seasonal one (the Christmas
+ * stall) only in its season, unless `allSeasons` (for testing, GAME_DESIGN.md §5.10).
+ */
+export function shopsAt(location: OutdoorLocationId, today: Date, allSeasons = false): ShopId[] {
+  return SHOP_IDS.filter((id) => SHOPS[id].location === location && (allSeasons || inSeason(SHOPS[id], today)));
+}
+
+/** Whether a shop is there on `today` (by the player's own date). */
+export function inSeason(shop: ShopDef, today: Date): boolean {
+  if (!shop.season) return true;
+  const key = (d: MonthDay) => d.month * 100 + d.day;
+  const now = key({ month: today.getMonth() + 1, day: today.getDate() });
+  const { from, to } = shop.season;
+  // A season can run over New Year (e.g. 20 December to 6 January).
+  return key(from) <= key(to) ? now >= key(from) && now <= key(to) : now >= key(from) || now <= key(to);
+}
+
+/** Where a stall touches the ground (its base), in pixels: what it's depth-sorted by. */
+export function stallBase(id: ShopId): Point {
+  const { stall, counterHeight } = SHOPS[id] as ShopDef;
+  return { x: stall.x, y: stall.y + (counterHeight ?? STALL_COUNTER_HEIGHT) };
 }
 
 /** Where the player walks to shop at `id` (in front of the counter). */
 export function shopStandPoint(id: ShopId): Point {
-  const { x, y } = SHOPS[id].stall;
-  return { x, y: y + STAND_BELOW };
+  const base = stallBase(id);
+  return { x: base.x, y: base.y + STAND_BELOW_BASE };
 }
 
 /** Leaves for `quantity` units of stock, at the unit price (no rush markup). */

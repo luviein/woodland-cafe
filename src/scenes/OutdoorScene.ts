@@ -36,12 +36,18 @@ import {
   newRecipesWith,
   shopStandPoint,
   shopsAt,
+  stallBase,
   unlockableIngredients,
   unlockIngredient,
 } from '../logic/shop';
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
-import { STALL_HEIGHT, TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
+import { CataloguePanel } from '../ui/CataloguePanel';
+import { TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
+import { spriteSize } from '../art/pixelSprite';
+import { SPRITE_ART, type ArtName } from '../art/spriteArt';
+import { devSettings } from '../debug/devSettings';
+import { CHRISTMAS_CATALOGUE } from '../data/furniture';
 import { addArt } from '../ui/art';
 import { playSound } from '../audio/audio';
 import { COLORS, TEXT, css } from '../ui/theme';
@@ -85,7 +91,8 @@ export class OutdoorScene extends Phaser.Scene {
   /** Shop stalls here, the one the player is walking to, and the open panel. */
   private shops: ShopId[] = [];
   private walkingToShop: ShopId | null = null;
-  private shop: { id: ShopId; panel: ShopPanel } | null = null;
+  /** The open stall: a shop list, or (the Christmas stall) a catalogue. */
+  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel } | null = null;
   /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
   private leafCount!: Phaser.GameObjects.Text;
   private bareGround!: Phaser.GameObjects.Text;
@@ -121,7 +128,7 @@ export class OutdoorScene extends Phaser.Scene {
       area: OUTDOOR_WALK_AREA,
       keepClear: [
         ...area.trees.map((t) => ({ x: t.x, y: t.y + TREE_TRUNK_HEIGHT })),
-        ...this.shops.map((id) => ({ x: SHOPS[id].stall.x, y: SHOPS[id].stall.y + STALL_HEIGHT })),
+        ...this.shops.map(stallBase),
         ...this.spots.map((s) => s.position),
       ],
       clearance: LEAF_CLEARANCE,
@@ -149,7 +156,9 @@ export class OutdoorScene extends Phaser.Scene {
       wallet.setLeaves(state.leaves);
       this.leafCount.setText(`Leaves today: ${state.leavesPickedToday}/${LEAF_CONFIG.leavesPerDay}`);
       this.redrawSpots();
-      if (this.shop) this.shop.panel.setRows(this.shopRows(this.shop.id));
+      const panel = this.shop?.panel;
+      if (panel instanceof ShopPanel) panel.setRows(this.shopRows(this.shop!.id));
+      else panel?.refresh();
     });
     this.add
       .text(BASE_WIDTH / 2, 10, LOCATIONS[this.location].name, {
@@ -294,19 +303,23 @@ export class OutdoorScene extends Phaser.Scene {
 
   /** A stall, its name sign and a tap area for each shop in this place. */
   private createShops(): void {
-    this.shops = shopsAt(this.location);
+    // Seasonal stalls by today's date, or all year while testing (the dev build).
+    this.shops = shopsAt(this.location, new Date(), devSettings.allSeasons);
     this.walkingToShop = null;
     this.shop = null;
     for (const id of this.shops) {
-      const { x, y } = SHOPS[id].stall;
-      addStanding(this, x, y + STALL_HEIGHT, 'stall').setDepth(y + STALL_HEIGHT);
+      const art = (SHOPS[id] as { art?: ArtName }).art ?? 'stall';
+      const { width, height } = spriteSize(SPRITE_ART[art]);
+      const base = stallBase(id);
+      addStanding(this, base.x, base.y, art).setDepth(base.y);
+      // The name sign hangs over the top of the stall (the plain stall's awning, the Christmas stall's roof).
       this.add
-        .text(x, y - 12, SHOPS[id].name, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
+        .text(base.x, base.y - height + 4, SHOPS[id].name, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
         .setOrigin(0.5, 1)
-        .setDepth(y + STALL_HEIGHT);
-      // Covers the awning and counter (36x26), plus a bit, for fingers.
+        .setDepth(base.y);
+      // The whole stall, plus a bit, for fingers.
       this.add
-        .zone(x, y + 2, 44, 34)
+        .zone(base.x, base.y - height / 2, width + 4, height + 2)
         .setInteractive({ useHandCursor: true })
         .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onShopTapped(id));
     }
@@ -321,9 +334,30 @@ export class OutdoorScene extends Phaser.Scene {
   }
 
   private openShop(id: ShopId): void {
-    const panel = new ShopPanel(this, SHOPS[id].name, SHOPS[id].blurb, this.shopRows(id), () => this.closeShop());
+    const panel =
+      id === 'christmas'
+        ? this.openCatalogue()
+        : new ShopPanel(this, SHOPS[id].name, SHOPS[id].blurb, this.shopRows(id), () => this.closeShop());
     // Above the HUD, so its dim layer covers the Map button too.
     this.shop = { id, panel: panel.setDepth(HUD_DEPTH + 1) };
+  }
+
+  /** The Christmas stall's catalogue: buying puts a piece in storage, like the Carpenter. */
+  private openCatalogue(): CataloguePanel {
+    return new CataloguePanel(
+      this,
+      CHRISTMAS_CATALOGUE,
+      {
+        leaves: () => getGameState(this).leaves,
+        owned: (design) => {
+          const { placed, stored } = getGameState(this).furniture;
+          return stored[design] + placed.filter((p) => p.design === design).length;
+        },
+        canBuy: (design) => canBuyFurniture(getGameState(this), design),
+        buy: (design) => setGameState(this, buyFurniture(getGameState(this), design)),
+      },
+      () => this.closeShop(),
+    );
   }
 
   private closeShop(): void {

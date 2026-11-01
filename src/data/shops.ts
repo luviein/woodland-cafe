@@ -1,3 +1,4 @@
+import type { ArtName } from '../art/spriteArt';
 import type { Point } from '../logic/layout';
 import type { OutdoorLocationId } from './outdoorAreas';
 import type { UpgradeId } from './upgrades';
@@ -6,14 +7,29 @@ import type { UpgradeId } from './upgrades';
 // on sale comes from the other data files (ingredient and upgrade prices);
 // this file only says which stall sells what kind of thing, and where it is.
 
+/** A day of the year, e.g. { month: 12, day: 1 } for 1 December. */
+export interface MonthDay {
+  month: number;
+  day: number;
+}
+
 export interface ShopDef {
   name: string;
   location: OutdoorLocationId;
-  /** Top-middle of the stall's counter, in pixels (drawn by drawStall in ui/sprites.ts). */
+  /** Top-middle of the stall's counter, in pixels. */
   stall: Point;
   /** One line under the title, saying what the stall is for. */
   blurb: string;
+  /** Its sprite, when it isn't the plain market stall. */
+  art?: ArtName;
+  /** From the counter's top down to the stall's base, in pixels, when it isn't the plain stall's. */
+  counterHeight?: number;
+  /** Only there between these days (inclusive), by the player's own date; always there without one. */
+  season?: { from: MonthDay; to: MonthDay };
 }
+
+/** The plain stall's counter: its bottom 16 rows (art/sprites/outdoor.ts). */
+export const STALL_COUNTER_HEIGHT = 16;
 
 export const SHOPS = {
   pantry: {
@@ -45,6 +61,16 @@ export const SHOPS = {
     location: 'marketplace',
     stall: { x: 540, y: 120 },
     blurb: 'Hire help. Wages are paid at the end of each day.',
+  },
+  // The Christmas edition's stall, in the open below the others (GAME_DESIGN.md §5.10).
+  christmas: {
+    name: 'Christmas',
+    location: 'marketplace',
+    stall: { x: 320, y: 231 },
+    blurb: 'The Christmas catalogue.',
+    art: 'christmasStall',
+    counterHeight: 19,
+    season: { from: { month: 12, day: 1 }, to: { month: 12, day: 31 } },
   },
 } satisfies Record<string, ShopDef>;
 

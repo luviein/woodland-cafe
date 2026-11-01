@@ -58,6 +58,21 @@ export function designsSoldBy(shop: FurnitureShop): DesignId[] {
   return DESIGN_IDS.filter((id) => FURNITURE[id].shop === shop);
 }
 
+/**
+ * The Christmas catalogue (GAME_DESIGN.md §5.10): its sections, each a tab
+ * down the book's side, and the pieces on its cover. Sold at the Christmas stall.
+ */
+export const CHRISTMAS_CATALOGUE = {
+  title: 'Woodland Cafe',
+  edition: 'Christmas Edition',
+  tabs: [
+    { name: 'Furniture', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'table' || kindOf(d) === 'chair') },
+    { name: 'Decor', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'floorDecor') },
+    { name: 'Wall', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'wallDecor') },
+  ],
+  cover: ['christmasTree', 'giftBoxes', 'snowman'],
+} as const satisfies { title: string; edition: string; tabs: readonly { name: string; designs: readonly DesignId[] }[]; cover: readonly ArtName[] };
+
 /** How a kind is written in a layout grid (data/cafeLayout.ts). Wall decorations aren't on the floor, so they have none. */
 export const KIND_CHAR = { table: 'T', chair: 'S', floorDecor: 'X' } as const satisfies Partial<Record<FurnitureKind, string>>;
 
