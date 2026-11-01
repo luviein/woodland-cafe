@@ -362,6 +362,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - More employee roles (e.g. a Server who carries dishes, a Greeter who takes orders), and more than one of a role
 - **Customer groups:** 2+ critters arriving together, ordering together and sharing a table (and leaving messes together). Planned once ordering and the counter queue exist (milestone 3 or later).
 - **Farming:** growing ingredients (planting, waiting, harvesting), building on foraging (§5.5) and ingredient stock (§3.6). Details still to be designed.
+- **Choose your animal:** at the start of a new game the player picks which critter they are (the cafe owner is a hedgehog until then, §8.2).
 - **Tutorial with a mini story** at the start of a new game. Part of the story: the player is given **30 of each starter ingredient** to open the cafe with, so they learn about ingredient stock (§3.6) from the start. Story and steps still to be designed.
 
 ---
@@ -392,7 +393,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   | Mascot | Frog in a leaf costume |
   | Customers | Fox, rabbit, squirrel and mouse (picked at random per customer) |
 - **Animations:** a 2-frame walk for everyone who moves, mirrored for left/right; an idle bob while waiting; the Mascot's dance stays a hop and sway.
-- **Where art comes from:** each sprite is first drawn **in code** as a small text grid (one letter per palette colour). A hand-drawn **PNG** with the same name in `public/art/` replaces it (a horizontal strip for animations). So any sprite can be redrawn later, one at a time.
+- **Where art comes from:** each sprite is first drawn **in code** as a small text grid (one letter per palette colour). A hand-drawn **PNG** with the same name in `src/art/drawn/` (e.g. `leaf.png`) replaces it: same size, and for animations a horizontal strip of frames that size. So any sprite can be redrawn later, one at a time.
 - **Covered:** cafe floor, walls, door, counter, tables, chairs, messes; the cast; ingredient bins, bread and fillings, dishes, toaster; the island map, the Forest, the Marketplace stalls, leaves, mushroom patches and berry bushes; the title screen.
 
 ### 8.3 Little animations
