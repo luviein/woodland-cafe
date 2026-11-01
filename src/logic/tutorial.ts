@@ -67,13 +67,19 @@ export function tutorialOrder(): Order {
 }
 
 /**
- * Places other than the Cafe stay locked until Grandma's map tour is
- * finished (GAME_DESIGN.md §5.9), so new players hear what each is for
- * first. The Cafe stays open: the next day can always start.
+ * Why a place on the map is locked by the tutorial (GAME_DESIGN.md §5.9), as
+ * a short message, or null if it isn't. The Forest and Marketplace (and any
+ * place added later) open once Grandma's map tour is done, so new players
+ * hear what each is for first; the Cafe, where the next day starts, only
+ * once the whole tutorial is over.
  */
-export function lockedForTour(state: TutorialState, place: LocationId): boolean {
-  if (place === 'cafe' || state === 'done') return false;
-  return TUTORIAL_STEPS.indexOf(state) <= TUTORIAL_STEPS.indexOf('map');
+export function tourLock(state: TutorialState, place: LocationId): string | null {
+  if (state === 'done') return null;
+  const step = TUTORIAL_STEPS.indexOf(state);
+  const tourDone = step > TUTORIAL_STEPS.indexOf('map');
+  if (place !== 'cafe') return tourDone ? null : "Finish Grandma's tour first";
+  if (!tourDone) return "Finish Grandma's tour first";
+  return state === 'explore' ? 'Look around the Forest and Marketplace first' : 'Listen to Grandma first';
 }
 
 export function isTutorialState(value: unknown): value is TutorialState {

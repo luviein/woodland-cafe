@@ -14,7 +14,7 @@ import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
 import { BOTTOM_BOX_LEFT, NOTES_BUTTON } from '../ui/hudLayout';
 import { exploredAll } from '../logic/gameState';
-import { lockedForTour } from '../logic/tutorial';
+import { tourLock } from '../logic/tutorial';
 import { TUTORIAL } from '../data/tutorial';
 
 /** What a location's scene is started with. */
@@ -119,10 +119,10 @@ export class WorldMapScene extends Phaser.Scene {
       onFinished: () => {
         tutorialEvent(this, 'next');
         guide.destroy();
-        // The tour is over: redraw the map, so the places unlock and the
-        // explore reminder (or, if both places were already seen, the
-        // farewell) shows.
-        if (step === 'map') this.scene.restart(this.request);
+        // Redraw the map so the signs unlock: after the tour (the Forest and
+        // Marketplace, then the explore reminder or the farewell) and after
+        // the farewell (the Cafe).
+        if (step === 'map' || step === 'farewell') this.scene.restart(this.request);
       },
       onSkip: () => {
         tutorialEvent(this, 'skip');
@@ -135,7 +135,8 @@ export class WorldMapScene extends Phaser.Scene {
     const choice = chooseLocation(id);
     const sign = this.signPosition(id);
     if (choice === 'locked') return this.showFloatingText(sign, 'Locked');
-    if (lockedForTour(getGameState(this).tutorial, id)) return this.showFloatingText(sign, "Finish Grandma's tour first");
+    const tutorialLock = tourLock(getGameState(this).tutorial, id);
+    if (tutorialLock) return this.showFloatingText(sign, tutorialLock);
     if (choice === 'notBuilt') return this.showFloatingText(sign, 'Coming soon!');
 
     // The cafe starts a new day, which can't be undone: ask first.
@@ -299,7 +300,7 @@ export class WorldMapScene extends Phaser.Scene {
     const location = LOCATIONS[id];
     const here = id === this.request.current;
     const { x, y } = this.signPosition(id);
-    const locked = location.locked || lockedForTour(getGameState(this).tutorial, id);
+    const locked = location.locked || tourLock(getGameState(this).tutorial, id) !== null;
     const text = locked ? `🔒 ${location.name}` : location.name;
     // About 8px per character in the 16px button font, plus some padding.
     const width = text.length * 9 + 16;

@@ -7,7 +7,7 @@ import {
   advanceTutorial,
   floorGuide,
   isGuidedStart,
-  lockedForTour,
+  tourLock,
   tutorialOrder,
   type TutorialEvent,
   type TutorialState,
@@ -59,12 +59,18 @@ describe('the tutorial', () => {
 });
 
 describe('places during the tutorial', () => {
-  it('everywhere but the Cafe is locked until the map tour is done', () => {
-    expect(lockedForTour('map', 'forest')).toBe(true);
-    expect(lockedForTour('map', 'marketplace')).toBe(true);
-    expect(lockedForTour('map', 'cafe')).toBe(false);
-    expect(lockedForTour('explore', 'forest')).toBe(false);
-    expect(lockedForTour('done', 'marketplace')).toBe(false);
+  it('the Forest and Marketplace open after the map tour', () => {
+    expect(tourLock('map', 'forest')).toBe("Finish Grandma's tour first");
+    expect(tourLock('map', 'marketplace')).toBe("Finish Grandma's tour first");
+    expect(tourLock('explore', 'forest')).toBeNull();
+    expect(tourLock('farewell', 'marketplace')).toBeNull();
+  });
+
+  it('the Cafe opens only once the whole tutorial is over', () => {
+    expect(tourLock('map', 'cafe')).toBe("Finish Grandma's tour first");
+    expect(tourLock('explore', 'cafe')).toBe('Look around the Forest and Marketplace first');
+    expect(tourLock('farewell', 'cafe')).toBe('Listen to Grandma first');
+    expect(tourLock('done', 'cafe')).toBeNull();
   });
 });
 
