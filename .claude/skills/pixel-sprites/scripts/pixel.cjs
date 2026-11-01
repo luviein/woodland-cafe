@@ -24,7 +24,19 @@ const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
 const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
 const near = (a, b, tol) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) <= tol;
 const hex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
-const rgbOf = (h) => [1, 3, 5].map((o) => parseInt(h.slice(o, o + 2), 16));
+/** The game's palette (src/art/palette.ts), by name, for legends that use names instead of '#rrggbb'. */
+let paletteCache = null;
+function paletteHex(name) {
+  if (!paletteCache) {
+    const file = require('path').join(process.cwd(), 'src/art/palette.ts');
+    const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+    paletteCache = Object.fromEntries([...text.matchAll(/(\w+): 0x([0-9a-fA-F]{6})/g)].map((m) => [m[1], '#' + m[2]]));
+  }
+  const h = paletteCache[name];
+  if (!h) throw new Error(`unknown colour '${name}' (not '#rrggbb', not in src/art/palette.ts; run from the project root)`);
+  return h;
+}
+const rgbOf = (h) => { if (!h.startsWith('#')) h = paletteHex(h); return [1, 3, 5].map((o) => parseInt(h.slice(o, o + 2), 16)); };
 
 /**
  * Background test for an image. Default: close to the corner pixel (plain
@@ -373,9 +385,13 @@ function readSprite(file, name) {
   const start = ts.indexOf(`export const ${name}: PixelSprite`);
   if (start < 0) throw new Error(`${file}: no sprite ${name}`);
   const body = ts.slice(start, ts.indexOf('\n};', start));
-  const legendName = body.match(/legend: (\w+)/)[1];
-  const lstart = ts.indexOf(`const ${legendName} = {`);
-  const legend = Object.fromEntries([...ts.slice(lstart, ts.indexOf('}', lstart)).matchAll(/(\w): '(#[0-9a-fA-F]{6})'/g)].map((m) => [m[1], m[2]]));
+  // The legend is a named constant (legend: LEGEND) or written inline (legend: { o: ... }).
+  const named = body.match(/legend: (\w+)/);
+  const legendName = named?.[1] ?? null;
+  const lstart = legendName ? ts.indexOf(`const ${legendName} = {`) : start + body.indexOf('legend: {');
+  const legendText = ts.slice(lstart, ts.indexOf('}', lstart));
+  // Colours are '#rrggbb' or palette names (resolved in the game); palette names are kept as written.
+  const legend = Object.fromEntries([...legendText.matchAll(/(\w): '([^']+)'/g)].map((m) => [m[1], m[2]]));
   const frames = body.split(/\n    \[/).slice(1).map((f) => [...f.matchAll(/'([^']*)'/g)].map((m) => m[1]));
   return { frames, legend, legendName };
 }
