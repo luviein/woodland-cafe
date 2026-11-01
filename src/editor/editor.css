@@ -163,3 +163,9 @@ main .about {
 .add {
   margin-left: 34px;
 }
+.row .waits {
+  grid-column: 2;
+  color: var(--green);
+  font-size: 13px;
+  margin-top: -2px;
+}

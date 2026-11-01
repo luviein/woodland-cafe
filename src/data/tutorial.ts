@@ -1,6 +1,6 @@
 import GRANDMA from './texts/grandma.json';
 import type { RecipeId } from './recipes';
-import { TIP_IDS, TUTORIAL_STEPS, type TextLine, type TipId, type TutorialStep } from './texts/rules';
+import { TIP_IDS, TUTORIAL_STEPS, WAITS_FOR, type WaitsFor, type TextLine, type TipId, type TutorialStep } from './texts/rules';
 
 // The tutorial's settings (GAME_DESIGN.md §5.9). Grandma Badger's WORDS are in
 // texts/grandma.json, edited with the text editor (npm run dev, then
@@ -16,25 +16,11 @@ export interface TutorialStepDef {
    * 'next': the player reads the lines and presses Next.
    * 'action': the last line stays up until the player does the thing.
    */
-  waitsFor: 'next' | 'action';
+  waitsFor: WaitsFor;
   /** What the arrow points at on each line (null: nothing); one of ARROW_TARGETS. */
   pointsAt: readonly (string | null)[];
 }
 
-const WAITS_FOR: Record<TutorialStep | TipId, TutorialStepDef['waitsFor']> = {
-  intro: 'next',
-  takeOrder: 'action',
-  prep: 'action',
-  clean: 'action',
-  freePlay: 'next',
-  summary: 'action',
-  map: 'next',
-  explore: 'action',
-  farewell: 'next',
-  decorate: 'next',
-  marketplace: 'next',
-  forest: 'next',
-};
 
 function stepDef(key: TutorialStep | TipId, lines: readonly TextLine[]): TutorialStepDef {
   return { waitsFor: WAITS_FOR[key], lines: lines.map((l) => l.text), pointsAt: lines.map((l) => l.arrow ?? null) };

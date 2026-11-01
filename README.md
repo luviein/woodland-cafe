@@ -51,7 +51,10 @@ them, run `npm run dev` and open **http://localhost:5173/editor.html**:
   move (↑ ↓) lines freely.
 - Grandma's lines can say what her arrow points at (the menu next to the line).
 - A line too long for where the game shows it gets an orange warning, and its
-  page a ⚠ in the list.
+  page a ⚠ in the list; it has to be shortened before saving.
+- For steps that wait for the player (the first customer, the prep station,
+  cleaning, the day summary), the **last** line stays up without Next until
+  the player does it: make the instruction the last line.
 - **Save** writes the files and the running game picks the new words up. It
   won't save anything that would break the game (an empty step, an order
   without hints, a line used for two orders): those are listed at the top.

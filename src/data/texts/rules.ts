@@ -29,6 +29,28 @@ export const TIP_IDS = ['decorate', 'marketplace', 'forest'] as const;
 export type TipId = (typeof TIP_IDS)[number];
 
 /**
+ * How a step (or tip) ends. 'next': the player reads the lines and presses
+ * Next. 'action': the LAST line stays up, without Next, until the player does
+ * the thing it asks (so the last line should be the instruction).
+ */
+export type WaitsFor = 'next' | 'action';
+
+export const WAITS_FOR: Record<TutorialStep | TipId, WaitsFor> = {
+  intro: 'next',
+  takeOrder: 'action',
+  prep: 'action',
+  clean: 'action',
+  freePlay: 'next',
+  summary: 'action',
+  map: 'next',
+  explore: 'action',
+  farewell: 'next',
+  decorate: 'next',
+  marketplace: 'next',
+  forest: 'next',
+};
+
+/**
  * What each step's (or tip's) arrow may point at, by name. The scene showing
  * the lines knows where each name is on screen.
  */

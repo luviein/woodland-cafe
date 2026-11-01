@@ -7,6 +7,7 @@ import {
   grandmaProblems,
   TIP_IDS,
   TUTORIAL_STEPS,
+  WAITS_FOR,
   type CustomerTexts,
   type GrandmaTexts,
   type TextLine,
@@ -78,7 +79,11 @@ function pages(): Page[] {
       id: `tutorial.${step}`,
       group: 'Grandma: tutorial',
       label: STEP_LABELS[step],
-      about: `Shown in ${STEP_FIT[step].where}, one line at a time.`,
+      about:
+        `Shown in ${STEP_FIT[step].where}, one line at a time.` +
+        (WAITS_FOR[step] === 'action'
+          ? ' The last line stays up without Next until the player does what it asks, so make the instruction the last line.'
+          : ''),
       build: (into) => into.append(grandmaLines(step, grandma.tutorial[step])),
       tooLong: () => stepTooLong(step, grandma.tutorial[step]),
     });
@@ -231,7 +236,10 @@ function grandmaLines(key: TutorialStep | TipId, lines: TextLine[]): HTMLElement
       tools.push(pick);
     }
     tools.push(...rowTools(lines, i));
-    group.append(row(i, line.text, STEP_FIT[key], (v) => (line.text = v), tools));
+    const waits = WAITS_FOR[key] === 'action' && i === lines.length - 1;
+    const r = row(i, line.text, STEP_FIT[key], (v) => (line.text = v), tools);
+    if (waits) r.append(el('div', { className: 'waits' }, '⏳ Waits for the player here (no Next): the instruction goes on this line.'));
+    group.append(r);
   });
   group.append(el('button', { className: 'add', onclick: () => (lines.push({ text: '' }), changed(true)) }, '+ Add a line'));
   return group;
@@ -287,8 +295,32 @@ const nav = el('nav');
 const main = el('main');
 let current = 'tutorial.intro';
 
+/** Everything that stops a save: the game's rules, plus any line too long for where it's shown (the tests check that too). */
 function problems(): string[] {
-  return [...grandmaProblems(grandma), ...customerProblems(customers)];
+  return [...grandmaProblems(grandma), ...customerProblems(customers), ...tooLongProblems()];
+}
+
+function tooLongProblems(): string[] {
+  const found: string[] = [];
+  const check = (where: string, text: string, fit: Fit) => {
+    const w = fitWarning(text, fit);
+    if (w) found.push(`${where}: ${w}`);
+  };
+  for (const step of TUTORIAL_STEPS) grandma.tutorial[step].forEach((l, i) => check(`${STEP_LABELS[step]}, line ${i + 1}`, l.text, STEP_FIT[step]));
+  for (const tip of TIP_IDS) grandma.tips[tip].forEach((l, i) => check(`${TIP_LABELS[tip]} tip, line ${i + 1}`, l.text, STEP_FIT[tip]));
+  grandma.notes.forEach((n) => {
+    const w = notesPageWarning(n.lines);
+    if (w) found.push(`Notes "${n.title}": ${w}`);
+  });
+  const customerLines = [
+    ...Object.entries(customers.recipes).flatMap(([id, l]) => [...l.direct, ...l.hint].map((t) => [`Order "${id}"`, t])),
+    ...Object.entries(customers.modifiers).flatMap(([id, l]) => [...l.direct, ...l.hint].map((t) => [`Extra "${id}"`, t])),
+    ...customers.doubleOrder.direct.map((t) => ['Double order', t]),
+    ...Object.entries(customers.reactions).flatMap(([mood, l]) => l.map((t) => [`Reactions "${mood}"`, t])),
+    ...customers.gaveUp.map((t) => ['Gave up', t]),
+  ];
+  for (const [where, text] of customerLines) check(where, text, FITS.bubble);
+  return found;
 }
 
 function unsaved(): FileName[] {
