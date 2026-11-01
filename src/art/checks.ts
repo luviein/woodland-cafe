@@ -39,13 +39,6 @@ export function strayPixels(frame: readonly string[]): number {
   return n;
 }
 
-/** A frame mirrored around its own drawn middle. */
-export function mirrored(frame: readonly string[]): string[] {
-  const cols = frame.flatMap((row) => [...row].flatMap((c, x) => (c === CLEAR ? [] : [x])));
-  const sum = Math.min(...cols) + Math.max(...cols);
-  return frame.map((row) => [...row].map((_, x) => row[sum - x] ?? CLEAR).join(''));
-}
-
 /** The head: the top 55% of a frame's drawn rows (where the face is; a tail may stick out lower down). */
 export function head(frame: readonly string[]): string[] {
   const rows = frame.map((row, y) => (row.replaceAll(CLEAR, '') ? y : -1)).filter((y) => y >= 0);
@@ -53,7 +46,24 @@ export function head(frame: readonly string[]): string[] {
   return frame.slice(top, top + Math.round((bottom - top) * 0.55) + 1);
 }
 
-const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((row, i) => row === b[i]);
+/**
+ * The face: the middle half of the head, centred between the ears (the top
+ * drawn row), so the eyes are in it but a tail or fluff off to one side isn't.
+ * Its own mirror image when the face is symmetrical.
+ */
+export function face(frame: readonly string[]): string[] {
+  const h = head(frame);
+  const drawn = (row: string) => [...row].flatMap((c, x) => (c === CLEAR ? [] : [x]));
+  const ears = drawn(h[0] ?? '');
+  const cols = h.flatMap(drawn);
+  if (!ears.length) return [];
+  const sum = Math.min(...ears) + Math.max(...ears); // left + right column of the middle
+  const half = Math.floor((Math.max(...cols) - Math.min(...cols) + 1) / 4);
+  const left = Math.floor(sum / 2) - half;
+  return h.map((row) => row.slice(left, sum - left + 1));
+}
+
+const symmetrical = (rows: readonly string[]) => rows.every((row) => row === [...row].reverse().join(''));
 
 /** Everything a sprite should be checked for, as short sentences; empty when it's fine. */
 export function spriteQuality(name: ArtName, sprite: PixelSprite = SPRITE_ART[name]): string[] {
@@ -66,8 +76,7 @@ export function spriteQuality(name: ArtName, sprite: PixelSprite = SPRITE_ART[na
     if (s) problems.push(`frame ${f}: ${s} stray pixel${s > 1 ? 's' : ''} on their own`);
   });
   if (VIEW_ART.has(name)) {
-    const face = head(sprite.frames[viewFrame(VIEW.front)] ?? []);
-    if (face.length && !same(mirrored(face), face)) problems.push("the front view's head isn't symmetrical (e.g. the eyes don't match)");
+    if (!symmetrical(face(sprite.frames[viewFrame(VIEW.front)] ?? []))) problems.push("the front view's head isn't symmetrical (e.g. the eyes don't match)");
   }
   return problems;
 }

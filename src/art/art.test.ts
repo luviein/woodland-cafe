@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PALETTE } from './palette';
 import { framePixels, spriteProblems, spriteSize, type PixelSprite } from './pixelSprite';
 import { ART_NAMES, CUSTOMER_ART, customerArt, SPRITE_ART, VIEW_ART } from './spriteArt';
-import { holes, mirrored, spriteQuality, strayPixels } from './checks';
+import { face, holes, spriteQuality, strayPixels } from './checks';
 
 describe('the palette', () => {
   it('is Endesga 32: 32 different colours', () => {
@@ -25,7 +25,8 @@ describe('sprite quality (the same checks as the sprite gallery)', () => {
     expect(holes(['ooo', 'o.o', 'ooo'])).toBe(1);
     expect(holes(['o.o', 'ooo'])).toBe(0); // open to the edge: not a hole
     expect(strayPixels(['o..', '...', '.oo'])).toBe(1);
-    expect(mirrored(['oo.', '.o.'])).toEqual(['oo.', 'o..']); // around the drawn middle (between columns 0 and 1)
+    expect(face(['o...o', 'axbxa'])).toEqual(['...', 'xbx']); // the middle half, between the ears
+    expect(face(['.o...o', 'faxbxa'])).toEqual(['...', 'xbx']); // fluff off to one side doesn't count
   });
 });
 
