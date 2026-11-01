@@ -587,3 +587,28 @@ describe('stepFloor: rules that must always hold', () => {
     expect(before).toEqual(snapshot);
   });
 });
+
+describe('the tutorial guided start (GAME_DESIGN.md §5.9)', () => {
+  it('held: nobody comes in, however long it is', () => {
+    const held = run({ ...start(), guide: 'hold' }, 60, { config: BUSY });
+    expect(held.customers).toEqual([]);
+  });
+
+  it('one: only the first customer of the day comes', () => {
+    const s = run({ ...start(), guide: 'one' }, 60, { config: BUSY, autoOrder: false });
+    expect(s.customers.map((c) => c.id)).toEqual([1]);
+  });
+
+  it("the guided customer's patience never runs out", () => {
+    const ordered = { ...start(), guide: 'one' as const, customers: [customer(1, TINY.orderSpot, { phase: 'ordered', patience: 1 })], queue: [1] };
+    const later = run(ordered, 10, { autoOrder: false, autoServe: false });
+    expect(find(later, 1)?.phase).toBe('ordered');
+    expect(find(later, 1)?.patience).toBe(1);
+  });
+
+  it('takeOrder can be given the dish they order', () => {
+    const waiting = { ...start(), customers: [customer(1, TINY.orderSpot, { phase: 'queued' })], queue: [1] };
+    const taken = takeOrder(waiting, TINY, OWNED, seededRng(1), () => ({ recipeId: 'jamBread', modifiers: [], quantity: 1 }));
+    expect(find(taken.floor, 1)?.order).toEqual({ recipeId: 'jamBread', modifiers: [], quantity: 1 });
+  });
+});

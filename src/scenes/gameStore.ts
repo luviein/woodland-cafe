@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { createNewGame, type GameState } from '../logic/gameState';
 import { loadGame, saveGame, type LoadResult } from '../logic/save';
+import { advanceTutorial, type TutorialEvent, type TutorialState } from '../logic/tutorial';
 import { browserSaveSlot, type SaveSlot } from '../storage/saveSlot';
 
 // Where the one GameState lives while the game runs: Phaser's registry, a
@@ -80,6 +81,17 @@ export function deleteSave(): void {
  * console uses that, so its commands work whichever scene is running).
  */
 type HasRegistry = { registry: Phaser.Data.DataManager };
+
+/**
+ * Something happened that the tutorial may be waiting for (GAME_DESIGN.md
+ * §5.9): moves it on if so. Returns where the tutorial is afterwards.
+ */
+export function tutorialEvent(owner: HasRegistry, event: TutorialEvent): TutorialState {
+  const state = getGameState(owner);
+  const tutorial = advanceTutorial(state.tutorial, event);
+  if (tutorial !== state.tutorial) setGameState(owner, { ...state, tutorial });
+  return tutorial;
+}
 
 export function getGameState(owner: HasRegistry): GameState {
   return owner.registry.get(KEY) as GameState;

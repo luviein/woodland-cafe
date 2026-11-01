@@ -29,6 +29,9 @@ import { earnLeaves } from '../logic/gameState';
 import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
 import { pointKey, samePoint, tableById, type Layout, type Point } from '../logic/layout';
 import { puffOfDust } from '../ui/effects';
+import { StoryBox, type BoxRect } from '../ui/StoryBox';
+import { TUTORIAL, type TutorialStep } from '../data/tutorial';
+import { floorGuide, isGuidedStart, tutorialOrder, type TutorialState } from '../logic/tutorial';
 import { playSound } from '../audio/audio';
 import { createCleaner, stepCleaner, type CleanerState } from '../logic/cleaner';
 import { isHired } from '../logic/employees';
@@ -46,10 +49,15 @@ import { ClockDisplay } from '../ui/ClockDisplay';
 import { createCleanerSprite, createCritter, createPlayerSprite, setBobbing } from '../ui/sprites';
 import { customerArt } from '../art/spriteArt';
 import { WalletDisplay } from '../ui/WalletDisplay';
-import { beginCafeDay, endCafeDay, getGameState, setGameState, watchGameState } from './gameStore';
+import { beginCafeDay, endCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
 import type { DaySummaryRequest } from './DaySummaryScene';
 import type { PrepRequest, PrepScene } from './PrepScene';
 import type { WorldMapRequest } from './WorldMapScene';
+
+/** The tutorial steps Grandma Badger talks through here on the floor. */
+const FLOOR_STEPS: ReadonlySet<TutorialStep> = new Set(['intro', 'takeOrder', 'clean', 'freePlay']);
+/** Her box: under the cafe, clear of the speaker button in the corner. */
+const GUIDE_RECT: BoxRect = { x: 36, y: 294, width: 568, height: 62 };
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;
@@ -122,6 +130,10 @@ export class FloorScene extends Phaser.Scene {
   private prepCustomerId: number | null = null;
   /** True once the day is over and its summary is up. */
   private summaryOpen = false;
+  /** Grandma Badger's box for the tutorial step on screen here, if any (GAME_DESIGN.md §5.9). */
+  private guide: StoryBox | null = null;
+  /** The tutorial step `guide` was made for, to notice when it moves on. */
+  private guideStep: TutorialState | null = null;
 
   constructor() {
     super('FloorScene');
@@ -158,6 +170,8 @@ export class FloorScene extends Phaser.Scene {
     this.prepOpen = false;
     this.prepCustomerId = null;
     this.summaryOpen = false;
+    this.guide = null;
+    this.guideStep = null;
     this.day = createDay();
     this.clock = new ClockDisplay(this, 8, 34);
     const wallet = new WalletDisplay(this, 8, 8);
@@ -218,6 +232,7 @@ export class FloorScene extends Phaser.Scene {
 
   update(_time: number, deltaMs: number): void {
     const seconds = deltaMs / 1000;
+    this.syncTutorial();
 
     // Player first, so a table cleaned this frame can seat someone this frame.
     const { player, cleanedSeats } = stepPlayer(this.player, this.floor, seconds);
@@ -235,7 +250,8 @@ export class FloorScene extends Phaser.Scene {
       const at = this.walkerToPixel(worked.cleaner.walker);
       this.cleaner.sprite.setPosition(at.x, at.y);
     }
-    this.day = stepDay(this.day, floorSeconds);
+    // The clock waits while Grandma Badger guides the start of Day 1.
+    if (!isGuidedStart(getGameState(this).tutorial)) this.day = stepDay(this.day, floorSeconds);
     // Closing time: the day decides, the floor just stops letting people in.
     if (this.floor.doorsOpen && !doorsOpen(this.day)) this.floor = { ...this.floor, doorsOpen: false };
     const before = this.floor;
@@ -254,13 +270,16 @@ export class FloorScene extends Phaser.Scene {
     // After the floor step, so a customer who just reached the order spot
     // can be served this frame.
     const frontId = this.floor.queue[0];
-    const taken = takeOrderAtCounter(this.player, this.floor, this.layout, getGameState(this));
+    // The tutorial's guided customer always orders the same simple dish.
+    const pickOrder = isGuidedStart(getGameState(this).tutorial) ? tutorialOrder : undefined;
+    const taken = takeOrderAtCounter(this.player, this.floor, this.layout, getGameState(this), Math.random, pickOrder);
     this.player = taken.player;
     this.floor = taken.floor;
     if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');
     if (taken.result === 'outOfStock') this.onOutOfStock(frontId);
     if (taken.result === 'ordered') {
       playSound('order');
+      tutorialEvent(this, 'orderTaken');
       this.openPrep(this.floor.queue[0]);
     }
 
@@ -282,10 +301,61 @@ export class FloorScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Keeps the floor in step with the tutorial (GAME_DESIGN.md §5.9): how
+   * customers may come, and Grandma Badger's box for the cafe's steps.
+   */
+  private syncTutorial(): void {
+    const step = getGameState(this).tutorial;
+    const guide = floorGuide(step);
+    if (this.floor.guide !== guide) this.floor = { ...this.floor, guide };
+
+    // A dish served wrong means they leave without eating, so no mess: with
+    // the floor empty and clean there's nothing to wipe, so move on anyway.
+    if (step === 'clean' && this.floor.customers.length === 0 && this.floor.messySeats.length === 0) {
+      tutorialEvent(this, 'wiped');
+      return; // the box changes next frame
+    }
+
+    if (step !== this.guideStep) {
+      this.guide?.destroy();
+      this.guide = null;
+      this.guideStep = step;
+      if (step !== 'done' && FLOOR_STEPS.has(step)) {
+        this.guide = new StoryBox(this, {
+          rect: GUIDE_RECT,
+          step: TUTORIAL[step],
+          arrow: () => this.tutorialArrow(step),
+          onFinished: () => tutorialEvent(this, 'next'),
+          onSkip: () => tutorialEvent(this, 'skip'),
+        });
+      }
+    }
+    this.guide?.refreshArrow();
+  }
+
+  /** What Grandma Badger points at on the floor: the customer to serve, or the mess to wipe. */
+  private tutorialArrow(step: TutorialState): Point | null {
+    if (step === 'takeOrder' && customerAtCounter(this.floor, this.layout)) {
+      const { x, y } = this.tileToPixel(this.layout.orderSpot);
+      return { x: x + TILE_SIZE / 2, y: y - 22 }; // over their head and the "!"
+    }
+    if (step === 'clean' && this.floor.messySeats.length > 0) {
+      const messy = this.floor.messySeats[0];
+      const table = this.layout.tables.find((t) => t.seats.some((s) => pointKey(s) === messy));
+      const seat = table?.seats.find((s) => pointKey(s) === messy);
+      if (!table || !seat) return null;
+      const { x, y } = this.seatSideCenter(table.position, seat);
+      return { x, y: y - 5 };
+    }
+    return null;
+  }
+
   /** Seats just wiped clean (by the player or the Cleaner): clean them, with a puff of dust where each mess was. */
   private wiped(seats: readonly Point[]): void {
     this.floor = cleanSeats(this.floor, seats);
     playSound('wipe');
+    tutorialEvent(this, 'wiped');
     for (const seat of seats) {
       const table = this.layout.tables.find((t) => t.seats.some((s) => samePoint(s, seat)));
       if (!table) continue;
@@ -379,6 +449,7 @@ export class FloorScene extends Phaser.Scene {
         // (The wallet display updates itself from the state.)
         const used = useIngredients(getGameState(this), plateIngredients(plate, order.quantity));
         setGameState(this, earnLeaves(used.state, payment.total));
+        tutorialEvent(this, 'served');
         const stats = recordServe(this.day.stats, result.score, payment);
         this.day = { ...this.day, stats: recordIngredients(stats, used.plan) };
       },

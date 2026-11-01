@@ -30,7 +30,9 @@ import { SpeechBubble } from '../ui/SpeechBubble';
 import { ClockDisplay } from '../ui/ClockDisplay';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
-import { getGameState, watchGameState } from './gameStore';
+import { getGameState, tutorialEvent, watchGameState } from './gameStore';
+import { StoryBox } from '../ui/StoryBox';
+import { TUTORIAL } from '../data/tutorial';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
@@ -98,6 +100,8 @@ export class PrepScene extends Phaser.Scene {
 
   private bubble!: SpeechBubble;
   private recipeBook!: RecipeBook;
+  /** Grandma Badger's box, on the tutorial's prep step only. */
+  private guide: StoryBox | null = null;
   private dishView!: DishView;
   private patienceBar!: Phaser.GameObjects.Graphics;
   private clock!: ClockDisplay;
@@ -174,6 +178,7 @@ export class PrepScene extends Phaser.Scene {
 
     this.setupKeyboard();
     this.refreshDish();
+    this.showTutorial();
 
     // Dev console `serve`: skip cooking and serve as if the dish scored that.
     // The plate counts as the recipe's layers, which the order was checked to
@@ -184,6 +189,40 @@ export class PrepScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.serve = null;
     });
+  }
+
+  /**
+   * Grandma Badger at the prep station (GAME_DESIGN.md §5.9), on the
+   * tutorial's prep step: left of the plate, pointing out the order, the
+   * Recipe Book and the bins in turn. Serving finishes the step (the floor
+   * hears it), and the box goes with it.
+   */
+  private showTutorial(): void {
+    this.guide = null;
+    if (getGameState(this).tutorial !== 'prep') return;
+    this.guide = new StoryBox(this, {
+      rect: { x: 8, y: COUNTER_TOP_Y + 6, width: 216, height: 116 },
+      step: TUTORIAL.prep,
+      // One target per line: the speech bubble, the Recipes button, the first bin.
+      arrow: (line) =>
+        [
+          { x: 308, y: 22 },
+          { x: 568, y: 46, up: true },
+          { x: 64, y: 346, up: true },
+        ][line] ?? null,
+      // Under the Recipe Book (50), so the open book covers her rather than the other way round.
+      depth: 45,
+      onFinished: () => {},
+      onSkip: () => {
+        tutorialEvent(this, 'skip');
+        this.closeTutorial();
+      },
+    });
+  }
+
+  private closeTutorial(): void {
+    this.guide?.destroy();
+    this.guide = null;
   }
 
   update(_time: number, deltaMs: number): void {
@@ -315,6 +354,7 @@ export class PrepScene extends Phaser.Scene {
     // Pays when served, tipping by the patience left right now.
     const payment = computePayment(this.request.order, result, this.request.patience());
     this.request.onServe(result, payment, plate);
+    this.closeTutorial(); // served: the floor has moved the tutorial on
     playSound(result.score === 'perfect' ? 'servePerfect' : result.score === 'close' ? 'serve' : 'wrong');
     // No result pop-up: the customer's reaction (and their Leaves) is the feedback.
     this.finish(buildReaction(result.score));

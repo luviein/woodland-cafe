@@ -56,11 +56,6 @@ export function createNewGame(): GameState {
   };
 }
 
-/** The game state after a tutorial event (see advanceTutorial). */
-export function withTutorial(state: GameState, tutorial: TutorialState): GameState {
-  return state.tutorial === tutorial ? state : { ...state, tutorial };
-}
-
 /**
  * On to the next day. Leaves and everything owned carry over; the leaf
  * pickup cap starts again and forage spots grow back.

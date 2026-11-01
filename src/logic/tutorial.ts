@@ -1,4 +1,6 @@
-import { TUTORIAL_STEPS, type TutorialStep } from '../data/tutorial';
+import { TUTORIAL_RECIPE, TUTORIAL_STEPS, type TutorialStep } from '../data/tutorial';
+import type { FloorGuide } from './floor';
+import type { Order } from './types';
 
 // The tutorial's rules (GAME_DESIGN.md §5.9): which step comes after which,
 // and what finishes each. Plain functions over plain data, like the rest of
@@ -42,6 +44,17 @@ export function advanceTutorial(state: TutorialState, event: TutorialEvent): Tut
  */
 export function isGuidedStart(state: TutorialState): boolean {
   return state === 'intro' || state === 'takeOrder' || state === 'prep' || state === 'clean';
+}
+
+/** How the floor runs during a tutorial step: held during the intro, one customer until the first wipe. */
+export function floorGuide(state: TutorialState): FloorGuide {
+  if (state === 'intro') return 'hold';
+  return isGuidedStart(state) ? 'one' : null;
+}
+
+/** The guided customer's order: always the same simple dish, no modifiers. */
+export function tutorialOrder(): Order {
+  return { recipeId: TUTORIAL_RECIPE, modifiers: [], quantity: 1 };
 }
 
 export function isTutorialState(value: unknown): value is TutorialState {

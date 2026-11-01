@@ -3,7 +3,14 @@ import { RECIPES } from '../data/recipes';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
 import { TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
 import { createNewGame } from './gameState';
-import { advanceTutorial, isGuidedStart, type TutorialEvent, type TutorialState } from './tutorial';
+import {
+  advanceTutorial,
+  floorGuide,
+  isGuidedStart,
+  tutorialOrder,
+  type TutorialEvent,
+  type TutorialState,
+} from './tutorial';
 
 describe('the tutorial', () => {
   it('a new game starts at the intro', () => {
@@ -30,6 +37,15 @@ describe('the tutorial', () => {
   it('guides (paused clock, one patient customer) only from the intro to the first wipe', () => {
     expect(TUTORIAL_STEPS.filter(isGuidedStart)).toEqual(['intro', 'takeOrder', 'prep', 'clean']);
     expect(isGuidedStart('done')).toBe(false);
+  });
+
+  it('holds the floor during the intro, then lets one customer in until the first wipe', () => {
+    expect(floorGuide('intro')).toBe('hold');
+    expect(floorGuide('takeOrder')).toBe('one');
+    expect(floorGuide('clean')).toBe('one');
+    expect(floorGuide('freePlay')).toBeNull();
+    expect(floorGuide('done')).toBeNull();
+    expect(tutorialOrder()).toEqual({ recipeId: 'jamBread', modifiers: [], quantity: 1 });
   });
 
   it('every step has something to say', () => {

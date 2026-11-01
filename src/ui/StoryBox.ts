@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import type { TutorialStepDef } from '../data/tutorial';
-import type { Point } from '../logic/layout';
 import { addArt } from './art';
 import { Button } from './Button';
 import { COLORS, TEXT, css } from './theme';
@@ -13,11 +12,20 @@ export interface BoxRect {
   height: number;
 }
 
+/** Where the arrow's tip goes. It points down at it, or up from below with `up` (for things near the top edge or under the box). */
+export interface ArrowTarget {
+  x: number;
+  y: number;
+  up?: boolean;
+}
+
 export interface StoryBoxOptions {
   rect: BoxRect;
   step: TutorialStepDef;
   /** Where the bouncing arrow points while line `index` is showing (its tip), or null for no arrow. */
-  arrow?: (index: number) => Point | null;
+  arrow?: (index: number) => ArrowTarget | null;
+  /** Drawing depth; 90 (over the scene, under its pop-up panels) if not given. */
+  depth?: number;
   /** Next pressed on the last line of a step that waits for Next. */
   onFinished: () => void;
   /** Skip tutorial, confirmed. */
@@ -43,6 +51,8 @@ export class StoryBox extends Phaser.GameObjects.Container {
   private readonly skip: Phaser.GameObjects.Text;
   private readonly arrow: Phaser.GameObjects.Image;
   private arrowBob: Phaser.Tweens.Tween | null = null;
+  /** Where the arrow points now (null: hidden), so it only moves when that changes. */
+  private arrowAt: ArrowTarget | null = null;
   private line = 0;
   /** True while "Skip the tutorial?" is asking. */
   private confirming = false;
@@ -86,7 +96,7 @@ export class StoryBox extends Phaser.GameObjects.Container {
     this.arrow = addArt(scene, 0, 0, 'pointerArrow').setOrigin(0.5, 1).setScale(2).setVisible(false);
 
     this.add([panel, portrait, this.text, this.nextButton, this.skip, this.arrow]);
-    this.setDepth(90); // over the scene, under its own pop-up panels (100)
+    this.setDepth(options.depth ?? 90); // over the scene, under its own pop-up panels (100)
     scene.add.existing(this);
     this.showLine();
   }
@@ -106,14 +116,26 @@ export class StoryBox extends Phaser.GameObjects.Container {
     this.nextButton.setVisible(!(last && waitsFor === 'action'));
     this.skip.setText('Skip tutorial');
 
+    this.refreshArrow();
+  }
+
+  /**
+   * Points the arrow at the current line's target. Scenes call this every
+   * frame, because a target can move or appear later (e.g. the customer
+   * walking up to the counter); the arrow only jumps when the target changes.
+   */
+  refreshArrow(): void {
+    const target = this.confirming ? null : (this.options.arrow?.(this.line) ?? null);
+    if (target?.x === this.arrowAt?.x && target?.y === this.arrowAt?.y && target?.up === this.arrowAt?.up) return;
+    this.arrowAt = target;
     // A fresh bounce for each target: up 5px and back, over and over.
-    const target = this.options.arrow?.(this.line) ?? null;
     this.arrowBob?.remove();
     this.arrowBob = null;
     this.arrow.setVisible(target !== null);
     if (target) {
-      this.arrow.setPosition(target.x, target.y);
-      this.arrowBob = this.scene.tweens.add({ targets: this.arrow, y: target.y - 5, duration: 400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      // Pointing up: flipped, hanging from its tip, bouncing downward.
+      this.arrow.setPosition(target.x, target.y).setFlipY(Boolean(target.up)).setOrigin(0.5, target.up ? 0 : 1);
+      this.arrowBob = this.scene.tweens.add({ targets: this.arrow, y: target.y + (target.up ? 5 : -5), duration: 400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
   }
 
@@ -142,6 +164,6 @@ export class StoryBox extends Phaser.GameObjects.Container {
     this.text.setText('Skip the tutorial? Grandma will let you get on with it.');
     this.nextButton.setText('Keep going').setVisible(true);
     this.skip.setText('Yes, skip');
-    this.arrow.setVisible(false);
+    this.refreshArrow(); // hidden while asking
   }
 }

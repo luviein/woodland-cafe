@@ -84,7 +84,17 @@ export interface FloorState {
   nextCustomerId: number;
   /** The Mascot is waving at the door today: customers arrive more often. */
   mascot: boolean;
+  /**
+   * The tutorial's guided start of Day 1 (GAME_DESIGN.md §5.9):
+   *   'hold' - nobody comes in yet (Grandma Badger is talking)
+   *   'one'  - just one customer comes, the first of the day
+   *   null   - a normal day
+   * While guided ('hold' or 'one'), nobody's patience runs out.
+   */
+  guide: FloorGuide;
 }
+
+export type FloorGuide = 'hold' | 'one' | null;
 
 export function createFloorState(config: FloorConfig = FLOOR_CONFIG, mascot = false): FloorState {
   return {
@@ -95,6 +105,7 @@ export function createFloorState(config: FloorConfig = FLOOR_CONFIG, mascot = fa
     doorsOpen: true,
     nextCustomerId: 1,
     mascot,
+    guide: null,
   };
 }
 
@@ -137,14 +148,16 @@ export function stepFloor(
     walker: stepWalker(c.walker, seconds, config.customerSpeed),
     timer: c.timer - seconds,
     // Only once their order is taken, and then at a fixed rate whatever else
-    // is going on. Waiting in the queue is free (GAME_DESIGN.md §4).
-    patience: c.phase === 'ordered' ? c.patience - seconds : c.patience,
+    // is going on. Waiting in the queue is free (GAME_DESIGN.md §4). Never
+    // during the tutorial's guided start: the player is still learning.
+    patience: c.phase === 'ordered' && state.guide === null ? c.patience - seconds : c.patience,
   }));
 
   // 2. A new customer walks in if it's time, the doors are open and the
-  // queue has room.
-  spawnTimer -= seconds;
-  if (state.doorsOpen && spawnTimer <= 0 && queue.length < queueCapacity(layout)) {
+  // queue has room. Guided: nobody while held, then only the day's first.
+  if (state.guide !== 'hold') spawnTimer -= seconds;
+  const mayCome = state.guide === null || (state.guide === 'one' && nextCustomerId === 1);
+  if (state.doorsOpen && mayCome && spawnTimer <= 0 && queue.length < queueCapacity(layout)) {
     const id = nextCustomerId++;
     customers.push({
       id,
@@ -237,6 +250,7 @@ export function stepFloor(
     doorsOpen: state.doorsOpen,
     nextCustomerId,
     mascot: state.mascot,
+    guide: state.guide,
   };
 }
 
@@ -273,13 +287,15 @@ export function takeOrder(
   layout: Layout,
   game: Owned & Pantry,
   rng: Rng = Math.random,
+  // What they order: normally random; the tutorial passes its fixed dish.
+  pickOrder: (owned: Owned, rng: Rng) => Order = generateOrder,
 ): { floor: FloorState; result: TakeOrderResult } {
   const front = customerAtCounter(state, layout);
   if (!front) return { floor: state, result: 'notReady' };
   const seat = findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot);
   if (!seat) return { floor: state, result: 'noSeat' };
 
-  const order = generateOrder(game, rng);
+  const order = pickOrder(game, rng);
   if (!canMakeOrder(game, order)) {
     // They keep the order, so the scene can say what ran out.
     const left: Customer = {

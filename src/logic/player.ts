@@ -4,6 +4,7 @@ import { pointKey, samePoint, type Layout, type Point, type Table } from './layo
 import type { Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import type { Rng } from './random';
+import type { Order } from './types';
 import type { Pantry } from './stock';
 import { createWalker, isMoving, redirect, stepWalker, walkTo, type Walker } from './walker';
 
@@ -147,6 +148,7 @@ export function takeOrderAtCounter(
   layout: Layout,
   game: Owned & Pantry,
   rng: Rng = Math.random,
+  pickOrder?: (owned: Owned, rng: Rng) => Order,
 ): { player: PlayerState; floor: FloorState; result: TakeOrderResult | null } {
   const unchanged = { player, floor, result: null };
   if (!player.takingOrder || isMoving(player.walker)) return unchanged;
@@ -154,7 +156,7 @@ export function takeOrderAtCounter(
   const done = { ...player, takingOrder: false };
   if (floor.queue.length === 0) return { ...unchanged, player: done };
 
-  const taken = takeOrder(floor, layout, game, rng);
+  const taken = takeOrder(floor, layout, game, rng, pickOrder);
   if (taken.result === 'notReady') return unchanged;
   return { player: done, floor: taken.floor, result: taken.result };
 }
