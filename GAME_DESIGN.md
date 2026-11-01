@@ -288,7 +288,6 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Buying stock is one unit at a time:** each ingredient row has a **+1** and a **+10** button. Each tap buys straight away (no basket, no checkout) and shows the new stock. A button is greyed out when the wallet can't pay for it, so +10 can be grey while +1 still works.
 - A newly unlocked ingredient starts with **0 stock**: buy some at the Pantry, or the first dishes are rush deliveries.
 - **Spending** never takes the wallet below 0; a purchase that can't be paid for does nothing (the buttons are greyed out anyway).
-- A fourth stall, the **Carpenter**, sells furniture (§5.7).
 
 ### 5.7 Furniture and decorating
 
