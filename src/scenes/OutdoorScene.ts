@@ -46,11 +46,11 @@ import {
   TREE_TRUNK_HEIGHT,
   createPlayerSprite,
   drawBerryBush,
-  drawLeaf,
   drawMushroomPatch,
   drawStall,
   drawTree,
 } from '../ui/sprites';
+import { addArt } from '../ui/art';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, watchGameState } from './gameStore';
@@ -80,7 +80,7 @@ export class OutdoorScene extends Phaser.Scene {
   /** Leaves on the ground (plain data) and their sprites, matched by leaf id. */
   private leafField!: LeafField;
   private leafGround!: LeafGround;
-  private leafSprites = new Map<number, Phaser.GameObjects.Graphics>();
+  private leafSprites = new Map<number, Phaser.GameObjects.Image>();
   /** Forage spots here, their sprites (by spot id), and what the player is gathering. */
   private spots: ForageSpotDef[] = [];
   private spotSprites = new Map<string, Phaser.GameObjects.Graphics>();
@@ -411,8 +411,7 @@ export class OutdoorScene extends Phaser.Scene {
     }
     for (const leaf of this.leafField.leaves) {
       if (this.leafSprites.has(leaf.id)) continue;
-      const sprite = this.add.graphics({ x: leaf.position.x, y: leaf.position.y });
-      drawLeaf(sprite);
+      const sprite = addArt(this, leaf.position.x, leaf.position.y, 'leaf');
       // Lying flat on the ground: under anything standing near it. Then a
       // little rocking, so it catches the eye on the grass.
       sprite.setDepth(2).setAngle(-15);

@@ -1,22 +1,24 @@
 import type Phaser from 'phaser';
+import { PALETTE } from '../art/palette';
 
-// Placeholder look of the game in one place. When real art and a pixel font
-// arrive (milestone 10), most visual changes start here instead of being
-// hunted down across every scene.
+// The look of the game in one place, so visual changes start here instead of
+// being hunted down across every scene. Milestone 10 moves every colour onto
+// the palette (GAME_DESIGN.md §8.1): the UI colours first; the rest as each
+// area gets its art.
 
 export const COLORS = {
   wall: 0x4a3a33,
   counter: 0xa0704a,
   counterEdge: 0x7a5236,
-  paper: 0xf4e9d8,
-  paperEdge: 0xc9b79c,
-  ink: 0x3b2a20,
-  plate: 0xeae4da,
-  plateEdge: 0xb8ad9e,
-  serve: 0x6f9e5a,
-  reset: 0xb0705a,
-  book: 0x5a7a9c,
-  disabled: 0x8a817a,
+  paper: PALETTE.cream,
+  paperEdge: PALETTE.sand,
+  ink: PALETTE.darkBrown,
+  plate: PALETTE.white,
+  plateEdge: PALETTE.silver,
+  serve: PALETTE.green,
+  reset: PALETTE.rust,
+  book: PALETTE.blue,
+  disabled: PALETTE.grey,
   // Cafe floor tiles
   floorA: 0xc9a77c,
   floorB: 0xbf9c70,
@@ -36,12 +38,12 @@ export const COLORS = {
   mess: 0x5b3b22,
   messLight: 0x8a6440,
   // Customer status label colours, so mood reads at a glance.
-  statusCalm: 0xf4e9d8,
-  statusImpatient: 0xf0a040,
-  statusUpset: 0xe0503c,
+  statusCalm: PALETTE.cream,
+  statusImpatient: PALETTE.orange,
+  statusUpset: PALETTE.red,
   /** Customer fur colours; each customer gets one, picked by id. */
   customerFur: [0x9c6b45, 0xc98a4b, 0x8a817a, 0xd9b38c, 0x6e4a2f],
-  overlay: 0x000000,
+  overlay: PALETTE.black,
   // World map (placeholder shapes until the illustrated island, milestone 10)
   water: 0x4f86a8,
   waterLight: 0x6a9cbc,
@@ -64,9 +66,6 @@ export const COLORS = {
   // Prep station equipment
   toaster: 0xc9cfd2,
   toasterShade: 0x8f999e,
-  // Leaf pickups: autumn orange, so they stand out on the grass.
-  leaf: 0xe08a3a,
-  leafVein: 0x9c5a24,
 } as const;
 
 /**

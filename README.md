@@ -30,6 +30,14 @@ There's one save slot, in the browser's local storage, and it saves itself
 on the map, in the Forest or Marketplace, or while decorating. Nothing is saved
 during a cafe day, so reloading mid-day goes back to just before that day.
 
+## Drawing your own sprites
+
+Every sprite is drawn in code first (`src/art/sprites/`, listed by name in
+`src/art/spriteArt.ts`). To replace one, save a PNG with the same name in
+`src/art/drawn/`, e.g. `src/art/drawn/leaf.png`: Endesga 32 colours, a
+transparent background, the same size as the code sprite, and animation
+frames side by side. Restart `npm run dev` to pick up a new file.
+
 ## Controls (cafe floor)
 
 | Action              | Mouse / touch |
@@ -150,6 +158,8 @@ src/
                      Prep and DaySummary (both overlays on the floor),
                      WorldMap, Outdoor (Forest and Marketplace), and
                      gameStore (shares the game state between scenes)
+  art/               the palette (Endesga 32), code-drawn sprites as text
+                     grids, and drawn/ for hand-drawn PNG replacements
   debug/             dev console and its commands (dev builds only)
 ```
 

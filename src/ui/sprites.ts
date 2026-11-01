@@ -65,14 +65,6 @@ export function drawTree(g: Phaser.GameObjects.Graphics, x: number, y: number, s
   g.fillStyle(COLORS.treeLeaf).fillCircle(x, y - 4 * size, 10 * size);
 }
 
-/** A Leaf lying on the ground (the currency): a small pointed oval with a vein. Centred on (0, 0). */
-export function drawLeaf(g: Phaser.GameObjects.Graphics): void {
-  g.fillStyle(COLORS.leaf).fillEllipse(0, 0, 10, 6);
-  g.fillTriangle(4, -2, 4, 2, 7, 0); // pointed tip
-  g.fillStyle(COLORS.leafVein).fillRect(-5, 0, 10, 1);
-  g.fillRect(-7, 0, 2, 1); // stem
-}
-
 /** A patch of mushrooms on a dirt mound; bare (just the mound) once gathered. Base centre at (0, 0). */
 export function drawMushroomPatch(g: Phaser.GameObjects.Graphics, full: boolean): void {
   g.fillStyle(COLORS.dirt).fillEllipse(0, -2, 24, 8);
