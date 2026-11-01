@@ -94,10 +94,10 @@ export class SoundScene extends Phaser.Scene {
     const frame = settings.muted ? 1 : 0;
     this.speakerIcon.setFrame(frame);
     this.muteIcon.setFrame(frame);
-    const x = TRACK.x - PANEL.x + Math.round(settings.volume * TRACK.width);
-    this.knob.setX(x);
-    this.fill.setSize(Math.round(settings.volume * TRACK.width), 4);
-    this.fill.setFillStyle(settings.muted ? COLORS.disabled : COLORS.serve);
+    // Muted shows as 0, but the volume itself is kept, so unmuting brings it back.
+    const shown = settings.muted ? 0 : settings.volume;
+    this.knob.setX(TRACK.x - PANEL.x + Math.round(shown * TRACK.width));
+    this.fill.setSize(Math.round(shown * TRACK.width), 4);
     this.label.setText(volumeLabel(settings));
   }
 }
