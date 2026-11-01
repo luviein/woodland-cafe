@@ -215,6 +215,8 @@ export class PrepScene extends Phaser.Scene {
       },
       // Under the Recipe Book (50), so the open book covers her rather than the other way round.
       depth: 45,
+      // Each new line may unlock the counter (at her instruction line).
+      onLine: () => this.refreshDish(),
       onFinished: () => {},
       onSkip: () => {
         tutorialEvent(this, 'skip');
@@ -222,6 +224,7 @@ export class PrepScene extends Phaser.Scene {
         this.refreshDish(); // skipped: every bin opens up
       },
     });
+    this.refreshDish(); // locked until her instruction line
   }
 
   /**
@@ -245,6 +248,11 @@ export class PrepScene extends Phaser.Scene {
   private guidedNextLayer(): IngredientId | null | undefined {
     if (getGameState(this).tutorial !== 'prep') return undefined;
     return expectedPlate(this.request.order).layers[this.dish.length] ?? null;
+  }
+
+  /** While Grandma is still explaining (before her instruction line), the counter is locked. */
+  private lockedForGuide(): boolean {
+    return getGameState(this).tutorial === 'prep' && this.guide !== null && !this.guide.reachedWaitingLine();
   }
 
   private closeTutorial(): void {
@@ -446,7 +454,9 @@ export class PrepScene extends Phaser.Scene {
     // dish is in the toaster: there's nothing on the plate.
     const hasItems = onPlate && this.dish.length > 0 && !this.busy;
     // The guided first order can only be served once it's complete.
-    this.serveButton.setEnabled(hasItems && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === null));
+    this.serveButton.setEnabled(
+      hasItems && !this.lockedForGuide() && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === null),
+    );
     this.resetButton.setEnabled(hasItems);
     this.refreshBins();
   }
@@ -457,7 +467,7 @@ export class PrepScene extends Phaser.Scene {
     this.binIds.forEach((id, i) => {
       const status = this.binStatus(id);
       // The guided first order: only the next right layer (GAME_DESIGN.md §5.9).
-      const allowed = this.guidedNextLayer() === undefined || this.guidedNextLayer() === id;
+      const allowed = !this.lockedForGuide() && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === id);
       this.binButtons[i].setEnabled(!full && status.kind !== 'out' && allowed);
       this.binCounts[i].setText(
         status.kind === 'stock' ? `x${status.left}` : status.kind === 'rush' ? `🍃${status.price}` : 'Out',

@@ -26,6 +26,8 @@ export interface StoryBoxOptions {
   arrow?: (index: number) => ArrowTarget | null;
   /** Drawing depth; 90 (over the scene, under its pop-up panels) if not given. */
   depth?: number;
+  /** Called each time a line shows (e.g. so the scene can unlock things at the waiting line). */
+  onLine?: () => void;
   /** Next pressed on the last line of a step that waits for Next. */
   onFinished: () => void;
   /** Skip tutorial, confirmed. */
@@ -122,6 +124,13 @@ export class StoryBox extends Phaser.GameObjects.Container {
     this.skip.setText('Skip tutorial');
 
     this.refreshArrow();
+    this.options.onLine?.();
+  }
+
+  /** True once Grandma has reached the line that waits for the player (or the step has none). */
+  reachedWaitingLine(): boolean {
+    const { waitsAt } = this.options.step;
+    return waitsAt === null || this.line >= waitsAt;
   }
 
   /**
