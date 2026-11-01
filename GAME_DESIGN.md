@@ -328,6 +328,25 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ---
 
+### 5.9 Tutorial and mini story
+
+- **The story:** the player (the hedgehog) arrives on Woodland Island to take over an old cafe from **Grandma Badger**, who is retiring. She hands over the keys and **30 of each starter ingredient** from her pantry (the starting stock, §3.6), shows them the ropes on their first day, then leaves them to it: "The cafe's yours now, dear."
+- **The story box:** Grandma Badger's portrait (her 16x24 sprite, larger) beside a few short lines of text, at the bottom of the screen, with **Next** for story lines and **Skip tutorial** (which asks first). A **bouncing arrow** points at whatever the line is about. Story lines wait for Next; "do this" lines stay up until the player does it.
+- **Only on a new game.** Saves from before the tutorial existed count as already past it.
+- **The steps** (each starts when the one before is done):
+  | Step | Where | Grandma says (roughly) | Done when |
+  | --- | --- | --- | --- |
+  | intro | cafe, Day 1 | welcome, the keys, the 30 of each ingredient | Next on the last line |
+  | takeOrder | cafe | a customer is here: tap them at the counter (arrow on them) | their order is taken |
+  | prep | prep station | what they want, the Recipe Book, layers go bottom to top, Serve | the dish is served |
+  | clean | cafe | they ate and left a mess: tap the table to wipe it | that mess is wiped |
+  | freePlay | cafe | customers will keep coming until closing: off you go! | Next |
+  | summary | day summary | how the day went: takings, stock used, wages later on | Exit cafe |
+  | map | world map | the Marketplace (buy stock before the starter 30 run out), the Forest (Leaves and foraging) | Next on the last line: the tutorial is done |
+- **The guided start of Day 1:** during intro, takeOrder, prep and clean, the **day clock is paused** and only **one** customer comes: they arrive once the intro is over, always order **Jam Bread**, and their **patience doesn't run out**. From freePlay on, Day 1 runs as normal (the clock starts, customers arrive as usual).
+- **Skip tutorial** ends it at once: Day 1 just carries on as a normal day.
+- The tutorial step is part of the game state, so it's saved; a reload during Day 1 starts Day 1 again (saves are between days only, §6.1), with the tutorial from its first cafe step.
+
 ## 6. Game State
 
 - All player state lives in **one central, serializable state object**, so it can be saved and loaded later:
@@ -339,6 +358,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - Hired employees (§5.8)
   - Cafe layout: the fixed room plus the placed furniture
   - Unlocked locations
+  - Where the player is in the tutorial (§5.9)
 - "Serializable" means plain data only (no Phaser objects, class instances, or functions), so it can be converted to JSON and back without losing anything.
 
 ### 6.1 Saving and loading
@@ -370,7 +390,6 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Background music:** a soft, cosy loop (made in code like the effects, or a music file), with its own volume next to the effects.
 - **A pixel font** for all text, to match the art.
 - **Choose your animal:** at the start of a new game the player picks which critter they are (the cafe owner is a hedgehog until then, §8.2).
-- **Tutorial with a mini story** at the start of a new game. Part of the story: the player is given **30 of each starter ingredient** to open the cafe with, so they learn about ingredient stock (§3.6) from the start. Story and steps still to be designed.
 
 ---
 
@@ -459,7 +478,8 @@ The player can leave the counter **before taking an order** to clean messes; the
 8. **Employees:** a quieter start, the Mascot (more customers) and the Cleaner, hired at the Notice Board for a daily wage (§5.8)
 9. **Saving and loading:** one autosaved slot, between days only, and a title screen (§6.1)
 10. **Pixel art, animation, sound** (including the illustrated island map): Endesga 32 palette, code-drawn sprites replaceable by PNGs, code-made sound effects (§8)
-11. **Desktop build** (Tauri or Electron)
+11. **Tutorial and mini story:** Grandma Badger guides the first day (§5.9)
+12. **Desktop build** (Tauri or Electron): not needed for now
 
 ### Milestone 1 scope: Prep Station
 
