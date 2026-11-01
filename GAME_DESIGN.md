@@ -373,6 +373,39 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Integer scaling** only, so pixels stay crisp.
 - **Colored placeholder shapes** until the art milestone; real art comes last (including the illustrated island map).
 
+### 8.1 Look and feel (milestone 10)
+
+- **Mood:** cute, cosy, retro charm. Chunky shapes, round faces with big dot eyes, soft shading (one light and one dark shade per colour), warm light indoors.
+- **Palette: Endesga 32** (from Lospec), and nothing outside it. The same 32 colours are used for code-drawn sprites and for any PNGs drawn by hand, so everything matches:
+  `be4a2f d77643 ead4aa e4a672 b86f50 733e39 3e2731 a22633 e43b44 f77622 feae34 fee761 63c74d 3e8948 265c42 193c3e 124e89 0099db 2ce8f5 ffffff c0cbdc 8b9bb4 5a6988 3a4466 262b44 181425 ff0044 68386c b55088 f6757a e8b796 c28569`
+- **Outlines:** a dark outline (`3e2731` dark brown, not black) around characters and props, so they read on any floor.
+- **UI colours** (panels, buttons, text) move to palette colours too: paper `ead4aa`, ink `3e2731`.
+
+### 8.2 Sprites
+
+- **Sizes:** tiles and props **16×16**; characters **16×24** (head and ears above the tile). Drawn at real size; the game scales them.
+- **Cast** (can still change):
+  | Who | Animal |
+  | --- | --- |
+  | Player (cafe owner) | Hedgehog in an apron |
+  | Cleaner | Raccoon with a bandana |
+  | Mascot | Frog in a leaf costume |
+  | Customers | Fox, rabbit, squirrel and mouse (picked at random per customer) |
+- **Animations:** a 2-frame walk for everyone who moves, mirrored for left/right; an idle bob while waiting; the Mascot's dance stays a hop and sway.
+- **Where art comes from:** each sprite is first drawn **in code** as a small text grid (one letter per palette colour). A hand-drawn **PNG** with the same name in `public/art/` replaces it (a horizontal strip for animations). So any sprite can be redrawn later, one at a time.
+- **Covered:** cafe floor, walls, door, counter, tables, chairs, messes; the cast; ingredient bins, bread and fillings, dishes, toaster; the island map, the Forest, the Marketplace stalls, leaves, mushroom patches and berry bushes; the title screen.
+
+### 8.3 Little animations
+
+- Customers bob while they wait; a coin-and-leaf pop when a dish is paid for; leaves flutter as they fall; a puff of dust when a table is wiped; buttons press down a pixel.
+
+### 8.4 Sound
+
+- **Sound effects, made in code** (Web Audio, no files at first): button tap, leaf pickup, order taken, ingredient added, serve (a ding; brighter for a perfect dish), angry customer, toaster tick and pop, wiping, a purchase, day end.
+- A real sound file with the same name can replace any effect later.
+- **Music:** a soft background loop, optional, last.
+- **Mute** with `M`, plus a volume setting. These are settings, not game progress: they're kept apart from the save and survive a New game.
+
 ---
 
 ## 9. Platform & Input
@@ -401,7 +434,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 7. **Furniture and cafe expansion**
 8. **Employees:** a quieter start, the Mascot (more customers) and the Cleaner, hired at the Notice Board for a daily wage (§5.8)
 9. **Saving and loading:** one autosaved slot, between days only, and a title screen (§6.1)
-10. **Pixel art, animation, sound** (including the illustrated island map)
+10. **Pixel art, animation, sound** (including the illustrated island map): Endesga 32 palette, code-drawn sprites replaceable by PNGs, code-made sound effects (§8)
 11. **Desktop build** (Tauri or Electron)
 
 ### Milestone 1 scope: Prep Station
