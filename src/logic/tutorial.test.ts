@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RECIPES } from '../data/recipes';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
-import { TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
+import { NOTES, TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
 import { createNewGame, seeTip, skipTutorial } from './gameState';
 import {
   advanceTutorial,
@@ -74,5 +74,14 @@ describe('one-off tips', () => {
 describe('the map tour', () => {
   it("names one place (or none) for each of Grandma's map lines", () => {
     expect(TUTORIAL.map.pointsAt).toHaveLength(TUTORIAL.map.lines.length);
+  });
+});
+
+describe("Grandma's notes", () => {
+  it('every topic has a title and something to read', () => {
+    for (const note of NOTES) {
+      expect(note.title.length).toBeGreaterThan(0);
+      expect(note.lines.length).toBeGreaterThan(0);
+    }
   });
 });

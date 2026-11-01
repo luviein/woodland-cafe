@@ -91,5 +91,40 @@ export const TIPS: Record<TipId, TutorialStepDef> = {
   },
 };
 
+/** A topic in Grandma's notes: what she explained, to read again any time. */
+export interface NoteTopic {
+  title: string;
+  lines: readonly string[];
+}
+
+/** Grandma's notes, behind the ? button (GAME_DESIGN.md §5.9). Mostly her own tutorial lines. */
+export const NOTES: readonly NoteTopic[] = [
+  {
+    title: 'Orders',
+    lines: [
+      'Tap a customer waiting at the counter to take their order.',
+      "No clean seat free? They can't order until you wipe a table.",
+      'Their patience only starts running down once you take the order.',
+    ],
+  },
+  {
+    title: 'Prep station',
+    lines: [
+      ...TUTORIAL.prep.lines.slice(0, 3),
+      'Tap the bins to stack the layers, bottom first, then Serve. A wrong layer? Press Reset.',
+    ],
+  },
+  {
+    title: 'Cleaning',
+    lines: [
+      'Customers leave a mess when they finish eating. Tap the table to wipe it clean.',
+      'Hire a Cleaner at the Notice Board and they will wipe tables for you.',
+    ],
+  },
+  { title: 'The day', lines: [...TUTORIAL.freePlay.lines, 'At the end of each day you see what you earned and what you used.'] },
+  { title: 'The island', lines: TUTORIAL.map.lines.slice(1, 5) },
+  { title: 'Decorating', lines: TIPS.decorate.lines },
+];
+
 /** What the guided first customer always orders: simple, with starter ingredients only. */
 export const TUTORIAL_RECIPE: RecipeId = 'jamBread';

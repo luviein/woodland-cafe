@@ -32,7 +32,7 @@ export class BootScene extends Phaser.Scene {
       if (!this.textures.exists(artKey(name))) buildArtTexture(this.textures, name);
     }
     // The volume control runs alongside every other scene from now on.
-    this.scene.launch('SoundScene');
+    this.scene.launch('HudScene');
     this.scene.start('TitleScene');
   }
 }

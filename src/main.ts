@@ -10,7 +10,7 @@ import { OutdoorScene } from './scenes/OutdoorScene';
 import { WorldMapScene } from './scenes/WorldMapScene';
 import { TitleScene } from './scenes/TitleScene';
 import { BootScene } from './scenes/BootScene';
-import { SoundScene } from './scenes/SoundScene';
+import { HudScene } from './scenes/HudScene';
 import { PALETTE } from './art/palette';
 import { css } from './ui/theme';
 import { getSoundSettings, setSoundSettings } from './audio/audio';
@@ -30,12 +30,12 @@ const game = new Phaser.Game({
   },
   // The first scene in the list starts automatically: Boot gets the art
   // ready, then opens the title screen, which continues the save or starts
-  // a new game. SoundScene (the volume control) is last so it's drawn over
+  // a new game. HudScene (the volume control) is last so it's drawn over
   // everything; Boot launches it and it never stops. Prep and the summary
   // are launched by the floor as overlays (when an order is taken, when the
   // day ends); later scenes in the list draw on top. The world map and the
   // outdoor places replace the floor between days.
-  scene: [BootScene, TitleScene, FloorScene, PrepScene, DaySummaryScene, WorldMapScene, OutdoorScene, DecorateScene, SoundScene],
+  scene: [BootScene, TitleScene, FloorScene, PrepScene, DaySummaryScene, WorldMapScene, OutdoorScene, DecorateScene, HudScene],
 });
 
 // The registry exists as soon as the game is constructed, before any

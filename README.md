@@ -36,7 +36,10 @@ A new game starts with Grandma Badger handing over the cafe and guiding your
 first morning: taking an order, the prep station, wiping a table, then the day
 summary and the map. Until the first table is wiped the clock waits and only
 one customer comes (always Jam Bread, never impatient). **Skip tutorial** is
-on every box. Her lines are in `src/data/tutorial.ts`.
+on every box. The first time you open Decorate she explains it too. The **?**
+button next to the speaker (bottom-left, every screen) opens **Grandma's
+notes** to read it all again; the game pauses while they're open. Her lines
+and notes are in `src/data/tutorial.ts`.
 
 ## Sound
 
