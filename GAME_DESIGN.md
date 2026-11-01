@@ -490,6 +490,14 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Safety:** saving is refused if it would break the game: an empty step or topic, a recipe or extra without lines, or a customer hint that no longer points to exactly one recipe. The tests check the same.
 - **Dev only:** the page and its save route exist only under `npm run dev`, never in a built game. Names (recipes, ingredients, stalls) and button labels aren't in the editor (yet).
 
+### 9.2 Sprite gallery (dev only)
+
+- **Every sprite in one page** at `/sprites.html` while `npm run dev` runs, grouped (critters, cafe, kitchen, outdoors, icons), with collapsible groups like the text editor.
+- Each sprite shows its **name, size, frames and where it comes from** (drawn in code, the player's PNG in `src/art/drawn/`, or converted from the player's critter sheet), its frames at game size and enlarged, and, for critters, its **walk playing** in every view.
+- **Quality checks**, flagged with a warning like the text editor: for critters, see-through holes inside the outline, uneven front/back views (eyes that don't match), stray single pixels; for every sprite, a broken grid (uneven rows, unknown colours). The same checks run as tests.
+- **Side by side:** every critter at real scale next to a table, chairs and the counter, to see proportions before playing.
+- Read-only for now. Later: drop a PNG onto a sprite to replace it, and import new critters drawn on the skeleton template.
+
 ---
 
 ## 10. Milestones
