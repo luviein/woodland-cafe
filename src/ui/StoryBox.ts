@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { TutorialStepDef } from '../data/tutorial';
 import { addArt } from './art';
+import { spriteSize } from '../art/pixelSprite';
+import { SPRITE_ART } from '../art/spriteArt';
 import { Button } from './Button';
 import { COLORS, TEXT, css } from './theme';
 
@@ -34,7 +36,8 @@ export interface StoryBoxOptions {
   onSkip: () => void;
 }
 
-const PORTRAIT_SCALE = 2;
+/** Her portrait at 1x: the badger art is about 27x34 already. */
+const PORTRAIT_SCALE = 1;
 const PAD = 6;
 /** Wide enough for "Keep going". */
 const NEXT = { width: 96, height: 20 };
@@ -71,7 +74,7 @@ export class StoryBox extends Phaser.GameObjects.Container {
       .setStrokeStyle(2, COLORS.ink)
       .setInteractive();
     const portrait = addArt(scene, x + PAD, y + PAD, 'badger').setOrigin(0).setScale(PORTRAIT_SCALE);
-    const textLeft = x + PAD * 2 + 16 * PORTRAIT_SCALE;
+    const textLeft = x + PAD * 2 + spriteSize(SPRITE_ART.badger).width * PORTRAIT_SCALE;
     this.text = scene.add.text(textLeft, y + PAD, '', {
       ...TEXT.label,
       color: css(COLORS.ink),

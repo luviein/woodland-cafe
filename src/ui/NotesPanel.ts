@@ -27,8 +27,8 @@ export class NotesPanel extends Phaser.GameObjects.Container {
     // Interactive so taps on the dim layer don't reach anything underneath.
     const dim = scene.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.6).setOrigin(0).setInteractive();
     const panel = scene.add.rectangle(left, top, WIDTH, HEIGHT, COLORS.paper).setOrigin(0).setStrokeStyle(3, COLORS.ink);
-    const portrait = addArt(scene, left + 12, top + 8, 'badger').setOrigin(0).setScale(2);
-    const title = scene.add.text(left + 52, top + 22, "Grandma's notes", TEXT.heading).setOrigin(0, 0.5);
+    const portrait = addArt(scene, left + 12, top + 6, 'badger').setOrigin(0);
+    const title = scene.add.text(left + 48, top + 22, "Grandma's notes", TEXT.heading).setOrigin(0, 0.5);
 
     const textLeft = left + 24 + TOPIC.width;
     // The small font, so the longest topic still fits the panel.

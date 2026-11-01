@@ -86,7 +86,7 @@ export class TitleScene extends Phaser.Scene {
     addStanding(this, 110, ground, 'cafeHouse').setScale(2);
     addTree(this, 586, ground + 8, 'oak');
     // The fox faces right (the art's way), toward the hedgehog, who faces it back with its left view.
-    addArt(this, 460, ground, 'fox').setOrigin(0.5, 1).setScale(2);
+    addArt(this, 460, ground, 'fox', viewFrame(VIEW.right)).setOrigin(0.5, 1).setScale(2);
     addArt(this, 520, ground, 'hedgehog', viewFrame(VIEW.left)).setOrigin(0.5, 1).setScale(2);
   }
 

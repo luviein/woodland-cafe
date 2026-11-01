@@ -16,7 +16,7 @@ import {
   TABLE,
   WALL,
 } from './sprites/cafe';
-import { BADGER, FOX, FROG, RACCOON, SQUIRREL } from './sprites/critters';
+import { BADGER, FOX, FROG, RACCOON, SQUIRREL } from './sprites/sheetCritters2';
 import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sprites/sheetCritters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
@@ -86,7 +86,17 @@ export function isArtName(name: string): name is ArtName {
  * sheetCritters.ts), each standing plus two steps, who face the way they
  * walk. The rest are 16x24 with a standing frame and two steps, facing right.
  */
-export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>(['hedgehog', 'rabbit', 'mouse', 'deer']);
+export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>([
+  'hedgehog',
+  'rabbit',
+  'mouse',
+  'deer',
+  'badger',
+  'raccoon',
+  'frog',
+  'fox',
+  'squirrel',
+]);
 
 /** The animals customers can be (GAME_DESIGN.md §8.2). */
 export const CUSTOMER_ART = ['fox', 'rabbit', 'squirrel', 'mouse', 'deer'] as const satisfies readonly ArtName[];

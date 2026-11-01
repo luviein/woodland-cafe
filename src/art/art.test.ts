@@ -38,9 +38,8 @@ describe('the cast', () => {
     expect(SPRITE_ART[name].frames).toHaveLength(12);
   });
 
-  it.each(cast.filter((n) => !VIEW_ART.has(n)))('%s is 16x24, standing plus two steps', (name) => {
-    expect(spriteSize(SPRITE_ART[name])).toEqual({ width: 16, height: 24 });
-    expect(SPRITE_ART[name].frames).toHaveLength(3);
+  it('every critter is the player\'s own four-view art', () => {
+    expect(cast.filter((n) => !VIEW_ART.has(n))).toEqual([]);
   });
 
   it('customers come as every animal, mixed up', () => {
