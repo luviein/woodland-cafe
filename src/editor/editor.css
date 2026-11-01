@@ -65,12 +65,37 @@ nav {
   background: var(--wood);
   padding: 8px 0;
 }
-nav h2 {
-  font-size: 12px;
+nav summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--paper);
+  user-select: none;
+}
+nav summary::-webkit-details-marker {
+  display: none;
+}
+nav summary::before {
+  content: '▸ ';
+  display: inline-block;
+  width: 1em;
+}
+nav details[open] > summary::before {
+  content: '▾ ';
+}
+nav details.section > summary {
+  font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 12px 16px 4px;
-  color: var(--paper);
+  padding: 8px 12px 4px;
+}
+nav details.group > summary {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 12px 2px 24px;
+}
+nav details.group a {
+  padding-left: 44px;
 }
 nav a {
   display: block;

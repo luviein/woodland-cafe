@@ -105,7 +105,7 @@ function pages(): Page[] {
   }
   list.push({
     id: 'notes',
-    group: "Grandma's notes",
+    group: 'Grandma: notes',
     label: 'All topics',
     about: 'The notebook behind the ? button: a topic per button, its lines shown together.',
     build: buildNotes,
@@ -361,22 +361,62 @@ function refreshChrome(): void {
     : dirty
       ? 'Unsaved changes'
       : 'All saved';
-  // The list of pages, with a flag where something is too long or wrong.
+  // The list of pages: sections (Grandma, Customers) holding groups
+  // (Tutorial, Orders...), each folding open and shut. A flag marks a page,
+  // and every group and section around it, where something needs a look.
   nav.replaceChildren();
-  let group = '';
+  const sections = new Map<string, Map<string, HTMLElement[]>>();
+  const flaggedFolds = new Set<string>();
   for (const page of pages()) {
-    if (page.group !== group) {
-      group = page.group;
-      nav.append(el('h2', {}, group));
-    }
+    const [section, group] = page.group.split(': ');
     const key = page.id.split('.')[1] ?? page.id;
     const flagged = page.tooLong() || issues.some((p) => p.includes(`"${key}"`));
     const link = el('a', { className: page.id === current ? 'current' : '', onclick: () => ((current = page.id), showPage()) }, page.label);
-    if (flagged) link.append(el('span', { className: 'flag', title: 'Something here needs a look' }, '⚠'));
-    nav.append(link);
+    if (flagged) {
+      link.append(flag());
+      flaggedFolds.add(section).add(page.group);
+    }
+    if (!sections.has(section)) sections.set(section, new Map());
+    const groups = sections.get(section)!;
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group)!.push(link);
+  }
+  for (const [section, groups] of sections) {
+    const inner = [...groups].map(([group, links]) => fold(`${section}: ${group}`, group[0].toUpperCase() + group.slice(1), 'group', flaggedFolds, links));
+    nav.append(fold(section, section, 'section', flaggedFolds, inner));
   }
   const box = main.querySelector('.problems');
   if (box) box.replaceWith(problemBox(issues));
+}
+
+const flag = () => el('span', { className: 'flag', title: 'Something here needs a look' }, '⚠');
+
+/** Which sections and groups are folded shut, remembered in this browser (just a convenience). */
+const FOLDED_KEY = 'woodland-text-editor-folded';
+const folded = new Set<string>(readFolded());
+function readFolded(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(FOLDED_KEY) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
+
+/** A heading that folds its contents open and shut (a <details> element). */
+function fold(id: string, title: string, kind: 'section' | 'group', flagged: Set<string>, children: HTMLElement[]): HTMLElement {
+  const summary = el('summary', {}, title);
+  if (flagged.has(id)) summary.append(flag());
+  const box = el('details', { className: kind, open: !folded.has(id) }, summary, ...children);
+  box.addEventListener('toggle', () => {
+    if (box.open) folded.delete(id);
+    else folded.add(id);
+    try {
+      localStorage.setItem(FOLDED_KEY, JSON.stringify([...folded]));
+    } catch {
+      // Not remembered this time; nothing else depends on it.
+    }
+  });
+  return box;
 }
 
 function problemBox(issues: string[]): HTMLElement {
