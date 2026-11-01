@@ -24,6 +24,9 @@ import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
 import { TIPS } from '../data/tutorial';
 import type { WorldMapRequest } from './WorldMapScene';
 
+/** The storage tray and Done, in the strip under the cafe. */
+const TRAY = { x: 64, y: BASE_HEIGHT - 42, firstButton: 196, buttonWidth: 104 };
+
 /** How far (px) a press must move to count as a drag rather than a tap. */
 const DRAG_THRESHOLD = 4;
 
@@ -79,23 +82,28 @@ export class DecorateScene extends Phaser.Scene {
     this.origin = cafeOrigin(buildLayout(this.furniture()));
     this.tiles = addCafeCanvas(this);
 
-    this.add.text(BASE_WIDTH / 2, 10, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0.5, 0);
+    // On the cafe's top wall, outlined so it reads on the logs.
+    this.add
+      .text(BASE_WIDTH / 2, 8, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 4 })
+      .setOrigin(0.5, 0);
     this.add
       .text(BASE_WIDTH / 2, BASE_HEIGHT - 8, 'Drag pieces to move or place them. Tap a piece for more.', TEXT.label)
       .setOrigin(0.5, 1);
 
-    // The storage tray, left of the cafe.
-    this.add.text(64, 90, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0.5, 0);
+    // The storage tray, in the strip under the cafe (right of the corner buttons).
+    this.add.text(TRAY.x, TRAY.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0, 0.5);
     this.selectedOutline = this.add.rectangle(0, 0, 112, 38).setStrokeStyle(3, COLORS.paper).setVisible(false);
     FURNITURE_KINDS.forEach((kind, i) => {
-      const button = new Button(this, 64, 130 + i * 44, 104, 30, '', COLORS.book, () => this.select(kind));
+      const button = new Button(this, TRAY.firstButton + i * (TRAY.buttonWidth + 12), TRAY.y, TRAY.buttonWidth, 30, '', COLORS.book, () =>
+        this.select(kind),
+      );
       // Pressing a tray button may also start dragging one out of storage.
       button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
         if (this.furniture().stored[kind] > 0) this.drag = { kind, from: null, pieces: [], start: pointer.position.clone(), ghost: null };
       });
       this.trayButtons.set(kind, button);
     });
-    new Button(this, BASE_WIDTH - 64, BASE_HEIGHT - 40, 100, 30, 'Done', COLORS.serve, () => this.done());
+    new Button(this, BASE_WIDTH - 64, TRAY.y, 100, 30, 'Done', COLORS.serve, () => this.done());
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && this.carrying) this.cancelCarrying();

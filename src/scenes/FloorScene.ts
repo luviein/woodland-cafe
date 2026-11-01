@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config/display';
 import { buildLayout } from '../logic/furniture';
-import { addCafeCanvas, cafeOrigin, drawCafeTiles } from '../ui/cafeTiles';
+import { addCafeCanvas, cafeOrigin, centred, drawCafeTiles } from '../ui/cafeTiles';
 import { artKey } from '../ui/art';
 import { DAY_CONFIG } from '../data/dayConfig';
 import { INGREDIENTS } from '../data/ingredients';
@@ -185,7 +185,8 @@ export class FloorScene extends Phaser.Scene {
     this.guide = null;
     this.guideStep = null;
     this.day = createDay();
-    this.clock = new ClockDisplay(this, 8, 34);
+    // Side by side on the top wall, clear of the floor.
+    this.clock = new ClockDisplay(this, 88, 8);
     const wallet = new WalletDisplay(this, 8, 8);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
 
@@ -529,11 +530,11 @@ export class FloorScene extends Phaser.Scene {
   private drawTableOverlay(): void {
     const canvas = this.tableOverlay;
     canvas.clear(); // cheap: a handful of tables, redrawn from scratch each frame
-    // Both sprites are 8x8, so -4 centres them on the spot.
     for (const table of this.layout.tables) {
       for (const seat of messySeatsAt(this.floor, table)) {
         const { x, y } = this.seatSideCenter(table.position, seat);
-        canvas.drawFrame(artKey('mess'), 0, x - 4, y - 4);
+        const at = centred('mess', x, y);
+        canvas.drawFrame(artKey('mess'), 0, at.x, at.y);
       }
     }
 
@@ -541,7 +542,8 @@ export class FloorScene extends Phaser.Scene {
       if (c.phase !== 'eating' || !c.seat) continue;
       const table = tableById(this.layout, c.seat.tableId);
       const { x, y } = this.seatSideCenter(table.position, c.seat.seat);
-      canvas.drawFrame(artKey('plate'), 0, x - 4, y - 4);
+      const at = centred('plate', x, y);
+      canvas.drawFrame(artKey('plate'), 0, at.x, at.y);
     }
   }
 

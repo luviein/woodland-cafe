@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
+import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { LOCATIONS } from '../data/locations';
 import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type OutdoorLocationId } from '../data/outdoorAreas';
@@ -216,7 +216,7 @@ export class OutdoorScene extends Phaser.Scene {
 
   update(_time: number, deltaMs: number): void {
     // Same walking speed as in the cafe (tiles per second, in pixels here).
-    this.player = stepMover(this.player, FLOOR_CONFIG.playerSpeed * TILE_SIZE * (deltaMs / 1000));
+    this.player = stepMover(this.player, FLOOR_CONFIG.playerSpeed * GROUND_TILE * (deltaMs / 1000));
     const { x, y } = this.player.position;
     this.playerSprite.setPosition(x - HALF, y - HALF);
     this.playerSprite.setDepth(y + HALF); // its feet, for the depth sorting in create()

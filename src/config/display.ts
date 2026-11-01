@@ -5,5 +5,10 @@
 export const BASE_WIDTH = 640;
 export const BASE_HEIGHT = 360;
 
-// Every grid (cafe floor, UI layout) uses this tile size.
-export const TILE_SIZE = 16;
+// The cafe's grid: its floor, walls and furniture are 24x24, so the critters
+// (about 30-38 tall) stand about 1.5 tiles high (GAME_DESIGN.md §8.2).
+export const TILE_SIZE = 24;
+
+// The outdoor ground and the map's grass are 16x16 art tiles; outdoor
+// walking speeds are counted in these too.
+export const GROUND_TILE = 16;

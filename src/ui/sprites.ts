@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
 import { VIEW, viewFrame, type View } from '../art/sprites/sheetCritters';
-import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
+import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
@@ -176,9 +176,9 @@ export function addStanding(scene: Phaser.Scene, x: number, y: number, art: ArtN
  */
 export function addGround(scene: Phaser.Scene, art: 'grass' | 'forestFloor'): Phaser.GameObjects.RenderTexture {
   const canvas = scene.add.renderTexture(0, 0, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
-  for (let y = 0; y < BASE_HEIGHT; y += TILE_SIZE) {
-    for (let x = 0; x < BASE_WIDTH; x += TILE_SIZE) {
-      canvas.drawFrame(artKey(art), groundFrame(x / TILE_SIZE, y / TILE_SIZE), x, y);
+  for (let y = 0; y < BASE_HEIGHT; y += GROUND_TILE) {
+    for (let x = 0; x < BASE_WIDTH; x += GROUND_TILE) {
+      canvas.drawFrame(artKey(art), groundFrame(x / GROUND_TILE, y / GROUND_TILE), x, y);
     }
   }
   return canvas;

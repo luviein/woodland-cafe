@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
+import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE } from '../config/display';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS, type LocationId } from '../data/locations';
 import { startNextDay } from '../logic/gameState';
 import type { Point } from '../logic/layout';
@@ -229,10 +229,10 @@ export class WorldMapScene extends Phaser.Scene {
     // tile fits on the light grass (their plain parts match it exactly).
     const inEllipse = (x: number, y: number, ex: number, ey: number, w: number, h: number) =>
       ((x - ex) / (w / 2)) ** 2 + ((y - ey) / (h / 2)) ** 2 <= 1;
-    for (let y = 0; y < BASE_HEIGHT; y += TILE_SIZE) {
-      for (let x = 0; x < BASE_WIDTH; x += TILE_SIZE) {
-        const frame = groundFrame(x / TILE_SIZE, y / TILE_SIZE);
-        const corners = [[x, y], [x + TILE_SIZE, y], [x, y + TILE_SIZE], [x + TILE_SIZE, y + TILE_SIZE]];
+    for (let y = 0; y < BASE_HEIGHT; y += GROUND_TILE) {
+      for (let x = 0; x < BASE_WIDTH; x += GROUND_TILE) {
+        const frame = groundFrame(x / GROUND_TILE, y / GROUND_TILE);
+        const corners = [[x, y], [x + GROUND_TILE, y], [x, y + GROUND_TILE], [x + GROUND_TILE, y + GROUND_TILE]];
         const fits = corners.every(
           ([px, py]) =>
             inEllipse(px, py, cx, cy, grassWidth - 4, grassHeight - 4) &&

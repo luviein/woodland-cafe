@@ -30,7 +30,5 @@ export const CAFE_LAYOUT: readonly string[] = [
   'W...STS...STS........5.W',
   'W......................W',
   'W......................W',
-  'W......................W',
-  'W......................W',
   'WWWWWWWWWWWWWWWWWWDWWWWW',
 ];
