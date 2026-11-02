@@ -39,6 +39,17 @@ describe('hedgehog Christmas clothing', () => {
 });
 
 describe('shared clothing fittings', () => {
+  it('continues each hat brim underneath the pompom without a gap', () => {
+    for (const fit of Object.values(CLOTHING_FITS)) {
+      for (const frame of SPRITE_ART[fit.santaHat].frames) {
+        const brim = [...frame].sort((a, b) => (b.match(/[CT]/g)?.length ?? 0) - (a.match(/[CT]/g)?.length ?? 0))[0];
+        const start = brim.search(/[CT]/);
+        const end = Math.max(brim.lastIndexOf('C'), brim.lastIndexOf('T'));
+        expect(start).toBeGreaterThanOrEqual(0);
+        expect(brim.slice(start, end + 1)).toMatch(/^[CT]+$/);
+      }
+    }
+  });
   for (const [animal, fit] of Object.entries(CLOTHING_FITS)) {
     it(`fits ${animal}'s frame grid and preserves its walking feet`, () => {
       const base = SPRITE_ART[animal as keyof typeof CLOTHING_FITS];

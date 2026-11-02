@@ -13,6 +13,19 @@ const stamp = (grid, x, y, rows) => rows.forEach((row, dy) => [...row].forEach((
 const flip = grid => grid.map(row => [...row].reverse());
 const rows = grid => grid.map(row => row.join(''));
 
+function fitBrim(grid, view) {
+  // The original brim stopped at the hanging pompom. It must continue under
+  // it to the far edge of the head, rather than leave a bare forehead strip.
+  const left = view < 2 ? 5 : 6, right = view < 2 ? 23 : 22;
+  for (let x = left; x <= right; x++) {
+    if (grid[6][x] === '.') grid[6][x] = 'O';
+    grid[7][x] = x === left || x === right ? 'O' : 'C';
+    grid[8][x] = x === left || x === right ? 'O' : x === left + 1 || x === right - 1 ? 'T' : 'C';
+    grid[9][x] = x === left || x === right ? '.' : 'O';
+  }
+  return grid;
+}
+
 function hat(view) {
   const grid = blank();
   // A connected pompom and continuous cream band avoid the sheet's ragged edges.
@@ -30,7 +43,7 @@ function hat(view) {
   ]);
   if (view === 1) {
     // The fold remains on the same physical side when seen from behind.
-    return flip(grid);
+    return fitBrim(flip(grid), view);
   }
   if (view === 2 || view === 3) {
     const side = blank();
@@ -46,9 +59,9 @@ function hat(view) {
       'OTCCCCCCCCTOOOOO.',
       '.OOOOOOOOOO......',
     ]);
-    return view === 3 ? flip(side) : side;
+    return fitBrim(view === 3 ? flip(side) : side, view);
   }
-  return grid;
+  return fitBrim(grid, view);
 }
 
 function coat(view, pose = 0) {
