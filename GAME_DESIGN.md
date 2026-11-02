@@ -287,6 +287,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   | **Specialty** | One-time **unlocks** for chilli (15), tomato (10) and tuna (20). Once unlocked, its recipes appear in orders, its bin shows at the prep station, and the Pantry sells its stock. Bought ones show "Owned". |
   | **Tools** | **Upgrades** (§3.4). For now only the Toaster (30, see "Toasting" in §3.4); the others aren't listed until they're built. Bought ones show "Owned". |
 
+- **Each stall has its own look**, from the player's drawings: the Pantry (green awning, a loaf sign, a basket), Specialty (gold, a star), Tools (blue, a hammer), the Carpenter (rust, a saw) and the Notice Board (a corkboard on legs with notes pinned up). Their open middles are backed with dark wood. The world map keeps the small plain stall as the Marketplace's icon.
 - **Buying stock is one unit at a time:** each ingredient row has a **+1** and a **+10** button. Each tap buys straight away (no basket, no checkout) and shows the new stock. A button is greyed out when the wallet can't pay for it, so +10 can be grey while +1 still works.
 - A newly unlocked ingredient starts with **0 stock**: buy some at the Pantry, or the first dishes are rush deliveries.
 - **Spending** never takes the wallet below 0; a purchase that can't be paid for does nothing (the buttons are greyed out anyway).
