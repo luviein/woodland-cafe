@@ -67,6 +67,15 @@ function garment(animal: PlayerAnimal, id: NewItem): PixelSprite {
         }
       }
     } else if (slot === 'top') {
+      // The Santa coat leaves tiny seams between cuffs and torso. A knitted
+      // sleeve covers these: otherwise the base outline shows as dark specks.
+      grid.forEach((row, y) => {
+        const drawn = row.flatMap((c, x) => c === '.' ? [] : [x]);
+        if (!drawn.length) return;
+        for (let x = Math.min(...drawn); x <= Math.max(...drawn); x++) {
+          if (row[x] === '.' && frame[y][x] !== '.') row[x] = 'R';
+        }
+      });
       grid.forEach((row, y) => row.forEach((c, x) => {
         if (c === '.' || c === 'O') return;
         if (id === 'treeJumper') row[x] = c === 'C' || c === 'T' ? 'Y' : x < centre ? 'Z' : 'Y';

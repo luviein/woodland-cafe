@@ -7,6 +7,14 @@ import { spriteSize, spriteProblems } from './pixelSprite';
 import { SPRITE_ART } from './spriteArt';
 
 describe('Christmas clothing collection', () => {
+  it('covers the two rabbit cuff gaps rather than showing base outline specks', () => {
+    for (const id of ['treeJumper', 'reindeerSweater', 'festiveJumper'] as const) {
+      for (const frame of SPRITE_ART[clothingArt('rabbit', id)].frames.slice(0, 3)) {
+        expect(frame[30][4]).not.toBe('.');
+        expect(frame[30][16]).not.toBe('.');
+      }
+    }
+  });
   it('leaves the mouse rear tail visible when boots are equipped', () => {
     for (const id of ['redBoots', 'brownBoots', 'buckleBoots', 'fluffyBoots'] as const) {
       for (const frame of SPRITE_ART[clothingArt('mouse', id)].frames.slice(3, 6)) {
