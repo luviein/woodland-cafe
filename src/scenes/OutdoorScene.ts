@@ -43,6 +43,7 @@ import {
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import { CataloguePanel } from '../ui/CataloguePanel';
+import { LeafText } from '../ui/LeafText';
 import { TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
 import { spriteSize } from '../art/pixelSprite';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
@@ -501,10 +502,7 @@ export class OutdoorScene extends Phaser.Scene {
 
   /** A short message drifting up from a spot, e.g. "+1 🍃" where a leaf was picked up. */
   private showFloatingText(at: Point, message: string): void {
-    const text = this.add
-      .text(at.x, at.y - 8, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
-      .setOrigin(0.5, 1)
-      .setDepth(HUD_DEPTH);
+    const text = new LeafText(this, at.x, at.y - 8, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 }, 0.5, 1).setDepth(HUD_DEPTH);
     this.tweens.add({ targets: text, y: text.y - 16, alpha: 0, duration: 800, onComplete: () => text.destroy() });
   }
 

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { ingredientLines, summaryLines, type DayStats } from '../logic/dayStats';
 import { Button } from '../ui/Button';
+import { LeafText } from '../ui/LeafText';
 import { COLORS, TEXT } from '../ui/theme';
 import { getGameState, tutorialEvent } from './gameStore';
 import { StoryBox } from '../ui/StoryBox';
@@ -48,7 +49,7 @@ export class DaySummaryScene extends Phaser.Scene {
     const left = cx - PANEL_WIDTH / 2;
     const body = { ...TEXT.body, lineSpacing: 8 };
     this.add.text(cx, top + 20, `Day ${state.day} is over`, TEXT.heading).setOrigin(0.5, 0);
-    this.add.text(left + 24, top + 56, summaryLines(this.request.stats, state.leaves), body);
+    new LeafText(this, left + 24, top + 56, summaryLines(this.request.stats, state.leaves).join('\n'), body);
     // Second column: there are up to one line per ingredient, too many to
     // stack under the totals.
     this.add.text(left + SECOND_COLUMN_X, top + 56, 'Ingredients used', { ...TEXT.body, fontStyle: 'bold' });

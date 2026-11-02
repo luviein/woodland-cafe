@@ -22,6 +22,7 @@ import { SPRITE_ART, type CustomerArt } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
 import { playSound } from '../audio/audio';
 import { addArt } from '../ui/art';
+import { LeafText } from '../ui/LeafText';
 import { popLeaves } from '../ui/effects';
 import { Button } from '../ui/Button';
 import { DishView, drawLayerStack } from '../ui/DishView';
@@ -113,7 +114,7 @@ export class PrepScene extends Phaser.Scene {
   private binButtons: Button[] = [];
   /** What each bin holds, and the stock / rush-price text above it (same order). */
   private binIds: IngredientId[] = [];
-  private binCounts: Phaser.GameObjects.Text[] = [];
+  private binCounts: LeafText[] = [];
 
   constructor() {
     super('PrepScene');
@@ -401,16 +402,8 @@ export class PrepScene extends Phaser.Scene {
   private showPayment(payment: Payment): void {
     const lines = [`+${payment.total} 🍃`];
     if (payment.tip > 0) lines.push(`(${payment.tip} tip)`);
-    const text = this.add
-      .text(64, COUNTER_TOP_Y - 76, lines, {
-        ...TEXT.heading,
-        color: css(COLORS.paper),
-        stroke: css(COLORS.ink),
-        strokeThickness: 4,
-        align: 'center',
-      })
-      .setOrigin(0.5, 1)
-      .setDepth(40); // over the prep UI, under the recipe book (50)
+    const style = { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 4 };
+    const text = new LeafText(this, 64, COUNTER_TOP_Y - 76, lines.join('\n'), style, 0.5, 1, 'center').setDepth(40); // over the prep UI, under the recipe book (50)
     this.tweens.add({ targets: text, y: text.y - 16, duration: 900, ease: 'Sine.easeOut' });
     // And the Leaves themselves, fluttering out of the customer's paws.
     popLeaves(this, 64, COUNTER_TOP_Y - 40, payment.total, 2);
@@ -518,7 +511,7 @@ export class PrepScene extends Phaser.Scene {
         .text(x, y + size / 2 + 6, INGREDIENTS[id].name, TEXT.label)
         .setOrigin(0.5, 0);
       // Filled in by refreshBins(): "x5" left, "🍃2" rush price, or "Out".
-      this.binCounts.push(this.add.text(x, y - size / 2 - 4, '', TEXT.label).setOrigin(0.5, 1));
+      this.binCounts.push(new LeafText(this, x, y - size / 2 - 4, '', TEXT.label, 0.5, 1));
     });
   }
 

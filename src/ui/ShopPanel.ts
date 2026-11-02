@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { Button } from './Button';
+import { LeafText } from './LeafText';
 import { COLORS, TEXT, css } from './theme';
 
 /** One button on a row, e.g. "+10". `onPress` is read at tap time, so it can change with each refresh. */
@@ -35,7 +36,7 @@ const BUTTON_GAP = 6;
  */
 export class ShopPanel extends Phaser.GameObjects.Container {
   private rows: ShopRowView[];
-  private readonly details: Phaser.GameObjects.Text[] = [];
+  private readonly details: LeafText[] = [];
   private readonly buttons: Button[][] = [];
 
   constructor(scene: Phaser.Scene, title: string, blurb: string, rows: ShopRowView[], onClose: () => void) {
@@ -58,7 +59,7 @@ export class ShopPanel extends Phaser.GameObjects.Container {
     rows.forEach((row, i) => {
       const y = top + HEADER + i * ROW_HEIGHT + ROW_HEIGHT / 2;
       this.add(scene.add.text(left + 16, y, row.name, TEXT.heading).setOrigin(0, 0.5));
-      const detail = scene.add.text(left + 116, y, '', TEXT.body).setOrigin(0, 0.5);
+      const detail = new LeafText(scene, left + 116, y, '', TEXT.body, 0, 0.5);
       this.details.push(detail);
       this.add(detail);
       // Buttons line up from the right edge, so rows with fewer still align.

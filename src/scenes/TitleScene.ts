@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import type { GameState } from '../logic/gameState';
 import { addArt } from '../ui/art';
+import { LeafText } from '../ui/LeafText';
 import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { Button } from '../ui/Button';
 import { addGround, addStanding, addTree } from '../ui/sprites';
@@ -37,14 +38,7 @@ export class TitleScene extends Phaser.Scene {
     if (save?.ok) {
       const saved = save.state;
       primary = new Button(this, cx, 196, 180, 34, 'Continue', COLORS.serve, () => this.continueFrom(saved));
-      this.add
-        .text(cx, 222, `Day ${saved.day} done · 🍃${saved.leaves}`, {
-          ...TEXT.label,
-          fontSize: '14px',
-          stroke: css(COLORS.ink),
-          strokeThickness: 3,
-        })
-        .setOrigin(0.5, 0);
+      new LeafText(this, cx, 222, `Day ${saved.day} done · 🍃 ${saved.leaves}`, { ...TEXT.label, fontSize: '14px', stroke: css(COLORS.ink), strokeThickness: 3 }, 0.5, 0);
       new Button(this, cx, 270, 180, 30, 'New game', COLORS.reset, () => this.confirmNewGame(saved.day));
     } else {
       if (save && !save.ok) {
