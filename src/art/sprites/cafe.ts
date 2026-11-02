@@ -204,7 +204,7 @@ export const TABLE: PixelSprite = {
       '.owwsssssssssswwwwwwwwo.',
       '.owwwsssssssswwwwwwwwwo.',
       '.owwwwsssssswwwwwwwwwwo.',
-      'owwwwwwwwwwwwwwwwwwwwwwo',
+      '.owwwwwwwwwwwwwwwwwwwwo.',
       '.owwwwwwwwwwwwwwwwwwwwo.',
       '.owwwwwwwwwwwwwwwwwwwwo.',
       '.owwwwwwwwwwwwwwwwwwwwo.',

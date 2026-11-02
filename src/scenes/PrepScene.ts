@@ -147,7 +147,8 @@ export class PrepScene extends Phaser.Scene {
     this.patienceBar = this.add.graphics();
 
     // No order ticket: the speech bubble is the only clue (see GAME_DESIGN.md).
-    this.bubble = new SpeechBubble(this, 112, 24, 392, 88);
+    // Ends 16px short of the Recipes button.
+    this.bubble = new SpeechBubble(this, 112, 24, 376, 88);
     // Hints get more common as the days go by (data/hintConfig.ts).
     this.bubble.setLines(buildSpeech(this.request.order, hintRatioForDay(getGameState(this).day)));
     this.dishView = new DishView(this, PLATE_X, PLATE_Y);
@@ -493,7 +494,9 @@ export class PrepScene extends Phaser.Scene {
   private createIngredientBins(): void {
     const size = 48;
     const spacing = 72;
-    const startX = 64;
+    // Far enough right that the first name clears the sound and notes buttons
+    // in the bottom-left corner (ui/hudLayout.ts); six bins still end before Serve.
+    const startX = 84;
     const y = 300;
 
     getGameState(this).ingredients.forEach((id, i) => {
