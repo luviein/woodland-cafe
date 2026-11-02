@@ -36,6 +36,14 @@ describe('hedgehog Christmas clothing', () => {
 });
 
 describe('shared clothing fittings', () => {
+  it('draws the rabbit back seam continuously beside its tail in every right pose', () => {
+    const coat = SPRITE_ART[CLOTHING_FITS.rabbit.santaCoat];
+    for (const frame of coat.frames.slice(9, 12)) {
+      for (const [x, y] of CLOTHING_RIG.rabbit.right.coatOutline) expect(frame[y][x]).toBe('O');
+      // Keep the tail itself visible beside the seam.
+      for (let y = 28; y <= 31; y++) expect(frame[y].slice(0, 5)).toBe('.....');
+    }
+  });
   it('joins the rabbit right brim to the forehead outline in every pose', () => {
     const hat = SPRITE_ART[CLOTHING_FITS.rabbit.santaHat];
     for (const frame of hat.frames.slice(9, 12)) {

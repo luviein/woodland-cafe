@@ -4,6 +4,7 @@ const path = require('path');
 const P = require('../.claude/skills/pixel-sprites/scripts/pixel.cjs');
 const root = path.resolve(__dirname, '..');
 const { attachSideHat, attachCoat } = require('./clothingRig.cjs');
+const rig = require('../src/data/clothingRig.json');
 const file = path.join(root, 'src/art/sprites/wardrobeCritters.ts');
 const shared = P.readSprite(path.join(root, 'src/art/sprites/wardrobe.ts'), 'SANTA_HAT');
 const specs = {
@@ -30,7 +31,8 @@ for (const [animal, spec] of Object.entries(specs)) {
       hat[hy + y][hx + x] = source[y][min + Math.min(max - min, Math.floor(x * (max - min + 1) / width))];
     }
     if (view >= 2) hat = attachSideHat(source, frame, animal.toLowerCase(), view);
-    const coat = attachCoat(frame, spec.body[view], view, { tail: spec.tail });
+    const outline = view >= 2 ? rig[animal.toLowerCase()][view === 2 ? 'left' : 'right'].coatOutline : [];
+    const coat = attachCoat(frame, spec.body[view], view, { tail: spec.tail, outline });
     // Joining a hat to long ears can enclose a single background pixel.
     // Fill only newly enclosed pixels in the overlay, never the animal art.
     const hatOnBody = frame.map((row, y) => [...row].map((c, x) => hat[y][x] === '.' ? c : hat[y][x]).join(''));

@@ -34,7 +34,7 @@ function attachSideHat(source, frame, animal, view) {
   return grid;
 }
 
-function attachCoat(frame, bounds, view, { fur = c => !'.ao'.includes(c), tail = () => false } = {}) {
+function attachCoat(frame, bounds, view, { fur = c => !'.ao'.includes(c), tail = () => false, outline = [] } = {}) {
   const grid = frame.map(row => [...'.'.repeat(row.length)]);
   const [top, hem, left, right] = bounds;
   const centre = Math.round((left + right) / 2);
@@ -47,6 +47,9 @@ function attachCoat(frame, bounds, view, { fur = c => !'.ao'.includes(c), tail =
     if (y === hem - 3 && (x <= left + 2 || x >= right - 2)) colour = 'C';
     grid[y][x] = colour;
   }
+  // Internal boundaries need an outline too: at a tail root the torso isn't
+  // next to transparency, so following only the outer silhouette misses it.
+  for (const [x, y] of outline) grid[y][x] = 'O';
   return grid;
 }
 module.exports = { attachSideHat, attachCoat };
