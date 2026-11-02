@@ -406,6 +406,12 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Bought Christmas pieces stay** after December: they're the player's to keep and place all year; only the stall goes away.
 - **In the game state** (§6) and the save: furniture records the design. Older saves load with the plain table and chair designs (a save version bump, §6.1).
 
+### 5.11 Wardrobe (in progress)
+
+- First step: review a Santa hat and coat fitted to the existing hedgehog, inspired by the supplied Christmas clothing sheet. Clean pixel outlines and matching front, back, left and right views; retain the existing face, spines and walking feet.
+- Clothing is separate transparent art on the hedgehog's frame grid, with equipped examples in the sprite gallery for review before use in play.
+- Next: tapping the player opens a cafe-styled wardrobe with a character preview, Hats and Tops tabs, item cards and equip/remove controls. Outfits are cosmetic, saved and shown while walking. Capes, shoes, purchases and other animals follow later.
+
 ## 6. Game State
 
 - All player state lives in **one central, serializable state object**, so it can be saved and loaded later:
