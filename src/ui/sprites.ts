@@ -4,7 +4,7 @@ import { spriteSize } from '../art/pixelSprite';
 import { VIEW, viewFrame, type View } from '../art/sprites/sheetCritters';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
-import { watchGameState } from '../scenes/gameStore';
+import { getGameState, watchGameState } from '../scenes/gameStore';
 import { WardrobePanel } from './WardrobePanel';
 import { CLOTHING_FITS } from '../data/clothingFits';
 
@@ -133,19 +133,28 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
   }
 }
 
-/** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). Scenes sort its depth by its feet. */
+/** The cafe owner, with a shared walk cycle and animal-specific clothing fittings. */
 export function createPlayerSprite(scene: Phaser.Scene, canOpen: () => boolean = () => true): Phaser.GameObjects.Container {
-  const player = createCritter(scene, 'hedgehog');
-  const fit = CLOTHING_FITS.hedgehog;
+  const player = createCritter(scene, getGameState(scene).animal);
+  const body = player.list[0] as Phaser.GameObjects.Image;
+  const fit = CLOTHING_FITS[getGameState(scene).animal];
   const coat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(fit.santaCoat)).setOrigin(0.5, 1);
   const hat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(fit.santaHat)).setOrigin(0.5, 1);
   player.add([coat, hat]);
+  const hitArea = new Phaser.Geom.Rectangle();
+  player.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
   watchGameState(scene, state => {
+    const frame = body.frame.name;
+    const fitting = CLOTHING_FITS[state.animal];
+    body.setTexture(artKey(state.animal), frame);
+    coat.setTexture(artKey(fitting.santaCoat), frame);
+    hat.setTexture(artKey(fitting.santaHat), frame);
     coat.setVisible(state.outfit.top === 'santaCoat');
     hat.setVisible(state.outfit.hat === 'santaHat');
+    const size = spriteSize(SPRITE_ART[state.animal]);
+    hitArea.setTo(TILE_SIZE / 2 - size.width / 2, TILE_SIZE - size.height, size.width, size.height);
   });
   // The moving character's hit area follows its container; it isn't a fixed layout point.
-  player.setInteractive(new Phaser.Geom.Rectangle(-3, TILE_SIZE - 30, 30, 30), Phaser.Geom.Rectangle.Contains);
   player.input!.cursor = 'pointer';
   let pressed = false;
   player.on('pointerdown', () => { pressed = true; });

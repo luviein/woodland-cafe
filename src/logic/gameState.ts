@@ -7,6 +7,7 @@ import { startingStock, type Stock } from './stock';
 import type { TutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
 import { emptyOutfit, type Outfit } from './wardrobe';
+import type { PlayerAnimal } from '../data/playerAnimals';
 
 /**
  * Everything about the player's progress, in one place (GAME_DESIGN.md §6).
@@ -22,6 +23,7 @@ import { emptyOutfit, type Outfit } from './wardrobe';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  animal: PlayerAnimal;
   outfit: Outfit;
   /** Which day it is, starting at 1. */
   day: number;
@@ -48,6 +50,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    animal: 'hedgehog',
     outfit: emptyOutfit(),
     day: 1,
     leaves: 0,

@@ -1,3 +1,5 @@
+import type { PlayerAnimal } from '../data/playerAnimals';
+
 /** Independent slots keep equipping a hat from removing a top. */
 export interface Outfit {
   hat: 'santaHat' | null;
@@ -5,6 +7,11 @@ export interface Outfit {
 }
 
 export const emptyOutfit = (): Outfit => ({ hat: null, top: null });
+
+/** Species changes are cosmetic: retain outfit and all progress. */
+export function changeAnimal<T extends { animal: PlayerAnimal }>(state: T, animal: PlayerAnimal): T {
+  return { ...state, animal };
+}
 
 export function equip<K extends keyof Outfit>(outfit: Outfit, slot: K, item: Outfit[K]): Outfit {
   return { ...outfit, [slot]: item };

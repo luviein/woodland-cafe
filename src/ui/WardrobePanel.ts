@@ -2,7 +2,11 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
-import { equip, type Outfit } from '../logic/wardrobe';
+import { changeAnimal, equip, type Outfit } from '../logic/wardrobe';
+import { ANIMAL_NAMES, PLAYER_ANIMALS } from '../data/playerAnimals';
+import { CLOTHING_FITS } from '../data/clothingFits';
+import { spriteSize } from '../art/pixelSprite';
+import { SPRITE_ART } from '../art/spriteArt';
 import { getGameState, setGameState } from '../scenes/gameStore';
 import { artKey } from './art';
 import { Button } from './Button';
@@ -10,7 +14,7 @@ import { COLORS, TEXT } from './theme';
 
 /** A single panel owns its input and preview, leaving scenes to run the world. */
 export class WardrobePanel extends Phaser.GameObjects.Container {
-  private slot: keyof Outfit = 'hat';
+  private slot: keyof Outfit | 'animal' = 'hat';
   private view = 0;
   private readonly critterImage: Phaser.GameObjects.Image;
   private readonly hat: Phaser.GameObjects.Image;
@@ -20,6 +24,9 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
   private readonly itemName: Phaser.GameObjects.Text;
   private readonly action: Button;
   private readonly tabs: Button[];
+  private readonly itemCard: Phaser.GameObjects.Rectangle;
+  private readonly animalObjects: (Phaser.GameObjects.Image | Button)[] = [];
+  private readonly animalButtons: Button[] = [];
 
   constructor(scene: Phaser.Scene) {
     super(scene, 0, 0);
@@ -46,13 +53,15 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     place('turnRight', 261, 252, new Button(scene, 0, 0, 44, 26, '>', COLORS.book, () => this.turn(1)));
     place('previewLabel', 192, 87, scene.add.text(0, 0, 'Cafe owner', TEXT.body).setOrigin(0.5));
     this.tabs = [
-      place('hatsTab', 379, 91, new Button(scene, 0, 0, 104, 28, 'Hats', COLORS.book, () => this.select('hat'))),
-      place('topsTab', 501, 91, new Button(scene, 0, 0, 104, 28, 'Tops', COLORS.book, () => this.select('top'))),
+      place('hatsTab', 353, 91, new Button(scene, 0, 0, 76, 28, 'Hats', COLORS.book, () => this.select('hat'))),
+      place('topsTab', 441, 91, new Button(scene, 0, 0, 76, 28, 'Tops', COLORS.book, () => this.select('top'))),
+      place('animalTab', 529, 91, new Button(scene, 0, 0, 76, 28, 'Animal', COLORS.book, () => this.select('animal'))),
     ];
-    place('itemCard', 441, 159, scene.add.rectangle(0, 0, 100, 82, COLORS.paperEdge).setStrokeStyle(2, COLORS.counterEdge));
+    this.itemCard = place('itemCard', 441, 159, scene.add.rectangle(0, 0, 100, 82, COLORS.paperEdge).setStrokeStyle(2, COLORS.counterEdge));
     this.item = place('item', 441, 162, scene.add.image(0, 0, artKey('santaHat')).setScale(2));
     this.itemName = place('itemName', 441, 216, scene.add.text(0, 0, '', TEXT.heading).setOrigin(0.5));
     this.action = place('equip', 441, 250, new Button(scene, 0, 0, 146, 28, '', COLORS.serve, () => {
+      if (this.slot === 'animal') return;
       const state = getGameState(scene);
       const outfit = this.slot === 'hat'
         ? equip(state.outfit, 'hat', state.outfit.hat ? null : 'santaHat')
@@ -60,6 +69,16 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       setGameState(scene, { ...state, outfit });
       this.refresh();
     }));
+    PLAYER_ANIMALS.forEach((animal, i) => {
+      const x = 381 + (i % 2) * 120, y = 143 + Math.floor(i / 2) * 74;
+      const icon = place(`animal.${animal}.portrait`, x, y, scene.add.image(0, 0, artKey(animal)));
+      const button = place(`animal.${animal}.choose`, x, y + 34, new Button(scene, 0, 0, 108, 26, ANIMAL_NAMES[animal], COLORS.serve, () => {
+        setGameState(scene, changeAnimal(getGameState(scene), animal));
+        this.refresh();
+      }));
+      this.animalObjects.push(icon, button);
+      this.animalButtons.push(button);
+    });
     this.status = place('status', 270, 298, scene.add.text(0, 0, '', { ...TEXT.label, fontSize: '11px' }).setOrigin(0.5));
     const close = () => {
       // Finish pointer dispatch before removing the dim layer, avoiding a walk-through tap.
@@ -73,7 +92,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     this.refresh();
   }
 
-  private select(slot: keyof Outfit): void { this.slot = slot; this.refresh(); }
+  private select(slot: keyof Outfit | 'animal'): void { this.slot = slot; this.refresh(); }
 
   private turn(direction: number): void {
     this.view = (this.view + direction + 4) % 4;
@@ -81,15 +100,29 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
   }
 
   private refresh(): void {
-    const outfit = getGameState(this.scene).outfit;
+    const { animal, outfit } = getGameState(this.scene);
+    const fit = CLOTHING_FITS[animal];
+    const frame = this.view * 3;
+    // Keep tall ears and antlers below the portrait label, using whole pixels.
+    const scale = Math.min(4, Math.floor(120 / spriteSize(SPRITE_ART[animal]).height));
+    this.critterImage.setTexture(artKey(animal), frame).setScale(scale);
+    this.coat.setTexture(artKey(fit.santaCoat), frame).setScale(scale);
+    this.hat.setTexture(artKey(fit.santaHat), frame).setScale(scale);
     this.hat.setVisible(!!outfit.hat);
     this.coat.setVisible(!!outfit.top);
-    this.item.setTexture(artKey(this.slot === 'hat' ? 'santaHat' : 'santaCoat'), 0);
-    this.item.setOrigin(0.5, this.slot === 'hat' ? 0.2 : 0.8);
-    this.itemName.setText(this.slot === 'hat' ? 'Santa hat' : 'Santa coat');
-    this.action.setText(outfit[this.slot] ? 'Remove' : 'Equip');
+    const choosingAnimal = this.slot === 'animal';
+    for (const object of [this.itemCard, this.item, this.itemName, this.action]) object.setVisible(!choosingAnimal);
+    for (const object of this.animalObjects) object.setVisible(choosingAnimal);
+    this.animalButtons.forEach((button, i) => button.setEnabled(PLAYER_ANIMALS[i] !== animal));
+    if (this.slot !== 'animal') {
+      this.item.setTexture(artKey(this.slot === 'hat' ? fit.santaHat : fit.santaCoat), 0);
+      this.item.setOrigin(0.5, this.slot === 'hat' ? 0.2 : 0.8);
+      this.itemName.setText(this.slot === 'hat' ? 'Santa hat' : 'Santa coat');
+      this.action.setText(outfit[this.slot] ? 'Remove' : 'Equip');
+    }
     this.tabs[0].setEnabled(this.slot !== 'hat');
     this.tabs[1].setEnabled(this.slot !== 'top');
-    this.status.setText('Free starter outfit · Saved with your game');
+    this.tabs[2].setEnabled(this.slot !== 'animal');
+    this.status.setText(`${ANIMAL_NAMES[animal]} · Saved with your game`);
   }
 }
