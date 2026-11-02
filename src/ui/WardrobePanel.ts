@@ -42,25 +42,38 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       arrangeable(scene, 'wardrobe', name, p, object);
       return object;
     };
-    place('frame', 320, 174, scene.add.rectangle(0, 0, 540, 294, COLORS.counterEdge).setStrokeStyle(3, COLORS.ink));
-    place('portraitBackdrop', 192, 172, scene.add.rectangle(0, 0, 222, 210, COLORS.paperEdge).setStrokeStyle(2, COLORS.ink));
-    place('inventoryBackdrop', 441, 172, scene.add.rectangle(0, 0, 252, 210, COLORS.paper).setStrokeStyle(2, COLORS.ink));
-    place('title', 320, 46, scene.add.text(0, 0, 'Your woodland wardrobe', { ...TEXT.heading, color: '#fff0cd' }).setOrigin(0.5));
-    this.critterImage = place('previewBody', 192, 226, scene.add.image(0, 0, artKey('hedgehog')).setOrigin(0.5, 1).setScale(4));
-    this.coat = place('previewCoat', 192, 226, scene.add.image(0, 0, artKey('santaCoat')).setOrigin(0.5, 1).setScale(4));
-    this.hat = place('previewHat', 192, 226, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1).setScale(4));
-    place('turnLeft', 123, 252, new Button(scene, 0, 0, 44, 26, '<', COLORS.book, () => this.turn(-1)));
-    place('turnRight', 261, 252, new Button(scene, 0, 0, 44, 26, '>', COLORS.book, () => this.turn(1)));
-    place('previewLabel', 192, 87, scene.add.text(0, 0, 'Cafe owner', TEXT.body).setOrigin(0.5));
+    place('cabinetShadow', 323, 183, scene.add.rectangle(0, 0, 596, 336, COLORS.overlay, 0.35));
+    place('frame', 320, 180, scene.add.rectangle(0, 0, 596, 336, COLORS.counter).setStrokeStyle(4, COLORS.ink));
+    place('cabinetInset', 320, 180, scene.add.rectangle(0, 0, 582, 322, COLORS.counter).setStrokeStyle(2, COLORS.paperEdge));
+    place('cornice', 320, 53, scene.add.rectangle(0, 0, 564, 4, COLORS.counterEdge));
+    place('centrePost', 300, 179, scene.add.rectangle(0, 0, 8, 246, COLORS.counterEdge));
+    place('bottomRail', 320, 304, scene.add.rectangle(0, 0, 564, 4, COLORS.counterEdge));
+    place('mirrorFrame', 172, 179, scene.add.rectangle(0, 0, 244, 238, COLORS.counterEdge).setStrokeStyle(2, COLORS.ink));
+    place('portraitBackdrop', 172, 179, scene.add.rectangle(0, 0, 232, 226, 0xc5d6c7).setStrokeStyle(2, COLORS.paperEdge));
+    place('mirrorGlint', 64, 121, scene.add.rectangle(0, 0, 3, 98, 0xe5eee0));
+    place('mirrorSill', 172, 253, scene.add.rectangle(0, 0, 210, 3, COLORS.counterEdge));
+    place('inventoryBackdrop', 446, 179, scene.add.rectangle(0, 0, 284, 238, COLORS.paper).setStrokeStyle(3, COLORS.counterEdge));
+    place('inventoryLabel', 446, 77, scene.add.text(0, 0, 'Your collection', TEXT.body).setOrigin(0.5));
+    place('clothesRail', 446, 126, scene.add.rectangle(0, 0, 244, 3, COLORS.counterEdge));
+    place('leftRailBracket', 328, 126, scene.add.rectangle(0, 0, 5, 9, 0xe9b64d).setStrokeStyle(1, COLORS.ink));
+    place('rightRailBracket', 564, 126, scene.add.rectangle(0, 0, 5, 9, 0xe9b64d).setStrokeStyle(1, COLORS.ink));
+    place('cabinetHandle', 300, 184, scene.add.rectangle(0, 0, 4, 14, 0xe9b64d).setStrokeStyle(1, COLORS.ink));
+    place('title', 320, 33, scene.add.text(0, 0, 'Woodland wardrobe', { ...TEXT.heading, color: '#fff0cd', stroke: '#47312b', strokeThickness: 3 }).setOrigin(0.5));
+    this.critterImage = place('previewBody', 172, 244, scene.add.image(0, 0, artKey('hedgehog')).setOrigin(0.5, 1).setScale(4));
+    this.coat = place('previewCoat', 172, 244, scene.add.image(0, 0, artKey('santaCoat')).setOrigin(0.5, 1).setScale(4));
+    this.hat = place('previewHat', 172, 244, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1).setScale(4));
+    place('turnLeft', 110, 276, new Button(scene, 0, 0, 44, 26, '<', COLORS.book, () => this.turn(-1)));
+    place('turnRight', 234, 276, new Button(scene, 0, 0, 44, 26, '>', COLORS.book, () => this.turn(1)));
+    place('previewLabel', 172, 80, scene.add.text(0, 0, 'Fitting mirror', TEXT.body).setOrigin(0.5));
     this.tabs = [
-      place('hatsTab', 353, 91, new Button(scene, 0, 0, 76, 28, 'Hats', COLORS.book, () => this.select('hat'))),
-      place('topsTab', 441, 91, new Button(scene, 0, 0, 76, 28, 'Tops', COLORS.book, () => this.select('top'))),
-      place('animalTab', 529, 91, new Button(scene, 0, 0, 76, 28, 'Animal', COLORS.book, () => this.select('animal'))),
+      place('hatsTab', 358, 105, new Button(scene, 0, 0, 76, 28, 'Hats', COLORS.book, () => this.select('hat'))),
+      place('topsTab', 446, 105, new Button(scene, 0, 0, 76, 28, 'Tops', COLORS.book, () => this.select('top'))),
+      place('animalTab', 534, 105, new Button(scene, 0, 0, 76, 28, 'Animal', COLORS.book, () => this.select('animal'))),
     ];
-    this.itemCard = place('itemCard', 441, 159, scene.add.rectangle(0, 0, 100, 82, COLORS.paperEdge).setStrokeStyle(2, COLORS.counterEdge));
-    this.item = place('item', 441, 162, scene.add.image(0, 0, artKey('santaHat')).setScale(2));
-    this.itemName = place('itemName', 441, 216, scene.add.text(0, 0, '', TEXT.heading).setOrigin(0.5));
-    this.action = place('equip', 441, 250, new Button(scene, 0, 0, 146, 28, '', COLORS.serve, () => {
+    this.itemCard = place('itemCard', 446, 177, scene.add.rectangle(0, 0, 132, 94, COLORS.paperEdge).setStrokeStyle(2, COLORS.counterEdge));
+    this.item = place('item', 446, 177, scene.add.image(0, 0, artKey('santaHat')).setScale(2));
+    this.itemName = place('itemName', 446, 239, scene.add.text(0, 0, '', TEXT.heading).setOrigin(0.5));
+    this.action = place('equip', 446, 276, new Button(scene, 0, 0, 146, 28, '', COLORS.serve, () => {
       if (this.slot === 'animal') return;
       const state = getGameState(scene);
       const outfit = this.slot === 'hat'
@@ -70,21 +83,21 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       this.refresh();
     }));
     PLAYER_ANIMALS.forEach((animal, i) => {
-      const x = 381 + (i % 2) * 120, y = 143 + Math.floor(i / 2) * 74;
+      const x = 382 + (i % 2) * 128, y = 151 + Math.floor(i / 2) * 74;
       const icon = place(`animal.${animal}.portrait`, x, y, scene.add.image(0, 0, artKey(animal)));
-      const button = place(`animal.${animal}.choose`, x, y + 34, new Button(scene, 0, 0, 108, 26, ANIMAL_NAMES[animal], COLORS.serve, () => {
+      const button = place(`animal.${animal}.choose`, x, y + 34, new Button(scene, 0, 0, 112, 26, ANIMAL_NAMES[animal], COLORS.serve, () => {
         setGameState(scene, changeAnimal(getGameState(scene), animal));
         this.refresh();
       }));
       this.animalObjects.push(icon, button);
       this.animalButtons.push(button);
     });
-    this.status = place('status', 270, 298, scene.add.text(0, 0, '', { ...TEXT.label, fontSize: '11px' }).setOrigin(0.5));
+    this.status = place('status', 247, 325, scene.add.text(0, 0, '', { ...TEXT.label, fontSize: '11px' }).setOrigin(0.5));
     const close = () => {
       // Finish pointer dispatch before removing the dim layer, avoiding a walk-through tap.
       scene.time.delayedCall(0, () => this.destroy());
     };
-    place('close', 526, 298, new Button(scene, 0, 0, 86, 26, 'Close', COLORS.reset, close));
+    place('close', 550, 325, new Button(scene, 0, 0, 86, 26, 'Close', COLORS.reset, close));
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.repeat) close(); };
     scene.input.keyboard?.on('keydown', onKey);
     this.once('destroy', () => scene.input.keyboard?.off('keydown', onKey));
