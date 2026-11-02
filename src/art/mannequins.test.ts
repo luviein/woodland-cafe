@@ -18,6 +18,10 @@ describe('catalogue mannequins', () => {
         expect(holes(dummy.frames[0]), item).toBe(0);
         expect(strayPixels(dummy.frames[0]), item).toBe(0);
         const clothing = SPRITE_ART[clothingArt(animal, item)];
+        // The display must use the critter itself, not a generic oval-headed form.
+        SPRITE_ART[animal].frames[0].forEach((row, y) => [...row].forEach((c, x) => {
+          if (c !== '.' && clothing.frames[0][y][x] === '.') expect(['J', 'K', 'L']).toContain(dummy.frames[0][y][x]);
+        }));
         clothing.frames[0].forEach((row, y) => [...row].forEach((c, x) => {
           if (c !== '.') expect(dummy.frames[0][y][x]).toBe(c);
         }));

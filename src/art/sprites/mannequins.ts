@@ -35,25 +35,16 @@ function sealDisplay(frame: string[]): string[] {
 function mannequin(animal: PlayerAnimal, item: ClothingId): PixelSprite {
   const body = BODIES[animal], original = body.frames[0];
   const width = original[0].length, height = original.length;
-  const coat = COATS[animal].frames[0], hat = HATS[animal].frames[0];
   const clothing = item === 'santaHat' ? HATS[animal] : item === 'santaCoat' ? COATS[animal]
     : COLLECTION_ART[clothingArt(animal, item) as CollectionArtName];
   const shape = Array.from({ length: height + 4 }, () => Array<string>(width).fill('.'));
-  const hatPixels = hat.flatMap((row, y) => [...row].flatMap((c, x) => c === '.' ? [] : [{ x, y }]));
-  const left = Math.min(...hatPixels.map(p => p.x)) + 1, right = Math.max(...hatPixels.map(p => p.x)) - 1;
-  const centre = Math.floor((left + right) / 2);
-  const neckline = coat.findIndex(row => /[^.]/.test(row));
-  const headTop = Math.max(0, Math.max(...hatPixels.map(p => p.y)) - 2);
-  const cy = (headTop + neckline - 1) / 2, ry = Math.max(1, (neckline - headTop) / 2);
-  const cx = (left + right) / 2, rx = (right - left + 1) / 2;
-  // A plain oval head has no animal face, ears or quills: this is a wooden
-  // display form. Its neck, torso and feet follow the reviewed garment grid.
-  for (let y = headTop; y < neckline; y++) for (let x = left; x <= right; x++) {
-    if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) shape[y][x] = 'J';
-  }
-  for (let y = neckline - 2; y <= neckline; y++) for (let x = centre - 1; x <= centre + 1; x++) shape[y][x] = 'J';
-  coat.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') shape[y][x] = 'J'; }));
-  for (let y = height - 4; y < height; y++) [...original[y]].forEach((c, x) => { if (c !== '.') shape[y][x] = 'J'; });
+  const centre = Math.floor(width / 2);
+  // Keep the critter's actual silhouette and clothing coordinates. Only its
+  // colours and facial details become featureless wood; ears, antlers,
+  // quills, shoulders and feet stay where they are on the playable animal.
+  original.forEach((row, y) => [...row].forEach((c, x) => {
+    if (c !== '.') shape[y][x] = 'J';
+  }));
   for (let y = height; y < height + 3; y++) shape[y][centre] = 'J';
   for (let x = centre - 6; x <= centre + 6; x++) {
     shape[height + 2][x] = 'J';
