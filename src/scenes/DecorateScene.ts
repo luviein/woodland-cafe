@@ -3,12 +3,14 @@ import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CHRISTMAS_CATALOGUE, DESIGN_IDS, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
 import {
   buildLayout,
+  CAFE_ROOM,
   movePiece,
   moveProblem,
   pieceAt,
   placePiece,
   placeProblem,
   removePiece,
+  spotAt,
   type Furniture,
   type PlacedPiece,
 } from '../logic/furniture';
@@ -147,7 +149,7 @@ export class DecorateScene extends Phaser.Scene {
         if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
         const piece = pieceAt(this.furniture(), tile);
-        if (piece) this.drag = { design: piece.design, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null };
+        if (piece) this.startDrag({ design: piece.design, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null });
       },
     );
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.onPointerMove(pointer));
@@ -174,11 +176,12 @@ export class DecorateScene extends Phaser.Scene {
       },
     );
     // Let go outside the game window: the drag is called off.
-    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => {
-      this.drag?.ghost?.destroy();
-      this.drag = null;
-      if (!this.carrying) this.refresh();
-    });
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => this.cancelDrag());
+    // The game lost focus mid-drag (e.g. a screenshot shortcut): the let-go
+    // will never arrive, so call the drag off rather than leave its copy stuck.
+    const onBlur = () => this.cancelDrag();
+    this.game.events.on(Phaser.Core.Events.BLUR, onBlur);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.events.off(Phaser.Core.Events.BLUR, onBlur));
     this.refresh();
     this.showTips();
   }
@@ -232,7 +235,12 @@ export class DecorateScene extends Phaser.Scene {
       return;
     }
     const drag = this.drag;
-    if (!drag || !pointer.isDown) return;
+    if (!drag) return;
+    if (!pointer.isDown) {
+      // Moving with nothing held: the let-go happened where the game couldn't see it.
+      if (drag.ghost) this.cancelDrag();
+      return;
+    }
     if (!drag.ghost) {
       if (Phaser.Math.Distance.BetweenPoints(drag.start, pointer.position) < DRAG_THRESHOLD) return;
       this.closeMenu();
@@ -253,15 +261,55 @@ export class DecorateScene extends Phaser.Scene {
     drag.ghost = this.createGhost(drag);
   }
 
-  /** Snaps the see-through copy to `tile`, red if it couldn't be put down there. */
+  /** Starts a press that may become a drag, calling off any drag that lost its let-go first. */
+  private startDrag(drag: Drag): void {
+    if (this.drag?.ghost) this.cancelDrag();
+    this.drag = drag;
+  }
+
+  /** Calls the drag off: its copy goes, and everything is drawn where it really is. */
+  private cancelDrag(): void {
+    const hadGhost = Boolean(this.drag?.ghost);
+    this.drag?.ghost?.destroy();
+    this.drag = null;
+    if (hadGhost && !this.carrying) this.refresh();
+  }
+
+  /**
+   * Snaps the see-through copy to `tile`, drawn exactly as it would be put
+   * down there (on the floor, on the wall, along the counter's front or on its
+   * top), red if it couldn't be put down there.
+   */
   private moveGhost(drag: Drag, tile: Point): void {
     if (!drag.ghost) return;
     drag.ghost.setPosition(this.origin.x + tile.x * TILE_SIZE, this.origin.y + tile.y * TILE_SIZE);
     const ok = this.dropProblem(drag, tile) === null;
-    for (const image of drag.ghost.list as Phaser.GameObjects.Image[]) {
+    const from = drag.from ?? { x: 0, y: 0 };
+    this.ghostPieces(drag).forEach((p, i) => {
+      const image = drag.ghost!.list[i] as Phaser.GameObjects.Image;
+      const offset = { x: p.x - from.x, y: p.y - from.y };
+      const at = this.ghostDrawing(p, offset, { x: tile.x + offset.x, y: tile.y + offset.y }).at;
+      image.setPosition(at.x, at.y);
       if (ok) image.clearTint();
       else image.setTint(COLORS.statusUpset);
-    }
+    });
+  }
+
+  /** The pieces a drag carries: the lifted piece, or one new from storage. */
+  private ghostPieces(drag: Drag): readonly PlacedPiece[] {
+    return drag.from ? drag.pieces : [{ design: drag.design, x: 0, y: 0 }];
+  }
+
+  /**
+   * How a carried piece is drawn, `offset` tiles from the ghost's origin,
+   * over cafe tile `over`: as it would be put down there, or (off any spot
+   * it could go) as on its usual place.
+   */
+  private ghostDrawing(p: PlacedPiece, offset: Point, over: Point): ReturnType<typeof pieceDrawing> {
+    const spot = spotAt(CAFE_ROOM, over);
+    const usual = placesOf(p.design)[0];
+    const on = spot ?? (usual === 'wall' ? 'wall' : usual === 'floor' ? 'floor' : 'counter');
+    return pieceDrawing([], p, { x: offset.x * TILE_SIZE, y: offset.y * TILE_SIZE }, on);
   }
 
   /**
@@ -341,13 +389,11 @@ export class DecorateScene extends Phaser.Scene {
 
   /** The dragged pieces as images, placed relative to the tile being dragged (the ghost's origin), drawn as on the floor. */
   private createGhost(drag: Drag): Phaser.GameObjects.Container {
-    const pieces: readonly PlacedPiece[] = drag.from ? drag.pieces : [{ design: drag.design, x: 0, y: 0 }];
     const from = drag.from ?? { x: 0, y: 0 };
-    const images = pieces.map((p) => {
-      // Drawn as on its usual place (the first in its list); it's redrawn properly once put down.
-      const usual = placesOf(p.design)[0];
-      const on = usual === 'wall' ? 'wall' : usual === 'floor' ? 'floor' : 'counter';
-      const { art, frame, at } = pieceDrawing([], p, { x: (p.x - from.x) * TILE_SIZE, y: (p.y - from.y) * TILE_SIZE }, on);
+    // Placed for where they are now; moveGhost() redraws them for each tile they pass over.
+    const images = this.ghostPieces(drag).map((p) => {
+      const offset = { x: p.x - from.x, y: p.y - from.y };
+      const { art, frame, at } = this.ghostDrawing(p, offset, drag.from ? p : { x: -1, y: -1 });
       return this.add.image(at.x, at.y, artKey(art), frame).setOrigin(0);
     });
     return this.add.container(0, 0, images).setAlpha(0.75).setDepth(50);
@@ -482,7 +528,7 @@ export class DecorateScene extends Phaser.Scene {
     frame.setInteractive({ useHandCursor: true });
     // Pressing a card may also start dragging one out of storage.
     frame.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      if (this.furniture().stored[design] > 0) this.drag = { design, from: null, pieces: [], start: pointer.position.clone(), ghost: null };
+      if (this.furniture().stored[design] > 0) this.startDrag({ design, from: null, pieces: [], start: pointer.position.clone(), ghost: null });
     });
     frame.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
       if (!this.drag?.ghost) this.select(design);
