@@ -1,12 +1,10 @@
 import type { PlayerAnimal } from '../data/playerAnimals';
+import { CLOTHING_SLOTS, clothingIn, type ClothingFor, type ClothingId, type ClothingSlot } from '../data/clothing';
 
 /** Independent slots keep equipping a hat from removing a top. */
-export interface Outfit {
-  hat: 'santaHat' | null;
-  top: 'santaCoat' | null;
-}
+export type Outfit = { [S in ClothingSlot]: ClothingFor<S> | null };
 
-export const emptyOutfit = (): Outfit => ({ hat: null, top: null });
+export const emptyOutfit = (): Outfit => ({ hat: null, top: null, cape: null, shoes: null });
 
 /** Species changes are cosmetic: retain outfit and all progress. */
 export function changeAnimal<T extends { animal: PlayerAnimal }>(state: T, animal: PlayerAnimal): T {
@@ -21,5 +19,7 @@ export function equip<K extends keyof Outfit>(outfit: Outfit, slot: K, item: Out
 export function readOutfit(raw: unknown): Outfit {
   if (!raw || typeof raw !== 'object') return emptyOutfit();
   const value = raw as Record<string, unknown>;
-  return { hat: value.hat === 'santaHat' ? 'santaHat' : null, top: value.top === 'santaCoat' ? 'santaCoat' : null };
+  return Object.fromEntries(CLOTHING_SLOTS.map(slot => [slot,
+    clothingIn(slot).includes(value[slot] as ClothingId) ? value[slot] : null,
+  ])) as Outfit;
 }

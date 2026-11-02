@@ -6,7 +6,8 @@ import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/displ
 import { artKey } from './art';
 import { getGameState, watchGameState } from '../scenes/gameStore';
 import { WardrobePanel } from './WardrobePanel';
-import { CLOTHING_FITS } from '../data/clothingFits';
+import { clothingArt } from '../data/clothingFits';
+import { CLOTHING_SLOTS } from '../data/clothing';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
 // so they look the same everywhere.
@@ -137,20 +138,20 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
 export function createPlayerSprite(scene: Phaser.Scene, canOpen: () => boolean = () => true): Phaser.GameObjects.Container {
   const player = createCritter(scene, getGameState(scene).animal);
   const body = player.list[0] as Phaser.GameObjects.Image;
-  const fit = CLOTHING_FITS[getGameState(scene).animal];
-  const coat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(fit.santaCoat)).setOrigin(0.5, 1);
-  const hat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(fit.santaHat)).setOrigin(0.5, 1);
-  player.add([coat, hat]);
+  const layers = Object.fromEntries(CLOTHING_SLOTS.map(slot => [slot,
+    scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey('santaHat')).setOrigin(0.5, 1).setVisible(false),
+  ]));
+  player.add([layers.shoes, layers.top, layers.cape, layers.hat]);
   const hitArea = new Phaser.Geom.Rectangle();
   player.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
   watchGameState(scene, state => {
     const frame = body.frame.name;
-    const fitting = CLOTHING_FITS[state.animal];
     body.setTexture(artKey(state.animal), frame);
-    coat.setTexture(artKey(fitting.santaCoat), frame);
-    hat.setTexture(artKey(fitting.santaHat), frame);
-    coat.setVisible(state.outfit.top === 'santaCoat');
-    hat.setVisible(state.outfit.hat === 'santaHat');
+    for (const slot of CLOTHING_SLOTS) {
+      const item = state.outfit[slot];
+      layers[slot].setVisible(!!item);
+      if (item) layers[slot].setTexture(artKey(clothingArt(state.animal, item)), frame);
+    }
     const size = spriteSize(SPRITE_ART[state.animal]);
     hitArea.setTo(TILE_SIZE / 2 - size.width / 2, TILE_SIZE - size.height, size.width, size.height);
   });

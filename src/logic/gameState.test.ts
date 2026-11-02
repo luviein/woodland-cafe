@@ -9,7 +9,7 @@ describe('createNewGame', () => {
   it('starts on day 1 with no Leaves, the starter ingredients and their stock, no upgrades, and the tutorial ahead', () => {
     expect(createNewGame()).toEqual({
       animal: 'hedgehog',
-      outfit: { hat: null, top: null },
+      outfit: { hat: null, top: null, cape: null, shoes: null },
       day: 1,
       leaves: 0,
       ingredients: STARTER_INGREDIENTS,

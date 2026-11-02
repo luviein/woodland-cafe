@@ -1,4 +1,5 @@
 import './gallery.css';
+import { COLLECTION_ART } from '../art/sprites/christmasClothing';
 import { CRITTER_ART, spriteQuality } from '../art/checks';
 import { DRAWN_ART } from '../art/drawnArt';
 import { framePixels, spriteSize } from '../art/pixelSprite';
@@ -16,6 +17,7 @@ import { INGREDIENT_IDS } from '../data/ingredients';
 /** The Marketplace stalls converted from the player's drawings. */
 const MARKET_STALLS: readonly ArtName[] = ['pantryStall', 'specialtyStall', 'toolsStall', 'carpenterStall', 'noticeBoard'];
 const WARDROBE_ART: readonly ArtName[] = [
+  ...Object.keys(COLLECTION_ART) as ArtName[],
   'santaHat', 'santaCoat', 'hedgehogSantaPreview',
   'rabbitSantaHat', 'rabbitSantaCoat', 'rabbitSantaPreview',
   'mouseSantaHat', 'mouseSantaCoat', 'mouseSantaPreview',
@@ -27,7 +29,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
-  ['Wardrobe: first clothing review', (n) => WARDROBE_ART.includes(n)],
+  ['Wardrobe collection', (n) => WARDROBE_ART.includes(n)],
   ['Critters', (n) => CRITTER_ART.includes(n)],
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
@@ -42,6 +44,7 @@ function groupOf(name: ArtName): string {
 
 function source(name: ArtName): string {
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
+  if (name in COLLECTION_ART) return 'drawn in code from your Christmas reference, using the reviewed animal fittings (sprites/christmasClothing.ts)';
   if (WARDROBE_ART.includes(name)) return 'redrawn from your Christmas clothing reference, individually fitted (tools/wardrobeArt.cjs and tools/wardrobeCritters.cjs)';
   if (VIEW_ART.has(name)) return 'converted from your critter sheet';
   if ((CHRISTMAS_ART as readonly ArtName[]).includes(name)) return 'converted from your Christmas drawings';

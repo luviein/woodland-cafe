@@ -24,7 +24,8 @@ import { readPlayerAnimal } from '../data/playerAnimals';
 // 2: furniture records its design (the Christmas edition, GAME_DESIGN.md §5.10).
 // 3: independent wardrobe slots; older saves start without clothing.
 // 4: player animal; older saves keep the hedgehog.
-export const SAVE_VERSION = 4;
+// 5: capes and shoes; older outfits retain their hat and top.
+export const SAVE_VERSION = 5;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {

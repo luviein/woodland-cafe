@@ -1,4 +1,5 @@
 import type { PixelSprite } from './pixelSprite';
+import { COLLECTION_ART } from './sprites/christmasClothing';
 import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
 import {
   DEER_SANTA_COAT, DEER_SANTA_HAT, DEER_SANTA_PREVIEW,
@@ -49,6 +50,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...COLLECTION_ART,
   // Cafe
   floor: FLOOR,
   wall: WALL,
