@@ -14,7 +14,7 @@ import { isHired } from '../logic/employees';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
-import { BOTTOM_BOX_LEFT, NOTES_BUTTON } from '../ui/hudLayout';
+import { bottomBoxLeft, notesButton } from '../ui/hudLayout';
 import { exploredAll } from '../logic/gameState';
 import { tourLock } from '../logic/tutorial';
 import { TUTORIAL } from '../data/tutorial';
@@ -114,14 +114,17 @@ export class WorldMapScene extends Phaser.Scene {
       return { x, y: y - SIGN_HEIGHT / 2 - (id === this.request.current ? 16 : 2) };
     };
     const target = (name: string | null | undefined): ArrowTarget | null => {
-      if (name === 'notes') return { x: NOTES_BUTTON.x, y: NOTES_BUTTON.y - NOTES_BUTTON.size / 2 - 2 };
+      if (name === 'notes') {
+        const notes = notesButton();
+        return { x: notes.x, y: notes.y - notes.size / 2 - 2 };
+      }
       return name && name in LOCATIONS ? signTop(name as LocationId) : null;
     };
     // The explore reminder points at whichever place is still to be seen.
     const seen = getGameState(this).tipsSeen;
     const unseen = (['marketplace', 'forest'] as const).find((place) => !seen.includes(place)) ?? null;
     const guide = new StoryBox(this, {
-      rect: { x: BOTTOM_BOX_LEFT, y: 292, width: BASE_WIDTH - 36 - BOTTOM_BOX_LEFT, height: 62 },
+      rect: { x: bottomBoxLeft(), y: 292, width: BASE_WIDTH - 36 - bottomBoxLeft(), height: 62 },
       step: TUTORIAL[step],
       arrow: (line) => (step === 'explore' ? target(unseen) : target(TUTORIAL[step].pointsAt[line])),
       onFinished: () => {

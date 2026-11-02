@@ -1,18 +1,18 @@
 import Phaser from 'phaser';
 import { getSoundSettings, onSoundSettings, playSound, setSoundSettings } from '../audio/audio';
 import { volumeLabel } from '../audio/soundSettings';
-import { BASE_HEIGHT } from '../config/display';
 import { addArt } from '../ui/art';
 import { Button } from '../ui/Button';
 import { NotesPanel } from '../ui/NotesPanel';
-import { NOTES_BUTTON, SPEAKER_BUTTON } from '../ui/hudLayout';
+import { notesButton as notesButtonAt, speakerButton } from '../ui/hudLayout';
+import { arrangeable } from '../layout/arrangeable';
 import { watchGameState } from './gameStore';
 import { COLORS, TEXT } from '../ui/theme';
 
-const ICON = SPEAKER_BUTTON;
-const NOTES_ICON = NOTES_BUTTON;
-const PANEL = { x: 34, y: BASE_HEIGHT - 48, width: 176, height: 30 };
-const TRACK = { x: PANEL.x + 34, width: 100 };
+/** The volume panel: opening up and to the right of the speaker button. */
+const PANEL = { dx: 18, dy: -32, width: 176, height: 30 };
+/** The slider's track, inside the panel. */
+const TRACK = { left: 34, width: 100 };
 
 /**
  * The corner buttons on every screen: the volume control (GAME_DESIGN.md
@@ -36,14 +36,16 @@ export class HudScene extends Phaser.Scene {
   }
 
   create(): void {
+    const icon = speakerButton();
     this.speakerIcon = addArt(this, 0, 0, 'speaker');
-    new Button(this, ICON.x, ICON.y, ICON.size, ICON.size, '', COLORS.book, () =>
+    const speaker = new Button(this, icon.x, icon.y, icon.size, icon.size, '', COLORS.book, () =>
       this.panel.setVisible(!this.panel.visible),
     ).setIcon(this.speakerIcon);
 
     // Only once Grandma has shown it at her farewell (GAME_DESIGN.md §5.9):
     // during the tutorial she does the explaining, and it would sit on her box.
-    const notesButton = new Button(this, NOTES_ICON.x, NOTES_ICON.y, NOTES_ICON.size, NOTES_ICON.size, '?', COLORS.book, () =>
+    const notesAt = notesButtonAt();
+    const notesButton = new Button(this, notesAt.x, notesAt.y, notesAt.size, notesAt.size, '?', COLORS.book, () =>
       this.toggleNotes(),
     );
     watchGameState(this, (state) => notesButton.setVisible(state.tutorial === 'farewell' || state.tutorial === 'done'));
@@ -53,7 +55,10 @@ export class HudScene extends Phaser.Scene {
     };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
 
-    this.createPanel();
+    this.createPanel(icon);
+    // Arrange mode: the corner buttons, on every screen; the volume panel goes with the speaker.
+    arrangeable(this, 'hud', 'speaker', icon, speaker, this.panel);
+    arrangeable(this, 'hud', 'notes', notesAt, notesButton);
     // A tap anywhere else closes the panel. (Scene-wide: it hears taps
     // even when they land on the scene below.)
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (_p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
@@ -87,7 +92,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   /** Mute button, then the slider track with its fill and knob, then "60%". */
-  private createPanel(): void {
+  private createPanel(speaker: { x: number; y: number }): void {
     const cy = PANEL.height / 2;
     const bg = this.add
       .rectangle(0, 0, PANEL.width, PANEL.height, COLORS.paper)
@@ -99,7 +104,7 @@ export class HudScene extends Phaser.Scene {
       setSoundSettings({ ...getSoundSettings(), muted: !getSoundSettings().muted }),
     ).setIcon(this.muteIcon);
 
-    const trackLeft = TRACK.x - PANEL.x;
+    const trackLeft = TRACK.left;
     const track = this.add.rectangle(trackLeft, cy, TRACK.width, 4, COLORS.disabled).setOrigin(0, 0.5);
     this.fill = this.add.rectangle(trackLeft, cy, 0, 4, COLORS.serve).setOrigin(0, 0.5);
     // A taller invisible strip over the track, so it's easy to hit with a finger.
@@ -116,12 +121,14 @@ export class HudScene extends Phaser.Scene {
     this.knob.on(Phaser.Input.Events.GAMEOBJECT_DRAG_END, () => playSound('tap'));
     hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => playSound('tap'));
 
-    this.panel = this.add.container(PANEL.x, PANEL.y, [bg, mute, track, this.fill, hit, this.knob, this.label]).setVisible(false);
+    this.panel = this.add
+      .container(speaker.x + PANEL.dx, speaker.y + PANEL.dy, [bg, mute, track, this.fill, hit, this.knob, this.label])
+      .setVisible(false);
   }
 
   /** Sets the volume from a screen x on the track (clamped to its ends). */
   private slideTo(screenX: number): void {
-    const volume = Phaser.Math.Clamp((screenX - TRACK.x) / TRACK.width, 0, 1);
+    const volume = Phaser.Math.Clamp((screenX - this.panel.x - TRACK.left) / TRACK.width, 0, 1);
     // Whole percents, so the label and the stored setting stay tidy.
     setSoundSettings({ volume: Math.round(volume * 100) / 100, muted: false });
   }
@@ -134,7 +141,7 @@ export class HudScene extends Phaser.Scene {
     this.muteIcon.setFrame(frame);
     // Muted shows as 0, but the volume itself is kept, so unmuting brings it back.
     const shown = settings.muted ? 0 : settings.volume;
-    this.knob.setX(TRACK.x - PANEL.x + Math.round(shown * TRACK.width));
+    this.knob.setX(TRACK.left + Math.round(shown * TRACK.width));
     this.fill.setSize(Math.round(shown * TRACK.width), 4);
     this.label.setText(volumeLabel(settings));
   }

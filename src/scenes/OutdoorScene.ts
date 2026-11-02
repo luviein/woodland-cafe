@@ -56,7 +56,7 @@ import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
-import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
+import { bottomBoxLeft } from '../ui/hudLayout';
 import { TIPS } from '../data/tutorial';
 import { exploredAll, seeTip } from '../logic/gameState';
 import type { LocationRequest, WorldMapRequest } from './WorldMapScene';
@@ -216,7 +216,7 @@ export class OutdoorScene extends Phaser.Scene {
       return null;
     };
     const guide = new StoryBox(this, {
-      rect: { x: BOTTOM_BOX_LEFT, y: 292, width: BASE_WIDTH - 36 - BOTTOM_BOX_LEFT, height: 62 },
+      rect: { x: bottomBoxLeft(), y: 292, width: BASE_WIDTH - 36 - bottomBoxLeft(), height: 62 },
       step: def,
       arrow: (line) => target(def.pointsAt[line]),
       // Over the y-sorted scenery and the HUD.

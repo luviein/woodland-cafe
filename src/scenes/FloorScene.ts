@@ -30,7 +30,7 @@ import { missingIngredient, orderIngredients, plateIngredients, useIngredients }
 import { pointKey, samePoint, tableById, type Layout, type Point } from '../logic/layout';
 import { puffOfDust } from '../ui/effects';
 import { StoryBox, type BoxRect } from '../ui/StoryBox';
-import { BOTTOM_BOX_LEFT } from '../ui/hudLayout';
+import { bottomBoxLeft } from '../ui/hudLayout';
 import { TUTORIAL, type TutorialStep } from '../data/tutorial';
 import { finishedBy, floorGuide, isGuidedStart, tutorialOrder, type TutorialEvent, type TutorialState } from '../logic/tutorial';
 import { playSound } from '../audio/audio';
@@ -76,7 +76,7 @@ function facingToward(from: Point, to: Point): View {
 /** The tutorial steps Grandma Badger talks through here on the floor. */
 const FLOOR_STEPS: ReadonlySet<TutorialStep> = new Set(['intro', 'takeOrder', 'clean', 'freePlay']);
 /** Her box: under the cafe, clear of the corner buttons. */
-const GUIDE_RECT: BoxRect = { x: BOTTOM_BOX_LEFT, y: 294, width: 604 - BOTTOM_BOX_LEFT, height: 62 };
+const guideRect = (): BoxRect => ({ x: bottomBoxLeft(), y: 294, width: 604 - bottomBoxLeft(), height: 62 });
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;
@@ -349,7 +349,7 @@ export class FloorScene extends Phaser.Scene {
       this.pendingEvent = null;
       if (step !== 'done' && FLOOR_STEPS.has(step)) {
         this.guide = new StoryBox(this, {
-          rect: GUIDE_RECT,
+          rect: guideRect(),
           depth: OVERLAY + 100,
           step: TUTORIAL[step],
           arrow: (line) => this.tutorialArrow(TUTORIAL[step].pointsAt[line]),

@@ -46,12 +46,13 @@ export function mountArrangeMode(game: Phaser.Game): ArrangeMode {
     const scenes = game.scene.getScenes(true).filter((s) => arrangeItems(s).length > 0);
     if (scenes.length === 0) return 'Nothing on this screen can be arranged yet.';
     active = true;
-    for (const scene of scenes) {
-      // Catches taps, so arranging never walks the player or presses a button.
-      const blocker = scene.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, 0x000000, 0.15).setOrigin(0).setInteractive().setDepth(DEPTH);
-      layers.push(blocker);
-      for (const item of arrangeItems(scene)) entries.push(createEntry(scene, item));
-    }
+    // Catches taps, so arranging never walks the player or presses a button.
+    // Only in the bottom scene: a tap goes to the topmost scene with
+    // something under it, so one here would hide the outlines of scenes drawn
+    // above it (the HUD), while theirs still sit on top of it.
+    const bottom = game.scene.getScenes(true)[0];
+    layers.push(bottom.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, 0x000000, 0.15).setOrigin(0).setInteractive().setDepth(DEPTH));
+    for (const scene of scenes) for (const item of arrangeItems(scene)) entries.push(createEntry(scene, item));
     check();
     bar.show();
     return 'Arrange mode: drag things to move them (Shift: 8px grid). Save, Undo (Ctrl+Z), Reset, Done.';
