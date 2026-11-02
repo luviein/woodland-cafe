@@ -386,7 +386,11 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 - **Furniture designs:** a placed piece and a stored piece now say **which design** it is (e.g. the plain chair or the Chair with Bow), not only table or chair. Every design has a **kind**: table, chair, floor decoration or wall decoration. Tables and chairs follow the seating rules of §5.7 whatever their design.
 - **Floor decorations** take one floor tile, by the same rules as a table (only plain floor; the floor must stay connected), but nobody sits at them and a chair next to one isn't next to a table.
-- **Wall decorations** hang on the **back wall**, one wall tile each, on any free wall tile: not over a window or the clock. They don't touch the floor, so they never get in anyone's way.
+- **Wall decorations** hang on the **back wall**, one wall tile each, on any free wall tile: not over a window or the clock. They don't touch the floor, so they never get in anyone's way. Things that hang from a line (the garland, the fairy lights, the baubles) hang from the wall's **top edge** and reach across the whole tile, so several side by side join into one long string; the rest hang in the middle of the tile.
+- **The counter** takes decorations too, one per counter tile, never in anyone's way:
+  - **along its front:** the Pine Garland and Fairy Lights (also wall pieces) hang from the counter's front edge;
+  - **on top:** small things stand on it: the Snow Globe (also a floor piece), the Lantern and the Christmas Tree Picture (also wall pieces).
+- **Table & Candle** is drawn wider than its tile (30 pixels), so it's clearly bigger than the chairs around it.
 - **Decorate:** the storage tray shows **one card per design** owned (its picture and a count), so all the new pieces can be placed by tap or drag, and Move / Put away work on them like on tables. A **catalogue button** in Decorate opens the same catalogue (when it's on sale) to buy more without leaving.
 - **Bought Christmas pieces stay** after December: they're the player's to keep and place all year; only the stall goes away.
 - **In the game state** (§6) and the save: furniture records the design. Older saves load with the plain table and chair designs (a save version bump, §6.1).
