@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE } from '../config/display';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS, type LocationId } from '../data/locations';
+import { arrangeable, type Placeable } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
 import { startNextDay } from '../logic/gameState';
 import type { Point } from '../logic/layout';
 import { chooseLocation, dotsAlong } from '../logic/worldMap';
@@ -28,7 +30,7 @@ export interface WorldMapRequest {
 }
 
 /** Where the hired Mascot dances: on the grass just right of the cafe house, feet on its baseline. */
-const MASCOT_SPOT: Point = { x: LOCATIONS.cafe.position.x + 36, y: LOCATIONS.cafe.position.y + 20 };
+const mascotSpot = (): Point => ({ x: LOCATIONS.cafe.position.x + 36, y: LOCATIONS.cafe.position.y + 20 });
 
 /** Signposts sit this far above their landmark's centre. */
 const SIGN_OFFSET_Y = 44;
@@ -36,13 +38,13 @@ const SIGN_HEIGHT = 22;
 
 /** The island's shape: a grass ellipse inside a sandy shore. */
 const ISLAND = { x: BASE_WIDTH / 2, y: BASE_HEIGHT / 2 + 4, grassWidth: 536, grassHeight: 276, shore: 12 };
-/** The darker patch of grass under the forest. */
-const FOREST_PATCH = { x: LOCATIONS.forest.position.x, y: LOCATIONS.forest.position.y + 6, width: 150, height: 90 };
+/** The darker patch of grass under the forest (it follows the Forest when that's moved). */
+const forestPatch = () => ({ x: LOCATIONS.forest.position.x, y: LOCATIONS.forest.position.y + 6, width: 150, height: 90 });
 
 /** Small map trees stand this far below their point (which is the top of the trunk). */
 const MAP_TRUNK = 8;
 
-/** Purely decorative trees around the island (the forest draws its own). Each point is the top of the trunk. */
+/** Purely decorative trees around the island (the forest draws its own). Each point is the top of the trunk; each movable in Arrange mode. */
 const TREES: readonly Point[] = [
   { x: 96, y: 228 }, { x: 120, y: 262 }, { x: 226, y: 288 }, { x: 410, y: 292 },
   { x: 540, y: 236 }, { x: 566, y: 196 }, { x: 392, y: 84 }, { x: 266, y: 70 },
@@ -69,10 +71,16 @@ export class WorldMapScene extends Phaser.Scene {
   create(): void {
     this.drawIsland();
     this.drawPaths();
-    TREES.forEach((point, i) => this.addMapTree(point.x, point.y + MAP_TRUNK, i % 3 === 2 ? 'pine' : 'oak'));
+    TREES.forEach((fallback, i) => {
+      const point = layoutPoint('worldMap', `tree.${i}`, fallback);
+      arrangeable(this, 'worldMap', `tree.${i}`, point, this.addMapTree(point.x, point.y + MAP_TRUNK, i % 3 === 2 ? 'pine' : 'oak'));
+    });
     for (const id of LOCATION_IDS) {
-      this.drawLandmark(id);
-      this.createSignpost(id);
+      // A place moves as one: its landmark and its signpost (unless the signpost was moved on its own).
+      const landmark = this.drawLandmark(id);
+      const sign = this.createSignpost(id);
+      arrangeable(this, 'worldMap', `place.${id}`, LOCATIONS[id].position, ...landmark, ...(sign.followsPlace ? sign.parts : []));
+      arrangeable(this, 'worldMap', `sign.${id}`, sign.point, ...sign.parts);
     }
     if (isHired(getGameState(this), 'mascot')) this.addDancingMascot();
 
@@ -219,7 +227,7 @@ export class WorldMapScene extends Phaser.Scene {
     g.fillStyle(COLORS.foam).fillEllipse(cx, cy, grassWidth + shore * 2 + 4, grassHeight + shore * 2 + 4);
     g.fillStyle(COLORS.sand).fillEllipse(cx, cy, grassWidth + shore * 2, grassHeight + shore * 2);
     g.fillStyle(COLORS.grass).fillEllipse(cx, cy, grassWidth, grassHeight);
-    const patch = FOREST_PATCH;
+    const patch = forestPatch();
     g.fillStyle(COLORS.grassDark).fillEllipse(patch.x, patch.y, patch.width, patch.height);
 
     const canvas = this.add.renderTexture(0, 0, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
@@ -249,8 +257,8 @@ export class WorldMapScene extends Phaser.Scene {
    * on the map, so creation order is enough, and the map's panels (depth
    * 100) must stay on top of everything.
    */
-  private addMapTree(x: number, baseY: number, kind: TreeKind): void {
-    addTree(this, x, baseY, kind, true);
+  private addMapTree(x: number, baseY: number, kind: TreeKind): Phaser.GameObjects.Image {
+    return addTree(this, x, baseY, kind, true);
   }
 
   private drawPaths(): void {
@@ -262,23 +270,20 @@ export class WorldMapScene extends Phaser.Scene {
     }
   }
 
-  /** Each place's landmark, standing on the map around its position. */
-  private drawLandmark(id: LocationId): void {
+  /** Each place's landmark, standing on the map around its position: what it's drawn with. */
+  private drawLandmark(id: LocationId): Placeable[] {
     const { x, y } = LOCATIONS[id].position;
     switch (id) {
       case 'cafe':
         // The cottage's doorstep is 20px below the centre (where the Mascot dances).
-        addStanding(this, x, y + 20, 'cafeHouse');
-        break;
+        return [addStanding(this, x, y + 20, 'cafeHouse')];
       case 'forest':
         // A little wood: each [dx, dy] is the top of a trunk, back ones first so front ones overlap them.
-        for (const [dx, dy, kind] of [[0, -10, 'pine'], [-30, 4, 'oak'], [28, 6, 'pine'], [-12, 18, 'oak'], [14, 20, 'oak']] as const) {
-          this.addMapTree(x + dx, y + dy + MAP_TRUNK, kind);
-        }
-        break;
+        return ([[0, -10, 'pine'], [-30, 4, 'oak'], [28, 6, 'pine'], [-12, 18, 'oak'], [14, 20, 'oak']] as const).map(([dx, dy, kind]) =>
+          this.addMapTree(x + dx, y + dy + MAP_TRUNK, kind),
+        );
       case 'marketplace':
-        for (const dx of [-22, 22]) addStanding(this, x + dx, y + STALL_HEIGHT, 'stall');
-        break;
+        return [-22, 22].map((dx) => addStanding(this, x + dx, y + STALL_HEIGHT, 'stall'));
     }
   }
 
@@ -289,14 +294,18 @@ export class WorldMapScene extends Phaser.Scene {
    * Purely for show: the faster arrivals are the floor's rule (FloorState.mascot).
    */
   private addDancingMascot(): void {
-    const { x, y } = MASCOT_SPOT;
+    const { x, y } = mascotSpot();
     const mascot = createMascotSprite(this).setPosition(x, y).setAngle(-12);
     this.tweens.add({ targets: mascot, y: y - 5, duration: 260, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
     this.tweens.add({ targets: mascot, angle: 12, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
-  /** The clickable signpost: a post and a board, green for where the player is. */
-  private createSignpost(id: LocationId): void {
+  /**
+   * The clickable signpost: a post and a board, green for where the player
+   * is. Returns what it's drawn with, its point, and whether it still sits
+   * where its place puts it (not moved on its own in Arrange mode).
+   */
+  private createSignpost(id: LocationId): { parts: Placeable[]; point: Point; followsPlace: boolean } {
     const location = LOCATIONS[id];
     const here = id === this.request.current;
     const { x, y } = this.signPosition(id);
@@ -305,20 +314,30 @@ export class WorldMapScene extends Phaser.Scene {
     // About 8px per character in the 16px button font, plus some padding.
     const width = text.length * 9 + 16;
 
-    this.add.rectangle(x, y + SIGN_HEIGHT / 2 + 5, 4, 10, COLORS.treeTrunk); // the post
+    const post = this.add.rectangle(x, y + SIGN_HEIGHT / 2 + 5, 4, 10, COLORS.treeTrunk);
     const sign = new Button(this, x, y, width, SIGN_HEIGHT, text, here ? COLORS.signpostHere : COLORS.signpost, () =>
       this.go(id),
     );
     sign.setDepth(10);
+    const parts: Placeable[] = [post, sign];
     if (here) {
-      this.add
-        .text(x, y - SIGN_HEIGHT / 2 - 2, 'You are here', { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
-        .setOrigin(0.5, 1)
-        .setDepth(10);
+      parts.push(
+        this.add
+          .text(x, y - SIGN_HEIGHT / 2 - 2, 'You are here', { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
+          .setOrigin(0.5, 1)
+          .setDepth(10),
+      );
     }
+    const usual = this.usualSignPosition(id);
+    return { parts, point: { x, y }, followsPlace: x === usual.x && y === usual.y };
   }
 
+  /** Where a signpost stands: moved on its own in Arrange mode, else above its place. */
   private signPosition(id: LocationId): Point {
+    return layoutPoint('worldMap', `sign.${id}`, this.usualSignPosition(id));
+  }
+
+  private usualSignPosition(id: LocationId): Point {
     const { x, y } = LOCATIONS[id].position;
     return { x, y: y - SIGN_OFFSET_Y };
   }

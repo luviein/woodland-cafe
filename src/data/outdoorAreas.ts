@@ -20,8 +20,13 @@ export interface OutdoorAreaDef {
  */
 export const OUTDOOR_WALK_AREA: Rect = { x: 16, y: 56, width: 608, height: 288 };
 
-/** Where the player appears on arriving from the map (bottom middle, like a path in). */
+/** Where the player appears on arriving from the map (bottom middle, like a path in), unless a place moves it. */
 export const OUTDOOR_ENTRY: Point = { x: 320, y: 330 };
+
+/** Where the player arrives at a place: its own entry (movable in Arrange mode), else OUTDOOR_ENTRY. */
+export function outdoorEntry(location: OutdoorLocationId): Point {
+  return layoutPoint(location, 'entry', OUTDOOR_ENTRY);
+}
 
 export const OUTDOOR_AREAS = {
   forest: {

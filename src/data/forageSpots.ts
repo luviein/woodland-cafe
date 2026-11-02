@@ -1,4 +1,5 @@
 import type { Point } from '../logic/layout';
+import { layoutPoint } from '../layout/positions';
 import type { IngredientId } from './ingredients';
 import type { OutdoorLocationId } from './outdoorAreas';
 
@@ -15,20 +16,34 @@ export interface ForageSpotDef {
   id: string;
   location: OutdoorLocationId;
   kind: ForageKind;
-  /** Centre of the base of the spot (where it touches the ground), in pixels. */
-  position: Point;
+  /** Centre of the base of the spot (where it touches the ground), in pixels (movable in Arrange mode, GAME_DESIGN.md §9.3). */
+  readonly position: Point;
   ingredient: IngredientId;
   amount: number;
 }
 
+/** A spot whose position is read by name (spot.<id>) each time, so a move in Arrange mode counts. */
+function spot(id: string, location: OutdoorLocationId, kind: ForageKind, at: Point, ingredient: IngredientId, amount: number): ForageSpotDef {
+  return {
+    id,
+    location,
+    kind,
+    get position() {
+      return layoutPoint(location, `spot.${id}`, at);
+    },
+    ingredient,
+    amount,
+  };
+}
+
 export const FORAGE_SPOTS: readonly ForageSpotDef[] = [
-  { id: 'forestMushrooms1', location: 'forest', kind: 'mushroomPatch', position: { x: 120, y: 150 }, ingredient: 'mushroom', amount: 2 },
-  { id: 'forestMushrooms2', location: 'forest', kind: 'mushroomPatch', position: { x: 290, y: 250 }, ingredient: 'mushroom', amount: 2 },
-  { id: 'forestMushrooms3', location: 'forest', kind: 'mushroomPatch', position: { x: 400, y: 160 }, ingredient: 'mushroom', amount: 2 },
-  { id: 'forestMushrooms4', location: 'forest', kind: 'mushroomPatch', position: { x: 560, y: 300 }, ingredient: 'mushroom', amount: 2 },
+  spot('forestMushrooms1', 'forest', 'mushroomPatch', { x: 120, y: 150 }, 'mushroom', 2),
+  spot('forestMushrooms2', 'forest', 'mushroomPatch', { x: 290, y: 250 }, 'mushroom', 2),
+  spot('forestMushrooms3', 'forest', 'mushroomPatch', { x: 400, y: 160 }, 'mushroom', 2),
+  spot('forestMushrooms4', 'forest', 'mushroomPatch', { x: 560, y: 300 }, 'mushroom', 2),
   // The cafe makes its jam from these berries.
-  { id: 'forestBerries1', location: 'forest', kind: 'berryBush', position: { x: 220, y: 190 }, ingredient: 'jam', amount: 2 },
-  { id: 'forestBerries2', location: 'forest', kind: 'berryBush', position: { x: 500, y: 210 }, ingredient: 'jam', amount: 2 },
+  spot('forestBerries1', 'forest', 'berryBush', { x: 220, y: 190 }, 'jam', 2),
+  spot('forestBerries2', 'forest', 'berryBush', { x: 500, y: 210 }, 'jam', 2),
 ];
 
 export type ForageConfig = {

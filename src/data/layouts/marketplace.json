@@ -1,27 +1,27 @@
 {
   "stall.carpenter": {
-    "x": 426,
-    "y": 199
+    "x": 463,
+    "y": 93
   },
   "stall.christmas": {
-    "x": 320,
-    "y": 269
+    "x": 170,
+    "y": 279
   },
   "stall.noticeBoard": {
-    "x": 498,
-    "y": 75
+    "x": 509,
+    "y": 279
   },
   "stall.pantry": {
-    "x": 107,
-    "y": 176
+    "x": 121,
+    "y": 155
   },
   "stall.specialty": {
-    "x": 221,
-    "y": 112
+    "x": 255,
+    "y": 88
   },
   "stall.tools": {
-    "x": 338,
-    "y": 137
+    "x": 355,
+    "y": 205
   },
   "tree.1": {
     "x": 606,

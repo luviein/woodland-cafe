@@ -113,6 +113,14 @@ export function mountArrangeMode(game: Phaser.Game): ArrangeMode {
     moveTo(item.screen, item.name, to);
     changed.add(item.screen);
     redraw(entry, OK_COLOUR);
+    // Things drawn with some of the same objects (a place and its signpost)
+    // went along: keep their own points and outlines in step. Not saved as
+    // moved on their own: they still follow what they belong to.
+    for (const other of entries) {
+      if (other === entry || !other.item.objects.some((o) => item.objects.includes(o))) continue;
+      other.item.point = { x: other.item.point.x + dx, y: other.item.point.y + dy };
+      redraw(other, OK_COLOUR);
+    }
     bar.status(`${item.name}: ${to.x}, ${to.y}`);
   }
 

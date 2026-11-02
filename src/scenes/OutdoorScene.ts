@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
 import { FLOOR_CONFIG } from '../data/floorConfig';
 import { LOCATIONS } from '../data/locations';
-import { OUTDOOR_AREAS, OUTDOOR_ENTRY, OUTDOOR_WALK_AREA, isOutdoor, type OutdoorLocationId } from '../data/outdoorAreas';
+import { OUTDOOR_AREAS, OUTDOOR_WALK_AREA, isOutdoor, outdoorEntry, type OutdoorLocationId } from '../data/outdoorAreas';
 import type { ForageSpotDef } from '../data/forageSpots';
 import { INGREDIENTS } from '../data/ingredients';
 import { LEAF_CONFIG } from '../data/leafConfig';
@@ -76,6 +76,12 @@ const LEAF_CLEARANCE = 22;
  * from data/outdoorAreas.ts by the place id it's started with. Tap anywhere
  * to walk there; "Map" goes back to the world map.
  */
+/** Inside the area the player can walk (OUTDOOR_WALK_AREA). */
+function inWalkArea({ x, y }: Point): boolean {
+  const a = OUTDOOR_WALK_AREA;
+  return x >= a.x && x <= a.x + a.width && y >= a.y && y <= a.y + a.height;
+}
+
 export class OutdoorScene extends Phaser.Scene {
   private location!: OutdoorLocationId;
   private player!: Mover;
@@ -139,7 +145,10 @@ export class OutdoorScene extends Phaser.Scene {
     // Map entries would point at destroyed sprites from the last visit.
     this.leafSprites = new Map();
 
-    this.player = createMover(OUTDOOR_ENTRY);
+    const entry = outdoorEntry(this.location);
+    this.player = createMover(entry);
+    // Arrange mode: where the player arrives, shown as a small marker (nothing is drawn there in play).
+    if (import.meta.env.DEV) arrangeable(this, this.location, 'entry', entry, this.add.zone(entry.x, entry.y - 8, 16, 16));
     this.playerSprite = createPlayerSprite(this);
     // Small ring where the player is heading; hidden when standing still.
     // Depth 1: on the ground, under everything standing on it.
@@ -272,12 +281,14 @@ export class OutdoorScene extends Phaser.Scene {
     for (const spot of this.spots) {
       const { x, y } = spot.position;
       // Depth sorted by its base, like the trees.
-      this.spotSprites.set(spot.id, addStanding(this, x, y, spot.kind).setDepth(y));
+      const sprite = addStanding(this, x, y, spot.kind).setDepth(y);
+      this.spotSprites.set(spot.id, sprite);
       // A bit bigger than the drawing, so it's easy to tap on a phone.
-      this.add
+      const tapArea = this.add
         .zone(x, y - 8, 32, 28)
         .setInteractive({ useHandCursor: true })
         .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onSpotTapped(spot));
+      arrangeable(this, this.location, `spot.${spot.id}`, spot.position, sprite, tapArea);
     }
     this.redrawSpots();
   }
@@ -326,12 +337,14 @@ export class OutdoorScene extends Phaser.Scene {
         .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onShopTapped(id));
       arrangeable(this, this.location, `stall.${id}`, SHOPS[id].stall, stall, sign, tapArea);
     }
+    // Arrange mode: forage spots, too, where the player can walk to them.
+    arrangeRule(this, () =>
+      this.spots.flatMap((spot) => (inWalkArea(spot.position) ? [] : [{ name: `spot.${spot.id}`, problem: 'outside where the player can walk' }])),
+    );
     // Arrange mode: a stall's base must be where the player can walk, so they can reach its counter.
     arrangeRule(this, () =>
       this.shops.flatMap((id) => {
-        const { x, y } = stallBase(id);
-        const a = OUTDOOR_WALK_AREA;
-        return x >= a.x && x <= a.x + a.width && y >= a.y && y <= a.y + a.height ? [] : [{ name: `stall.${id}`, problem: 'its counter is outside where the player can walk' }];
+        return inWalkArea(stallBase(id)) ? [] : [{ name: `stall.${id}`, problem: 'its counter is outside where the player can walk' }];
       }),
     );
   }
