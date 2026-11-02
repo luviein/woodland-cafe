@@ -9,6 +9,19 @@ import { DEER_VENDOR_IDLE } from './sprites/stallVendorIdle';
 import { holes, strayPixels } from './checks';
 
 describe('catalogue outfit samples', () => {
+  it('keeps the bunny ear gap clear in its standing and walking front views', () => {
+    for (const frame of SPRITE_ART.rabbit.frames.slice(0, 3)) {
+      expect(frame[5].slice(9, 12)).toBe('...');
+      expect(frame[5][8]).toBe('a');
+      expect(frame[5][12]).toBe('a');
+    }
+    for (const item of CLOTHING_IDS) {
+      const sample = CATALOGUE_SAMPLES[catalogueSampleName('rabbit', item)];
+      // Hats can cover the gap deliberately; uncovered pixels stay clear.
+      const garment = SPRITE_ART[clothingArt('rabbit', item)].frames[0];
+      for (const x of [9, 11]) if (garment[5][x] === '.') expect(sample.frames[0][5][x]).toBe('.');
+    }
+  });
   for (const animal of PLAYER_ANIMALS) {
     it(`shows the active ${animal} with its original body and advertised garment`, () => {
       for (const item of CLOTHING_IDS) {
