@@ -26,6 +26,8 @@ import { getGameState, setGameState, tutorialEvent } from './gameStore';
 import { seeTip } from '../logic/gameState';
 import { StoryBox } from '../ui/StoryBox';
 import { bottomBoxLeft } from '../ui/hudLayout';
+import { arrangeable, sizeBox } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
 import { TIPS } from '../data/tutorial';
 import type { WorldMapRequest } from './WorldMapScene';
 
@@ -34,6 +36,9 @@ import type { WorldMapRequest } from './WorldMapScene';
  * (its picture and how many are in storage), a page at a time.
  */
 const TRAY = { x: 64, y: BASE_HEIGHT - 42, firstCard: 172, card: 40, gap: 4, perPage: 7 };
+
+/** Where something goes in Decorate: by name, movable in Arrange mode (GAME_DESIGN.md §9.3). */
+const at = (name: string, x: number, y: number): Point => layoutPoint('decorate', name, { x, y });
 
 /** How far (px) a press must move to count as a drag rather than a tap. */
 const DRAG_THRESHOLD = 4;
@@ -84,6 +89,9 @@ export class DecorateScene extends Phaser.Scene {
   private trayPrev!: Button;
   private trayNext!: Button;
   private selectedOutline!: Phaser.GameObjects.Rectangle;
+  /** The tray's first card's centre (movable in Arrange mode), and the layer its cards live in (so they move together). */
+  private trayAt!: Point;
+  private trayLayer!: Phaser.GameObjects.Container;
   private hint!: Phaser.GameObjects.Text;
   private catalogue: CataloguePanel | null = null;
   /** What the next floor tap places; null = nothing picked yet. */
@@ -112,21 +120,33 @@ export class DecorateScene extends Phaser.Scene {
     this.tiles = addCafeCanvas(this);
 
     // On the cafe's top wall, outlined so it reads on the logs.
-    this.add
-      .text(BASE_WIDTH / 2, 8, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 4 })
+    const titleAt = at('title', BASE_WIDTH / 2, 8);
+    const title = this.add
+      .text(titleAt.x, titleAt.y, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 4 })
       .setOrigin(0.5, 0);
-    this.hint = this.add.text(BASE_WIDTH / 2, BASE_HEIGHT - 8, '', TEXT.label).setOrigin(0.5, 1);
+    arrangeable(this, 'decorate', 'title', titleAt, title);
+    const hintAt = at('hint', BASE_WIDTH / 2, BASE_HEIGHT - 8);
+    this.hint = this.add.text(hintAt.x, hintAt.y, '', TEXT.label).setOrigin(0.5, 1);
+    arrangeable(this, 'decorate', 'hint', hintAt, this.hint);
 
     // The storage tray, in the strip under the cafe (right of the corner buttons).
-    this.add.text(TRAY.x, TRAY.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) }).setOrigin(0, 0.5);
-    this.selectedOutline = this.add.rectangle(0, 0, TRAY.card + 4, TRAY.card + 4).setStrokeStyle(3, COLORS.paper).setVisible(false).setDepth(1);
-    const arrowY = TRAY.y;
-    this.trayPrev = new Button(this, TRAY.firstCard - TRAY.card / 2 - 14, arrowY, 18, TRAY.card, '<', COLORS.book, () => this.turnTray(-1));
+    // The tray moves as one, by its first card: its label, arrows and cards (in their own layer).
+    this.trayAt = at('tray', TRAY.firstCard, TRAY.y);
+    this.trayLayer = this.add.container(0, 0);
+    const label = this.add
+      .text(this.trayAt.x - (TRAY.firstCard - TRAY.x), this.trayAt.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) })
+      .setOrigin(0, 0.5);
+    this.selectedOutline = this.add.rectangle(0, 0, TRAY.card + 4, TRAY.card + 4).setStrokeStyle(3, COLORS.paper).setVisible(false);
+    const arrowY = this.trayAt.y;
+    this.trayPrev = new Button(this, this.trayAt.x - TRAY.card / 2 - 14, arrowY, 18, TRAY.card, '<', COLORS.book, () => this.turnTray(-1));
     this.trayNext = new Button(this, this.cardX(TRAY.perPage - 1) + TRAY.card / 2 + 14, arrowY, 18, TRAY.card, '>', COLORS.book, () => this.turnTray(1));
-    new Button(this, BASE_WIDTH - 64, TRAY.y, 100, 30, 'Done', COLORS.serve, () => this.done());
+    arrangeable(this, 'decorate', 'tray', this.trayAt, label, this.trayPrev, this.trayNext, this.trayLayer, ...sizeBox(this, label.x, this.trayAt.y - TRAY.card / 2, this.cardX(TRAY.perPage - 1) + TRAY.card / 2 - label.x, TRAY.card));
+    const doneAt = at('done', BASE_WIDTH - 64, TRAY.y);
+    arrangeable(this, 'decorate', 'done', doneAt, new Button(this, doneAt.x, doneAt.y, 100, 30, 'Done', COLORS.serve, () => this.done()));
     // The Christmas catalogue, to buy more without leaving (while the Christmas stall is open).
     if (shopsAt('marketplace', new Date(), devSettings.allSeasons).includes('christmas')) {
-      new Button(this, BASE_WIDTH - 60, 16, 104, 22, 'Catalogue', COLORS.book, () => this.openCatalogue());
+      const catalogueAt = at('catalogue', BASE_WIDTH - 60, 16);
+      arrangeable(this, 'decorate', 'catalogue', catalogueAt, new Button(this, catalogueAt.x, catalogueAt.y, 104, 22, 'Catalogue', COLORS.book, () => this.openCatalogue()));
     }
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
@@ -193,9 +213,11 @@ export class DecorateScene extends Phaser.Scene {
   private showTips(): void {
     if (getGameState(this).tipsSeen.includes('decorate')) return;
     const firstTable = this.furniture().placed.find((p) => kindOf(p.design) === 'table');
+    const guideAt = at('guide', bottomBoxLeft(), 294);
+    const guideRect = { x: guideAt.x, y: guideAt.y, width: 516 - guideAt.x, height: 62 };
     const guide = new StoryBox(this, {
       // Clear of the corner buttons on the left and Done on the right.
-      rect: { x: bottomBoxLeft(), y: 294, width: 516 - bottomBoxLeft(), height: 62 },
+      rect: guideRect,
       step: TIPS.decorate,
       arrow: (line) => {
         const target = TIPS.decorate.pointsAt[line];
@@ -215,6 +237,7 @@ export class DecorateScene extends Phaser.Scene {
         guide.destroy();
       },
     });
+    arrangeable(this, 'decorate', 'guide', guideAt, guide, ...sizeBox(this, guideRect.x, guideRect.y, guideRect.width, guideRect.height));
   }
 
   /** The cafe tile under the pointer (it may be outside the grid). */
@@ -486,7 +509,7 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private cardX(slot: number): number {
-    return TRAY.firstCard + slot * (TRAY.card + TRAY.gap);
+    return this.trayAt.x + slot * (TRAY.card + TRAY.gap);
   }
 
   /**
@@ -503,6 +526,8 @@ export class DecorateScene extends Phaser.Scene {
     if (onPage.join() !== this.trayCards.map((c) => c.design).join()) {
       for (const card of this.trayCards) for (const o of card.parts) o.destroy();
       this.trayCards = onPage.map((design, slot) => this.createTrayCard(design, this.cardX(slot)));
+      this.trayLayer.add(this.trayCards.flatMap((c) => c.parts));
+      this.trayLayer.add(this.selectedOutline); // on top of the cards
     }
     const { stored } = this.furniture();
     for (const card of this.trayCards) {
@@ -524,7 +549,7 @@ export class DecorateScene extends Phaser.Scene {
   /** A tray card: the piece's picture on paper, its count in the corner. Tap to pick it; press and drag to place one. */
   private createTrayCard(design: DesignId, x: number): TrayCard {
     const def = FURNITURE[design];
-    const frame = this.add.rectangle(x, TRAY.y, TRAY.card, TRAY.card, COLORS.paper).setStrokeStyle(2, COLORS.ink);
+    const frame = this.add.rectangle(x, this.trayAt.y, TRAY.card, TRAY.card, COLORS.paper).setStrokeStyle(2, COLORS.ink);
     frame.setInteractive({ useHandCursor: true });
     // Pressing a card may also start dragging one out of storage.
     frame.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
@@ -533,12 +558,12 @@ export class DecorateScene extends Phaser.Scene {
     frame.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
       if (!this.drag?.ghost) this.select(design);
     });
-    const image = addArt(this, x, TRAY.y + TRAY.card / 2 - 3, def.art).setOrigin(0.5, 1);
+    const image = addArt(this, x, this.trayAt.y + TRAY.card / 2 - 3, def.art).setOrigin(0.5, 1);
     // Everything fits the card at 1x today (the tree, 36 tall, is the biggest);
     // anything bigger later is shrunk to fit.
     image.setScale(Math.min(1, (TRAY.card - 2) / Math.max(image.width, image.height)));
     const count = this.add
-      .text(x + TRAY.card / 2 - 2, TRAY.y + TRAY.card / 2 - 1, '', { ...TEXT.label, fontSize: '10px', stroke: css(COLORS.ink), strokeThickness: 3 })
+      .text(x + TRAY.card / 2 - 2, this.trayAt.y + TRAY.card / 2 - 1, '', { ...TEXT.label, fontSize: '10px', stroke: css(COLORS.ink), strokeThickness: 3 })
       .setOrigin(1, 1);
     return { design, parts: [frame, image, count], frame, count };
   }
