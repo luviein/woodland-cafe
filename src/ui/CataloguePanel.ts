@@ -4,6 +4,8 @@ import type { ArtName } from '../art/spriteArt';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { FURNITURE, type DesignId } from '../data/furniture';
 import { addArt } from './art';
+import { arrangeable } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
 import { Button } from './Button';
 import { COLORS, TEXT, css } from './theme';
 
@@ -94,6 +96,8 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
   private busy = false;
   /** Everything that slides: the closed book sits centred, the open one further left. */
   private stage!: Phaser.GameObjects.Container;
+  /** How far the open book sits from the screen's middle (Arrange mode). */
+  private offset = { x: 0, y: 0 };
   private cover!: Phaser.GameObjects.Container;
   private book!: Phaser.GameObjects.Container;
   private leftBoard!: Phaser.GameObjects.Rectangle;
@@ -113,7 +117,12 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     // The dim layer takes taps, so nothing behind the catalogue can be pressed.
     this.add(scene.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.5).setOrigin(0).setInteractive());
     // Closed, only the right half (the front cover) shows: centre it on the screen.
-    this.stage = scene.add.container(BASE_WIDTH / 2 - (SPINE_X + HALF / 2), 0);
+    // Where the open book goes (movable in Arrange mode): its offset from the screen's middle.
+    const middle = { x: BASE_WIDTH / 2, y: BASE_HEIGHT / 2 };
+    const at = layoutPoint('catalogue', 'book', middle);
+    this.offset = { x: at.x - middle.x, y: at.y - middle.y };
+    this.stage = scene.add.container(BASE_WIDTH / 2 - (SPINE_X + HALF / 2) + this.offset.x, this.offset.y);
+    arrangeable(scene, 'catalogue', 'book', at, this.stage);
     this.add(this.stage);
     this.createBook();
     this.createCover();
@@ -210,7 +219,7 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     if (this.opened || this.busy) return;
     this.busy = true;
     const s = this.scene;
-    s.tweens.add({ targets: this.stage, x: 0, duration: TURN_MS * 2, ease: 'Quad.easeInOut' });
+    s.tweens.add({ targets: this.stage, x: this.offset.x, duration: TURN_MS * 2, ease: 'Quad.easeInOut' });
     s.tweens.add({
       targets: this.cover,
       scaleX: 0,

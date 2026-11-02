@@ -44,7 +44,7 @@ import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import { CataloguePanel } from '../ui/CataloguePanel';
 import { layoutPoint } from '../layout/positions';
-import { arrangeable, arrangeRule, sizeBox } from '../layout/arrangeable';
+import { arrangeable, arrangeablePanel, arrangeRule, sizeBox } from '../layout/arrangeable';
 import { LeafText } from '../ui/LeafText';
 import { TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
 import { spriteSize } from '../art/pixelSprite';
@@ -377,6 +377,8 @@ export class OutdoorScene extends Phaser.Scene {
       id === 'christmas'
         ? this.openCatalogue()
         : new ShopPanel(this, SHOPS[id].name, SHOPS[id].blurb, this.shopRows(id), () => this.closeShop());
+    // Movable in Arrange mode (one place for every stall's list); the catalogue moves itself.
+    if (panel instanceof ShopPanel) arrangeablePanel(this, 'shop', 'panel', panel);
     // Above the HUD, so its dim layer covers the Map button too.
     this.shop = { id, panel: panel.setDepth(HUD_DEPTH + 1) };
   }
