@@ -40,6 +40,8 @@ export const SHOPS = {
       return layoutPoint('marketplace', 'stall.pantry', { x: 100, y: 120 });
     },
     blurb: 'Stock up on ingredients you own.',
+    art: 'pantryStall',
+    counterHeight: 15,
   },
   specialty: {
     name: 'Specialty',
@@ -48,6 +50,8 @@ export const SHOPS = {
       return layoutPoint('marketplace', 'stall.specialty', { x: 210, y: 110 });
     },
     blurb: 'New ingredients for new recipes.',
+    art: 'specialtyStall',
+    counterHeight: 16,
   },
   tools: {
     name: 'Tools',
@@ -56,6 +60,8 @@ export const SHOPS = {
       return layoutPoint('marketplace', 'stall.tools', { x: 320, y: 120 });
     },
     blurb: 'Kitchen upgrades.',
+    art: 'toolsStall',
+    counterHeight: 16,
   },
   carpenter: {
     name: 'Carpenter',
@@ -64,6 +70,8 @@ export const SHOPS = {
       return layoutPoint('marketplace', 'stall.carpenter', { x: 430, y: 110 });
     },
     blurb: 'Furniture. Place it via Cafe > Decorate.',
+    art: 'carpenterStall',
+    counterHeight: 16,
   },
   noticeBoard: {
     name: 'Notice Board',
@@ -72,6 +80,8 @@ export const SHOPS = {
       return layoutPoint('marketplace', 'stall.noticeBoard', { x: 540, y: 120 });
     },
     blurb: 'Hire help. Wages are paid at the end of each day.',
+    art: 'noticeBoard',
+    counterHeight: 15,
   },
   // The Christmas edition's stall, in the open below the others (GAME_DESIGN.md §5.10).
   christmas: {

@@ -36,6 +36,7 @@ import {
 } from './sprites/christmas';
 import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sprites/sheetCritters';
 import { INGREDIENT_ICONS, INGREDIENT_LAYERS, TOASTED_BREAD_LAYER, TOASTER } from './sprites/kitchen';
+import { CARPENTER_STALL, NOTICE_BOARD, PANTRY_STALL, SPECIALTY_STALL, TOOLS_STALL } from './sprites/marketStalls';
 import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_PATCH, STALL, TREE } from './sprites/outdoor';
 
 // Every code-drawn sprite, by name. The name is also the file name a
@@ -86,6 +87,12 @@ export const SPRITE_ART = {
   mushroomPatch: MUSHROOM_PATCH,
   berryBush: BERRY_BUSH,
   stall: STALL,
+  // The Marketplace's stalls, each its own (the plain stall stays for the world map)
+  pantryStall: PANTRY_STALL,
+  specialtyStall: SPECIALTY_STALL,
+  toolsStall: TOOLS_STALL,
+  carpenterStall: CARPENTER_STALL,
+  noticeBoard: NOTICE_BOARD,
   cafeHouse: CAFE_HOUSE,
   // The Christmas edition (GAME_DESIGN.md §5.10)
   christmasTree: CHRISTMAS_TREE,

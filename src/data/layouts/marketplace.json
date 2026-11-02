@@ -1,1 +1,30 @@
-{}
+{
+  "stall.carpenter": {
+    "x": 440,
+    "y": 179
+  },
+  "stall.christmas": {
+    "x": 320,
+    "y": 269
+  },
+  "stall.noticeBoard": {
+    "x": 498,
+    "y": 75
+  },
+  "stall.pantry": {
+    "x": 107,
+    "y": 176
+  },
+  "stall.specialty": {
+    "x": 185,
+    "y": 79
+  },
+  "stall.tools": {
+    "x": 275,
+    "y": 152
+  },
+  "tree.1": {
+    "x": 606,
+    "y": 76
+  }
+}

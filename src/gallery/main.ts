@@ -13,6 +13,9 @@ import { INGREDIENT_IDS } from '../data/ingredients';
 // scale. Read-only: change a sprite in its file (or drop a PNG in
 // src/art/drawn/) and this page and the game both update.
 
+/** The Marketplace stalls converted from the player's drawings. */
+const MARKET_STALLS: readonly ArtName[] = ['pantryStall', 'specialtyStall', 'toolsStall', 'carpenterStall', 'noticeBoard'];
+
 const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 
 // ---- Groups -----------------------------------------------------------------
@@ -22,7 +25,7 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
   ['Christmas', (n) => (CHRISTMAS_ART as readonly ArtName[]).includes(n)],
-  ['Outdoors and map', (n) => ['leaf', 'grass', 'forestFloor', 'tree', 'mapTree', 'mushroomPatch', 'berryBush', 'stall', 'cafeHouse'].includes(n)],
+  ['Outdoors and map', (n) => ['leaf', 'grass', 'forestFloor', 'tree', 'mapTree', 'mushroomPatch', 'berryBush', 'stall', 'cafeHouse', ...MARKET_STALLS].includes(n)],
   ['Icons and effects', () => true], // everything else
 ];
 
@@ -34,6 +37,7 @@ function source(name: ArtName): string {
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
   if (VIEW_ART.has(name)) return 'converted from your critter sheet';
   if ((CHRISTMAS_ART as readonly ArtName[]).includes(name)) return 'converted from your Christmas drawings';
+  if (MARKET_STALLS.includes(name)) return 'converted from your Marketplace drawings';
   return 'drawn in code';
 }
 
