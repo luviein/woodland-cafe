@@ -1,8 +1,8 @@
 # Critter drawing template
 
 A skeleton for drawing new critters in the same body shape as the hedgehog,
-rabbit, mouse and deer. Its neutral grey body is also used for the catalogue's
-clothing mannequins; `node tools/importCritterSkeleton.cjs` imports its pixels.
+rabbit, mouse and deer. `node tools/importCritterSkeleton.cjs` imports its pixels
+for the drawing-template section in the sprite gallery.
 
 | File | What it is |
 | --- | --- |

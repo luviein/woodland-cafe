@@ -1,6 +1,6 @@
 import './gallery.css';
 import { COLLECTION_ART } from '../art/sprites/christmasClothing';
-import { MANNEQUIN_ART } from '../art/sprites/mannequins';
+import { CATALOGUE_SAMPLES } from '../art/sprites/catalogueSamples';
 import { CRITTER_ART, spriteQuality } from '../art/checks';
 import { DRAWN_ART } from '../art/drawnArt';
 import { framePixels, spriteSize } from '../art/pixelSprite';
@@ -30,7 +30,8 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
-  ['Catalogue mannequins', (n) => n in MANNEQUIN_ART || n === 'critterSkeleton'],
+  ['Catalogue outfit samples', (n) => n in CATALOGUE_SAMPLES],
+  ['Drawing template', (n) => n === 'critterSkeleton'],
   ['Stall vendor', (n) => n === 'deerVendorIdle'],
   ['Wardrobe collection', (n) => WARDROBE_ART.includes(n)],
   ['Critters', (n) => CRITTER_ART.includes(n)],
@@ -47,7 +48,8 @@ function groupOf(name: ArtName): string {
 
 function source(name: ArtName): string {
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
-  if (name in MANNEQUIN_ART || name === 'critterSkeleton') return 'your grey critter-skeleton.png template, with catalogue clothing fitted to its body (sprites/mannequins.ts)';
+  if (name in CATALOGUE_SAMPLES) return 'the selected critter wearing the advertised item with its gameplay fitting (sprites/catalogueSamples.ts)';
+  if (name === 'critterSkeleton') return 'your neutral critter-skeleton.png drawing template';
   if (name === 'deerVendorIdle') return 'your deer in the Santa outfit, with matching blinking eyes (sprites/stallVendorIdle.ts)';
   if (name in COLLECTION_ART) return 'drawn in code from your Christmas reference, using the reviewed animal fittings (sprites/christmasClothing.ts)';
   if (WARDROBE_ART.includes(name)) return 'redrawn from your Christmas clothing reference, individually fitted (tools/wardrobeArt.cjs and tools/wardrobeCritters.cjs)';

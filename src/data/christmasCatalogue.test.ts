@@ -13,6 +13,7 @@ describe('Christmas catalogue and vendor', () => {
     expect(new Set(clothes?.designs).size).toBe(CLOTHING_IDS.length);
     for (const id of CLOTHING_IDS) {
       const product = catalogueProduct(id, 'rabbit');
+      expect(product.art.startsWith('rabbitCatalogue')).toBe(true);
       expect(product.unique).toBe(true);
       expect(Number.isInteger(product.price)).toBe(true);
       expect(product.price).toBeGreaterThan(0);

@@ -2,27 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { CLOTHING_IDS } from '../data/clothing';
 import { PLAYER_ANIMALS } from '../data/playerAnimals';
 import { spriteProblems, spriteSize } from './pixelSprite';
-import { CRITTER_SKELETON } from './sprites/critterSkeleton';
-import { MANNEQUIN_ART, mannequinArtName } from './sprites/mannequins';
+import { SPRITE_ART } from './spriteArt';
+import { clothingArt } from '../data/clothingFits';
+import { CATALOGUE_SAMPLES, catalogueSampleName } from './sprites/catalogueSamples';
 import { DEER_VENDOR_IDLE } from './sprites/stallVendorIdle';
 import { holes, strayPixels } from './checks';
 
-describe('catalogue mannequins', () => {
+describe('catalogue outfit samples', () => {
   for (const animal of PLAYER_ANIMALS) {
-    it(`uses the shared grey skeleton for every ${animal} catalogue display`, () => {
+    it(`shows the active ${animal} with its original body and advertised garment`, () => {
       for (const item of CLOTHING_IDS) {
-        const dummy = MANNEQUIN_ART[mannequinArtName(animal, item)];
+        const dummy = CATALOGUE_SAMPLES[catalogueSampleName(animal, item)];
         expect(spriteProblems(dummy)).toEqual([]);
         expect(spriteSize(dummy).height * 2).toBeLessThanOrEqual(84);
         expect(holes(dummy.frames[0]), item).toBe(0);
         expect(strayPixels(dummy.frames[0]), item).toBe(0);
-        expect(spriteSize(dummy)).toEqual({ width: 32, height: 40 });
-        let garmentPixels = 0;
-        dummy.frames[0].forEach((row, y) => [...row].forEach((c, x) => {
-          if (c === '.' || ['J', 'K', 'L'].includes(c)) expect(c).toBe(CRITTER_SKELETON.frames[0][y][x]);
-          else garmentPixels++;
+        const body = SPRITE_ART[animal], garment = SPRITE_ART[clothingArt(animal, item)];
+        expect(spriteSize(dummy)).toEqual(spriteSize(body));
+        body.frames[0].forEach((row, y) => [...row].forEach((c, x) => {
+          const expected = garment.frames[0][y][x];
+          expect(dummy.frames[0][y][x]).toBe(expected === '.' ? c : expected);
         }));
-        expect(garmentPixels).toBeGreaterThan(0);
       }
     });
   }
