@@ -150,7 +150,7 @@ export class OutdoorScene extends Phaser.Scene {
     this.player = createMover(entry);
     // Arrange mode: where the player arrives, shown as a small marker (nothing is drawn there in play).
     if (import.meta.env.DEV) arrangeable(this, this.location, 'entry', entry, this.add.zone(entry.x, entry.y - 8, 16, 16));
-    this.playerSprite = createPlayerSprite(this);
+    this.playerSprite = createPlayerSprite(this, () => !this.shop);
     // Small ring where the player is heading; hidden when standing still.
     // Depth 1: on the ground, under everything standing on it.
     this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.paper).setVisible(false).setDepth(1);
@@ -373,6 +373,7 @@ export class OutdoorScene extends Phaser.Scene {
   }
 
   private openShop(id: ShopId): void {
+    this.children.getByName('wardrobe')?.destroy();
     const panel =
       id === 'christmas'
         ? this.openCatalogue()

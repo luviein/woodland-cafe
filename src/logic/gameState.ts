@@ -6,6 +6,7 @@ import { startingFurniture, type Furniture } from './furniture';
 import { startingStock, type Stock } from './stock';
 import type { TutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
+import { emptyOutfit, type Outfit } from './wardrobe';
 
 /**
  * Everything about the player's progress, in one place (GAME_DESIGN.md §6).
@@ -21,6 +22,7 @@ import { TIP_IDS, type TipId } from '../data/tutorial';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  outfit: Outfit;
   /** Which day it is, starting at 1. */
   day: number;
   /** The wallet. Always a whole number, never negative. */
@@ -46,6 +48,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    outfit: emptyOutfit(),
     day: 1,
     leaves: 0,
     ingredients: STARTER_INGREDIENTS,

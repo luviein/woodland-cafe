@@ -218,7 +218,7 @@ export class FloorScene extends Phaser.Scene {
       .setVisible(false);
 
     this.player = createPlayer(this.layout);
-    this.playerSprite = createPlayerSprite(this);
+    this.playerSprite = createPlayerSprite(this, () => !this.prepOpen && !this.summaryOpen);
 
     // Listen on the whole scene, not on each tile: one handler converts the
     // tap position to a tile. 'pointerup' works the same for mouse and touch.
@@ -454,6 +454,7 @@ export class FloorScene extends Phaser.Scene {
    * carry over.
    */
   private openSummary(): void {
+    this.children.getByName('wardrobe')?.destroy();
     this.summaryOpen = true;
     // The day ended with "Off you go!" still up: that's read enough, so the
     // tutorial carries on with the summary (GAME_DESIGN.md §5.9).
@@ -487,6 +488,7 @@ export class FloorScene extends Phaser.Scene {
   private openPrep(customerId: number): void {
     const order = this.customer(customerId)?.order;
     if (!order) return;
+    this.children.getByName('wardrobe')?.destroy();
     this.prepOpen = true;
     this.prepCustomerId = customerId;
     this.destinationMarker.setVisible(false);

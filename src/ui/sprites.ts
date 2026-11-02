@@ -4,6 +4,8 @@ import { spriteSize } from '../art/pixelSprite';
 import { VIEW, viewFrame, type View } from '../art/sprites/sheetCritters';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
 import { artKey } from './art';
+import { watchGameState } from '../scenes/gameStore';
+import { WardrobePanel } from './WardrobePanel';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
 // so they look the same everywhere.
@@ -75,6 +77,10 @@ function animateWalking(
     else if (face === 'left' || face === 'right') image.setFlipX(face === 'left'); // 16x24 art has no front or back
     const pose = moving ? 1 + (Math.floor(walkedFor / STEP_MS) % 2) : 0;
     image.setFrame(views ? viewFrame(facing, pose) : pose);
+    // Clothing uses the same frame grid as the body, including walking poses.
+    for (const layer of container.list.slice(1)) {
+      if (layer instanceof Phaser.GameObjects.Image) layer.setFrame(image.frame.name).setFlipX(image.flipX);
+    }
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));
@@ -127,8 +133,27 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
 }
 
 /** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). Scenes sort its depth by its feet. */
-export function createPlayerSprite(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  return createCritter(scene, 'hedgehog');
+export function createPlayerSprite(scene: Phaser.Scene, canOpen: () => boolean = () => true): Phaser.GameObjects.Container {
+  const player = createCritter(scene, 'hedgehog');
+  const coat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey('santaCoat')).setOrigin(0.5, 1);
+  const hat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey('santaHat')).setOrigin(0.5, 1);
+  player.add([coat, hat]);
+  watchGameState(scene, state => {
+    coat.setVisible(state.outfit.top === 'santaCoat');
+    hat.setVisible(state.outfit.hat === 'santaHat');
+  });
+  // The moving character's hit area follows its container; it isn't a fixed layout point.
+  player.setInteractive(new Phaser.Geom.Rectangle(-3, TILE_SIZE - 30, 30, 30), Phaser.Geom.Rectangle.Contains);
+  player.input!.cursor = 'pointer';
+  let pressed = false;
+  player.on('pointerdown', () => { pressed = true; });
+  player.on('pointerout', () => { pressed = false; });
+  player.on('pointerup', () => {
+    const open = pressed;
+    pressed = false;
+    if (open && canOpen() && !scene.children.getByName('wardrobe')) new WardrobePanel(scene);
+  });
+  return player;
 }
 
 /**

@@ -6,6 +6,7 @@ import { CAFE_ROOM, buildLayout, spotProblemFor, type Furniture, type PlacedPiec
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
+import { readOutfit } from './wardrobe';
 
 // Turning the game state into text for the save slot and back
 // (GAME_DESIGN.md §6.1). Saved text is untrusted: it may come from an older
@@ -20,7 +21,8 @@ import { TIP_IDS, type TipId } from '../data/tutorial';
  * default anyway.
  */
 // 2: furniture records its design (the Christmas edition, GAME_DESIGN.md §5.10).
-export const SAVE_VERSION = 2;
+// 3: independent wardrobe slots; older saves start without clothing.
+export const SAVE_VERSION = 3;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -69,6 +71,7 @@ function readState(raw: Record<string, unknown>): GameState {
   const fresh = createNewGame();
   const furniture = readFurniture(raw.furniture, fresh.furniture);
   return {
+    outfit: readOutfit(raw.outfit),
     day: field(raw, 'day', fresh.day, (v) => isWhole(v) && v >= 1),
     leaves: field(raw, 'leaves', fresh.leaves, (v) => isWhole(v) && v >= 0),
     ingredients: idList(raw, 'ingredients', fresh.ingredients, INGREDIENT_IDS),
