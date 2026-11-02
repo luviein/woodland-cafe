@@ -117,6 +117,16 @@ Each recipe is an **ordered list of layers, bottom to top**. A recipe **only app
 
 ### 3.3 Modifiers
 
+#### Optional extra ingredient
+
+- Random orders have a 50% chance (extraIngredientChance) of requesting one extra ingredient in a supplementary sentence, e.g. "A tuna sandwich, please!" followed by "Add some mushrooms too!".
+- Pick uniformly from owned ingredients absent from the recipe, excluding bread. Any combination is allowed. With no eligible ingredient, skip the extra request.
+- Add one layer inside the top bread of a sandwich, or on top of open bread. Fillings work in either order; omitting the extra is one layer mistake.
+- Extras use stock and rush deliveries normally, and add twice their ingredient unit price to the dish price. Double orders include the extra on both dishes. Eligibility means owned, regardless of current stock.
+- The guided tutorial keeps its fixed Jam Bread order without extras. The recipe book lists base recipes; the customer supplies the extra request.
+- Add Tuna Bread (bread > tuna), Tomato Sandwich (bread > tomato > bread), Mushroom Tomato Bread (bread > mushroom > tomato), and Spicy Tomato Bread (bread > tomato > chilli). They unlock when all ingredients are owned and have direct and hint dialogue.
+
+
 - Modifiers are **separate from recipes**. There are **no** combined recipes such as "Toasted Jam Bread".
 - **Order = recipe + zero or more unlocked modifiers.**
 - A modifier has:
