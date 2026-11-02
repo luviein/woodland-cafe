@@ -3,7 +3,7 @@ import { layoutPoint } from '../layout/positions';
 import { SHOPS } from './shops';
 
 export const CHRISTMAS_VENDOR = {
-  art: 'deerSantaPreview' as ArtName,
+  art: 'deerVendorIdle' as ArtName,
   // The awning hides the antlers and upper hat; the counter hides the legs.
   crop: { width: 30, height: 14, sourceY: 11 },
   get position() {
