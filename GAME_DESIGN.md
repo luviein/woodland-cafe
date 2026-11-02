@@ -569,7 +569,9 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Safety:** something that breaks a rule turns red and Save is refused: off the screen, a stall outside the walk area, two buttons on top of each other, a forage spot inside a tree. The tests check the saved files the same way.
 - **Not movable:** things that move by themselves while playing (critters, falling leaves, messes); their starting points can be (where the player arrives).
 - **Dev only:** like the text editor, Arrange mode and its save route exist only under `npm run dev`, never in a built game.
-- **Later (optional):** painting the cafe room's tiles (walls, counter, door, queue) in the same way, instead of editing `data/cafeLayout.ts` by hand.
+- **Room painter (dev only):** open **Room painter** from the F2 Arrange toolbar, or `/room.html`. Paint the current 24x12 room with floor, wall, counter, door (D), player counter spot (P), order spot (O), and queue 1-9 brushes. Drag to paint; each stroke has Undo. Reset reloads the last saved room.
+- The preview uses the game's tile art and shows starter furniture plus furniture in the current browser save. D, P, O and each queue number move when painted elsewhere. Intermediate invalid drafts are allowed, but saving requires exactly one D/P/O, a contiguous numbered queue, a counter between P and O, connected walkable tiles and usable furniture placements. Errors explain what to fix.
+- Save writes `src/data/cafeRoom.json` through a dev-only endpoint; the shipped game reads that room. Furniture ownership stays in the game save, with the original starter furniture defined by `cafeLayout.ts`. The painter validates both starter and saved furniture. Changes apply on the next cafe/Decorate visit; edit between days. Room resizing comes later.
 
 ---
 
