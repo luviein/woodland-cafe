@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE } from '../config/display';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS, type LocationId } from '../data/locations';
-import { arrangeable, type Placeable } from '../layout/arrangeable';
+import { arrangeable, sizeBox, type Placeable } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
 import { startNextDay } from '../logic/gameState';
 import type { Point } from '../logic/layout';
@@ -84,15 +84,19 @@ export class WorldMapScene extends Phaser.Scene {
     }
     if (isHired(getGameState(this), 'mascot')) this.addDancingMascot();
 
-    const wallet = new WalletDisplay(this, 8, 8);
+    const walletAt = layoutPoint('worldMap', 'wallet', { x: 8, y: 8 });
+    const wallet = new WalletDisplay(this, walletAt.x, walletAt.y);
+    arrangeable(this, 'worldMap', 'wallet', walletAt, wallet);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
-    this.add
-      .text(BASE_WIDTH / 2, BASE_HEIGHT - 10, 'Tap a signpost to go there', {
+    const hintAt = layoutPoint('worldMap', 'hint', { x: BASE_WIDTH / 2, y: BASE_HEIGHT - 10 });
+    const hint = this.add
+      .text(hintAt.x, hintAt.y, 'Tap a signpost to go there', {
         ...TEXT.label,
         stroke: css(COLORS.ink),
         strokeThickness: 3,
       })
       .setOrigin(0.5, 1);
+    arrangeable(this, 'worldMap', 'hint', hintAt, hint);
 
     this.showTutorial();
   }
@@ -123,8 +127,10 @@ export class WorldMapScene extends Phaser.Scene {
     // The explore reminder points at whichever place is still to be seen.
     const seen = getGameState(this).tipsSeen;
     const unseen = (['marketplace', 'forest'] as const).find((place) => !seen.includes(place)) ?? null;
+    const guideAt = layoutPoint('worldMap', 'guide', { x: bottomBoxLeft(), y: 292 });
+    const guideRect = { x: guideAt.x, y: guideAt.y, width: BASE_WIDTH - 36 - guideAt.x, height: 62 };
     const guide = new StoryBox(this, {
-      rect: { x: bottomBoxLeft(), y: 292, width: BASE_WIDTH - 36 - bottomBoxLeft(), height: 62 },
+      rect: guideRect,
       step: TUTORIAL[step],
       arrow: (line) => (step === 'explore' ? target(unseen) : target(TUTORIAL[step].pointsAt[line])),
       onFinished: () => {
@@ -140,6 +146,7 @@ export class WorldMapScene extends Phaser.Scene {
         guide.destroy();
       },
     });
+    arrangeable(this, 'worldMap', 'guide', guideAt, guide, ...sizeBox(this, guideRect.x, guideRect.y, guideRect.width, guideRect.height));
   }
 
   private go(id: LocationId): void {
