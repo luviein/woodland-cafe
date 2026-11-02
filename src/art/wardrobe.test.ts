@@ -18,9 +18,20 @@ describe('hedgehog Christmas clothing', () => {
     });
   });
 
-  it('keeps the side clothing mirrored consistently', () => {
-    for (const sprite of [SANTA_HAT, SANTA_COAT]) {
-      expect(sprite.frames[9]).toEqual(sprite.frames[6].map(row => [...row].reverse().join('')));
+  it('keeps the side hats mirrored consistently', () => {
+    expect(SANTA_HAT.frames[9]).toEqual(SANTA_HAT.frames[6].map(row => [...row].reverse().join('')));
+  });
+
+  it('keeps the coat off the back quills and fits the front and left torso', () => {
+    for (const frame of SANTA_COAT.frames.slice(3, 6)) expect(frame.every(row => /^\.+$/.test(row))).toBe(true);
+    // These views were painted over the spines or left bare fur beside the coat.
+    for (const f of [0, 1, 2, 6, 7, 8]) {
+      for (let y = 20; y <= 26; y++) {
+        [...HEDGEHOG.frames[f][y]].forEach((colour, x) => {
+          const covered = SANTA_COAT.frames[f][y][x] !== '.';
+          expect(covered).toBe('efghijklmnpqrstuv'.includes(colour));
+        });
+      }
     }
   });
 });

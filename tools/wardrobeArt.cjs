@@ -51,27 +51,33 @@ function hat(view) {
   return grid;
 }
 
-function coat(view) {
+function coat(view, pose = 0) {
   const grid = blank();
-  if (view < 2) {
-    stamp(grid, 7, 20, [
-      '....OCCCCCO....',
-      '...ORCTCTCRO...',
-      '..ORRRRCRRRRO..',
-      '.ORHRRRCRRRSRO.',
-      'OCRRRRRCRRRRRCO',
-      'OCTOBBBGGBBOTCO',
-      '.OOORRRGGRROOO.',
-      '...OCCCCCCCO...',
-      '....OOOOOOO....',
-    ]);
-    if (view === 1) {
-      // Back seam and belt, without a front opening or second buckle.
-      for (let y = 22; y <= 24; y++) grid[y][14] = 'R';
-      for (let x = 11; x <= 17; x++) grid[25][x] = 'B';
-      for (let x = 11; x <= 17; x++) grid[26][x] = 'R';
+  // The quills cover the entire back: painting a coat over them makes it
+  // float on the animal's shell. The exposed pale patch is its tail.
+  if (view === 1) return grid;
+  if (view === 0 || view === 2) {
+    const frame = base.frames[view * 3 + pose];
+    const fur = new Set('efghijklmnpqrstuv');
+    for (let y = 20; y <= 27; y++) {
+      const body = [...frame[y]].flatMap((c, x) => fur.has(c) ? [x] : []);
+      if (!body.length) continue;
+      const left = Math.min(...body), right = Math.max(...body);
+      for (const x of body) {
+        // Follow the original torso and sleeves instead of stamping a generic
+        // jacket across the differently shaped side views and their quills.
+        let colour = x <= left + 1 ? 'H' : x >= right - 1 ? 'S' : 'R';
+        if (view === 0 && x === 14) colour = 'C';
+        if (y === 20 || y === 27) colour = 'C';
+        if (y === 25) colour = view === 0 && x >= 13 && x <= 15 ? 'G' : 'B';
+        if (view === 0 && y === 24 && (x <= 8 || x >= 20)) colour = 'C';
+        if (view === 2 && y === 24 && x <= left + 2) colour = 'C';
+        grid[y][x] = colour;
+      }
     }
-  } else {
+    return grid;
+  }
+  // Preserve the right view already approved in the running wardrobe.
     stamp(grid, 6, 20, [
       '....OCCCCO.....',
       '...OCRRRRRO....',
@@ -83,13 +89,11 @@ function coat(view) {
       '..OCCCCCCCCCO..',
       '...OOOOOOOOO...',
     ]);
-    return view === 3 ? flip(grid) : grid;
-  }
-  return grid;
+  return flip(grid);
 }
 
 const hats = base.frames.map((_, f) => rows(hat(Math.floor(f / 3))));
-const coats = base.frames.map((_, f) => rows(coat(Math.floor(f / 3))));
+const coats = base.frames.map((_, f) => rows(coat(Math.floor(f / 3), f % 3)));
 const equipped = base.frames.map((frame, f) => frame.map((row, y) => [...row].map((c, x) => {
   // Match the original frame exactly, so lifting feet never shifts the outfit.
   return hats[f][y][x] !== '.' ? hats[f][y][x] : coats[f][y][x] !== '.' ? coats[f][y][x] : c;
