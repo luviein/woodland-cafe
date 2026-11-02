@@ -1,3 +1,5 @@
+import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
+import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
 import { FLOOR_CONFIG } from '../data/floorConfig';
@@ -340,6 +342,7 @@ export class OutdoorScene extends Phaser.Scene {
       const { width, height } = spriteSize(SPRITE_ART[art]);
       const base = stallBase(id);
       const stall = addStanding(this, base.x, base.y, art).setDepth(base.y);
+      const vendor = id === 'christmas' ? addChristmasVendor(this, base.y, () => this.onShopTapped(id)) : null;
       // The name sign hangs over the top of the stall (the plain stall's awning, the Christmas stall's roof).
       const sign = this.add
         .text(base.x, base.y - height + 4, SHOPS[id].name, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
@@ -350,7 +353,7 @@ export class OutdoorScene extends Phaser.Scene {
         .zone(base.x, base.y - height / 2, width + 4, height + 2)
         .setInteractive({ useHandCursor: true })
         .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onShopTapped(id));
-      arrangeable(this, this.location, `stall.${id}`, SHOPS[id].stall, stall, sign, tapArea);
+      arrangeable(this, this.location, `stall.${id}`, SHOPS[id].stall, stall, sign, tapArea, ...(vendor ? [vendor] : []));
     }
     // Arrange mode: forage spots, too, where the player can walk to them.
     arrangeRule(this, () =>
@@ -384,20 +387,12 @@ export class OutdoorScene extends Phaser.Scene {
     this.shop = { id, panel: panel.setDepth(HUD_DEPTH + 1) };
   }
 
-  /** The Christmas stall's catalogue: buying puts a piece in storage, like the Carpenter. */
+  /** Furniture goes to storage; one-time clothing purchases unlock the wardrobe. */
   private openCatalogue(): CataloguePanel {
     return new CataloguePanel(
       this,
       CHRISTMAS_CATALOGUE,
-      {
-        leaves: () => getGameState(this).leaves,
-        owned: (design) => {
-          const { placed, stored } = getGameState(this).furniture;
-          return stored[design] + placed.filter((p) => p.design === design).length;
-        },
-        canBuy: (design) => canBuyFurniture(getGameState(this), design),
-        buy: (design) => setGameState(this, buyFurniture(getGameState(this), design)),
-      },
+      christmasCatalogueShop(this),
       () => this.closeShop(),
     );
   }

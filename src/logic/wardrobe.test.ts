@@ -13,7 +13,7 @@ describe('wardrobe', () => {
         expect(outfit[slot]).toBe(clothingIn(slot).includes(id) ? id : null);
       }
     }
-    const state = { ...createNewGame(), outfit: { hat: 'winterBeanie', top: 'treeJumper', cape: 'redCape', shoes: 'buckleBoots' } as const };
+    const state = { ...createNewGame(), ownedClothing: CLOTHING_IDS, outfit: { hat: 'winterBeanie', top: 'treeJumper', cape: 'redCape', shoes: 'buckleBoots' } as const };
     expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
   });
 

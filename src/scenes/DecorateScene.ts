@@ -1,3 +1,4 @@
+import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CHRISTMAS_CATALOGUE, DESIGN_IDS, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
@@ -19,7 +20,7 @@ import { addArt, artKey } from '../ui/art';
 import { Button } from '../ui/Button';
 import { addCafeCanvas, cafeOrigin, drawCafeTiles, pieceDrawing } from '../ui/cafeTiles';
 import { CataloguePanel } from '../ui/CataloguePanel';
-import { canBuyFurniture, buyFurniture, shopsAt } from '../logic/shop';
+import { shopsAt } from '../logic/shop';
 import { devSettings } from '../debug/devSettings';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { getGameState, setGameState, tutorialEvent } from './gameStore';
@@ -576,19 +577,7 @@ export class DecorateScene extends Phaser.Scene {
     const panel = new CataloguePanel(
       this,
       CHRISTMAS_CATALOGUE,
-      {
-        leaves: () => getGameState(this).leaves,
-        owned: (design) => {
-          const { placed, stored } = this.furniture();
-          return stored[design] + placed.filter((p) => p.design === design).length;
-        },
-        canBuy: (design) => canBuyFurniture(getGameState(this), design),
-        buy: (design) => {
-          setGameState(this, buyFurniture(getGameState(this), design));
-          panel.refresh();
-          this.refresh();
-        },
-      },
+      christmasCatalogueShop(this, () => { panel.refresh(); this.refresh(); }),
       () => {
         // Destroyed once the close tap is over (see OutdoorScene.closeShop).
         this.catalogue = null;

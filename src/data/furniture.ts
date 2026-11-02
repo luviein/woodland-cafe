@@ -1,4 +1,5 @@
 import type { ArtName } from '../art/spriteArt';
+import { CLOTHING_IDS, type ClothingId } from './clothing';
 
 // Furniture the player can buy and place in the cafe (GAME_DESIGN.md §5.7,
 // §5.10). Every piece is one tile. A DESIGN is one thing you can buy (the
@@ -85,9 +86,10 @@ export const CHRISTMAS_CATALOGUE = {
     { name: 'Furniture', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'table' || kindOf(d) === 'chair') },
     { name: 'Decor', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'floorDecor') },
     { name: 'Wall', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'wallDecor') },
+    { name: 'Clothes', designs: CLOTHING_IDS },
   ],
   cover: ['christmasTree', 'giftBoxes', 'snowman'],
-} as const satisfies { title: string; edition: string; tabs: readonly { name: string; designs: readonly DesignId[] }[]; cover: readonly ArtName[] };
+} as const satisfies { title: string; edition: string; tabs: readonly { name: string; designs: readonly (DesignId | ClothingId)[] }[]; cover: readonly ArtName[] };
 
 /** How a kind is written in a layout grid (data/cafeLayout.ts). Wall decorations aren't on the floor, so they have none. */
 export const KIND_CHAR = { table: 'T', chair: 'S', floorDecor: 'X' } as const satisfies Partial<Record<FurnitureKind, string>>;

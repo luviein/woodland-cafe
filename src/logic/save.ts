@@ -8,6 +8,7 @@ import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
 import { readOutfit } from './wardrobe';
 import { readPlayerAnimal } from '../data/playerAnimals';
+import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 
 // Turning the game state into text for the save slot and back
 // (GAME_DESIGN.md §6.1). Saved text is untrusted: it may come from an older
@@ -25,7 +26,8 @@ import { readPlayerAnimal } from '../data/playerAnimals';
 // 3: independent wardrobe slots; older saves start without clothing.
 // 4: player animal; older saves keep the hedgehog.
 // 5: capes and shoes; older outfits retain their hat and top.
-export const SAVE_VERSION = 5;
+// 6: clothing ownership; pre-shop saves retain the free collection.
+export const SAVE_VERSION = 6;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -63,19 +65,26 @@ export function loadGame(text: string): LoadResult {
     return { ok: false, reason: 'The save is from a newer version of the game.' };
   }
   try {
-    return { ok: true, state: readState(file.state) };
+    return { ok: true, state: readState(file.state, file.version) };
   } catch (e) {
     if (e instanceof BadSave) return { ok: false, reason: `The save is damaged (${e.message}).` };
     throw e; // a bug in this file, not a bad save: let it show
   }
 }
 
-function readState(raw: Record<string, unknown>): GameState {
+function readState(raw: Record<string, unknown>, version: number): GameState {
   const fresh = createNewGame();
   const furniture = readFurniture(raw.furniture, fresh.furniture);
+  const ownedClothing = idList(raw, 'ownedClothing', version < 6 ? CLOTHING_IDS : fresh.ownedClothing, CLOTHING_IDS);
+  const outfit = readOutfit(raw.outfit);
+  for (const slot of CLOTHING_SLOTS) {
+    const item = outfit[slot];
+    if (item && !ownedClothing.includes(item)) outfit[slot] = null;
+  }
   return {
+    ownedClothing,
     animal: readPlayerAnimal(raw.animal),
-    outfit: readOutfit(raw.outfit),
+    outfit,
     day: field(raw, 'day', fresh.day, (v) => isWhole(v) && v >= 1),
     leaves: field(raw, 'leaves', fresh.leaves, (v) => isWhole(v) && v >= 0),
     ingredients: idList(raw, 'ingredients', fresh.ingredients, INGREDIENT_IDS),

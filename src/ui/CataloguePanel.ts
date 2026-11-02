@@ -2,7 +2,10 @@ import Phaser from 'phaser';
 import { PALETTE } from '../art/palette';
 import type { ArtName } from '../art/spriteArt';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { FURNITURE, type DesignId } from '../data/furniture';
+import { catalogueProduct, type CatalogueItem } from '../data/catalogueProducts';
+import type { PlayerAnimal } from '../data/playerAnimals';
+import { SPRITE_ART } from '../art/spriteArt';
+import { spriteSize } from '../art/pixelSprite';
 import { addArt } from './art';
 import { arrangeable } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
@@ -24,7 +27,7 @@ import { COLORS, TEXT, css } from './theme';
 /** One section of the catalogue, with a tab down the side. */
 export interface CatalogueTab {
   name: string;
-  designs: readonly DesignId[];
+  designs: readonly CatalogueItem[];
 }
 
 export interface CatalogueBook {
@@ -37,11 +40,12 @@ export interface CatalogueBook {
 
 /** What the catalogue needs from the game: what's owned and the wallet, and how to buy. */
 export interface CatalogueShop {
+  animal?: () => PlayerAnimal;
   leaves: () => number;
-  /** How many of a design the player has, placed or stored. */
-  owned: (design: DesignId) => number;
-  canBuy: (design: DesignId) => boolean;
-  buy: (design: DesignId) => void;
+  /** Furniture counts include placed and stored pieces; clothing is owned once. */
+  owned: (design: CatalogueItem) => number;
+  canBuy: (design: CatalogueItem) => boolean;
+  buy: (design: CatalogueItem) => void;
 }
 
 /** Two tall cards side by side on each page, so every picture fits at the same scale. */
@@ -77,7 +81,7 @@ type Side = 'left' | 'right';
 interface Page {
   side: Side;
   container: Phaser.GameObjects.Container;
-  cards: { design: DesignId; button: Button; owned: Phaser.GameObjects.Text }[];
+  cards: { design: CatalogueItem; button: Button; owned: Phaser.GameObjects.Text }[];
   /** Only on the right page: "Your leaves:", the leaf, the amount. */
   wallet?: { label: Phaser.GameObjects.Text; leaf: Phaser.GameObjects.Image; amount: Phaser.GameObjects.Text };
 }
@@ -156,7 +160,8 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
       for (const { design, button, owned } of page.cards) {
         button.setEnabled(this.shop.canBuy(design));
         const n = this.shop.owned(design);
-        owned.setText(n > 0 ? `have ${n}` : '');
+        const unique = catalogueProduct(design).unique;
+        owned.setText(n > 0 ? unique ? 'Owned' : `have ${n}` : '');
       }
     }
   }
@@ -255,10 +260,11 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     this.leftBoard = s.add.rectangle(SPINE_X, top, HALF, height, COLORS.counter).setOrigin(1, 0).setStrokeStyle(3, COLORS.ink).setVisible(false);
     b.add([this.leftBoard, s.add.rectangle(SPINE_X, top, HALF, height, COLORS.counter).setOrigin(0, 0).setStrokeStyle(3, COLORS.ink)]);
     // Tabs down the right edge (a section each, its name running down it) and Close: shown once open.
+    const tabHeight = Math.min(TAB.height, Math.floor((height - 32 - (this.catalogue.tabs.length - 1) * TAB.gap) / this.catalogue.tabs.length));
     this.tabButtons = this.catalogue.tabs.map((tab, i) => {
-      const y = top + 16 + TAB.height / 2 + i * (TAB.height + TAB.gap);
-      const button = new Button(s, TAB.x, y, TAB.width, TAB.height, '', COLORS.book, () => this.showTab(i));
-      button.add(s.add.text(0, 0, tab.name, { ...TEXT.body, fontSize: '11px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setAngle(90));
+      const y = top + 16 + tabHeight / 2 + i * (tabHeight + TAB.gap);
+      const button = new Button(s, TAB.x, y, TAB.width, tabHeight, '', COLORS.book, () => this.showTab(i));
+      button.add(s.add.text(0, 0, tab.name, { ...TEXT.body, fontSize: tabHeight < 70 ? '10px' : '11px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setAngle(90));
       return button;
     });
     const close = this.closeButton(BOOK.left + BOOK.width - 2, top + 2);
@@ -402,13 +408,22 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
   }
 
   /** One item: its picture, name, a line about it, how many you have, and its price to buy one. */
-  private createCard(page: Phaser.GameObjects.Container, design: DesignId, x: number, y: number): Page['cards'][number] {
+  private createCard(page: Phaser.GameObjects.Container, design: CatalogueItem, x: number, y: number): Page['cards'][number] {
     const s = this.scene;
-    const def = FURNITURE[design];
+    const def = catalogueProduct(design, this.shop.animal?.());
     const midX = x + CARD.width / 2;
     page.add(s.add.rectangle(midX, y + CARD.height / 2, CARD.width, CARD.height, PALETTE.white).setStrokeStyle(2, COLORS.paperEdge));
     // The picture standing on the picture box's bottom, at the same scale as every other.
-    page.add(addArt(s, midX, y + 10 + ART_BOX, def.art).setOrigin(0.5, 1).setScale(ART_SCALE));
+    const image = addArt(s, midX, y + 10 + ART_BOX, def.art).setOrigin(0.5, 1).setScale(ART_SCALE);
+    if (def.unique) {
+      const sprite = SPRITE_ART[def.art], size = spriteSize(sprite);
+      const points = sprite.frames[0].flatMap((row, py) => [...row].flatMap((c, px) => c === '.' ? [] : [{ x: px, y: py }]));
+      if (points.length) {
+        const xs = points.map(p => p.x), ys = points.map(p => p.y);
+        image.setOrigin((Math.min(...xs) + Math.max(...xs) + 1) / 2 / size.width, (Math.min(...ys) + Math.max(...ys) + 1) / 2 / size.height).setY(y + 10 + ART_BOX / 2);
+      }
+    }
+    page.add(image);
     const name = s.add.text(midX, y + ART_BOX + 20, def.name, { ...NAME, align: 'center', wordWrap: { width: CARD.width - 8 } }).setOrigin(0.5, 0);
     // Right under the name, however many lines it took.
     const blurb = s.add.text(midX, name.y + name.height + 1, def.blurb, { ...SMALL, align: 'center', wordWrap: { width: CARD.width - 10 } }).setOrigin(0.5, 0);

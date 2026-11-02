@@ -8,6 +8,7 @@ import { availableRecipes } from './orders';
 describe('createNewGame', () => {
   it('starts on day 1 with no Leaves, the starter ingredients and their stock, no upgrades, and the tutorial ahead', () => {
     expect(createNewGame()).toEqual({
+      ownedClothing: ['santaHat', 'santaCoat'],
       animal: 'hedgehog',
       outfit: { hat: null, top: null, cape: null, shoes: null },
       day: 1,

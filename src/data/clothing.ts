@@ -20,6 +20,11 @@ export type ClothingId = keyof typeof CLOTHING;
 export type ClothingSlot = (typeof CLOTHING)[ClothingId]['slot'];
 export const CLOTHING_SLOTS = ['hat', 'top', 'cape', 'shoes'] as const;
 export const CLOTHING_IDS = Object.keys(CLOTHING) as ClothingId[];
+export const STARTER_CLOTHING: readonly ClothingId[] = ['santaHat', 'santaCoat'];
+export function clothingPrice(id: ClothingId): number {
+  if (id === 'antlers' || id === 'buckleBoots' || id === 'fluffyBoots') return 20;
+  return { hat: 15, top: 25, cape: 30, shoes: 15 }[CLOTHING[id].slot];
+}
 export type ClothingFor<S extends ClothingSlot> = {
   [K in ClothingId]: (typeof CLOTHING)[K]['slot'] extends S ? K : never
 }[ClothingId];

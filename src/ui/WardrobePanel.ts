@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
-import { changeAnimal, equip, type Outfit } from '../logic/wardrobe';
+import { changeAnimal, type Outfit } from '../logic/wardrobe';
+import { toggleClothing } from '../logic/clothingShop';
 import { ANIMAL_NAMES, PLAYER_ANIMALS } from '../data/playerAnimals';
 import { clothingArt } from '../data/clothingFits';
 import { CLOTHING, CLOTHING_SLOTS, clothingIn, type ClothingId } from '../data/clothing';
@@ -123,8 +124,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const item = clothingIn(this.slot)[index];
     if (!item) return;
     const state = getGameState(this.scene);
-    const outfit = equip(state.outfit, this.slot, state.outfit[this.slot] === item ? null : item);
-    setGameState(this.scene, { ...state, outfit });
+    setGameState(this.scene, toggleClothing(state, item));
     this.refresh();
   }
 
@@ -144,7 +144,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
   }
 
   private refresh(): void {
-    const { animal, outfit } = getGameState(this.scene);
+    const { animal, outfit, ownedClothing } = getGameState(this.scene);
     const frame = this.view * 3;
     const scale = Math.min(4, Math.floor(120 / spriteSize(SPRITE_ART[animal]).height));
     this.critterImage.setTexture(artKey(animal), frame).setScale(scale);
@@ -161,15 +161,18 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       for (const object of Object.values(card)) object.setVisible(!!item);
       if (!item || this.slot === 'animal') return;
       const equipped = outfit[this.slot] === item;
+      const owned = ownedClothing.includes(item);
+      card.button.setEnabled(owned);
+      card.image.setAlpha(owned ? 1 : 0.35);
       card.image.setTexture(artKey(clothingArt(animal, item)), 0);
       this.centreItem(card.image, animal, item);
       card.label.setText(CLOTHING[item].name);
       card.outline.setVisible(equipped);
-      card.worn.setVisible(equipped);
+      card.worn.setText(owned ? 'Worn' : 'Locked').setFontSize(owned ? 10 : 9).setVisible(equipped || !owned);
     });
     for (const object of this.animalObjects) object.setVisible(choosingAnimal);
     this.animalButtons.forEach((button, i) => button.setEnabled(PLAYER_ANIMALS[i] !== animal));
     (['hat', 'top', 'cape', 'shoes', 'animal'] as const).forEach((slot, i) => this.tabs[i].setEnabled(this.slot !== slot));
-    this.status.setText(`${ANIMAL_NAMES[animal]} · Saved with your game`);
+    this.status.setText(`${ANIMAL_NAMES[animal]} · Locked items: Christmas catalogue`);
   }
 }
