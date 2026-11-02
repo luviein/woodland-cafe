@@ -1,5 +1,6 @@
 import type { PixelSprite } from './pixelSprite';
 import { MANNEQUIN_ART } from './sprites/mannequins';
+import { CRITTER_SKELETON } from './sprites/critterSkeleton';
 import { DEER_VENDOR_IDLE } from './sprites/stallVendorIdle';
 import { COLLECTION_ART } from './sprites/christmasClothing';
 import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
@@ -53,6 +54,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 
 export const SPRITE_ART = {
   ...MANNEQUIN_ART,
+  critterSkeleton: CRITTER_SKELETON,
   deerVendorIdle: DEER_VENDOR_IDLE,
   ...COLLECTION_ART,
   // Cafe

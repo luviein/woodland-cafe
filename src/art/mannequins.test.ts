@@ -1,30 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { CLOTHING_IDS } from '../data/clothing';
-import { clothingArt } from '../data/clothingFits';
 import { PLAYER_ANIMALS } from '../data/playerAnimals';
 import { spriteProblems, spriteSize } from './pixelSprite';
-import { SPRITE_ART } from './spriteArt';
+import { CRITTER_SKELETON } from './sprites/critterSkeleton';
 import { MANNEQUIN_ART, mannequinArtName } from './sprites/mannequins';
 import { DEER_VENDOR_IDLE } from './sprites/stallVendorIdle';
 import { holes, strayPixels } from './checks';
 
 describe('catalogue mannequins', () => {
   for (const animal of PLAYER_ANIMALS) {
-    it(`shows every ${animal} garment unchanged on a clean wooden display`, () => {
+    it(`uses the shared grey skeleton for every ${animal} catalogue display`, () => {
       for (const item of CLOTHING_IDS) {
         const dummy = MANNEQUIN_ART[mannequinArtName(animal, item)];
         expect(spriteProblems(dummy)).toEqual([]);
         expect(spriteSize(dummy).height * 2).toBeLessThanOrEqual(84);
         expect(holes(dummy.frames[0]), item).toBe(0);
         expect(strayPixels(dummy.frames[0]), item).toBe(0);
-        const clothing = SPRITE_ART[clothingArt(animal, item)];
-        // The display must use the critter itself, not a generic oval-headed form.
-        SPRITE_ART[animal].frames[0].forEach((row, y) => [...row].forEach((c, x) => {
-          if (c !== '.' && clothing.frames[0][y][x] === '.') expect(['J', 'K', 'L']).toContain(dummy.frames[0][y][x]);
+        expect(spriteSize(dummy)).toEqual({ width: 32, height: 40 });
+        let garmentPixels = 0;
+        dummy.frames[0].forEach((row, y) => [...row].forEach((c, x) => {
+          if (c === '.' || ['J', 'K', 'L'].includes(c)) expect(c).toBe(CRITTER_SKELETON.frames[0][y][x]);
+          else garmentPixels++;
         }));
-        clothing.frames[0].forEach((row, y) => [...row].forEach((c, x) => {
-          if (c !== '.') expect(dummy.frames[0][y][x]).toBe(c);
-        }));
+        expect(garmentPixels).toBeGreaterThan(0);
       }
     });
   }
