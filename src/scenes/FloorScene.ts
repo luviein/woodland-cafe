@@ -31,6 +31,8 @@ import { pointKey, samePoint, tableById, type Layout, type Point } from '../logi
 import { puffOfDust } from '../ui/effects';
 import { StoryBox, type BoxRect } from '../ui/StoryBox';
 import { bottomBoxLeft } from '../ui/hudLayout';
+import { arrangeable, sizeBox } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
 import { TUTORIAL, type TutorialStep } from '../data/tutorial';
 import { finishedBy, floorGuide, isGuidedStart, tutorialOrder, type TutorialEvent, type TutorialState } from '../logic/tutorial';
 import { playSound } from '../audio/audio';
@@ -76,7 +78,11 @@ function facingToward(from: Point, to: Point): View {
 /** The tutorial steps Grandma Badger talks through here on the floor. */
 const FLOOR_STEPS: ReadonlySet<TutorialStep> = new Set(['intro', 'takeOrder', 'clean', 'freePlay']);
 /** Her box: under the cafe, clear of the corner buttons. */
-const guideRect = (): BoxRect => ({ x: bottomBoxLeft(), y: 294, width: 604 - bottomBoxLeft(), height: 62 });
+/** Grandma's box along the bottom (movable in Arrange mode); it reaches to the same right edge wherever it starts. */
+const guideRect = (): BoxRect => {
+  const { x, y } = layoutPoint('floor', 'guide', { x: bottomBoxLeft(), y: 294 });
+  return { x, y, width: 604 - x, height: 62 };
+};
 
 interface CustomerSprite {
   body: Phaser.GameObjects.Container;
@@ -196,8 +202,12 @@ export class FloorScene extends Phaser.Scene {
     this.pendingEvent = null;
     this.day = createDay();
     // Side by side on the top wall, clear of the floor.
-    this.clock = new ClockDisplay(this, 88, 8);
-    const wallet = new WalletDisplay(this, 8, 8);
+    const clockAt = layoutPoint('floor', 'clock', { x: 88, y: 8 });
+    this.clock = new ClockDisplay(this, clockAt.x, clockAt.y);
+    arrangeable(this, 'floor', 'clock', clockAt, this.clock);
+    const walletAt = layoutPoint('floor', 'wallet', { x: 8, y: 8 });
+    const wallet = new WalletDisplay(this, walletAt.x, walletAt.y);
+    arrangeable(this, 'floor', 'wallet', walletAt, wallet);
     watchGameState(this, (state) => wallet.setLeaves(state.leaves));
 
     // Small outline showing where the player is heading; hidden when idle.
@@ -348,8 +358,9 @@ export class FloorScene extends Phaser.Scene {
       this.guideStep = step;
       this.pendingEvent = null;
       if (step !== 'done' && FLOOR_STEPS.has(step)) {
+        const rect = guideRect();
         this.guide = new StoryBox(this, {
-          rect: guideRect(),
+          rect,
           depth: OVERLAY + 100,
           step: TUTORIAL[step],
           arrow: (line) => this.tutorialArrow(TUTORIAL[step].pointsAt[line]),
@@ -357,6 +368,7 @@ export class FloorScene extends Phaser.Scene {
           onFinished: () => tutorialEvent(this, this.pendingEvent ?? 'next'),
           onSkip: () => tutorialEvent(this, 'skip'),
         });
+        arrangeable(this, 'floor', 'guide', rect, this.guide, ...sizeBox(this, rect.x, rect.y, rect.width, rect.height));
       }
     }
     this.guide?.refreshArrow();
