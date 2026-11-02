@@ -4,7 +4,7 @@ const P = require('../.claude/skills/pixel-sprites/scripts/pixel.cjs');
 const sides = require('../src/data/clothingRig.json');
 
 function attachSideHat(source, frame, animal, view) {
-  const { head: [left, right, brim], eyes } = sides[animal][view === 2 ? 'left' : 'right'];
+  const { head: [left, right, brim], eyes, outlineJoin = [] } = sides[animal][view === 2 ? 'left' : 'right'];
   const grid = frame.map(row => [...'.'.repeat(row.length)]);
   const xs = source.flatMap(row => [...row].flatMap((c, x) => c === '.' ? [] : [x]));
   const start = Math.min(...xs), width = Math.max(...xs) - start + 1;
@@ -28,6 +28,9 @@ function attachSideHat(source, frame, animal, view) {
   P.fillHoles(combined, 'O').forEach((row, y) => [...row].forEach((c, x) => {
     if (c !== combined[y][x]) grid[y][x] = c;
   }));
+  // A forehead may step outward below its hat band. Join that corner with
+  // the same dark outline instead of exposing the base sprite's fur shading.
+  for (const [x, y] of outlineJoin) grid[y][x] = 'O';
   return grid;
 }
 

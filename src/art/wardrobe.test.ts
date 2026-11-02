@@ -36,6 +36,12 @@ describe('hedgehog Christmas clothing', () => {
 });
 
 describe('shared clothing fittings', () => {
+  it('joins the rabbit right brim to the forehead outline in every pose', () => {
+    const hat = SPRITE_ART[CLOTHING_FITS.rabbit.santaHat];
+    for (const frame of hat.frames.slice(9, 12)) {
+      for (const [x, y] of CLOTHING_RIG.rabbit.right.outlineJoin) expect(frame[y][x]).toBe('O');
+    }
+  });
   it('attaches every side hat to its forehead while keeping the eye area clear', () => {
     for (const [animal, rig] of Object.entries(CLOTHING_RIG)) {
       const fit = CLOTHING_FITS[animal as keyof typeof CLOTHING_FITS];
