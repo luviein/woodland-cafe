@@ -18,6 +18,7 @@ import { INGREDIENT_IDS } from '../data/ingredients';
 /** The Marketplace stalls converted from the player's drawings. */
 const MARKET_STALLS: readonly ArtName[] = ['pantryStall', 'specialtyStall', 'toolsStall', 'carpenterStall', 'noticeBoard'];
 const WARDROBE_ART: readonly ArtName[] = [
+  'foxSantaHat', 'foxSantaCoat',
   ...Object.keys(COLLECTION_ART) as ArtName[],
   'santaHat', 'santaCoat', 'hedgehogSantaPreview',
   'rabbitSantaHat', 'rabbitSantaCoat', 'rabbitSantaPreview',

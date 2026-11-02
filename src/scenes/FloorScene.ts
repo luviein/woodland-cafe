@@ -49,7 +49,9 @@ import {
 import { destination, isMoving, walkerPosition, type Walker } from '../logic/walker';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
-import { createCleanerSprite, createCritter, createPlayerSprite, critterHeadroom, setBobbing, setFacing } from '../ui/sprites';
+import { createCleanerSprite, createDressedCritter, createPlayerSprite, critterHeadroom, setBobbing, setFacing } from '../ui/sprites';
+import { christmasCustomerOutfit } from '../logic/christmasOutfits';
+import type { Outfit } from '../logic/wardrobe';
 import type { View } from '../art/sprites/sheetCritters';
 import { customerArt } from '../art/spriteArt';
 import { WalletDisplay } from '../ui/WalletDisplay';
@@ -145,6 +147,7 @@ export class FloorScene extends Phaser.Scene {
   private patienceBars!: Phaser.GameObjects.Graphics;
   /** One sprite per customer id, created and destroyed as customers come and go. */
   private customerSprites = new Map<number, CustomerSprite>();
+  private customerOutfits = new Map<number, Outfit>();
 
   /** True while the prep station is on screen (taps on the floor are ignored). */
   private prepOpen = false;
@@ -194,6 +197,7 @@ export class FloorScene extends Phaser.Scene {
     // Map entries point at the previous run's destroyed sprites if the scene
     // restarts, so start with a fresh map.
     this.customerSprites = new Map();
+    this.customerOutfits = new Map();
     this.prepOpen = false;
     this.prepCustomerId = null;
     this.summaryOpen = false;
@@ -496,6 +500,7 @@ export class FloorScene extends Phaser.Scene {
     const request: PrepRequest = {
       order,
       art: customerArt(customerId),
+      outfit: this.outfitFor(customerId),
       clock: () => ({ text: clockText(this.day), open: this.floor.doorsOpen }),
       patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
       onServe: (result, payment, plate) => {
@@ -711,7 +716,7 @@ export class FloorScene extends Phaser.Scene {
   /** A customer: a fox, rabbit, deer or mouse, picked by id. */
   private createCustomerSprite(id: number): CustomerSprite {
     // Its depth follows its feet every frame (syncCustomerSprites).
-    const body = createCritter(this, customerArt(id));
+    const body = createDressedCritter(this, customerArt(id), this.outfitFor(id));
     // Status text above the head (see statusLabel), on a layer above every
     // character (with the patience bars, under the progress bar), with a
     // dark outline so it reads on any floor colour.
@@ -720,5 +725,14 @@ export class FloorScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(OVERLAY + 15);
     return { body, label };
+  }
+
+  private outfitFor(id: number): Outfit {
+    let outfit = this.customerOutfits.get(id);
+    if (!outfit) {
+      outfit = christmasCustomerOutfit(id, getGameState(this).day, new Date(), !!devSettings.allSeasons);
+      this.customerOutfits.set(id, outfit);
+    }
+    return outfit;
   }
 }

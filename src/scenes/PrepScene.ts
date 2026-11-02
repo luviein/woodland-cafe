@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import type { Outfit } from '../logic/wardrobe';
+import { outfitImages } from '../ui/sprites';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { devActions } from '../debug/devActions';
@@ -71,6 +73,8 @@ export interface PrepRequest {
   order: Order;
   /** So the customer behind the counter is the same animal as on the floor. */
   art: CustomerArt;
+  /** The same festive outfit as their floor sprite, fixed for this visit. */
+  outfit?: Outfit;
   /** Patience left, 0..1, read every frame for the bar. The floor keeps it ticking. */
   patience: () => number;
   /** The day clock, read every frame: the day keeps going while the player cooks. */
@@ -630,8 +634,10 @@ export class PrepScene extends Phaser.Scene {
    * numbers, so the pixels stay square). (x, y) = body centre; the counter,
    * drawn after, hides the legs.
    */
-  private drawCustomer(x: number, y: number): Phaser.GameObjects.Image {
+  private drawCustomer(x: number, y: number): Phaser.GameObjects.Container {
     const scale = Math.max(1, Math.round(96 / spriteSize(SPRITE_ART[this.request.art]).height));
-    return addArt(this, x, y - 40, this.request.art, 0).setOrigin(0.5, 0).setScale(scale);
+    const body = addArt(this, 0, 0, this.request.art, 0).setOrigin(0.5, 0);
+    const layers = this.request.outfit ? outfitImages(this, this.request.art, this.request.outfit).map(image => image.setOrigin(0.5, 0)) : [];
+    return this.add.container(x, y - 40, [body, ...layers]).setScale(scale);
   }
 }

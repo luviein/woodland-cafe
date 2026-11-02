@@ -2,5 +2,6 @@
   "hedgehog": { "left": { "head": [4, 22, 7], "eyes": 13 }, "right": { "head": [6, 24, 7], "eyes": 13 } },
   "rabbit": { "left": { "head": [1, 18, 12], "eyes": 18 }, "right": { "head": [3, 18, 12], "eyes": 18, "outlineJoin": [[19, 13], [18, 14], [19, 14]], "coatOutline": [[5, 24], [6, 25], [5, 26], [5, 27], [5, 28], [5, 29], [5, 30], [5, 31], [5, 32], [6, 33]] } },
   "mouse": { "left": { "head": [2, 20, 8], "eyes": 13 }, "right": { "head": [5, 23, 7], "eyes": 12 } },
-  "deer": { "left": { "head": [3, 21, 10], "eyes": 16 }, "right": { "head": [5, 23, 10], "eyes": 16 } }
+  "deer": { "left": { "head": [3, 21, 10], "eyes": 16 }, "right": { "head": [5, 23, 10], "eyes": 16 } },
+  "fox": { "left": { "head": [4, 18, 8], "eyes": 12 }, "right": { "head": [14, 28, 8], "eyes": 12 } }
 }

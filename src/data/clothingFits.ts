@@ -1,5 +1,5 @@
 import type { ArtName } from '../art/spriteArt';
-import type { PlayerAnimal } from './playerAnimals';
+import type { ClothingAnimal } from './clothingAnimals';
 import type { ClothingId } from './clothing';
 import type { CollectionArtName } from '../art/sprites/christmasClothing';
 
@@ -9,9 +9,10 @@ export const CLOTHING_FITS = {
   rabbit: { santaHat: 'rabbitSantaHat', santaCoat: 'rabbitSantaCoat' },
   mouse: { santaHat: 'mouseSantaHat', santaCoat: 'mouseSantaCoat' },
   deer: { santaHat: 'deerSantaHat', santaCoat: 'deerSantaCoat' },
-} as const satisfies Record<PlayerAnimal, Record<'santaHat' | 'santaCoat', ArtName>>;
+  fox: { santaHat: 'foxSantaHat', santaCoat: 'foxSantaCoat' },
+} as const satisfies Record<ClothingAnimal, Record<'santaHat' | 'santaCoat', ArtName>>;
 
-export function clothingArt(animal: PlayerAnimal, item: ClothingId): ArtName {
+export function clothingArt(animal: ClothingAnimal, item: ClothingId): ArtName {
   if (item === 'santaHat' || item === 'santaCoat') return CLOTHING_FITS[animal][item];
   return `${animal}${item[0].toUpperCase()}${item.slice(1)}` as CollectionArtName;
 }

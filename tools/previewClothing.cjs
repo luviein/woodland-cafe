@@ -15,6 +15,6 @@ const body = SPRITE_ART[animal];
 const items = CLOTHING_IDS.map(id => {
   const item = SPRITE_ART[clothingArt(animal, id)];
   const rows = body.frames[+frame].map((row, y) => [...row].map((c, x) => item.frames[+frame][y][x] === '.' ? c : item.frames[+frame][y][x]).join(''));
-  return { rows, legend: { ...body.legend, ...item.legend } };
+  return { rows, legend: { ...item.legend, ...body.legend } };
 });
 P.preview(path.resolve(output), items, { scale: 8, perRow: 4 });

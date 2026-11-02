@@ -3,22 +3,24 @@ import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sheetCritters';
 import { SANTA_COAT, SANTA_HAT } from './wardrobe';
 import { DEER_SANTA_COAT, DEER_SANTA_HAT, MOUSE_SANTA_COAT, MOUSE_SANTA_HAT, RABBIT_SANTA_COAT, RABBIT_SANTA_HAT } from './wardrobeCritters';
 import { CLOTHING, CLOTHING_IDS, type ClothingId } from '../../data/clothing';
-import { PLAYER_ANIMALS, type PlayerAnimal } from '../../data/playerAnimals';
+import { CLOTHING_ANIMALS, type ClothingAnimal } from '../../data/clothingAnimals';
+import { FOX } from './sheetCritters2';
+import { FOX_SANTA_COAT, FOX_SANTA_HAT } from './foxClothing';
 
 // These pieces inherit the reviewed fittings, rather than inventing another
 // set of offsets. All decoration stays inside the existing garment silhouette.
-const BODIES = { hedgehog: HEDGEHOG, rabbit: RABBIT, mouse: MOUSE, deer: DEER };
-const HATS = { hedgehog: SANTA_HAT, rabbit: RABBIT_SANTA_HAT, mouse: MOUSE_SANTA_HAT, deer: DEER_SANTA_HAT };
-const TOPS = { hedgehog: SANTA_COAT, rabbit: RABBIT_SANTA_COAT, mouse: MOUSE_SANTA_COAT, deer: DEER_SANTA_COAT };
+const BODIES = { hedgehog: HEDGEHOG, rabbit: RABBIT, mouse: MOUSE, deer: DEER, fox: FOX };
+const HATS = { hedgehog: SANTA_HAT, rabbit: RABBIT_SANTA_HAT, mouse: MOUSE_SANTA_HAT, deer: DEER_SANTA_HAT, fox: FOX_SANTA_HAT };
+const TOPS = { hedgehog: SANTA_COAT, rabbit: RABBIT_SANTA_COAT, mouse: MOUSE_SANTA_COAT, deer: DEER_SANTA_COAT, fox: FOX_SANTA_COAT };
 type NewItem = Exclude<ClothingId, 'santaHat' | 'santaCoat'>;
-export type CollectionArtName = `${PlayerAnimal}${Capitalize<NewItem>}`;
+export type CollectionArtName = `${ClothingAnimal}${Capitalize<NewItem>}`;
 const LEGEND = {
   ...SANTA_HAT.legend, O: '#352522', R: '#bd3f36', S: '#8e302e', H: '#e35a43',
   C: '#fff0cd', T: '#d9bc91', B: '#47312b', G: '#e9b64d',
   Z: '#426b3b', Y: '#294b33', W: '#92ac60', D: '#9b6346', N: '#704634',
 } as const;
 
-function garment(animal: PlayerAnimal, id: NewItem): PixelSprite {
+function garment(animal: ClothingAnimal, id: NewItem): PixelSprite {
   const body = BODIES[animal];
   const slot = CLOTHING[id].slot;
   const frames = body.frames.map((frame, f) => {
@@ -128,6 +130,7 @@ function garment(animal: PlayerAnimal, id: NewItem): PixelSprite {
         if ((animal === 'rabbit' || animal === 'deer') && ((view === 2 && x >= 16) || (view === 3 && x <= (animal === 'deer' ? 10 : 5)))) continue;
         if (animal === 'deer' && view === 1 && x >= 10 && x <= 16) continue;
         if (animal === 'hedgehog' && view === 1 && x >= 11 && x <= 17) continue;
+        if (animal === 'fox' && (view === 1 || (view === 2 && x >= 19) || (view === 3 && x <= 13))) continue;
         grid[y][x] = 'ao'.includes(c) || y === frame.length - 1 ? 'O'
           : y === first ? id === 'brownBoots' || id === 'buckleBoots' ? 'T' : 'C'
           : id === 'redBoots' ? 'R' : id === 'fluffyBoots' ? 'T' : 'N';
@@ -139,7 +142,7 @@ function garment(animal: PlayerAnimal, id: NewItem): PixelSprite {
   return { legend: LEGEND, frames };
 }
 
-export const COLLECTION_ART = Object.fromEntries(PLAYER_ANIMALS.flatMap(animal =>
+export const COLLECTION_ART = Object.fromEntries(CLOTHING_ANIMALS.flatMap(animal =>
   CLOTHING_IDS.filter((id): id is NewItem => id !== 'santaHat' && id !== 'santaCoat').map(id =>
     [`${animal}${id[0].toUpperCase()}${id.slice(1)}`, garment(animal, id)],
   ),

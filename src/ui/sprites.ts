@@ -8,6 +8,8 @@ import { getGameState, watchGameState } from '../scenes/gameStore';
 import { WardrobePanel } from './WardrobePanel';
 import { clothingArt } from '../data/clothingFits';
 import { CLOTHING_SLOTS } from '../data/clothing';
+import type { ClothingAnimal } from '../data/clothingAnimals';
+import type { Outfit } from '../logic/wardrobe';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
 // so they look the same everywhere.
@@ -34,6 +36,20 @@ export function createCritter(scene: Phaser.Scene, art: ArtName): Phaser.GameObj
   const container = scene.add.container(0, 0, [image]);
   animateWalking(scene, container, image, VIEW_ART.has(art));
   return container;
+}
+
+/** Clothing images in drawing order, reusable on the floor and prep portrait. */
+export function outfitImages(scene: Phaser.Scene, animal: ClothingAnimal, outfit: Outfit): Phaser.GameObjects.Image[] {
+  return (['shoes', 'top', 'cape', 'hat'] as const).flatMap(slot => {
+    const item = outfit[slot];
+    return item ? [scene.add.image(0, 0, artKey(clothingArt(animal, item)), 0)] : [];
+  });
+}
+
+export function createDressedCritter(scene: Phaser.Scene, animal: ClothingAnimal, outfit: Outfit): Phaser.GameObjects.Container {
+  const critter = createCritter(scene, animal);
+  critter.add(outfitImages(scene, animal, outfit).map(image => image.setOrigin(0.5, 1).setPosition(TILE_SIZE / 2, TILE_SIZE)));
+  return critter;
 }
 
 /**
@@ -110,11 +126,11 @@ const BOB = 'bob';
  * different moment so a queue doesn't bob in step.
  */
 export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): void {
-  const image = critter.list[0] as Phaser.GameObjects.Image;
+  const images = critter.list.filter((object): object is Phaser.GameObjects.Image => object instanceof Phaser.GameObjects.Image);
   const tween = critter.getData(BOB) as Phaser.Tweens.Tween | undefined;
   if (on && !tween) {
     const bob = critter.scene.tweens.add({
-      targets: image,
+      targets: images,
       y: TILE_SIZE - 1,
       // A 1px move can't glide (pixels snap to whole steps), so instead of a
       // constant wobble it's a slow rhythm: up, rest, down, rest.
@@ -130,7 +146,7 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
   } else if (!on && tween) {
     tween.remove();
     critter.setData(BOB, undefined);
-    image.y = TILE_SIZE;
+    for (const image of images) image.y = TILE_SIZE;
   }
 }
 

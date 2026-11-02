@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CLOTHING_IDS } from '../data/clothing';
 import { clothingArt } from '../data/clothingFits';
-import { PLAYER_ANIMALS } from '../data/playerAnimals';
+import { CLOTHING_ANIMALS } from '../data/clothingAnimals';
 import { holes, strayPixels } from './checks';
 import { spriteSize, spriteProblems } from './pixelSprite';
 import { SPRITE_ART } from './spriteArt';
@@ -22,7 +22,7 @@ describe('Christmas clothing collection', () => {
       }
     }
   });
-  for (const animal of PLAYER_ANIMALS) {
+  for (const animal of CLOTHING_ANIMALS) {
     it(`fits ${animal}'s frame grid without holes or stray pixels in every outfit view`, () => {
       const body = SPRITE_ART[animal];
       for (const id of CLOTHING_IDS) {

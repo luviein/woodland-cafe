@@ -3,6 +3,7 @@ import { CATALOGUE_SAMPLES } from './sprites/catalogueSamples';
 import { CRITTER_SKELETON } from './sprites/critterSkeleton';
 import { DEER_VENDOR_IDLE } from './sprites/stallVendorIdle';
 import { COLLECTION_ART } from './sprites/christmasClothing';
+import { FOX_SANTA_COAT, FOX_SANTA_HAT } from './sprites/foxClothing';
 import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
 import {
   DEER_SANTA_COAT, DEER_SANTA_HAT, DEER_SANTA_PREVIEW,
@@ -57,6 +58,8 @@ export const SPRITE_ART = {
   critterSkeleton: CRITTER_SKELETON,
   deerVendorIdle: DEER_VENDOR_IDLE,
   ...COLLECTION_ART,
+  foxSantaHat: FOX_SANTA_HAT,
+  foxSantaCoat: FOX_SANTA_COAT,
   // Cafe
   floor: FLOOR,
   wall: WALL,
