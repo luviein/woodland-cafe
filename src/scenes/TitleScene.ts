@@ -3,6 +3,12 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import type { GameState } from '../logic/gameState';
 import { addArt } from '../ui/art';
 import { LeafText } from '../ui/LeafText';
+import { arrangeable, type Placeable } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
+import type { Point } from '../logic/layout';
+
+/** Where something goes on the title screen: by name, movable in Arrange mode (GAME_DESIGN.md §9.3). */
+const at = (name: string, x: number, y: number): Point => layoutPoint('title', name, { x, y });
 import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { Button } from '../ui/Button';
 import { addGround, addStanding, addTree } from '../ui/sprites';
@@ -26,25 +32,36 @@ export class TitleScene extends Phaser.Scene {
     this.drawScene();
     // Light text with a dark outline, so it reads on the grass.
     const outlined = { stroke: css(COLORS.ink), strokeThickness: 4 };
-    this.add
-      .text(cx, 90, 'Woodland Cafe', { ...TEXT.heading, fontSize: '32px', color: css(COLORS.paper), ...outlined })
+    const titleAt = at('title', cx, 90);
+    const title = this.add
+      .text(titleAt.x, titleAt.y, 'Woodland Cafe', { ...TEXT.heading, fontSize: '32px', color: css(COLORS.paper), ...outlined })
       .setOrigin(0.5);
-    this.add
-      .text(cx, 124, 'A cozy cafe for woodland critters', { ...TEXT.body, color: css(COLORS.paper), ...outlined })
+    arrangeable(this, 'title', 'title', titleAt, title);
+    const subtitleAt = at('subtitle', cx, 124);
+    const subtitle = this.add
+      .text(subtitleAt.x, subtitleAt.y, 'A cozy cafe for woodland critters', { ...TEXT.body, color: css(COLORS.paper), ...outlined })
       .setOrigin(0.5);
+    arrangeable(this, 'title', 'subtitle', subtitleAt, subtitle);
+    // The menu moves as one, by its middle (where Continue or New game is).
+    const menu = at('menu', cx, 196);
+    const dx = menu.x - cx, dy = menu.y - 196;
+    const menuParts: Placeable[] = [];
 
     const save = readSave();
     let primary: Button;
     if (save?.ok) {
       const saved = save.state;
-      primary = new Button(this, cx, 196, 180, 34, 'Continue', COLORS.serve, () => this.continueFrom(saved));
-      new LeafText(this, cx, 222, `Day ${saved.day} done · 🍃 ${saved.leaves}`, { ...TEXT.label, fontSize: '14px', stroke: css(COLORS.ink), strokeThickness: 3 }, 0.5, 0);
-      new Button(this, cx, 270, 180, 30, 'New game', COLORS.reset, () => this.confirmNewGame(saved.day));
+      primary = new Button(this, cx + dx, 196 + dy, 180, 34, 'Continue', COLORS.serve, () => this.continueFrom(saved));
+      menuParts.push(
+        primary,
+        new LeafText(this, cx + dx, 222 + dy, `Day ${saved.day} done · 🍃 ${saved.leaves}`, { ...TEXT.label, fontSize: '14px', stroke: css(COLORS.ink), strokeThickness: 3 }, 0.5, 0),
+        new Button(this, cx + dx, 270 + dy, 180, 30, 'New game', COLORS.reset, () => this.confirmNewGame(saved.day)),
+      );
     } else {
       if (save && !save.ok) {
         // Broken or from a newer version: say why, and that New game replaces it.
-        this.add
-          .text(cx, 166, `${save.reason}\nNew game will replace it.`, {
+        const reason = this.add
+          .text(cx + dx, 166 + dy, `${save.reason}\nNew game will replace it.`, {
             ...TEXT.body,
             color: css(COLORS.statusImpatient),
             stroke: css(COLORS.ink),
@@ -52,9 +69,12 @@ export class TitleScene extends Phaser.Scene {
             align: 'center',
           })
           .setOrigin(0.5);
+        menuParts.push(reason);
       }
-      primary = new Button(this, cx, 220, 180, 34, 'New game', COLORS.serve, () => this.newGame());
+      primary = new Button(this, cx + dx, 220 + dy, 180, 34, 'New game', COLORS.serve, () => this.newGame());
+      menuParts.push(primary);
     }
+    arrangeable(this, 'title', 'menu', menu, ...menuParts);
 
     // Enter presses the main button, through the button like other shortcuts.
     const onKey = (event: KeyboardEvent) => {
@@ -74,14 +94,19 @@ export class TitleScene extends Phaser.Scene {
   private drawScene(): void {
     addGround(this, 'grass');
     const ground = BASE_HEIGHT - 24;
-    addTree(this, 24, ground - 30, 'pine');
-    addTree(this, 196, ground - 40, 'oak');
-    addTree(this, 616, ground - 36, 'pine');
-    addStanding(this, 110, ground, 'cafeHouse').setScale(2);
-    addTree(this, 586, ground + 8, 'oak');
+    // Each piece of scenery stands at its base point, movable in Arrange mode.
+    const place = (name: string, x: number, y: number, add: (p: Point) => Placeable) => {
+      const p = at(name, x, y);
+      arrangeable(this, 'title', name, p, add(p));
+    };
+    place('pine.left', 24, ground - 30, (p) => addTree(this, p.x, p.y, 'pine'));
+    place('oak.left', 196, ground - 40, (p) => addTree(this, p.x, p.y, 'oak'));
+    place('pine.right', 616, ground - 36, (p) => addTree(this, p.x, p.y, 'pine'));
+    place('cottage', 110, ground, (p) => addStanding(this, p.x, p.y, 'cafeHouse').setScale(2));
+    place('oak.right', 586, ground + 8, (p) => addTree(this, p.x, p.y, 'oak'));
     // The fox faces right (the art's way), toward the hedgehog, who faces it back with its left view.
-    addArt(this, 460, ground, 'fox', viewFrame(VIEW.right)).setOrigin(0.5, 1).setScale(2);
-    addArt(this, 520, ground, 'hedgehog', viewFrame(VIEW.left)).setOrigin(0.5, 1).setScale(2);
+    place('fox', 460, ground, (p) => addArt(this, p.x, p.y, 'fox', viewFrame(VIEW.right)).setOrigin(0.5, 1).setScale(2));
+    place('hedgehog', 520, ground, (p) => addArt(this, p.x, p.y, 'hedgehog', viewFrame(VIEW.left)).setOrigin(0.5, 1).setScale(2));
   }
 
   /** True while "Start a new game?" is showing, so Enter doesn't press Continue behind it. */
