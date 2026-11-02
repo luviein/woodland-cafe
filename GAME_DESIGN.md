@@ -410,7 +410,8 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 - First step: review a Santa hat and coat fitted to the existing hedgehog, inspired by the supplied Christmas clothing sheet. Clean pixel outlines and matching front, back, left and right views; retain the existing face, spines and walking feet.
 - Clothing is separate transparent art on the hedgehog's frame grid, with equipped examples in the sprite gallery for review before use in play.
-- Next: tapping the player opens a cafe-styled wardrobe with a character preview, Hats and Tops tabs, item cards and equip/remove controls. Outfits are cosmetic, saved and shown while walking. Capes, shoes, purchases and other animals follow later.
+- Tapping the player on the cafe floor or outdoors opens a cafe-styled wardrobe with a four-direction character preview, Hats and Tops tabs, item cards and equip/remove controls. The Santa hat and coat are free starter cosmetics. Changes apply immediately; Close or Escape returns to play. The world continues running, as with the shops and recipe book.
+- Outfits use separate head and top slots, are saved with the normal game save (during a cafe day, at the end of that day), and appear in every walking direction. Older saves start without clothing. Capes, shoes, purchases and other animals follow later.
 
 ## 6. Game State
 
