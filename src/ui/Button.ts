@@ -103,6 +103,16 @@ export class Button extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /** A small picture just before the label (e.g. the leaf before a price), the two centred together. */
+  setLeadingIcon(icon: Phaser.GameObjects.Image): this {
+    const gap = 3;
+    const total = icon.displayWidth + gap + this.label.width;
+    icon.setOrigin(0, 0.5).setPosition(-total / 2, 0);
+    this.label.setOrigin(0, 0.5).setPosition(-total / 2 + icon.displayWidth + gap, 0);
+    this.add(icon);
+    return this;
+  }
+
   setEnabled(enabled: boolean): this {
     this.enabled = enabled;
     this.bg.setFillStyle(enabled ? this.color : COLORS.disabled);
