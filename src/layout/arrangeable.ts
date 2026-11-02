@@ -6,9 +6,9 @@ import type { Point } from '../logic/layout';
 // move together (a stall and its sign). This file is tiny and always in the
 // game; the Arrange overlay itself (debug/ArrangeMode.ts) is dev only.
 
-/** Anything placed on a screen: it has a position and a box on screen. */
+/** Anything placed on a screen: it has a position, and usually a box on screen (Graphics have none: give them a sizeBox). */
 export type Placeable = Phaser.GameObjects.GameObject &
-  Phaser.GameObjects.Components.Transform & { getBounds(): Phaser.Geom.Rectangle };
+  Phaser.GameObjects.Components.Transform & { getBounds?(): Phaser.Geom.Rectangle };
 
 export interface ArrangeItem {
   screen: string;
@@ -58,4 +58,14 @@ export function arrangeItems(scene: Phaser.Scene): ArrangeItem[] {
 
 export function arrangeRules(scene: Phaser.Scene): ArrangeRule[] {
   return rules.get(scene) ?? [];
+}
+
+/**
+ * An invisible box the size of something drawn with Graphics (a speech
+ * bubble, a plate), whose own box Arrange mode can't measure: pass it to
+ * arrangeable() with the thing, and it moves with it. (x, y) is its
+ * top-left. Nothing in the release build.
+ */
+export function sizeBox(scene: Phaser.Scene, x: number, y: number, width: number, height: number): Placeable[] {
+  return import.meta.env.DEV ? [scene.add.zone(x, y, width, height).setOrigin(0)] : [];
 }

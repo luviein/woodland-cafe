@@ -23,6 +23,9 @@ import { spriteSize } from '../art/pixelSprite';
 import { playSound } from '../audio/audio';
 import { addArt } from '../ui/art';
 import { LeafText } from '../ui/LeafText';
+import { arrangeable, sizeBox, type Placeable } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
+import type { Point } from '../logic/layout';
 import { popLeaves } from '../ui/effects';
 import { Button } from '../ui/Button';
 import { DishView, drawLayerStack } from '../ui/DishView';
@@ -48,10 +51,16 @@ const CLOSE_DELAY_MS = 1200;
 const SKIP_AFTER_MS = 300;
 
 const COUNTER_TOP_Y = 140;
-/** Centre of the plate; the dish is grabbed from, and dropped back onto, the area around it. */
-const PLATE_X = 320;
-const PLATE_Y = 214;
-const PLATE_AREA = new Phaser.Geom.Rectangle(PLATE_X - 88, PLATE_Y - 84, 176, 112);
+
+/** Where something goes at the prep station: by name, movable in Arrange mode (GAME_DESIGN.md §9.3). */
+const at = (name: string, x: number, y: number): Point => layoutPoint('prep', name, { x, y });
+
+/** The area around the plate (centre `plate`) the dish is grabbed from, and dropped back onto. */
+const plateArea = (plate: Point) => new Phaser.Geom.Rectangle(plate.x - 88, plate.y - 84, 176, 112);
+/** The speech bubble's size. */
+const BUBBLE = { width: 376, height: 88 };
+/** The patience bar under the customer. */
+const PATIENCE_BAR = { width: 80, height: 8 };
 
 /**
  * What the floor hands the prep station when the player takes an order.
@@ -106,6 +115,10 @@ export class PrepScene extends Phaser.Scene {
   private guide: StoryBox | null = null;
   private dishView!: DishView;
   private patienceBar!: Phaser.GameObjects.Graphics;
+  /** Where things were put this time (from the layout): what depends on them follows. */
+  private customerAt!: Point;
+  private plateAt!: Point;
+  private bubbleAt!: Point;
   private clock!: ClockDisplay;
   private serveButton!: Button;
   private resetButton!: Button;
@@ -142,38 +155,59 @@ export class PrepScene extends Phaser.Scene {
     // lower body), then all UI on top. The wall and counter are opaque and
     // cover the whole screen, hiding the floor underneath.
     this.drawWall();
-    this.drawCustomer(64, COUNTER_TOP_Y - 30);
+    this.customerAt = at('customer', 64, COUNTER_TOP_Y - 30);
+    const customer = this.drawCustomer(this.customerAt.x, this.customerAt.y);
+    arrangeable(this, 'prep', 'customer', this.customerAt, customer);
     this.drawCounter();
-    this.patienceBar = this.add.graphics();
+    // The bar is redrawn every frame at (0, 0) of its own; it's moved by moving the Graphics.
+    const bar = at('patience', 24, COUNTER_TOP_Y + 12);
+    this.patienceBar = this.add.graphics({ x: bar.x, y: bar.y });
+    arrangeable(this, 'prep', 'patience', bar, this.patienceBar, ...sizeBox(this, bar.x, bar.y, PATIENCE_BAR.width, PATIENCE_BAR.height));
 
     // No order ticket: the speech bubble is the only clue (see GAME_DESIGN.md).
     // Ends 16px short of the Recipes button.
-    this.bubble = new SpeechBubble(this, 112, 24, 376, 88);
+    this.bubbleAt = at('bubble', 112, 24);
+    this.bubble = new SpeechBubble(this, this.bubbleAt.x, this.bubbleAt.y, BUBBLE.width, BUBBLE.height);
+    arrangeable(this, 'prep', 'bubble', this.bubbleAt, this.bubble, ...sizeBox(this, this.bubbleAt.x, this.bubbleAt.y, BUBBLE.width, BUBBLE.height));
     // Hints get more common as the days go by (data/hintConfig.ts).
     this.bubble.setLines(buildSpeech(this.request.order, hintRatioForDay(getGameState(this).day)));
-    this.dishView = new DishView(this, PLATE_X, PLATE_Y);
+    this.plateAt = at('plate', 320, 214);
+    this.dishView = new DishView(this, this.plateAt.x, this.plateAt.y);
+    const area = plateArea(this.plateAt);
+    arrangeable(this, 'prep', 'plate', this.plateAt, this.dishView, ...sizeBox(this, area.x, area.y, area.width, area.height));
     if (getGameState(this).upgrades.includes('toaster')) this.createToaster();
 
     this.createIngredientBins();
     // Silent: serving plays the customer's verdict (a ding, or a "bwom").
-    this.serveButton = new Button(this, 544, 260, 112, 36, 'Serve', COLORS.serve, () => this.serve()).setSound(null);
-    this.resetButton = new Button(this, 544, 308, 112, 36, 'Reset', COLORS.reset, () =>
+    const serveAt = at('serve', 544, 260);
+    this.serveButton = new Button(this, serveAt.x, serveAt.y, 112, 36, 'Serve', COLORS.serve, () => this.serve()).setSound(null);
+    arrangeable(this, 'prep', 'serve', serveAt, this.serveButton);
+    const resetAt = at('reset', 544, 308);
+    this.resetButton = new Button(this, resetAt.x, resetAt.y, 112, 36, 'Reset', COLORS.reset, () =>
       this.resetDish(),
     );
+    arrangeable(this, 'prep', 'reset', resetAt, this.resetButton);
     // Shortcut hint, so PC players can discover the keys (bins show their own numbers).
-    this.add.text(544, 332, 'Enter: serve  Bksp: reset', TEXT.label).setOrigin(0.5, 0);
+    const keysAt = at('keys', 544, 332);
+    arrangeable(this, 'prep', 'keys', keysAt, this.add.text(keysAt.x, keysAt.y, 'Enter: serve  Bksp: reset', TEXT.label).setOrigin(0.5, 0));
 
     // Created after the prep UI so it draws on top of it.
     this.recipeBook = new RecipeBook(this);
-    this.recipesButton = new Button(this, 568, 28, 128, 32, 'Recipes (R)', COLORS.book, () =>
+    const recipesAt = at('recipes', 568, 28);
+    this.recipesButton = new Button(this, recipesAt.x, recipesAt.y, 128, 32, 'Recipes (R)', COLORS.book, () =>
       this.recipeBook.open(availableRecipes(getGameState(this))),
     );
+    arrangeable(this, 'prep', 'recipes', recipesAt, this.recipesButton);
 
     // Same wallet and clock as on the floor, but top-right, under the Recipes
     // button: the customer peeks over the counter in the top-left. The
     // wallet ticks up the moment the customer pays.
-    this.clock = new ClockDisplay(this, 560, 78);
-    const wallet = new WalletDisplay(this, 560, 52);
+    const clockAt = at('clock', 560, 78);
+    this.clock = new ClockDisplay(this, clockAt.x, clockAt.y);
+    arrangeable(this, 'prep', 'clock', clockAt, this.clock);
+    const walletAt = at('wallet', 560, 52);
+    const wallet = new WalletDisplay(this, walletAt.x, walletAt.y);
+    arrangeable(this, 'prep', 'wallet', walletAt, wallet);
     watchGameState(this, (state) => {
       wallet.setLeaves(state.leaves);
       this.refreshDish(); // bins depend on stock and Leaves
@@ -203,16 +237,18 @@ export class PrepScene extends Phaser.Scene {
   private showTutorial(): void {
     this.guide = null;
     if (getGameState(this).tutorial !== 'prep') return;
+    const guideAt = at('guide', 8, COUNTER_TOP_Y + 6);
     this.guide = new StoryBox(this, {
       // Short enough that the arrow can point down at a bin from just under it.
-      rect: { x: 8, y: COUNTER_TOP_Y + 6, width: 216, height: 96 },
+      rect: { x: guideAt.x, y: guideAt.y, width: 216, height: 96 },
       step: TUTORIAL.prep,
       // By name (texts/grandma.json): the speech bubble, the Recipes button,
       // or the dish: whatever it needs next.
       arrow: (line) => {
         const target = TUTORIAL.prep.pointsAt[line];
-        if (target === 'bubble') return { x: 308, y: 22 };
-        if (target === 'recipes') return { x: 568, y: 46, up: true };
+        // Pointing at the bubble's top middle, and up at the Recipes button from under it, wherever they were put.
+        if (target === 'bubble') return { x: this.bubbleAt.x + BUBBLE.width / 2 + 8, y: this.bubbleAt.y - 2 };
+        if (target === 'recipes') return { x: this.recipesButton.x, y: this.recipesButton.y + 18, up: true };
         return target === 'dish' ? this.nextStepArrow() : null;
       },
       // Under the Recipe Book (50), so the open book covers her rather than the other way round.
@@ -226,6 +262,7 @@ export class PrepScene extends Phaser.Scene {
         this.refreshDish(); // skipped: every bin opens up
       },
     });
+    arrangeable(this, 'prep', 'guide', guideAt, this.guide, ...sizeBox(this, guideAt.x, guideAt.y, 216, 96));
     this.refreshDish(); // locked until her instruction line
   }
 
@@ -307,12 +344,15 @@ export class PrepScene extends Phaser.Scene {
    * up, from the top of the toaster back onto the plate.
    */
   private createToaster(): void {
-    const toaster = new ToasterView(this, 456, 200);
+    const toasterAt = at('toaster', 456, 200);
+    const toaster = new ToasterView(this, toasterAt.x, toasterAt.y);
     this.toaster = toaster;
-    this.add.text(456, 222, 'Toaster (T)', TEXT.label).setOrigin(0.5, 0);
+    const label = this.add.text(toasterAt.x, toasterAt.y + 22, 'Toaster (T)', TEXT.label).setOrigin(0.5, 0);
+    arrangeable(this, 'prep', 'toaster', toasterAt, toaster, label);
+    const area = plateArea(this.plateAt);
 
     this.addDragSource(
-      PLATE_AREA,
+      area,
       () => canToast(this.toast, this.dish.length),
       () => this.dishView.setLayers([], false, ''), // it's in your hand now
       () => toaster.dropArea(),
@@ -322,7 +362,7 @@ export class PrepScene extends Phaser.Scene {
       toaster.topArea(),
       () => this.toast.place === 'ready',
       () => toaster.showOnTop([]),
-      () => PLATE_AREA,
+      () => area,
       () => this.takeBackFromToaster(),
     );
   }
@@ -404,10 +444,12 @@ export class PrepScene extends Phaser.Scene {
     const lines = [`+${payment.total} 🍃`];
     if (payment.tip > 0) lines.push(`(${payment.tip} tip)`);
     const style = { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 4 };
-    const text = new LeafText(this, 64, COUNTER_TOP_Y - 76, lines.join('\n'), style, 0.5, 1, 'center').setDepth(40); // over the prep UI, under the recipe book (50)
+    // Over the customer, wherever they were put.
+    const { x, y } = this.customerAt;
+    const text = new LeafText(this, x, y - 46, lines.join('\n'), style, 0.5, 1, 'center').setDepth(40); // over the prep UI, under the recipe book (50)
     this.tweens.add({ targets: text, y: text.y - 16, duration: 900, ease: 'Sine.easeOut' });
     // And the Leaves themselves, fluttering out of the customer's paws.
-    popLeaves(this, 64, COUNTER_TOP_Y - 40, payment.total, 2);
+    popLeaves(this, x, y - 10, payment.total, 2);
   }
 
   /** Shows the customer's last words, locks the counter, then closes. */
@@ -481,13 +523,12 @@ export class PrepScene extends Phaser.Scene {
     const g = this.patienceBar;
     g.clear();
     const fraction = Phaser.Math.Clamp(this.request.patience(), 0, 1);
-    const x = 24;
-    const y = COUNTER_TOP_Y + 12;
-    const width = 80;
+    // At (0, 0) of the Graphics, which is placed where the layout puts the bar.
+    const { width, height } = PATIENCE_BAR;
     g.fillStyle(COLORS.ink);
-    g.fillRect(x, y, width, 8);
+    g.fillRect(0, 0, width, height);
     g.fillStyle(patienceColor(fraction));
-    g.fillRect(x + 2, y + 2, Math.ceil((width - 4) * fraction), 4);
+    g.fillRect(2, 2, Math.ceil((width - 4) * fraction), height - 4);
   }
 
   /** One square button per owned ingredient along the bottom of the counter. */
@@ -496,8 +537,10 @@ export class PrepScene extends Phaser.Scene {
     const spacing = 72;
     // Far enough right that the first name clears the sound and notes buttons
     // in the bottom-left corner (ui/hudLayout.ts); six bins still end before Serve.
-    const startX = 84;
-    const y = 300;
+    const first = at('bins', 84, 300);
+    const startX = first.x;
+    const y = first.y;
+    const parts: Placeable[] = [];
 
     getGameState(this).ingredients.forEach((id, i) => {
       const x = startX + i * spacing;
@@ -510,12 +553,12 @@ export class PrepScene extends Phaser.Scene {
         .setSound(null); // addIngredient plays its own
       this.binButtons.push(bin);
       this.binIds.push(id);
-      this.add
-        .text(x, y + size / 2 + 6, INGREDIENTS[id].name, TEXT.label)
-        .setOrigin(0.5, 0);
+      parts.push(bin, this.add.text(x, y + size / 2 + 6, INGREDIENTS[id].name, TEXT.label).setOrigin(0.5, 0));
       // Filled in by refreshBins(): "x5" left, "🍃2" rush price, or "Out".
       this.binCounts.push(new LeafText(this, x, y - size / 2 - 4, '', TEXT.label, 0.5, 1));
     });
+    // The bins move as a row, by the first one.
+    arrangeable(this, 'prep', 'bins', first, ...parts, ...this.binCounts);
   }
 
   /**
@@ -587,8 +630,8 @@ export class PrepScene extends Phaser.Scene {
    * numbers, so the pixels stay square). (x, y) = body centre; the counter,
    * drawn after, hides the legs.
    */
-  private drawCustomer(x: number, y: number): void {
+  private drawCustomer(x: number, y: number): Phaser.GameObjects.Image {
     const scale = Math.max(1, Math.round(96 / spriteSize(SPRITE_ART[this.request.art]).height));
-    addArt(this, x, y - 40, this.request.art, 0).setOrigin(0.5, 0).setScale(scale);
+    return addArt(this, x, y - 40, this.request.art, 0).setOrigin(0.5, 0).setScale(scale);
   }
 }

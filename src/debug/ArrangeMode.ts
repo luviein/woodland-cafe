@@ -70,7 +70,8 @@ export function mountArrangeMode(game: Phaser.Game): ArrangeMode {
 
   /** The box around all of an item's objects, on screen. */
   function bounds(item: ArrangeItem): Phaser.Geom.Rectangle {
-    const boxes = item.objects.map((o) => o.getBounds());
+    // Things with no box of their own (Graphics) move along; the box comes from the rest.
+    const boxes = item.objects.flatMap((o) => (o.getBounds ? [o.getBounds()] : []));
     const box = boxes[0] ?? new Phaser.Geom.Rectangle(item.point.x, item.point.y, 0, 0);
     for (const b of boxes.slice(1)) Phaser.Geom.Rectangle.Union(box, b, box);
     return box;
