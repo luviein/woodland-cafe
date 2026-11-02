@@ -141,6 +141,46 @@
         "Something earthy on a slice, with a fiery kick!",
         "Forest-floor finds on bread. Make it spicy!"
       ]
+    },
+    "tunaBread": {
+      "direct": [
+        "Tuna bread, please!",
+        "One tuna bread for me."
+      ],
+      "hint": [
+        "Something from the river, on a slice.",
+        "A slice with something fishy on top."
+      ]
+    },
+    "tomatoSandwich": {
+      "direct": [
+        "A tomato sandwich, please!",
+        "One tomato sandwich for me."
+      ],
+      "hint": [
+        "Something juicy and red, between two slices.",
+        "Two slices hugging something round and red from the garden."
+      ]
+    },
+    "mushroomTomatoBread": {
+      "direct": [
+        "Mushroom tomato bread, please!",
+        "One mushroom and tomato bread."
+      ],
+      "hint": [
+        "Forest-floor finds and something red from the garden, on a slice.",
+        "Something earthy and something juicy and red, on bread."
+      ]
+    },
+    "spicyTomatoBread": {
+      "direct": [
+        "Spicy tomato bread, please!",
+        "One spicy tomato bread for me."
+      ],
+      "hint": [
+        "Something juicy and red on a slice, with a fiery kick!",
+        "Something from the garden on bread. Make it spicy!"
+      ]
     }
   },
   "modifiers": {
@@ -224,5 +264,42 @@
     "I can't wait any longer! I'm off.",
     "Too slow! Never mind, then.",
     "Forget it, I'll find breakfast elsewhere!"
-  ]
+  ],
+  "extraIngredients": {
+    "mushroom": {
+      "direct": [
+        "Add some mushrooms too!",
+        "Some mushrooms sound nice."
+      ],
+      "hint": []
+    },
+    "jam": {
+      "direct": [
+        "Add some jam too!",
+        "Some jam sounds nice."
+      ],
+      "hint": []
+    },
+    "chilli": {
+      "direct": [
+        "Add some chilli too!",
+        "Some chilli sounds nice."
+      ],
+      "hint": []
+    },
+    "tuna": {
+      "direct": [
+        "Add some tuna too!",
+        "Some tuna sounds nice."
+      ],
+      "hint": []
+    },
+    "tomato": {
+      "direct": [
+        "Add some tomato too!",
+        "Some tomato sounds nice."
+      ],
+      "hint": []
+    }
+  }
 }

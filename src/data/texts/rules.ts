@@ -1,3 +1,4 @@
+import { INGREDIENT_IDS } from '../ingredients';
 import { MODIFIER_IDS, MODIFIERS } from '../modifiers';
 import { RECIPE_IDS } from '../recipes';
 import { TOOLS_ON_SALE } from '../shops';
@@ -109,6 +110,7 @@ export interface Lines {
 export interface CustomerTexts {
   recipes: Record<string, Lines>;
   modifiers: Record<string, Lines>;
+  extraIngredients: Record<string, Lines>;
   doubleOrder: Lines;
   reactions: Record<'perfect' | 'close' | 'wrong', string[]>;
   gaveUp: string[];
@@ -160,6 +162,11 @@ export function customerProblems(t: CustomerTexts): string[] {
     if (!lines?.hint?.length) problems.push(`Order "${id}": needs at least one hint line`);
     noBlanks(`Order "${id}" (direct)`, lines?.direct);
     noBlanks(`Order "${id}" (hint)`, lines?.hint);
+  }
+  for (const id of INGREDIENT_IDS.filter((id) => id !== 'bread')) {
+    const lines = t.extraIngredients?.[id];
+    if (!lines?.direct?.length) problems.push('Extra ingredient ' + id + ': needs at least one direct line');
+    noBlanks('Extra ingredient ' + id, lines?.direct);
   }
   for (const id of MODIFIER_IDS) {
     const lines = t.modifiers?.[id];

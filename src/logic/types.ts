@@ -5,6 +5,8 @@ import type { RecipeId } from '../data/recipes';
 /** What a customer asked for. Plain data, so it can live in saved game state. */
 export interface Order {
   recipeId: RecipeId;
+  /** Optional extra filling; absent on base orders and the guided tutorial. */
+  extraIngredient?: IngredientId;
   modifiers: ModifierId[];
   /** 2 = double order (Serving Tray). Always 1 until milestone 6. */
   quantity: number;

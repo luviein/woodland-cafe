@@ -39,6 +39,10 @@ export const RECIPES = {
   jamSandwich: { name: 'Jam Sandwich', layers: ['bread', 'jam', 'bread'], tags: ['sandwich'] },
 
   // Unlocked by purchasable ingredients
+  tunaBread: { name: 'Tuna Bread', layers: ['bread', 'tuna'], tags: [] },
+  tomatoSandwich: { name: 'Tomato Sandwich', layers: ['bread', 'tomato', 'bread'], tags: ['sandwich'] },
+  mushroomTomatoBread: { name: 'Mushroom Tomato Bread', layers: ['bread', 'mushroom', 'tomato'], tags: [] },
+  spicyTomatoBread: { name: 'Spicy Tomato Bread', layers: ['bread', 'tomato', 'chilli'], tags: [] },
   tomatoBread: { name: 'Tomato Bread', layers: ['bread', 'tomato'], tags: [] },
   tunaSandwich: { name: 'Tuna Sandwich', layers: ['bread', 'tuna', 'bread'], tags: ['sandwich'] },
   tunaTomatoSandwich: {

@@ -1,5 +1,6 @@
 import {
   DOUBLE_ORDER_LINES,
+  EXTRA_INGREDIENT_LINES,
   GAVE_UP_LINES,
   MODIFIER_LINES,
   REACTION_LINES,
@@ -52,6 +53,9 @@ export function buildSpeech(order: Order, hintRatio: number, rng: Rng = Math.ran
   // hint built ingredient by ingredient can't tell Mushroom Bread from a
   // Mushroom Sandwich (GAME_DESIGN.md §3.5).
   speech.push(pickLine(RECIPE_LINES[order.recipeId], rollStyle(), rng));
+  if (order.extraIngredient && order.extraIngredient !== 'bread') {
+    speech.push(pickLine(EXTRA_INGREDIENT_LINES[order.extraIngredient], 'direct', rng));
+  }
   for (const mod of order.modifiers) {
     speech.push(pickLine(MODIFIER_LINES[mod], rollStyle(), rng));
   }

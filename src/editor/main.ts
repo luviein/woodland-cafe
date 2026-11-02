@@ -1,3 +1,4 @@
+import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
 import './editor.css';
 import { MODIFIER_IDS, MODIFIERS } from '../data/modifiers';
 import { RECIPE_IDS, RECIPES } from '../data/recipes';
@@ -119,6 +120,16 @@ function pages(): Page[] {
       about: 'What a customer says to order it. Direct names the dish; a hint describes it for the player to work out.',
       build: (into) => buildDirectHint(into, customers.recipes[id]),
       tooLong: () => stringsTooLong([...customers.recipes[id].direct, ...customers.recipes[id].hint], FITS.bubble),
+    });
+  }
+  for (const id of INGREDIENT_IDS.filter((id) => id !== 'bread')) {
+    list.push({
+      id: 'extraIngredients.' + id,
+      group: 'Customers: extra ingredients',
+      label: INGREDIENTS[id].name,
+      about: 'An optional extra filling requested after the base recipe. Direct lines are used in game.',
+      build: (into) => buildDirectHint(into, customers.extraIngredients[id]),
+      tooLong: () => stringsTooLong(customers.extraIngredients[id].direct, FITS.bubble),
     });
   }
   for (const id of MODIFIER_IDS) {

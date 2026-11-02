@@ -1,3 +1,4 @@
+import { INGREDIENTS } from '../data/ingredients';
 import { RECIPE_PRICES } from '../data/prices';
 import type { RecipeId } from '../data/recipes';
 import { TIP_CONFIG, type TipConfig } from '../data/tipConfig';
@@ -36,7 +37,8 @@ export function computePayment(
 ): Payment {
   if (result.score === 'wrong') return NOTHING;
 
-  const price = prices[order.recipeId] * order.quantity;
+  const extraPrice = order.extraIngredient ? 2 * INGREDIENTS[order.extraIngredient].unitPrice : 0;
+  const price = (prices[order.recipeId] + extraPrice) * order.quantity;
   const tier = config.tiers.find((t) => patienceLeft > t.above);
   let tip = price * config.fullTipShare * (tier?.share ?? 0);
   if (result.score === 'close') tip *= config.closeMultiplier;

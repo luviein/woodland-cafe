@@ -27,6 +27,7 @@ const STARTER_RECIPES = [
 // don't depend on luck.
 const ALWAYS: OrderConfig = {
   modifierChance: 1,
+  extraIngredientChance: 0,
   maxModifiers: 10,
   doubleOrderChance: 1,
 };

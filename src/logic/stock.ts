@@ -1,5 +1,5 @@
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
-import { RECIPES } from '../data/recipes';
+import { expectedPlate } from './orders';
 import { STOCK_CONFIG, type StockConfig } from '../data/stockConfig';
 import type { Order } from './types';
 
@@ -42,7 +42,7 @@ export function plateIngredients(layers: readonly IngredientId[], quantity: numb
 
 /** Everything the order's dish needs, if made right. */
 export function orderIngredients(order: Order): IngredientId[] {
-  return plateIngredients(RECIPES[order.recipeId].layers, order.quantity);
+  return plateIngredients(expectedPlate(order).layers, order.quantity);
 }
 
 /**

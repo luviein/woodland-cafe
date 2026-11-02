@@ -1,3 +1,4 @@
+import type { IngredientId } from './ingredients';
 import CUSTOMERS from './texts/customers.json';
 import type { Score } from '../logic/types';
 import type { ModifierId } from './modifiers';
@@ -31,6 +32,8 @@ export interface DialogueLines {
 //   open bread: "on a slice" / "on bread"   sandwich: "between two slices", "tucked inside"
 //   a doubled layer: "twice", "more of it", "double"
 // Each hint must fit exactly one recipe.
+export const EXTRA_INGREDIENT_LINES: Record<Exclude<IngredientId, 'bread'>, DialogueLines> = CUSTOMERS.extraIngredients;
+
 export const RECIPE_LINES: Record<RecipeId, DialogueLines> = CUSTOMERS.recipes;
 
 /**

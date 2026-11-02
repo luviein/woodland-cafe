@@ -74,10 +74,22 @@ export function generateOrder(
   );
   const quantity = canDouble && rng() < config.doubleOrderChance ? 2 : 1;
 
-  return { recipeId, modifiers, quantity };
+  const eligible = [...new Set(owned.ingredients)].filter(
+    (id) => id !== 'bread' && !(RECIPES[recipeId].layers as readonly IngredientId[]).includes(id),
+  );
+  const extraIngredient = eligible.length > 0 && rng() < config.extraIngredientChance
+    ? pickOne(eligible, rng) : undefined;
+  return { recipeId, modifiers, quantity, ...(extraIngredient ? { extraIngredient } : {}) };
 }
 
 /** What one correct plate for this order looks like, for scoreDish(). */
 export function expectedPlate(order: Order): Plate {
-  return { layers: RECIPES[order.recipeId].layers, modifiers: order.modifiers };
+  const layers: IngredientId[] = [...RECIPES[order.recipeId].layers];
+  if (order.extraIngredient) {
+    // Keep the closing bread in place; open breads get their extra on top.
+    const index = layers.length > 1 && layers[layers.length - 1] === 'bread'
+      ? layers.length - 1 : layers.length;
+    layers.splice(index, 0, order.extraIngredient);
+  }
+  return { layers, modifiers: order.modifiers };
 }

@@ -150,8 +150,8 @@ describe('unlocking ingredients', () => {
 
   it('counts the recipes an unlock would add', () => {
     const state = rich();
-    expect(newRecipesWith(state, 'tuna')).toBe(1); // Tuna Sandwich (the others need tomato or chilli too)
-    expect(newRecipesWith(unlockIngredient(state, 'tomato'), 'tuna')).toBe(2); // + Tuna Tomato Sandwich
+    expect(newRecipesWith(state, 'tuna')).toBe(2); // Tuna Bread and Tuna Sandwich
+    expect(newRecipesWith(unlockIngredient(state, 'tomato'), 'tuna')).toBe(3); // + Tuna Tomato Sandwich
     expect(newRecipesWith(unlockIngredient(state, 'tuna'), 'tuna')).toBe(0);
   });
 });
