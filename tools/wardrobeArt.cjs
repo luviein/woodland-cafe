@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const P = require('../.claude/skills/pixel-sprites/scripts/pixel.cjs');
+const { attachSideHat, attachCoat } = require('./clothingRig.cjs');
 const root = path.resolve(__dirname, '..');
 const base = P.readSprite(path.join(root, 'src/art/sprites/sheetCritters.ts'), 'HEDGEHOG');
 const legend = { ...base.legend, O: '#352522', R: '#bd3f36', S: '#8e302e', H: '#e35a43', C: '#fff0cd', T: '#d9bc91', B: '#47312b', G: '#e9b64d' };
@@ -59,7 +60,7 @@ function hat(view) {
       'OTCCCCCCCCTOOOOO.',
       '.OOOOOOOOOO......',
     ]);
-    return fitBrim(view === 3 ? flip(side) : side, view);
+    return attachSideHat(rows(fitBrim(view === 3 ? flip(side) : side, view)), base.frames[view * 3], 'hedgehog', view);
   }
   return fitBrim(grid, view);
 }
@@ -69,6 +70,9 @@ function coat(view, pose = 0) {
   // The quills cover the entire back: painting a coat over them makes it
   // float on the animal's shell. The exposed pale patch is its tail.
   if (view === 1) return grid;
+  if (view >= 2) return attachCoat(base.frames[view * 3 + pose], [20, 27, 0, 28], view, {
+    fur: c => 'efghijklmnpqrstuv'.includes(c),
+  });
   if (view === 0 || view === 2) {
     const frame = base.frames[view * 3 + pose];
     const fur = new Set('efghijklmnpqrstuv');
@@ -90,19 +94,7 @@ function coat(view, pose = 0) {
     }
     return grid;
   }
-  // Preserve the right view already approved in the running wardrobe.
-    stamp(grid, 6, 20, [
-      '....OCCCCO.....',
-      '...OCRRRRRO....',
-      '..OCRRHRRRRO...',
-      '..ORRRHRSRRRO..',
-      '..ORRRCCTRRRO..',
-      '..OBBBOOOBBBO..',
-      '..ORRRRRRRRRO..',
-      '..OCCCCCCCCCO..',
-      '...OOOOOOOOO...',
-    ]);
-  return flip(grid);
+  return grid;
 }
 
 const hats = base.frames.map((_, f) => rows(hat(Math.floor(f / 3))));

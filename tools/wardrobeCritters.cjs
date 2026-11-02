@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const P = require('../.claude/skills/pixel-sprites/scripts/pixel.cjs');
 const root = path.resolve(__dirname, '..');
+const { attachSideHat, attachCoat } = require('./clothingRig.cjs');
 const file = path.join(root, 'src/art/sprites/wardrobeCritters.ts');
 const shared = P.readSprite(path.join(root, 'src/art/sprites/wardrobe.ts'), 'SANTA_HAT');
 const specs = {
@@ -18,7 +19,7 @@ for (const [animal, spec] of Object.entries(specs)) {
   const hats = [], coats = [], equipped = [];
   for (let f = 0; f < 12; f++) {
     const view = Math.floor(f / 3), frame = base.frames[f];
-    const hat = blank(), coat = blank();
+    let hat = blank();
     // Share the design, but anchor the band to each head's forehead. Ears and
     // antlers above the hat remain the original animal's pixels.
     const source = shared.frames[view * 3];
@@ -28,18 +29,8 @@ for (const [animal, spec] of Object.entries(specs)) {
     for (let y = 0; y < 10; y++) for (let x = 0; x < width; x++) {
       hat[hy + y][hx + x] = source[y][min + Math.min(max - min, Math.floor(x * (max - min + 1) / width))];
     }
-    const [top, bottom, left, right] = spec.body[view];
-    const centre = Math.round((left + right) / 2);
-    for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
-      // Recolour the torso inside its own outline, preserving tails and feet.
-      if ('.ao'.includes(frame[y][x]) || spec.tail(view, x, y)) continue;
-      let colour = x < centre ? 'R' : 'S';
-      if (view === 0 && x === centre) colour = 'C';
-      if (y === top || y === bottom) colour = 'C';
-      if (y === bottom - 2) colour = view === 0 && Math.abs(x - centre) <= 1 ? 'G' : 'B';
-      if (y === bottom - 3 && (x <= left + 2 || x >= right - 2)) colour = 'C';
-      coat[y][x] = colour;
-    }
+    if (view >= 2) hat = attachSideHat(source, frame, animal.toLowerCase(), view);
+    const coat = attachCoat(frame, spec.body[view], view, { tail: spec.tail });
     // Joining a hat to long ears can enclose a single background pixel.
     // Fill only newly enclosed pixels in the overlay, never the animal art.
     const hatOnBody = frame.map((row, y) => [...row].map((c, x) => hat[y][x] === '.' ? c : hat[y][x]).join(''));

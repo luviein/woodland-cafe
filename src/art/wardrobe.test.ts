@@ -5,6 +5,7 @@ import { HEDGEHOG } from './sprites/sheetCritters';
 import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
 import { CLOTHING_FITS } from '../data/clothingFits';
 import { SPRITE_ART } from './spriteArt';
+import CLOTHING_RIG from '../data/clothingRig.json';
 
 describe('hedgehog Christmas clothing', () => {
   it('fits every original facing and walking frame without moving the feet', () => {
@@ -18,10 +19,6 @@ describe('hedgehog Christmas clothing', () => {
       expect(holes(frame)).toBe(0);
       expect(strayPixels(frame)).toBe(0);
     });
-  });
-
-  it('keeps the side hats mirrored consistently', () => {
-    expect(SANTA_HAT.frames[9]).toEqual(SANTA_HAT.frames[6].map(row => [...row].reverse().join('')));
   });
 
   it('keeps the coat off the back quills and fits the front and left torso', () => {
@@ -39,6 +36,19 @@ describe('hedgehog Christmas clothing', () => {
 });
 
 describe('shared clothing fittings', () => {
+  it('attaches every side hat to its forehead while keeping the eye area clear', () => {
+    for (const [animal, rig] of Object.entries(CLOTHING_RIG)) {
+      const fit = CLOTHING_FITS[animal as keyof typeof CLOTHING_FITS];
+      for (const [side, start] of [['left', 6], ['right', 9]] as const) {
+        const { head: [left, right, brim], eyes } = rig[side];
+        for (let pose = 0; pose < 3; pose++) {
+          const frame = SPRITE_ART[fit.santaHat].frames[start + pose];
+          expect(frame[brim].slice(left + 1, right)).toMatch(/^[CT]+$/);
+          expect(frame.slice(eyes - 1).every(row => /^\.+$/.test(row))).toBe(true);
+        }
+      }
+    }
+  });
   it('continues each hat brim underneath the pompom without a gap', () => {
     for (const fit of Object.values(CLOTHING_FITS)) {
       for (const frame of SPRITE_ART[fit.santaHat].frames) {
