@@ -236,6 +236,7 @@ export function mountArrangeMode(game: Phaser.Game): ArrangeMode {
     const saveButton = button('Save', () => void save());
     button('Undo', stepBack);
     button('Reset', () => void reset());
+    button('Room painter', () => window.open('/room.html', 'woodland-room-painter'));
     button('Done', done);
     panel.append(row, text, list);
     document.body.append(panel);

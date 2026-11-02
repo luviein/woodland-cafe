@@ -1,0 +1,15 @@
+:root { font-family: system-ui, sans-serif; color: #382b25; background: #ece0c9; }
+body { margin: 0; }
+main { max-width: 1200px; margin: auto; padding: 20px; }
+h1 { margin: 0 0 8px; font-size: 25px; }
+p { margin: 8px 0 14px; }
+.tools, .brushes { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
+button { border: 2px solid #75513b; background: #fff8e9; color: #382b25; border-radius: 5px; padding: 8px 12px; cursor: pointer; font: inherit; }
+button[aria-pressed="true"] { background: #386444; color: white; border-color: #25452e; }
+button:disabled { opacity: .45; cursor: default; }
+canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; background: #45382e; border: 3px solid #75513b; box-sizing: border-box; touch-action: none; }
+#status { font-weight: 600; min-height: 24px; }
+#problems { margin: 10px 0; padding: 12px; background: #fff4dc; border-left: 4px solid #b84e39; white-space: pre-line; }
+#problems:empty { display: none; }
+.hint { color: #6e5946; font-size: 14px; }
+label { display: flex; align-items: center; gap: 6px; }

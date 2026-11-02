@@ -1,4 +1,6 @@
 import { CAFE_LAYOUT } from '../data/cafeLayout';
+import { CAFE_ROOM } from '../data/cafeRoom';
+export { CAFE_ROOM } from '../data/cafeRoom';
 import { DESIGN_IDS, FURNITURE, KIND_CHAR, kindOf, placesOf, type DesignId, type Place } from '../data/furniture';
 import { isWalkable, neighbours, parseLayout, pointKey, samePoint, type Layout, type Point } from './layout';
 
@@ -90,7 +92,6 @@ export function splitLayout(rows: readonly string[]): { room: string[]; placed: 
 }
 
 /** The cafe's room with no furniture in it. */
-export const CAFE_ROOM: readonly string[] = splitLayout(CAFE_LAYOUT).room;
 
 /** A new game's furniture: what cafeLayout.ts shows, all placed, nothing stored. */
 export function startingFurniture(): Furniture {
@@ -125,7 +126,7 @@ function tablesTouching(placed: readonly PlacedPiece[], p: Point): number {
  * area (reached from the door), and every table and seat has a walkable
  * tile next to it, for customers to sit down and the player to clean.
  */
-function staysConnected(layout: Layout): boolean {
+export function staysConnected(layout: Layout): boolean {
   const walkable: Point[] = [];
   layout.tiles.forEach((row, y) => row.forEach((_, x) => isWalkable(layout, { x, y }) && walkable.push({ x, y })));
   // Flood fill from the door: a breadth-first walk over walkable tiles.

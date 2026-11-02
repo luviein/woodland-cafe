@@ -1,6 +1,6 @@
-// The cafe floor as a tile grid, one character per 24x24 tile. Edit this to
-// change or expand the cafe; no code changes needed. logic/layout.ts turns it
-// into tables, seats and walkable tiles, and its tests check it's valid.
+// The original cafe grid, one character per 24x24 tile. This remains the
+// source of starter furniture. Paint the room itself at /room.html; its
+// saved walls, counter and queue live in data/cafeRoom.json.
 //
 // The tables (T) and seats (S) here are only a NEW GAME's furniture: from
 // then on the player's own furniture (in the game state) is used instead,
