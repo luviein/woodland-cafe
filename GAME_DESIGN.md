@@ -535,6 +535,16 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Side by side:** every critter at real scale next to a table, chairs and the counter, to see proportions before playing.
 - Read-only for now. Later: drop a PNG onto a sprite to replace it, and import new critters drawn on the skeleton template.
 
+### 9.3 Arrange mode (dev only)
+
+- **Move things on any screen by dragging them**, in the running game: the dev console's `arrange` (or **F2**) turns Arrange mode on for the screen you're on. Everything movable gets a thin outline and its name; drag it to move it. It snaps to whole pixels, to an 8-pixel grid while **Shift** is held. A small toolbar: **Save**, **Undo** (Ctrl+Z), **Reset** (back to the last save), **Done**.
+- **Positions live in data, one file per screen:** `src/data/layouts/<screen>.json`, like the words in `src/data/texts/`. Save writes that file (through a dev-only route, like the text editor's) and the game picks the new positions up.
+- **The rule for every screen, now and later:** each thing on a screen gets its position **by name with a default** ("the Serve button, else (544, 260)"), never from a bare number in the scene's code. Then it shows up in Arrange mode by itself, and anything never moved keeps its default. Rows of things (the ingredient bins, the tray's cards, a stall and its sign) move as one, by their first one.
+- **Safety:** something that breaks a rule turns red and Save is refused: off the screen, a stall outside the walk area, two buttons on top of each other, a forage spot inside a tree. The tests check the saved files the same way.
+- **Not movable:** things that move by themselves while playing (critters, falling leaves, messes); their starting points can be (where the player arrives).
+- **Dev only:** like the text editor, Arrange mode and its save route exist only under `npm run dev`, never in a built game.
+- **Later (optional):** painting the cafe room's tiles (walls, counter, door, queue) in the same way, instead of editing `data/cafeLayout.ts` by hand.
+
 ---
 
 ## 10. Milestones
