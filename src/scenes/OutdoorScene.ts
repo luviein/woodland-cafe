@@ -43,7 +43,8 @@ import {
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import { CataloguePanel } from '../ui/CataloguePanel';
-import { arrangeable, arrangeRule } from '../layout/arrangeable';
+import { layoutPoint } from '../layout/positions';
+import { arrangeable, arrangeRule, sizeBox } from '../layout/arrangeable';
 import { LeafText } from '../ui/LeafText';
 import { TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
 import { spriteSize } from '../art/pixelSprite';
@@ -155,14 +156,22 @@ export class OutdoorScene extends Phaser.Scene {
     this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.paper).setVisible(false).setDepth(1);
 
     // Top strip: wallet, place name, and the way back.
-    const wallet = new WalletDisplay(this, 8, 8).setDepth(HUD_DEPTH);
+    // The same in every outdoor place, so one layout for them all (screen 'outdoor').
+    const hud = (name: string, x: number, y: number) => layoutPoint('outdoor', name, { x, y });
+    const walletAt = hud('wallet', 8, 8);
+    const wallet = new WalletDisplay(this, walletAt.x, walletAt.y).setDepth(HUD_DEPTH);
+    arrangeable(this, 'outdoor', 'wallet', walletAt, wallet);
     const hudText = { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 };
-    this.leafCount = this.add.text(8, 34, '', hudText).setDepth(HUD_DEPTH);
+    const countAt = hud('leafCount', 8, 34);
+    this.leafCount = this.add.text(countAt.x, countAt.y, '', hudText).setDepth(HUD_DEPTH);
+    arrangeable(this, 'outdoor', 'leafCount', countAt, this.leafCount);
+    const bareAt = hud('bareGround', BASE_WIDTH / 2, BASE_HEIGHT - 10);
     this.bareGround = this.add
-      .text(BASE_WIDTH / 2, BASE_HEIGHT - 10, 'The ground is bare. Come back tomorrow!', hudText)
+      .text(bareAt.x, bareAt.y, 'The ground is bare. Come back tomorrow!', hudText)
       .setOrigin(0.5, 1)
       .setDepth(HUD_DEPTH)
       .setVisible(false);
+    arrangeable(this, 'outdoor', 'bareGround', bareAt, this.bareGround);
     watchGameState(this, (state) => {
       wallet.setLeaves(state.leaves);
       this.leafCount.setText(`Leaves today: ${state.leavesPickedToday}/${LEAF_CONFIG.leavesPerDay}`);
@@ -171,8 +180,9 @@ export class OutdoorScene extends Phaser.Scene {
       if (panel instanceof ShopPanel) panel.setRows(this.shopRows(this.shop!.id));
       else panel?.refresh();
     });
-    this.add
-      .text(BASE_WIDTH / 2, 10, LOCATIONS[this.location].name, {
+    const titleAt = hud('title', BASE_WIDTH / 2, 10);
+    const title = this.add
+      .text(titleAt.x, titleAt.y, LOCATIONS[this.location].name, {
         ...TEXT.heading,
         color: css(COLORS.paper),
         stroke: css(COLORS.ink),
@@ -180,7 +190,9 @@ export class OutdoorScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0)
       .setDepth(HUD_DEPTH);
-    new Button(this, BASE_WIDTH - 48, 20, 80, 28, 'Map', COLORS.book, () => this.backToMap()).setDepth(HUD_DEPTH);
+    arrangeable(this, 'outdoor', 'title', titleAt, title);
+    const mapAt = hud('map', BASE_WIDTH - 48, 20);
+    arrangeable(this, 'outdoor', 'map', mapAt, new Button(this, mapAt.x, mapAt.y, 80, 28, 'Map', COLORS.book, () => this.backToMap()).setDepth(HUD_DEPTH));
 
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
@@ -215,8 +227,10 @@ export class OutdoorScene extends Phaser.Scene {
       }
       return null;
     };
+    const guideAt = layoutPoint('outdoor', 'guide', { x: bottomBoxLeft(), y: 292 });
+    const guideRect = { x: guideAt.x, y: guideAt.y, width: BASE_WIDTH - 36 - guideAt.x, height: 62 };
     const guide = new StoryBox(this, {
-      rect: { x: bottomBoxLeft(), y: 292, width: BASE_WIDTH - 36 - bottomBoxLeft(), height: 62 },
+      rect: guideRect,
       step: def,
       arrow: (line) => target(def.pointsAt[line]),
       // Over the y-sorted scenery and the HUD.
@@ -232,6 +246,7 @@ export class OutdoorScene extends Phaser.Scene {
         guide.destroy();
       },
     });
+    arrangeable(this, 'outdoor', 'guide', guideAt, guide, ...sizeBox(this, guideRect.x, guideRect.y, guideRect.width, guideRect.height));
   }
 
   update(_time: number, deltaMs: number): void {
