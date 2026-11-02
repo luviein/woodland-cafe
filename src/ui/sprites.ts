@@ -6,6 +6,7 @@ import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/displ
 import { artKey } from './art';
 import { watchGameState } from '../scenes/gameStore';
 import { WardrobePanel } from './WardrobePanel';
+import { CLOTHING_FITS } from '../data/clothingFits';
 
 // Drawings shared by several scenes (cafe floor, world map, outdoor areas),
 // so they look the same everywhere.
@@ -135,8 +136,9 @@ export function setBobbing(critter: Phaser.GameObjects.Container, on: boolean): 
 /** The player, the cafe owner: the hedgehog (GAME_DESIGN.md §8.2). Scenes sort its depth by its feet. */
 export function createPlayerSprite(scene: Phaser.Scene, canOpen: () => boolean = () => true): Phaser.GameObjects.Container {
   const player = createCritter(scene, 'hedgehog');
-  const coat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey('santaCoat')).setOrigin(0.5, 1);
-  const hat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey('santaHat')).setOrigin(0.5, 1);
+  const fit = CLOTHING_FITS.hedgehog;
+  const coat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(fit.santaCoat)).setOrigin(0.5, 1);
+  const hat = scene.add.image(TILE_SIZE / 2, TILE_SIZE, artKey(fit.santaHat)).setOrigin(0.5, 1);
   player.add([coat, hat]);
   watchGameState(scene, state => {
     coat.setVisible(state.outfit.top === 'santaCoat');

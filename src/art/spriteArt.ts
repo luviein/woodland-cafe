@@ -1,6 +1,11 @@
 import type { PixelSprite } from './pixelSprite';
 import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
 import {
+  DEER_SANTA_COAT, DEER_SANTA_HAT, DEER_SANTA_PREVIEW,
+  MOUSE_SANTA_COAT, MOUSE_SANTA_HAT, MOUSE_SANTA_PREVIEW,
+  RABBIT_SANTA_COAT, RABBIT_SANTA_HAT, RABBIT_SANTA_PREVIEW,
+} from './sprites/wardrobeCritters';
+import {
   CHAIR,
   COUNTER,
   DOOR,
@@ -65,6 +70,15 @@ export const SPRITE_ART = {
   santaHat: SANTA_HAT,
   santaCoat: SANTA_COAT,
   hedgehogSantaPreview: HEDGEHOG_SANTA_PREVIEW,
+  rabbitSantaHat: RABBIT_SANTA_HAT,
+  rabbitSantaCoat: RABBIT_SANTA_COAT,
+  rabbitSantaPreview: RABBIT_SANTA_PREVIEW,
+  mouseSantaHat: MOUSE_SANTA_HAT,
+  mouseSantaCoat: MOUSE_SANTA_COAT,
+  mouseSantaPreview: MOUSE_SANTA_PREVIEW,
+  deerSantaHat: DEER_SANTA_HAT,
+  deerSantaCoat: DEER_SANTA_COAT,
+  deerSantaPreview: DEER_SANTA_PREVIEW,
   raccoon: RACCOON,
   frog: FROG,
   fox: FOX,
@@ -132,6 +146,9 @@ export function isArtName(name: string): name is ArtName {
 export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>([
   'hedgehog',
   'hedgehogSantaPreview',
+  'rabbitSantaPreview',
+  'mouseSantaPreview',
+  'deerSantaPreview',
   'rabbit',
   'mouse',
   'deer',

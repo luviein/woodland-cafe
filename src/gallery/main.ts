@@ -15,7 +15,12 @@ import { INGREDIENT_IDS } from '../data/ingredients';
 
 /** The Marketplace stalls converted from the player's drawings. */
 const MARKET_STALLS: readonly ArtName[] = ['pantryStall', 'specialtyStall', 'toolsStall', 'carpenterStall', 'noticeBoard'];
-const WARDROBE_ART: readonly ArtName[] = ['santaHat', 'santaCoat', 'hedgehogSantaPreview'];
+const WARDROBE_ART: readonly ArtName[] = [
+  'santaHat', 'santaCoat', 'hedgehogSantaPreview',
+  'rabbitSantaHat', 'rabbitSantaCoat', 'rabbitSantaPreview',
+  'mouseSantaHat', 'mouseSantaCoat', 'mouseSantaPreview',
+  'deerSantaHat', 'deerSantaCoat', 'deerSantaPreview',
+];
 
 const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 
@@ -37,7 +42,7 @@ function groupOf(name: ArtName): string {
 
 function source(name: ArtName): string {
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
-  if (WARDROBE_ART.includes(name)) return 'redrawn from your Christmas clothing reference, fitted to the hedgehog (tools/wardrobeArt.cjs)';
+  if (WARDROBE_ART.includes(name)) return 'redrawn from your Christmas clothing reference, individually fitted (tools/wardrobeArt.cjs and tools/wardrobeCritters.cjs)';
   if (VIEW_ART.has(name)) return 'converted from your critter sheet';
   if ((CHRISTMAS_ART as readonly ArtName[]).includes(name)) return 'converted from your Christmas drawings';
   if (MARKET_STALLS.includes(name)) return 'converted from your Marketplace drawings';
@@ -126,7 +131,7 @@ function card(name: ArtName): { node: HTMLElement; problems: string[] } {
     el('div', { className: 'meta' }, `${width}x${height}, ${sprite.frames.length} frame${sprite.frames.length > 1 ? 's' : ''}, ${source(name)}`),
     frames,
   );
-  if (CRITTER_ART.includes(name) || name === 'hedgehogSantaPreview') node.append(walkStrip(name));
+  if (CRITTER_ART.includes(name) || VIEW_ART.has(name)) node.append(walkStrip(name));
   if (DRAWN_ART.has(name)) {
     node.append(el('div', { className: 'meta' }, 'In the game your PNG is used; the checks and frames above are the code version it replaces.'));
   }

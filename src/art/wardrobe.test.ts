@@ -3,6 +3,8 @@ import { holes, strayPixels } from './checks';
 import { spriteProblems, spriteSize } from './pixelSprite';
 import { HEDGEHOG } from './sprites/sheetCritters';
 import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
+import { CLOTHING_FITS } from '../data/clothingFits';
+import { SPRITE_ART } from './spriteArt';
 
 describe('hedgehog Christmas clothing', () => {
   it('fits every original facing and walking frame without moving the feet', () => {
@@ -34,4 +36,24 @@ describe('hedgehog Christmas clothing', () => {
       }
     }
   });
+});
+
+describe('shared clothing fittings', () => {
+  for (const [animal, fit] of Object.entries(CLOTHING_FITS)) {
+    it(`fits ${animal}'s frame grid and preserves its walking feet`, () => {
+      const base = SPRITE_ART[animal as keyof typeof CLOTHING_FITS];
+      for (const name of [fit.santaHat, fit.santaCoat]) {
+        const clothing = SPRITE_ART[name];
+        expect(spriteSize(clothing)).toEqual(spriteSize(base));
+        expect(clothing.frames).toHaveLength(base.frames.length);
+        expect(spriteProblems(clothing)).toEqual([]);
+        clothing.frames.forEach((frame, f) => {
+          expect(frame.at(-1)).toMatch(/^\.+$/);
+          const combined = base.frames[f].map((row, y) => [...row].map((c, x) => frame[y][x] === '.' ? c : frame[y][x]).join(''));
+          expect(holes(combined)).toBe(0);
+          expect(strayPixels(combined)).toBe(0);
+        });
+      }
+    });
+  }
 });
