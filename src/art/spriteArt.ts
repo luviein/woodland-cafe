@@ -1,4 +1,5 @@
 import type { PixelSprite } from './pixelSprite';
+import { HEDGEHOG_SANTA_PREVIEW, SANTA_COAT, SANTA_HAT } from './sprites/wardrobe';
 import {
   CHAIR,
   COUNTER,
@@ -61,6 +62,9 @@ export const SPRITE_ART = {
   storeIcon: STORE_ICON,
   // The cast, four views each (GAME_DESIGN.md §8.2)
   hedgehog: HEDGEHOG,
+  santaHat: SANTA_HAT,
+  santaCoat: SANTA_COAT,
+  hedgehogSantaPreview: HEDGEHOG_SANTA_PREVIEW,
   raccoon: RACCOON,
   frog: FROG,
   fox: FOX,
@@ -127,6 +131,7 @@ export function isArtName(name: string): name is ArtName {
  */
 export const VIEW_ART: ReadonlySet<ArtName> = new Set<ArtName>([
   'hedgehog',
+  'hedgehogSantaPreview',
   'rabbit',
   'mouse',
   'deer',

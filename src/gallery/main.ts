@@ -15,12 +15,14 @@ import { INGREDIENT_IDS } from '../data/ingredients';
 
 /** The Marketplace stalls converted from the player's drawings. */
 const MARKET_STALLS: readonly ArtName[] = ['pantryStall', 'specialtyStall', 'toolsStall', 'carpenterStall', 'noticeBoard'];
+const WARDROBE_ART: readonly ArtName[] = ['santaHat', 'santaCoat', 'hedgehogSantaPreview'];
 
 const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
+  ['Wardrobe: first clothing review', (n) => WARDROBE_ART.includes(n)],
   ['Critters', (n) => CRITTER_ART.includes(n)],
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
@@ -35,6 +37,7 @@ function groupOf(name: ArtName): string {
 
 function source(name: ArtName): string {
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
+  if (WARDROBE_ART.includes(name)) return 'redrawn from your Christmas clothing reference, fitted to the hedgehog (tools/wardrobeArt.cjs)';
   if (VIEW_ART.has(name)) return 'converted from your critter sheet';
   if ((CHRISTMAS_ART as readonly ArtName[]).includes(name)) return 'converted from your Christmas drawings';
   if (MARKET_STALLS.includes(name)) return 'converted from your Marketplace drawings';
@@ -123,7 +126,7 @@ function card(name: ArtName): { node: HTMLElement; problems: string[] } {
     el('div', { className: 'meta' }, `${width}x${height}, ${sprite.frames.length} frame${sprite.frames.length > 1 ? 's' : ''}, ${source(name)}`),
     frames,
   );
-  if (CRITTER_ART.includes(name)) node.append(walkStrip(name));
+  if (CRITTER_ART.includes(name) || name === 'hedgehogSantaPreview') node.append(walkStrip(name));
   if (DRAWN_ART.has(name)) {
     node.append(el('div', { className: 'meta' }, 'In the game your PNG is used; the checks and frames above are the code version it replaces.'));
   }
