@@ -17,20 +17,20 @@ import { COLORS, TEXT } from './theme';
 export class WardrobePanel extends Phaser.GameObjects.Container {
   private slot: keyof Outfit | 'animal' = 'hat';
   private view = 0;
-  private itemIndex = 0;
   private readonly cape: Phaser.GameObjects.Image;
   private readonly shoes: Phaser.GameObjects.Image;
-  private readonly previousItem: Button;
-  private readonly nextItem: Button;
   private readonly critterImage: Phaser.GameObjects.Image;
   private readonly hat: Phaser.GameObjects.Image;
   private readonly coat: Phaser.GameObjects.Image;
-  private readonly item: Phaser.GameObjects.Image;
   private readonly status: Phaser.GameObjects.Text;
-  private readonly itemName: Phaser.GameObjects.Text;
-  private readonly action: Button;
   private readonly tabs: Button[];
-  private readonly itemCard: Phaser.GameObjects.Rectangle;
+  private readonly cards: {
+    button: Button;
+    image: Phaser.GameObjects.Image;
+    label: Phaser.GameObjects.Text;
+    outline: Phaser.GameObjects.Rectangle;
+    worn: Phaser.GameObjects.Text;
+  }[] = [];
   private readonly animalObjects: (Phaser.GameObjects.Image | Button)[] = [];
   private readonly animalButtons: Button[] = [];
 
@@ -80,19 +80,19 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       place('shoesTab', 402, 130, new Button(scene, 0, 0, 76, 24, 'Shoes', COLORS.book, () => this.select('shoes'))),
       place('animalTab', 490, 130, new Button(scene, 0, 0, 76, 24, 'Animal', COLORS.book, () => this.select('animal'))),
     ];
-    this.itemCard = place('itemCard', 446, 198, scene.add.rectangle(0, 0, 132, 76, COLORS.paperEdge).setStrokeStyle(2, COLORS.counterEdge));
-    this.item = place('item', 446, 195, scene.add.image(0, 0, artKey('santaHat')).setScale(2));
-    this.itemName = place('itemName', 446, 251, scene.add.text(0, 0, '', TEXT.heading).setOrigin(0.5));
-    this.action = place('equip', 446, 276, new Button(scene, 0, 0, 146, 28, '', COLORS.serve, () => {
-      if (this.slot === 'animal') return;
-      const state = getGameState(scene);
-      const item = this.currentItem();
-      const outfit = equip(state.outfit, this.slot, state.outfit[this.slot] === item ? null : item);
-      setGameState(scene, { ...state, outfit });
-      this.refresh();
-    }));
-    this.previousItem = place('previousItem', 344, 198, new Button(scene, 0, 0, 38, 26, '<', COLORS.book, () => this.browse(-1)));
-    this.nextItem = place('nextItem', 548, 198, new Button(scene, 0, 0, 38, 26, '>', COLORS.book, () => this.browse(1)));
+    for (let i = 0; i < 4; i++) {
+      const x = 382 + (i % 2) * 128, y = 190 + Math.floor(i / 2) * 72;
+      const button = place(`item.${i}.card`, x, y, new Button(scene, 0, 0, 116, 62, '', COLORS.paperEdge, () => this.toggleItem(i)));
+      const outline = place(`item.${i}.outline`, x, y, scene.add.rectangle(0, 0, 116, 62).setFillStyle(0, 0).setStrokeStyle(3, COLORS.serve));
+      const image = place(`item.${i}.picture`, x, y - 16, scene.add.image(0, 0, artKey('santaHat')).setScale(2));
+      const label = place(`item.${i}.name`, x, y + 15, scene.add.text(0, 0, '', {
+        ...TEXT.body, fontSize: '11px', align: 'center', wordWrap: { width: 104, useAdvancedWrap: true },
+      }).setOrigin(0.5));
+      const worn = place(`item.${i}.worn`, x + 50, y - 25, scene.add.text(0, 0, 'Worn', {
+        ...TEXT.body, fontSize: '10px', color: '#294b33', fontStyle: 'bold',
+      }).setOrigin(1, 0));
+      this.cards.push({ button, image, label, outline, worn });
+    }
     PLAYER_ANIMALS.forEach((animal, i) => {
       const x = 350, y = 164 + i * 35;
       const icon = place(`animal.${animal}.portrait`, x, y, scene.add.image(0, 0, artKey(animal)));
@@ -116,24 +116,26 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     this.refresh();
   }
 
-  private select(slot: keyof Outfit | 'animal'): void { this.slot = slot; this.itemIndex = 0; this.refresh(); }
+  private select(slot: keyof Outfit | 'animal'): void { this.slot = slot; this.refresh(); }
 
-  private currentItem(): ClothingId { return clothingIn(this.slot === 'animal' ? 'hat' : this.slot)[this.itemIndex]; }
-
-  private browse(direction: number): void {
+  private toggleItem(index: number): void {
     if (this.slot === 'animal') return;
-    const count = clothingIn(this.slot).length;
-    this.itemIndex = (this.itemIndex + direction + count) % count;
+    const item = clothingIn(this.slot)[index];
+    if (!item) return;
+    const state = getGameState(this.scene);
+    const outfit = equip(state.outfit, this.slot, state.outfit[this.slot] === item ? null : item);
+    setGameState(this.scene, { ...state, outfit });
     this.refresh();
   }
 
-  private centreItem(): void {
-    const pixels = SPRITE_ART[this.item.texture.key.slice(4) as keyof typeof SPRITE_ART].frames[0];
+  private centreItem(image: Phaser.GameObjects.Image, animal: (typeof PLAYER_ANIMALS)[number], item: ClothingId): void {
+    const sprite = SPRITE_ART[clothingArt(animal, item)];
+    const pixels = sprite.frames[0];
     const points = pixels.flatMap((row, y) => [...row].flatMap((c, x) => c === '.' ? [] : [{ x, y }]));
     if (!points.length) return;
-    const size = spriteSize(SPRITE_ART[this.item.texture.key.slice(4) as keyof typeof SPRITE_ART]);
+    const size = spriteSize(sprite);
     const xs = points.map(p => p.x), ys = points.map(p => p.y);
-    this.item.setOrigin((Math.min(...xs) + Math.max(...xs) + 1) / 2 / size.width, (Math.min(...ys) + Math.max(...ys) + 1) / 2 / size.height);
+    image.setOrigin((Math.min(...xs) + Math.max(...xs) + 1) / 2 / size.width, (Math.min(...ys) + Math.max(...ys) + 1) / 2 / size.height);
   }
 
   private turn(direction: number): void {
@@ -153,16 +155,20 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       if (item) layers[slot].setTexture(artKey(clothingArt(animal, item)), frame);
     }
     const choosingAnimal = this.slot === 'animal';
-    for (const object of [this.itemCard, this.item, this.itemName, this.action, this.previousItem, this.nextItem]) object.setVisible(!choosingAnimal);
+    const items = this.slot === 'animal' ? [] : clothingIn(this.slot);
+    this.cards.forEach((card, i) => {
+      const item = items[i];
+      for (const object of Object.values(card)) object.setVisible(!!item);
+      if (!item || this.slot === 'animal') return;
+      const equipped = outfit[this.slot] === item;
+      card.image.setTexture(artKey(clothingArt(animal, item)), 0);
+      this.centreItem(card.image, animal, item);
+      card.label.setText(CLOTHING[item].name);
+      card.outline.setVisible(equipped);
+      card.worn.setVisible(equipped);
+    });
     for (const object of this.animalObjects) object.setVisible(choosingAnimal);
     this.animalButtons.forEach((button, i) => button.setEnabled(PLAYER_ANIMALS[i] !== animal));
-    if (this.slot !== 'animal') {
-      const item = this.currentItem();
-      this.item.setTexture(artKey(clothingArt(animal, item)), 0);
-      this.centreItem();
-      this.itemName.setText(`${CLOTHING[item].name} (${this.itemIndex + 1}/${clothingIn(this.slot).length})`).setFontSize(14);
-      this.action.setText(outfit[this.slot] === item ? 'Remove' : 'Equip');
-    }
     (['hat', 'top', 'cape', 'shoes', 'animal'] as const).forEach((slot, i) => this.tabs[i].setEnabled(this.slot !== slot));
     this.status.setText(`${ANIMAL_NAMES[animal]} · Saved with your game`);
   }
