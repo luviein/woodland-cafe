@@ -1,5 +1,6 @@
 import type { ArtName } from '../art/spriteArt';
 import type { Point } from '../logic/layout';
+import { layoutPoint } from '../layout/positions';
 import type { OutdoorLocationId } from './outdoorAreas';
 import type { UpgradeId } from './upgrades';
 
@@ -16,8 +17,8 @@ export interface MonthDay {
 export interface ShopDef {
   name: string;
   location: OutdoorLocationId;
-  /** Top-middle of the stall's counter, in pixels. */
-  stall: Point;
+  /** Top-middle of the stall's counter, in pixels (movable in Arrange mode, GAME_DESIGN.md §9.3). */
+  readonly stall: Point;
   /** One line under the title, saying what the stall is for. */
   blurb: string;
   /** Its sprite, when it isn't the plain market stall. */
@@ -35,38 +36,50 @@ export const SHOPS = {
   pantry: {
     name: 'Pantry',
     location: 'marketplace',
-    stall: { x: 100, y: 120 },
+    get stall() {
+      return layoutPoint('marketplace', 'stall.pantry', { x: 100, y: 120 });
+    },
     blurb: 'Stock up on ingredients you own.',
   },
   specialty: {
     name: 'Specialty',
     location: 'marketplace',
-    stall: { x: 210, y: 110 },
+    get stall() {
+      return layoutPoint('marketplace', 'stall.specialty', { x: 210, y: 110 });
+    },
     blurb: 'New ingredients for new recipes.',
   },
   tools: {
     name: 'Tools',
     location: 'marketplace',
-    stall: { x: 320, y: 120 },
+    get stall() {
+      return layoutPoint('marketplace', 'stall.tools', { x: 320, y: 120 });
+    },
     blurb: 'Kitchen upgrades.',
   },
   carpenter: {
     name: 'Carpenter',
     location: 'marketplace',
-    stall: { x: 430, y: 110 },
+    get stall() {
+      return layoutPoint('marketplace', 'stall.carpenter', { x: 430, y: 110 });
+    },
     blurb: 'Furniture. Place it via Cafe > Decorate.',
   },
   noticeBoard: {
     name: 'Notice Board',
     location: 'marketplace',
-    stall: { x: 540, y: 120 },
+    get stall() {
+      return layoutPoint('marketplace', 'stall.noticeBoard', { x: 540, y: 120 });
+    },
     blurb: 'Hire help. Wages are paid at the end of each day.',
   },
   // The Christmas edition's stall, in the open below the others (GAME_DESIGN.md §5.10).
   christmas: {
     name: 'Christmas',
     location: 'marketplace',
-    stall: { x: 320, y: 231 },
+    get stall() {
+      return layoutPoint('marketplace', 'stall.christmas', { x: 320, y: 231 });
+    },
     blurb: 'The Christmas catalogue.',
     art: 'christmasStall',
     counterHeight: 19,

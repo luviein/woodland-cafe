@@ -216,6 +216,15 @@ export function createDevCommands(
       },
     },
 
+    arrange: {
+      usage: 'arrange',
+      description: 'Arrange mode: drag things on this screen to move them, then Save (also F2)',
+      run: () => {
+        if (!actions.arrange) throw new Error('Arrange mode is not available');
+        return actions.arrange();
+      },
+    },
+
     season: {
       usage: 'season [all|date]',
       description: 'Seasonal shops (the Christmas stall): open all year, or only in their season by the date',

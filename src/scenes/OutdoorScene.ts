@@ -43,6 +43,7 @@ import {
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
 import { CataloguePanel } from '../ui/CataloguePanel';
+import { arrangeable, arrangeRule } from '../layout/arrangeable';
 import { LeafText } from '../ui/LeafText';
 import { TREE_TRUNK_HEIGHT, addGround, addStanding, addTree, createPlayerSprite } from '../ui/sprites';
 import { spriteSize } from '../art/pixelSprite';
@@ -118,7 +119,7 @@ export class OutdoorScene extends Phaser.Scene {
     area.trees.forEach((t, i) => {
       const base = t.y + TREE_TRUNK_HEIGHT;
       const kind = this.location === 'forest' && i % 2 === 1 ? 'pine' : 'oak';
-      addTree(this, t.x, base, kind).setDepth(base);
+      arrangeable(this, this.location, `tree.${i}`, t, addTree(this, t.x, base, kind).setDepth(base));
     });
     this.createForageSpots();
     this.createShops();
@@ -312,18 +313,27 @@ export class OutdoorScene extends Phaser.Scene {
       const art = (SHOPS[id] as { art?: ArtName }).art ?? 'stall';
       const { width, height } = spriteSize(SPRITE_ART[art]);
       const base = stallBase(id);
-      addStanding(this, base.x, base.y, art).setDepth(base.y);
+      const stall = addStanding(this, base.x, base.y, art).setDepth(base.y);
       // The name sign hangs over the top of the stall (the plain stall's awning, the Christmas stall's roof).
-      this.add
+      const sign = this.add
         .text(base.x, base.y - height + 4, SHOPS[id].name, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
         .setOrigin(0.5, 1)
         .setDepth(base.y);
       // The whole stall, plus a bit, for fingers.
-      this.add
+      const tapArea = this.add
         .zone(base.x, base.y - height / 2, width + 4, height + 2)
         .setInteractive({ useHandCursor: true })
         .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.onShopTapped(id));
+      arrangeable(this, this.location, `stall.${id}`, SHOPS[id].stall, stall, sign, tapArea);
     }
+    // Arrange mode: a stall's base must be where the player can walk, so they can reach its counter.
+    arrangeRule(this, () =>
+      this.shops.flatMap((id) => {
+        const { x, y } = stallBase(id);
+        const a = OUTDOOR_WALK_AREA;
+        return x >= a.x && x <= a.x + a.width && y >= a.y && y <= a.y + a.height ? [] : [{ name: `stall.${id}`, problem: 'its counter is outside where the player can walk' }];
+      }),
+    );
   }
 
   /** Walk up to the counter; the panel opens on arrival (see update()). */

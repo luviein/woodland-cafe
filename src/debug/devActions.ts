@@ -27,11 +27,13 @@ export interface DevActions {
   save: { now: () => void; wipe: () => void } | null;
   /** Any time: play a sound effect by name (the name is checked first). */
   playSound: ((name: SoundName) => void) | null;
+  /** Any time: Arrange mode on or off for the screen showing (GAME_DESIGN.md §9.3); says what happened. */
+  arrange: (() => string) | null;
 }
 
 /** Nothing registered: every scene-specific command says "not available". */
 export function noDevActions(): DevActions {
-  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null, save: null, playSound: null };
+  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null, save: null, playSound: null, arrange: null };
 }
 
 export const devActions: DevActions = noDevActions();

@@ -13,6 +13,7 @@ import type { LocationRequest, WorldMapRequest } from '../scenes/WorldMapScene';
 import { createDevCommands, runCommand } from './commands';
 import { devActions } from './devActions';
 import { devSettings } from './devSettings';
+import { mountArrangeMode } from './ArrangeMode';
 
 /**
  * A small text box over the game for typing test commands. Plain HTML, not
@@ -28,6 +29,8 @@ export function mountDevConsole(game: Phaser.Game): void {
   devActions.game = { get: () => getGameState(game), set: (state) => setGameState(game, state) };
   devActions.save = { now: () => saveNow(game), wipe: deleteSave };
   devActions.playSound = playSound;
+  const arrange = mountArrangeMode(game);
+  devActions.arrange = () => arrange.toggle();
   devActions.goto = (place) => {
     // Overlays included (prep, summary): a clean jump, like a fresh visit.
     for (const scene of game.scene.getScenes(true)) game.scene.stop(scene.scene.key);
