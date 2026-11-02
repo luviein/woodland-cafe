@@ -412,6 +412,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - Clothing is separate transparent art on the hedgehog's frame grid, with equipped examples in the sprite gallery for review before use in play.
 - Tapping the player on the cafe floor or outdoors opens a cafe-styled wardrobe with a four-direction character preview, Hats and Tops tabs, item cards and equip/remove controls. The Santa hat and coat are free starter cosmetics. Changes apply immediately; Close or Escape returns to play. The world continues running, as with the shops and recipe book.
 - Outfits use separate head and top slots, are saved with the normal game save (during a cafe day, at the end of that day), and appear in every walking direction. Older saves start without clothing. Capes, shoes, purchases and other animals follow later.
+- The wardrobe's **Animal** tab lets the player change freely between hedgehog, rabbit, mouse and deer. The preview and walking character change immediately, keeping the equipped outfit with its animal-specific fitting. The choice saves with the outfit; older saves default to hedgehog. This changes appearance only, not movement, interactions or game rules.
 
 ## 6. Game State
 
@@ -460,7 +461,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - **Safety, from the start:** a word filter on chat and names, block and report buttons, and limits on how fast messages can be sent. Worth deciding early who the game is for (e.g. younger players need stricter chat rules).
   - **Fairness:** the server decides what counts (Leaves picked up, purchases), so a changed copy of the game can't cheat in shared places.
 - **Appearance and wardrobe:** the player changes how their critter looks from a **profile and inventory menu**: a portrait of their critter on a backdrop, their name, and an inventory of cosmetic items in **category tabs** (e.g. Hats, Clothes, Held items, Colours, Backs), shown as cards, paged. Items are bought or earned in the game and are cosmetic only. Drawn as layers on top of the critter, so each item needs a version for each of the four views (§8.2), lined up with the critter's head and body. Shown to other players in the multiplayer places. Pairs with **choose your animal** below.
-- **Choose your animal:** at the start of a new game the player picks which critter they are (the cafe owner is a hedgehog until then, §8.2).
+- **Choose your animal:** available in the wardrobe (§5.11) for hedgehog, rabbit, mouse and deer. A choice at new-game setup and the remaining animals can follow later.
 
 ---
 
