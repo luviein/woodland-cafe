@@ -385,9 +385,10 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     fold.lineStyle(1, COLORS.counterEdge).lineBetween(-dir * CORNER, 0, 0, -CORNER);
     const hit = s.add.zone(-dir * 18, -18, 40, 40).setInteractive({ useHandCursor: true });
     hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.turn(turnBy));
+    // Still, except a slight lift while the pointer is over it.
+    hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => fold.setScale(1.2));
+    hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => fold.setScale(1));
     corner.add([fold, hit]);
-    // A gentle lift, so it reads as something to tap.
-    s.tweens.add({ targets: fold, scale: 1.15, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     return corner;
   }
 
