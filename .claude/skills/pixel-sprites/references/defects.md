@@ -75,3 +75,19 @@ Each one: what it looks like, why it happens, and the fix that worked.
   pointed at, and look for the same defect elsewhere in the sprite and in its
   siblings (both stockings, every string, every view).
 - Keep fixes in the regeneration script so a rerun doesn't undo them.
+
+## In the game, not just on the checkerboard
+
+- **Vanishing on its backdrop** (bauble strings on the log wall): a colour
+  that reads on the gallery's checkerboard can match what it's placed on.
+  Render it on the real backdrop (a wall tile, the floor, the counter) and
+  use the outline colour for thin lines.
+- **Wrong size next to its neighbours** (Table & Candle smaller than the
+  Chair with Bow beside it): compare a piece with what stands next to it in
+  the game; it's fine for a piece to be wider than its tile (the table is 30
+  on a 24 tile).
+- **Floating** (a garland centred on the wall looked like a stray sprig):
+  things that hang from a line should hang from an edge, reach across their
+  whole tile, and join up when placed side by side.
+- **Same scale in lists** (the catalogue): show every item at one scale so
+  sizes compare; never scale each to fill its box.
