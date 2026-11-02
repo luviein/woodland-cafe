@@ -1,5 +1,5 @@
 import { CAFE_LAYOUT } from '../data/cafeLayout';
-import { DESIGN_IDS, FURNITURE, KIND_CHAR, kindOf, type DesignId } from '../data/furniture';
+import { DESIGN_IDS, FURNITURE, KIND_CHAR, kindOf, placesOf, type DesignId, type Place } from '../data/furniture';
 import { isWalkable, neighbours, parseLayout, pointKey, samePoint, type Layout, type Point } from './layout';
 
 // The cafe = a fixed ROOM (walls, door, counter, queue) + the player's
@@ -7,8 +7,8 @@ import { isWalkable, neighbours, parseLayout, pointKey, samePoint, type Layout, 
 // the game state and be moved, while the room stays in data/cafeLayout.ts
 // (GAME_DESIGN.md §5.7, §5.10). To build the floor, the floor pieces are
 // written back into the room's rows and parsed like any hand-written layout,
-// so all of parseLayout()'s checks still apply. Wall decorations hang on the
-// back wall: they're never in the floor's rows, so they can't block anything.
+// so all of parseLayout()'s checks still apply. Pieces on the back wall or
+// the counter are never in the floor's rows, so they can't block anything.
 
 export interface PlacedPiece extends Point {
   /** Which design it is (the plain table, the Christmas tree...); its kind follows from that. */
@@ -34,7 +34,24 @@ const DESIGN_BY_CHAR = new Map<string, DesignId>([
 ]);
 
 const isKind = (kind: string) => (p: PlacedPiece) => kindOf(p.design) === kind;
-const onFloor = (p: PlacedPiece) => kindOf(p.design) !== 'wallDecor';
+/** What kind of spot a tile is for furniture: the floor, the back wall, the counter, or none. */
+export type Spot = 'floor' | 'wall' | 'counter';
+
+export function spotAt(room: readonly string[], at: Point): Spot | null {
+  const char = room[at.y]?.[at.x];
+  if (char === '.') return 'floor';
+  if (char === 'C') return 'counter';
+  return isWallSpot(room, at) ? 'wall' : null;
+}
+
+/** Whether a design can go on a kind of spot (the counter takes counter-front and counter-top pieces). */
+function fits(design: DesignId, spot: Spot): boolean {
+  const places = placesOf(design);
+  return spot === 'counter' ? places.includes('counterFront') || places.includes('counterTop') : places.includes(spot);
+}
+
+/** Where a design can go, in words, for "can't go there" messages. */
+const PLACE_WORDS: Record<Place, string> = { floor: 'the floor', wall: 'the back wall (between the windows)', counterFront: 'the counter', counterTop: 'the counter' };
 
 /** Back-wall tiles get a window every few tiles (drawn by ui/cafeTiles.ts); decorations can't hang there. */
 export const WINDOW_EVERY = 5;
@@ -83,7 +100,7 @@ export function startingFurniture(): Furniture {
 /** The room's rows with the floor pieces written in (T, S, X), ready for parseLayout(). */
 export function furnishedRows(room: readonly string[], placed: readonly PlacedPiece[]): string[] {
   const grid = room.map((row) => [...row]);
-  for (const piece of placed.filter(onFloor)) grid[piece.y][piece.x] = KIND_CHAR[kindOf(piece.design) as keyof typeof KIND_CHAR];
+  for (const piece of placed.filter((p) => room[p.y]?.[p.x] === '.')) grid[piece.y][piece.x] = KIND_CHAR[kindOf(piece.design) as keyof typeof KIND_CHAR];
   return grid.map((row) => row.join(''));
 }
 
@@ -144,13 +161,17 @@ export function placeProblem(
   return arrangementProblem([...furniture.placed, { design, ...at }], room);
 }
 
-/** Whether a design can stand on this tile at all (before the rules for the cafe as a whole). */
-function spotProblemFor(design: DesignId, at: Point, room: readonly string[]): string | null {
-  if (kindOf(design) === 'wallDecor') return isWallSpot(room, at) ? null : 'Hang it on the back wall, between the windows';
-  // '.' only: not walls or the counter, and not the door, the counter spot,
-  // the order spot or queue spots (P, O, 1-9), which must stay clear.
-  if (room[at.y]?.[at.x] !== '.') return 'Keep the door, counter and queue clear';
-  return null;
+/** Whether a design can go on this tile at all (before the rules for the cafe as a whole), or why not. */
+export function spotProblemFor(design: DesignId, at: Point, room: readonly string[]): string | null {
+  const spot = spotAt(room, at);
+  if (spot && fits(design, spot)) return null;
+  const places = placesOf(design);
+  // Floor-only pieces: '.' only, so not the door, the counter spot, the
+  // order spot or queue spots (P, O, 1-9), which must stay clear.
+  if (places.length === 1 && places[0] === 'floor') return 'Keep the door, counter and queue clear';
+  if (places.length === 1 && places[0] === 'wall') return 'Hang it on the back wall, between the windows';
+  const words = [...new Set(places.map((p) => PLACE_WORDS[p]))];
+  return `It goes on ${words.join(' or ')}`;
 }
 
 /**

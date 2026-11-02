@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
-import { CHRISTMAS_CATALOGUE, DESIGN_IDS, FURNITURE, kindOf, type DesignId } from '../data/furniture';
+import { CHRISTMAS_CATALOGUE, DESIGN_IDS, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
 import {
   buildLayout,
   movePiece,
@@ -35,6 +35,12 @@ const TRAY = { x: 64, y: BASE_HEIGHT - 42, firstCard: 172, card: 40, gap: 4, per
 
 /** How far (px) a press must move to count as a drag rather than a tap. */
 const DRAG_THRESHOLD = 4;
+
+/** Where a design can go, for the hint under the tray, e.g. "the back wall or the counter". */
+function placeWords(design: DesignId): string {
+  const words = { floor: 'the floor', wall: 'the back wall', counterFront: 'the counter', counterTop: 'the counter' } as const;
+  return [...new Set(placesOf(design).map((p) => words[p]))].join(' or ');
+}
 
 /** Always in the tray, even with none in storage: the plain table and chair (Grandma's tip points at the table). */
 const ALWAYS_IN_TRAY: readonly DesignId[] = ['table', 'chair'];
@@ -338,7 +344,10 @@ export class DecorateScene extends Phaser.Scene {
     const pieces: readonly PlacedPiece[] = drag.from ? drag.pieces : [{ design: drag.design, x: 0, y: 0 }];
     const from = drag.from ?? { x: 0, y: 0 };
     const images = pieces.map((p) => {
-      const { art, frame, at } = pieceDrawing([], p, { x: (p.x - from.x) * TILE_SIZE, y: (p.y - from.y) * TILE_SIZE });
+      // Drawn as on its usual place (the first in its list); it's redrawn properly once put down.
+      const usual = placesOf(p.design)[0];
+      const on = usual === 'wall' ? 'wall' : usual === 'floor' ? 'floor' : 'counter';
+      const { art, frame, at } = pieceDrawing([], p, { x: (p.x - from.x) * TILE_SIZE, y: (p.y - from.y) * TILE_SIZE }, on);
       return this.add.image(at.x, at.y, artKey(art), frame).setOrigin(0);
     });
     return this.add.container(0, 0, images).setAlpha(0.75).setDepth(50);
@@ -419,7 +428,7 @@ export class DecorateScene extends Phaser.Scene {
     this.refreshTray();
     this.hint.setText(
       this.selected
-        ? `${FURNITURE[this.selected].name}: tap a spot to place it${kindOf(this.selected) === 'wallDecor' ? ' on the back wall' : ''}`
+        ? `${FURNITURE[this.selected].name}: tap a spot to place it (${placeWords(this.selected)})`
         : 'Drag pieces to move or place them. Tap a piece for more.',
     );
   }

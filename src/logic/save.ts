@@ -1,8 +1,8 @@
 import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
-import { DESIGN_IDS, kindOf, type DesignId } from '../data/furniture';
+import { DESIGN_IDS, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, type IngredientId } from '../data/ingredients';
 import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
-import { CAFE_ROOM, buildLayout, isWallSpot, type Furniture, type PlacedPiece } from './furniture';
+import { CAFE_ROOM, buildLayout, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
@@ -157,7 +157,7 @@ function readFurniture(value: unknown, fallback: Furniture): Furniture {
 function allPlacedOk(furniture: Furniture): boolean {
   const spots = new Set(furniture.placed.map((p) => `${p.x},${p.y}`));
   if (spots.size !== furniture.placed.length) return false;
-  const onItsSpot = (p: PlacedPiece) => (kindOf(p.design) === 'wallDecor' ? isWallSpot(CAFE_ROOM, p) : CAFE_ROOM[p.y]?.[p.x] === '.');
+  const onItsSpot = (p: PlacedPiece) => spotProblemFor(p.design, p, CAFE_ROOM) === null;
   return furniture.placed.every(onItsSpot) && buildsValidCafe(furniture);
 }
 

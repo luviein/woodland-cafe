@@ -8,6 +8,12 @@ import type { ArtName } from '../art/spriteArt';
 
 export type FurnitureKind = 'table' | 'chair' | 'floorDecor' | 'wallDecor';
 
+/**
+ * Where a piece can go: on the floor, on the back wall, hanging along the
+ * counter's front, or standing on the counter's top (GAME_DESIGN.md §5.10).
+ */
+export type Place = 'floor' | 'wall' | 'counterFront' | 'counterTop';
+
 /** Where a design is sold: the Carpenter stall, or a catalogue edition (§5.10). */
 export type FurnitureShop = 'carpenter' | 'christmas';
 
@@ -21,6 +27,10 @@ export interface FurnitureDesign {
   art: ArtName;
   /** One line about it, for the catalogue. */
   blurb: string;
+  /** Where it can go, when that's more than its kind's usual place (see placesOf). */
+  places?: readonly Place[];
+  /** It hangs from a line (a garland): from the top edge of the wall, not the middle. */
+  hangsFromTop?: boolean;
 }
 
 export const FURNITURE = {
@@ -35,14 +45,14 @@ export const FURNITURE = {
   chairWithBow: { name: 'Chair with Bow', kind: 'chair', price: 20, shop: 'christmas', art: 'chairWithBow', blurb: 'A red cushion and a bow.' },
   giftBoxes: { name: 'Gift Boxes', kind: 'floorDecor', price: 35, shop: 'christmas', art: 'giftBoxes', blurb: 'No peeking!' },
   poinsettia: { name: 'Poinsettia Plant', kind: 'floorDecor', price: 20, shop: 'christmas', art: 'poinsettia', blurb: 'Red leaves for a winter window.' },
-  snowGlobe: { name: 'Snow Globe', kind: 'floorDecor', price: 15, shop: 'christmas', art: 'snowGlobe', blurb: 'Give it a shake.' },
-  pineGarland: { name: 'Pine Garland', kind: 'wallDecor', price: 35, shop: 'christmas', art: 'pineGarland', blurb: 'Pine, bows and a little glow.' },
-  fairyLights: { name: 'Fairy Lights', kind: 'wallDecor', price: 25, shop: 'christmas', art: 'fairyLights', blurb: 'A string of warm little lights.' },
+  snowGlobe: { name: 'Snow Globe', kind: 'floorDecor', price: 15, shop: 'christmas', art: 'snowGlobe', blurb: 'Give it a shake.', places: ['floor', 'counterTop'] },
+  pineGarland: { name: 'Pine Garland', kind: 'wallDecor', price: 35, shop: 'christmas', art: 'pineGarland', blurb: 'Pine, bows and a little glow.', places: ['wall', 'counterFront'], hangsFromTop: true },
+  fairyLights: { name: 'Fairy Lights', kind: 'wallDecor', price: 25, shop: 'christmas', art: 'fairyLights', blurb: 'A string of warm little lights.', places: ['wall', 'counterFront'], hangsFromTop: true },
   stockings: { name: 'Stockings', kind: 'wallDecor', price: 20, shop: 'christmas', art: 'stockings', blurb: 'Hung up with care.' },
-  baubles: { name: 'Bauble Ornaments', kind: 'wallDecor', price: 20, shop: 'christmas', art: 'baubles', blurb: 'Red, gold and green.' },
+  baubles: { name: 'Bauble Ornaments', kind: 'wallDecor', price: 20, shop: 'christmas', art: 'baubles', blurb: 'Red, gold and green.', hangsFromTop: true },
   wreath: { name: 'Christmas Wreath', kind: 'wallDecor', price: 35, shop: 'christmas', art: 'wreath', blurb: 'Holly, pinecones and a bow.' },
-  lantern: { name: 'Lantern', kind: 'wallDecor', price: 20, shop: 'christmas', art: 'lantern', blurb: 'A soft light for long nights.' },
-  treePicture: { name: 'Christmas Tree Picture', kind: 'wallDecor', price: 40, shop: 'christmas', art: 'treePicture', blurb: 'A snowy tree, framed.' },
+  lantern: { name: 'Lantern', kind: 'wallDecor', price: 20, shop: 'christmas', art: 'lantern', blurb: 'A soft light for long nights.', places: ['wall', 'counterTop'] },
+  treePicture: { name: 'Christmas Tree Picture', kind: 'wallDecor', price: 40, shop: 'christmas', art: 'treePicture', blurb: 'A snowy tree, framed.', places: ['wall', 'counterTop'] },
 } as const satisfies Record<string, FurnitureDesign>;
 
 export type DesignId = keyof typeof FURNITURE;
@@ -51,6 +61,12 @@ export const DESIGN_IDS = Object.keys(FURNITURE) as DesignId[];
 
 export function kindOf(design: DesignId): FurnitureKind {
   return FURNITURE[design].kind;
+}
+
+/** Where a design can go: its own list, or its kind's usual place (wall pieces on the wall, the rest on the floor). */
+export function placesOf(design: DesignId): readonly Place[] {
+  const def: FurnitureDesign = FURNITURE[design];
+  return def.places ?? (def.kind === 'wallDecor' ? ['wall'] : ['floor']);
 }
 
 /** The designs a shop sells, in catalogue order. */

@@ -273,3 +273,20 @@ describe('designs and decorations (GAME_DESIGN.md §5.10)', () => {
     expect(chairFacing(f.placed, { x: 5, y: 4 })).toBe('front');
   });
 });
+
+describe('decorations on the counter (GAME_DESIGN.md §5.10)', () => {
+  const stocked = (): Furniture => ({ placed: [], stored: { ...noneStored(), pineGarland: 1, snowGlobe: 1, christmasTree: 1, lantern: 1 } });
+
+  it('garlands hang along its front, small things stand on its top, one per counter tile', () => {
+    const f = build([['pineGarland', 2, 1], ['snowGlobe', 3, 1]], ROOM, stocked());
+    expect(f.placed).toHaveLength(2);
+    expect(furnishedRows(ROOM, f.placed)).toEqual(ROOM); // not on the floor: nothing in anyone's way
+    expect(placeProblem(f, 'lantern', { x: 2, y: 1 }, ROOM)).toBe('Something is already there');
+  });
+
+  it("big things don't go on it, and each piece says where it does go", () => {
+    expect(placeProblem(stocked(), 'christmasTree', { x: 2, y: 1 }, ROOM)).toBe('Keep the door, counter and queue clear');
+    expect(placeProblem(stocked(), 'pineGarland', { x: 2, y: 3 }, ROOM)).toBe('It goes on the back wall (between the windows) or the counter');
+    expect(placeProblem(stocked(), 'snowGlobe', { x: 0, y: 3 }, ROOM)).toBe('It goes on the floor or the counter');
+  });
+});

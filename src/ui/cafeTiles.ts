@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
-import { CHAIR_VIEWS, FURNITURE, kindOf } from '../data/furniture';
+import { CHAIR_VIEWS, FURNITURE, kindOf, placesOf, type FurnitureDesign } from '../data/furniture';
 import { chairFacing, isWindow, type PlacedPiece } from '../logic/furniture';
 import type { Layout, Point, TileKind } from '../logic/layout';
 import { artKey } from './art';
@@ -83,23 +83,36 @@ export function drawCafeTiles(
 
   // Furniture, top row first so a tall piece (a tree) stands in front of the row behind it.
   for (const piece of [...placed].sort((a, b) => a.y - b.y)) {
-    const { art, frame, at } = pieceDrawing(placed, piece, px(piece));
+    const { art, frame, at } = pieceDrawing(placed, piece, px(piece), layout.tiles[piece.y]?.[piece.x]);
     canvas.drawFrame(artKey(art), frame, at.x, at.y);
   }
 }
 
+/** Where things sit on the counter tile (art/sprites/cafe.ts COUNTER): its cream top, and its front edge. */
+const COUNTER_TOP_STAND = 8;
+const COUNTER_FRONT_EDGE = 12;
+
 /**
- * How a piece is drawn on its tile (top-left pixel `tile`): its design's art
- * and frame, and where. Floor pieces stand on the tile's bottom edge, centred
- * (a tall one rises above its tile); wall pieces hang centred on the wall tile.
+ * How a piece is drawn on its tile (top-left pixel `tile`), on a tile of
+ * kind `on`: its design's art and frame, and where.
+ * - Floor: standing on the tile's bottom edge, centred (a tall one rises above its tile).
+ * - Back wall: hanging from the top edge if it hangs from a line (a garland), else centred.
+ * - Counter: hanging from its front edge (a garland), or standing on its top.
  * A chair faces its table, when its design has the views for it.
  */
-export function pieceDrawing(placed: readonly PlacedPiece[], piece: PlacedPiece, tile: Point): { art: ArtName; frame: number; at: Point } {
-  const art = FURNITURE[piece.design].art;
-  const sprite = SPRITE_ART[art];
+export function pieceDrawing(
+  placed: readonly PlacedPiece[],
+  piece: PlacedPiece,
+  tile: Point,
+  on: TileKind | undefined,
+): { art: ArtName; frame: number; at: Point } {
+  const def: FurnitureDesign = FURNITURE[piece.design];
+  const sprite = SPRITE_ART[def.art];
   const { width, height } = spriteSize(sprite);
   const frame = kindOf(piece.design) === 'chair' && sprite.frames.length >= 3 ? CHAIR_VIEWS[chairFacing(placed, piece)] : 0;
   const x = tile.x + Math.floor((TILE_SIZE - width) / 2);
-  const y = kindOf(piece.design) === 'wallDecor' ? tile.y + Math.floor((TILE_SIZE - height) / 2) : tile.y + TILE_SIZE - height;
-  return { art, frame, at: { x, y } };
+  let y = tile.y + TILE_SIZE - height;
+  if (on === 'wall') y = def.hangsFromTop ? tile.y + 1 : tile.y + Math.floor((TILE_SIZE - height) / 2);
+  else if (on === 'counter') y = placesOf(piece.design).includes('counterFront') ? tile.y + COUNTER_FRONT_EDGE : tile.y + COUNTER_TOP_STAND - height;
+  return { art: def.art, frame, at: { x, y } };
 }
