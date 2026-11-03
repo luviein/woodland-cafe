@@ -414,7 +414,9 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     const midX = x + CARD.width / 2;
     page.add(s.add.rectangle(midX, y + CARD.height / 2, CARD.width, CARD.height, PALETTE.white).setStrokeStyle(2, COLORS.paperEdge));
     // The picture standing on the picture box's bottom, at the same scale as every other.
-    const image = addArt(s, midX, y + 10 + ART_BOX, def.art).setOrigin(0.5, 1).setScale(ART_SCALE);
+    const artSize = spriteSize(SPRITE_ART[def.art]);
+    const artScale = Math.min(ART_SCALE, Math.max(1, Math.floor(ART_BOX / Math.max(artSize.width, artSize.height))));
+    const image = addArt(s, midX, y + 10 + ART_BOX, def.art).setOrigin(0.5, 1).setScale(artScale);
     if (def.unique) {
       const sprite = SPRITE_ART[def.art], size = spriteSize(sprite);
       const points = sprite.frames[0].flatMap((row, py) => [...row].flatMap((c, px) => c === '.' ? [] : [{ x: px, y: py }]));

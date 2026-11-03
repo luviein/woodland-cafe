@@ -1,3 +1,4 @@
+import { RUG_ART } from '../art/sprites/rugs';
 import { CUSTOMER_SANTA_ART } from '../art/sprites/customerClothing';
 import { WALLPAPER_CORNERS } from '../art/sprites/wallpaperCorners';
 import { SIDE_WALLPAPER_ART } from '../art/sprites/sideWallpaper';
@@ -41,6 +42,7 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Wardrobe collection', (n) => WARDROBE_ART.includes(n) || n in CUSTOMER_SANTA_ART],
   ['Critters', (n) => CRITTER_ART.includes(n)],
   ['Room finishes', (n) => n in ROOM_FINISH_ART || n in SIDE_WALLPAPER_ART || n in WALLPAPER_CORNERS],
+  ['Rugs', n => n in RUG_ART],
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
   ['Christmas', (n) => (CHRISTMAS_ART as readonly ArtName[]).includes(n)],

@@ -1,6 +1,6 @@
 import type { RoomSurface } from '../data/roomFinishes';
 import { FLOOR_FINISHES, WALL_FINISHES } from '../data/roomFinishes';
-import type { Furniture } from './furniture';
+import { placementOverlap, type Furniture } from './furniture';
 import { parseLayout, type Point } from './layout';
 import { roomProblems } from './roomPainter';
 
@@ -59,7 +59,7 @@ export function moveCounter(room: readonly string[], furniture: Furniture, to: P
     if (moving(room[y][x])) grid[y + dy][x + dx] = room[y][x];
   }
   const placed = furniture.placed.map(piece => room[piece.y]?.[piece.x] === 'C' ? { ...piece, x: piece.x + dx, y: piece.y + dy } : piece);
-  if (new Set(placed.map(piece => `${piece.x},${piece.y}`)).size !== placed.length) return { ok: false, reason: 'Move furniture out of the way first' };
+  if (placementOverlap(placed)) return { ok: false, reason: 'Move furniture out of the way first' };
   const rows = grid.map(row => row.join(''));
   const problems = roomProblems(rows, placed, false);
   return problems.length ? { ok: false, reason: problems[0] } : { ok: true, room: rows, furniture: { ...furniture, placed } };

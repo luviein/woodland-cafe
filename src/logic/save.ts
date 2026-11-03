@@ -6,7 +6,7 @@ import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
 import { DESIGN_IDS, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, type IngredientId } from '../data/ingredients';
 import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
-import { buildLayout, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
+import { buildLayout, placementOverlap, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
@@ -34,7 +34,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 7: each cafe saves its own painted room.
 // 8: painted floor and wall finishes, separate from room structure.
 // 9: one-time room finish purchases.
-export const SAVE_VERSION = 9;
+// 10: rugs share floor coordinates with furniture.
+export const SAVE_VERSION = 10;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -185,8 +186,7 @@ function readFurniture(value: unknown, fallback: Furniture, room: readonly strin
 
 /** Every piece on a spot it may stand on, one per spot, making a valid cafe. */
 function allPlacedOk(furniture: Furniture, room: readonly string[]): boolean {
-  const spots = new Set(furniture.placed.map((p) => `${p.x},${p.y}`));
-  if (spots.size !== furniture.placed.length) return false;
+  if (placementOverlap(furniture.placed)) return false;
   const onItsSpot = (p: PlacedPiece) => spotProblemFor(p.design, p, room) === null;
   return furniture.placed.every(onItsSpot) && buildsValidCafe(furniture, room);
 }

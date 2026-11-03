@@ -3,12 +3,12 @@ import type { ArtName } from '../art/spriteArt';
 import { CLOTHING_IDS, type ClothingId } from './clothing';
 
 // Furniture the player can buy and place in the cafe (GAME_DESIGN.md §5.7,
-// §5.10). Every piece is one tile. A DESIGN is one thing you can buy (the
+// §5.10). Most pieces are one tile; rugs cover a 2x2 floor area. A DESIGN is one thing you can buy (the
 // plain chair, the Chair with Bow); its KIND says how it works in the cafe:
 // tables and chairs seat customers whatever their design, floor decorations
 // just stand there, wall decorations hang on the back wall.
 
-export type FurnitureKind = 'table' | 'chair' | 'floorDecor' | 'wallDecor';
+export type FurnitureKind = 'table' | 'chair' | 'floorDecor' | 'wallDecor' | 'rug';
 
 /**
  * Where a piece can go: on the floor, on the back wall, hanging along the
@@ -55,6 +55,10 @@ export const FURNITURE = {
   wreath: { name: 'Christmas Wreath', kind: 'wallDecor', price: 35, shop: 'christmas', art: 'wreath', blurb: 'Holly, pinecones and a bow.' },
   lantern: { name: 'Lantern', kind: 'wallDecor', price: 20, shop: 'christmas', art: 'lantern', blurb: 'A soft light for long nights.', places: ['wall', 'counterTop'] },
   treePicture: { name: 'Christmas Tree Picture', kind: 'wallDecor', price: 40, shop: 'christmas', art: 'treePicture', blurb: 'A snowy tree, framed.', places: ['wall', 'counterTop'] },
+  snowflakeRug: { name: 'Snowflake Rug', kind: 'rug', price: 35, shop: 'christmas', art: 'snowflakeRug', blurb: 'A red snowflake rug. Fits under furniture.' },
+  treeRug: { name: 'Tree Rug', kind: 'rug', price: 35, shop: 'christmas', art: 'treeRug', blurb: 'A round Christmas tree rug. Fits under furniture.' },
+  floralRug: { name: 'Floral Rug', kind: 'rug', price: 35, shop: 'christmas', art: 'floralRug', blurb: 'A soft scalloped rug. Fits under furniture.' },
+  tartanRug: { name: 'Tartan Rug', kind: 'rug', price: 35, shop: 'christmas', art: 'tartanRug', blurb: 'Green checks with warm fringe. Fits under furniture.' },
 } as const satisfies Record<string, FurnitureDesign>;
 
 export type DesignId = keyof typeof FURNITURE;
@@ -85,7 +89,7 @@ export const CHRISTMAS_CATALOGUE = {
   edition: 'Christmas Edition',
   tabs: [
     { name: 'Furniture', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'table' || kindOf(d) === 'chair') },
-    { name: 'Decor', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'floorDecor') },
+    { name: 'Decor', designs: designsSoldBy('christmas').filter((d) => (kindOf(d) === 'floorDecor' || kindOf(d) === 'rug')) },
     { name: 'Wall', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'wallDecor') },
     { name: 'Clothes', designs: CLOTHING_IDS },
     { name: 'Room', designs: FINISH_IDS },

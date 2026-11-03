@@ -99,7 +99,7 @@ export function startingFurniture(): Furniture {
 /** The room's rows with the floor pieces written in (T, S, X), ready for parseLayout(). */
 export function furnishedRows(room: readonly string[], placed: readonly PlacedPiece[]): string[] {
   const grid = room.map((row) => [...row]);
-  for (const piece of placed.filter((p) => room[p.y]?.[p.x] === '.')) grid[piece.y][piece.x] = KIND_CHAR[kindOf(piece.design) as keyof typeof KIND_CHAR];
+  for (const piece of placed.filter((p) => room[p.y]?.[p.x] === '.' && kindOf(p.design) !== 'rug')) grid[piece.y][piece.x] = KIND_CHAR[kindOf(piece.design) as keyof typeof KIND_CHAR];
   return grid.map((row) => row.join(''));
 }
 
@@ -108,8 +108,18 @@ export function buildLayout(furniture: Furniture, room: readonly string[] = CAFE
   return parseLayout(furnishedRows(room, furniture.placed));
 }
 
-export function pieceAt(furniture: Furniture, at: Point): PlacedPiece | undefined {
-  return furniture.placed.find((p) => samePoint(p, at));
+export function pieceAt(furniture: Furniture, at: Point, design?: DesignId): PlacedPiece | undefined {
+  const solid = furniture.placed.find(p => kindOf(p.design) !== 'rug' && samePoint(p, at) && (!design || p.design === design));
+  return solid ?? furniture.placed.find(p => kindOf(p.design) === 'rug' && (!design || p.design === design) && at.x >= p.x && at.x < p.x + 2 && at.y >= p.y && at.y < p.y + 2);
+}
+
+/** Rugs share tiles with furniture, but cannot overlap another rug. */
+export function placementOverlap(placed: readonly PlacedPiece[]): boolean {
+  return placed.some((a, i) => placed.slice(i + 1).some(b => {
+    const rug = kindOf(a.design) === 'rug';
+    if (rug !== (kindOf(b.design) === 'rug')) return false;
+    return rug ? a.x < b.x + 2 && a.x + 2 > b.x && a.y < b.y + 2 && a.y + 2 > b.y : samePoint(a, b);
+  }));
 }
 
 const touching = (a: Point, b: Point): boolean => neighbours(a).some((n) => samePoint(n, b));
@@ -154,7 +164,7 @@ export function placeProblem(
   room: readonly string[] = CAFE_ROOM,
 ): string | null {
   if (furniture.stored[design] <= 0) return `No ${FURNITURE[design].name} in storage`;
-  if (pieceAt(furniture, at)) return 'Something is already there';
+  if (placementOverlap([...furniture.placed, { design, ...at }])) return 'Something is already there';
   const spotProblem = spotProblemFor(design, at, room);
   if (spotProblem) return spotProblem;
   return arrangementProblem([...furniture.placed, { design, ...at }], room);
@@ -162,6 +172,13 @@ export function placeProblem(
 
 /** Whether a design can go on this tile at all (before the rules for the cafe as a whole), or why not. */
 export function spotProblemFor(design: DesignId, at: Point, room: readonly string[]): string | null {
+  if (kindOf(design) === 'rug') {
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      const char = room[at.y + dy]?.[at.x + dx];
+      if (!char || !'.PO123456789'.includes(char)) return 'Keep the whole rug on floor tiles, clear of walls, counter and door';
+    }
+    return null;
+  }
   const spot = spotAt(room, at);
   if (spot && fits(design, spot)) return null;
   const places = placesOf(design);
@@ -186,8 +203,8 @@ function arrangementProblem(placed: readonly PlacedPiece[], room: readonly strin
 }
 
 /** `placed` with the piece at `from` moved to `to`, in the same order (so only its position changes). */
-function withMoved(placed: readonly PlacedPiece[], from: Point, to: Point): PlacedPiece[] {
-  return placed.map((p) => (samePoint(p, from) ? { ...p, x: to.x, y: to.y } : p));
+function withMoved(placed: readonly PlacedPiece[], piece: PlacedPiece, to: Point): PlacedPiece[] {
+  return placed.map(p => p === piece ? { ...p, x: to.x, y: to.y } : p);
 }
 
 /**
@@ -200,13 +217,15 @@ export function moveProblem(
   from: Point,
   to: Point,
   room: readonly string[] = CAFE_ROOM,
+  design?: DesignId,
 ): string | null {
-  if (!pieceAt(furniture, from)) return 'Nothing there to move';
+  if (!pieceAt(furniture, from, design)) return 'Nothing there to move';
   if (samePoint(from, to)) return null;
-  if (pieceAt(furniture, to)) return 'Something is already there';
-  const spotProblem = spotProblemFor(pieceAt(furniture, from)!.design, to, room);
+  const piece = pieceAt(furniture, from, design)!;
+  if (placementOverlap(withMoved(furniture.placed, piece, to))) return 'Something is already there';
+  const spotProblem = spotProblemFor(piece.design, to, room);
   if (spotProblem) return spotProblem;
-  return arrangementProblem(withMoved(furniture.placed, from, to), room);
+  return arrangementProblem(withMoved(furniture.placed, piece, to), room);
 }
 
 /** Moves the piece at `from` to `to`. Throws if moveProblem() says no: check first. */
@@ -215,10 +234,11 @@ export function movePiece(
   from: Point,
   to: Point,
   room: readonly string[] = CAFE_ROOM,
+  design?: DesignId,
 ): Furniture {
-  const problem = moveProblem(furniture, from, to, room);
+  const problem = moveProblem(furniture, from, to, room, design);
   if (problem) throw new Error(`movePiece: ${problem}`);
-  return { ...furniture, placed: withMoved(furniture.placed, from, to) };
+  return { ...furniture, placed: withMoved(furniture.placed, pieceAt(furniture, from, design)!, to) };
 }
 
 /** Moves one `design` from storage to `at`. Throws if placeProblem() says no: check first. */
@@ -241,8 +261,8 @@ export function placePiece(
  * table: its chairs stay where they are (a chair with no table is allowed,
  * just unused), the same as moving it. Nothing there: unchanged.
  */
-export function removePiece(furniture: Furniture, at: Point): Furniture {
-  const piece = pieceAt(furniture, at);
+export function removePiece(furniture: Furniture, at: Point, design?: DesignId): Furniture {
+  const piece = pieceAt(furniture, at, design);
   if (!piece) return furniture;
   return {
     placed: furniture.placed.filter((p) => p !== piece),

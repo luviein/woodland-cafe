@@ -178,14 +178,14 @@ export class DecorateScene extends Phaser.Scene {
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
         if (this.painter) return;
         if (over.length > 0) return; // a button: the tray handles its own
-        if (this.carrying) return; // the coming tap puts the carried pieces down
+        if (this.carrying || this.selected) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
         if (this.room()[tile.y]?.[tile.x] === 'C' && !pieceAt(this.furniture(), tile)) {
           this.startDrag({ counter: true, design: 'table', from: tile, pieces: this.furniture().placed.filter(p => this.room()[p.y]?.[p.x] === 'C'), start: pointer.position.clone(), ghost: null });
           return;
         }
         const piece = pieceAt(this.furniture(), tile);
-        if (piece) this.startDrag({ design: piece.design, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null });
+        if (piece) this.startDrag({ design: piece.design, from: { x: piece.x, y: piece.y }, pieces: [piece], start: pointer.position.clone(), ghost: null });
       },
     );
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.onPointerMove(pointer));
@@ -390,26 +390,32 @@ export class DecorateScene extends Phaser.Scene {
    * The menu over a tapped piece: Move and Put away, as icon buttons on a
    * small paper panel, just above the piece (below it on the top row).
    */
-  private openMenu(tile: Point): void {
+  private openMenu(tile: Point, design?: DesignId): void {
     this.closeMenu();
+    const piece = pieceAt(this.furniture(), tile, design);
+    if (!piece) return;
+    const under = kindOf(piece.design) === 'rug' ? undefined : this.furniture().placed.find(p => kindOf(p.design) === 'rug' && tile.x >= p.x && tile.x < p.x + 2 && tile.y >= p.y && tile.y < p.y + 2);
+    tile = { x: piece.x, y: piece.y };
     const tileX = this.origin.x + tile.x * TILE_SIZE + TILE_SIZE / 2;
     const tileTop = this.origin.y + tile.y * TILE_SIZE;
     const y = tile.y <= 1 ? tileTop + TILE_SIZE + 16 : tileTop - 16;
-    const x = Phaser.Math.Clamp(tileX, 32, BASE_WIDTH - 32);
+    const x = Phaser.Math.Clamp(tileX, 32, BASE_WIDTH - 64);
     // Interactive only so a tap on the panel between the buttons doesn't count as "elsewhere".
-    const panel = this.add.rectangle(x, y, 56, 30, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
+    const panel = this.add.rectangle(x + (under ? 14 : 0), y, under ? 90 : 56, 30, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
     // An outline around the tapped piece, so it's clear which one the menu is for.
+    const span = kindOf(piece.design) === 'rug' ? 2 : 1;
     const outline = this.add
-      .rectangle(tileX, tileTop + TILE_SIZE / 2, TILE_SIZE + 2, TILE_SIZE + 2)
+      .rectangle(tileX + (span - 1) * TILE_SIZE / 2, tileTop + span * TILE_SIZE / 2, span * TILE_SIZE + 2, span * TILE_SIZE + 2)
       .setStrokeStyle(2, COLORS.paper);
     // Small buttons with the 13x13 icons at 1x: about a tile and a half each.
-    const move = new Button(this, x - 13, y, 22, 22, '', COLORS.book, () => this.startCarrying(tile)).setIcon(
+    const move = new Button(this, x - 13, y, 22, 22, '', COLORS.book, () => this.startCarrying(tile, piece.design)).setIcon(
       addArt(this, 0, 0, 'moveIcon'),
     );
-    const store = new Button(this, x + 13, y, 22, 22, '', COLORS.reset, () => this.putAway(tile)).setIcon(
+    const store = new Button(this, x + 13, y, 22, 22, '', COLORS.reset, () => this.putAway(tile, piece.design)).setIcon(
       addArt(this, 0, 0, 'storeIcon'),
     );
     const parts = [panel, outline, move, store];
+    if (under) parts.push(new Button(this, x + 43, y, 28, 22, 'Rug', COLORS.book, () => this.openMenu({ x: under.x, y: under.y }, under.design)));
     for (const o of parts) o.setDepth(60);
     this.menu = parts;
   }
@@ -420,9 +426,9 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   /** Menu: Move. Just that piece lifts and follows the pointer. */
-  private startCarrying(tile: Point): void {
+  private startCarrying(tile: Point, design?: DesignId): void {
     this.closeMenu();
-    const piece = pieceAt(this.furniture(), tile);
+    const piece = pieceAt(this.furniture(), tile, design);
     if (!piece) return;
     // `start` is only used to tell a press from a drag, which doesn't apply here.
     const carrying: Drag = { design: piece.design, from: tile, pieces: [piece], start: new Phaser.Math.Vector2(), ghost: null };
@@ -438,14 +444,14 @@ export class DecorateScene extends Phaser.Scene {
     if (!carrying?.from) return;
     const layout = buildLayout(this.furniture(), this.room());
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
-    const problem = moveProblem(this.furniture(), carrying.from, tile, this.room());
+    const problem = moveProblem(this.furniture(), carrying.from, tile, this.room(), carrying.design);
     if (problem) {
       this.showMessage(tile, problem);
       return;
     }
     carrying.ghost?.destroy();
     this.carrying = null;
-    this.applyMove(carrying.from, tile);
+    this.applyMove(carrying.from, tile, carrying.design);
   }
 
   /** Esc while carrying: everything goes back where it was. */
@@ -456,9 +462,9 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   /** Menu: Put away. Just that piece into storage (a table's chairs stay put). */
-  private putAway(tile: Point): void {
+  private putAway(tile: Point, design?: DesignId): void {
     this.closeMenu();
-    this.setFurniture(removePiece(this.furniture(), tile));
+    this.setFurniture(removePiece(this.furniture(), tile, design));
   }
 
   /** The dragged pieces as images, placed relative to the tile being dragged (the ghost's origin), drawn as on the floor. */
@@ -495,7 +501,7 @@ export class DecorateScene extends Phaser.Scene {
       return result.ok ? null : result.reason;
     }
     return drag.from
-      ? moveProblem(this.furniture(), drag.from, tile, this.room())
+      ? moveProblem(this.furniture(), drag.from, tile, this.room(), drag.design)
       : placeProblem(this.furniture(), drag.design, tile, this.room());
   }
 
@@ -518,15 +524,15 @@ export class DecorateScene extends Phaser.Scene {
       if (result.ok) setGameState(this, { ...getGameState(this), room: result.room, furniture: result.furniture });
       this.refresh();
     } else if (drag.from) {
-      this.applyMove(drag.from, tile);
+      this.applyMove(drag.from, tile, drag.design);
     } else {
       this.setFurniture(placePiece(this.furniture(), drag.design, tile, this.room()));
     }
   }
 
   /** Moves a piece (already checked). */
-  private applyMove(from: Point, to: Point): void {
-    this.setFurniture(movePiece(this.furniture(), from, to, this.room()));
+  private applyMove(from: Point, to: Point, design?: DesignId): void {
+    this.setFurniture(movePiece(this.furniture(), from, to, this.room(), design));
   }
 
   private room(): readonly string[] { return getGameState(this).room; }
@@ -566,17 +572,17 @@ export class DecorateScene extends Phaser.Scene {
     const layout = buildLayout(this.furniture(), this.room());
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
 
+    if (this.selected) {
+      const problem = placeProblem(this.furniture(), this.selected, tile, this.room());
+      if (problem) this.showMessage(tile, problem);
+      else this.setFurniture(placePiece(this.furniture(), this.selected, tile, this.room()));
+      return;
+    }
     if (pieceAt(this.furniture(), tile)) {
       this.openMenu(tile);
       return;
     }
-    if (!this.selected) {
-      this.showMessage(tile, 'Pick something from storage first');
-      return;
-    }
-    const problem = placeProblem(this.furniture(), this.selected, tile, this.room());
-    if (problem) this.showMessage(tile, problem);
-    else this.setFurniture(placePiece(this.furniture(), this.selected, tile, this.room()));
+    this.showMessage(tile, 'Pick something from storage first');
   }
 
   /** Redraws the cafe and the tray from the game state. */

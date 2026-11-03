@@ -78,6 +78,11 @@ export function drawCafeTiles(
     });
   });
 
+  // Rugs are a floor layer: service markers and furniture stay above them.
+  for (const piece of placed.filter(piece => kindOf(piece.design) === 'rug')) {
+    const { art, frame, at } = pieceDrawing(placed, piece, px(piece), 'floor');
+    canvas.drawFrame(artKey(art), frame, at.x, at.y);
+  }
   const spot = px(layout.orderSpot);
   canvas.drawFrame(artKey('orderRug'), 0, spot.x, spot.y);
   // A paw print in the middle of each queue spot.
@@ -88,7 +93,7 @@ export function drawCafeTiles(
   }
 
   // Furniture, top row first so a tall piece (a tree) stands in front of the row behind it.
-  for (const piece of [...placed].sort((a, b) => a.y - b.y)) {
+  for (const piece of placed.filter(piece => kindOf(piece.design) !== 'rug').sort((a, b) => a.y - b.y)) {
     const { art, frame, at } = pieceDrawing(placed, piece, px(piece), layout.tiles[piece.y]?.[piece.x]);
     canvas.drawFrame(artKey(art), frame, at.x, at.y);
   }
@@ -113,6 +118,7 @@ export function pieceDrawing(
   on: TileKind | undefined,
 ): { art: ArtName; frame: number; at: Point } {
   const def: FurnitureDesign = FURNITURE[piece.design];
+  if (def.kind === 'rug') return { art: def.art, frame: 0, at: { ...tile } };
   const sprite = SPRITE_ART[def.art];
   const { width, height } = spriteSize(sprite);
   const frame = kindOf(piece.design) === 'chair' && sprite.frames.length >= 3 ? CHAIR_VIEWS[chairFacing(placed, piece)] : 0;
