@@ -163,6 +163,10 @@ export class WorldMapScene extends Phaser.Scene {
   }
 
   private enter(id: LocationId): void {
+    if (id === 'garden') {
+      this.scene.start('GardenScene', { from: 'map' });
+      return;
+    }
     // start() stops this scene and starts the other one fresh. The place id
     // goes along, so one scene (OutdoorScene) can serve several places.
     const request: LocationRequest = { location: id };
@@ -287,6 +291,16 @@ export class WorldMapScene extends Phaser.Scene {
       case 'cafe':
         // The cottage's doorstep is 20px below the centre (where the Mascot dances).
         return [addStanding(this, x, y + 20, 'cafeHouse')];
+      case 'garden': {
+        const bed = this.add.image(x, y, artKey('gardenSoil')).setInteractive({ useHandCursor: true });
+        bed.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.go('garden'));
+        return [bed,
+          this.add.image(x - 10, y - 8, artKey('gardenTomato'), 3),
+          this.add.image(x + 10, y - 4, artKey('gardenMushroom'), 3),
+          this.add.image(x - 16, y + 18, artKey('gardenFence')),
+          this.add.image(x + 16, y + 18, artKey('gardenFence')),
+        ];
+      }
       case 'forest':
         // A little wood: each [dx, dy] is the top of a trunk, back ones first so front ones overlap them.
         return ([[0, -10, 'pine'], [-30, 4, 'oak'], [28, 6, 'pine'], [-12, 18, 'oak'], [14, 20, 'oak']] as const).map(([dx, dy, kind]) =>

@@ -17,6 +17,7 @@ const cropArt = (crop: CropId): ArtName => `garden${crop[0].toUpperCase()}${crop
 
 /** A separate visit: FloorScene stays paused, so returning resumes its live orders. */
 export class GardenScene extends Phaser.Scene {
+  private from: 'cafe' | 'map' = 'map';
   private selected: CropId = 'mushroom';
   private seeds: Button[] = [];
   private plots: { crop: Phaser.GameObjects.Image; status: Phaser.GameObjects.Text }[] = [];
@@ -25,6 +26,10 @@ export class GardenScene extends Phaser.Scene {
   private sprite!: Phaser.GameObjects.Container;
 
   constructor() { super('GardenScene'); }
+
+  init(request: { from?: 'cafe' | 'map' }): void {
+    this.from = request?.from === 'cafe' ? 'cafe' : 'map';
+  }
 
   create(): void {
     this.selected = 'mushroom'; this.seeds = []; this.plots = [];
@@ -42,8 +47,8 @@ export class GardenScene extends Phaser.Scene {
     arrangeable(this, 'garden', 'wallet', walletAt, wallet);
     const doorAt = point('returnDoor', 70, 108);
     const door = addArt(this, doorAt.x, doorAt.y, 'gardenDoor').setScale(2).setInteractive({ useHandCursor: true });
-    door.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.returnToCafe());
-    const back = new Button(this, doorAt.x, doorAt.y + 40, 100, 26, 'Cafe', COLORS.book, () => this.returnToCafe());
+    door.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.returnToEntrance());
+    const back = new Button(this, doorAt.x, doorAt.y + 40, 100, 26, this.from === 'cafe' ? 'Cafe' : 'Map', COLORS.book, () => this.returnToEntrance());
     arrangeable(this, 'garden', 'returnDoor', doorAt, door, back);
     for (let i = 0; i < 2; i++) {
       const at = point('tree.' + i, i === 0 ? 44 : 595, i === 0 ? 280 : 180);
@@ -88,8 +93,8 @@ export class GardenScene extends Phaser.Scene {
       if (over.length) return;
       this.player = walkToward(this.player, { x: pointer.worldX, y: pointer.worldY }, { x: 32, y: 180, width: 560, height: 112 });
     });
-    this.input.keyboard?.on('keydown-ESC', this.returnToCafe, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown-ESC', this.returnToCafe, this));
+    this.input.keyboard?.on('keydown-ESC', this.returnToEntrance, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown-ESC', this.returnToEntrance, this));
   }
 
   update(_time: number, delta: number): void {
@@ -128,8 +133,10 @@ export class GardenScene extends Phaser.Scene {
     });
   }
 
-  private returnToCafe(): void {
-    this.scene.resume('FloorScene');
-    this.scene.stop();
+  private returnToEntrance(): void {
+    if (this.from === 'cafe' && this.scene.isPaused('FloorScene')) {
+      this.scene.resume('FloorScene');
+      this.scene.stop();
+    } else this.scene.start('WorldMapScene', { current: 'garden' });
   }
 }

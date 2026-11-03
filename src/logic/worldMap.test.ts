@@ -5,6 +5,7 @@ import { chooseLocation, dotsAlong } from './worldMap';
 describe('chooseLocation', () => {
   it('every place can be entered for now', () => {
     expect(chooseLocation('cafe')).toBe('enter');
+    expect(chooseLocation('garden')).toBe('enter');
     expect(chooseLocation('forest')).toBe('enter');
     expect(chooseLocation('marketplace')).toBe('enter');
   });

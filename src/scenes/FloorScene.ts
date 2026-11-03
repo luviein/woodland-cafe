@@ -190,7 +190,7 @@ export class FloorScene extends Phaser.Scene {
     const gardenAt = layoutPoint('floor', 'gardenDoor', { x: this.origin.x + 7.5 * TILE_SIZE, y: this.origin.y + 12 });
     const gardenDoor = new Button(this, gardenAt.x, gardenAt.y, 24, 24, '', COLORS.counterEdge, () => {
       if (this.prepOpen || this.summaryOpen || getGameState(this).tutorial !== 'done') return;
-      this.scene.launch('GardenScene');
+      this.scene.launch('GardenScene', { from: 'cafe' });
       this.scene.pause();
     }).setIcon(addArt(this, 0, 0, 'gardenDoor')).setDepth(OVERLAY);
     const gardenLabel = this.add.text(gardenAt.x, gardenAt.y + 14, 'Garden', { ...TEXT.label, fontSize: '8px', stroke: css(COLORS.ink), strokeThickness: 2 }).setOrigin(0.5, 0).setDepth(OVERLAY);

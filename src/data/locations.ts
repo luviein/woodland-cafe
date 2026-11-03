@@ -17,6 +17,7 @@ export interface LocationDef {
 
 export const LOCATIONS = {
   cafe: { name: 'Cafe', get position() { return layoutPoint('worldMap', 'place.cafe', { x: 320, y: 220 }); }, scene: 'FloorScene', locked: false },
+  garden: { name: 'Garden', get position() { return layoutPoint('worldMap', 'place.garden', { x: 440, y: 250 }); }, scene: 'GardenScene', locked: false },
   // Both outdoor places share one scene, set up from data/outdoorAreas.ts.
   forest: { name: 'Forest', get position() { return layoutPoint('worldMap', 'place.forest', { x: 168, y: 140 }); }, scene: 'OutdoorScene', locked: false },
   marketplace: { name: 'Marketplace', get position() { return layoutPoint('worldMap', 'place.marketplace', { x: 476, y: 132 }); }, scene: 'OutdoorScene', locked: false },
@@ -30,4 +31,5 @@ export const LOCATION_IDS = Object.keys(LOCATIONS) as LocationId[];
 export const MAP_PATHS: readonly (readonly [LocationId, LocationId])[] = [
   ['cafe', 'forest'],
   ['cafe', 'marketplace'],
+  ['cafe', 'garden'],
 ];

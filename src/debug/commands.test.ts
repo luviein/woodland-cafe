@@ -304,8 +304,9 @@ describe('serve / mess / clean / time / endday', () => {
     });
     expect(runCommand(commands, 'goto Forest')).toBe('Went to forest');
     runCommand(commands, 'goto map');
-    expect(runCommand(commands, 'goto moon')).toMatch(/Usage: goto <map\|cafe\|forest\|marketplace>/);
-    expect(went).toEqual(['forest', 'map']);
+    expect(runCommand(commands, 'goto garden')).toBe('Went to garden');
+    expect(runCommand(commands, 'goto moon')).toMatch(/Usage: goto <map\|cafe\|garden\|forest\|marketplace>/);
+    expect(went).toEqual(['forest', 'map', 'garden']);
   });
 
   it('say so when the scene they need is not running', () => {
