@@ -33,5 +33,15 @@ const { rows, legend } = P.toRows(grids, colours);
 const sprites = {};
 for (let i = 0; i < 4; i++) sprites[`roomWall${i + 1}`] = { legend, frames: rows.slice(i * 2, i * 2 + 2) };
 for (let i = 0; i < 7; i++) sprites[`roomFloor${i + 1}`] = { legend, frames: [rows[8 + i], rows[8 + i]] };
+// The generated reference has warped checker squares. Keep its two main
+// colours, but rebuild an exact 6px grid so neighbouring 24px tiles join.
+for (const style of [5, 6, 7]) {
+  const sprite = sprites['roomFloor' + style];
+  const counts = {};
+  for (const char of sprite.frames[0].join('')) counts[char] = (counts[char] ?? 0) + 1;
+  const checks = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([char]) => char);
+  const clean = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => checks[(Math.floor(x / 6) + Math.floor(y / 6)) % 2]).join(''));
+  sprite.frames = [clean, clean];
+}
 fs.writeFileSync('src/art/sprites/roomFinishes.ts', `// Converted from the supplied room tile sheet; regenerate with tools/roomFinishes.cjs.\nimport type { PixelSprite } from '../pixelSprite';\nexport const ROOM_FINISH_ART = ${JSON.stringify(sprites, null, 2)} as const satisfies Record<string, PixelSprite>;\n`);
-P.preview(process.argv[3], rows.map(rows => ({ rows, legend })), { scale: 6 });
+P.preview(process.argv[3], Object.values(sprites).map(sprite => ({ rows: sprite.frames[0], legend: sprite.legend })), { scale: 6 });
