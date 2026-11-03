@@ -1,3 +1,4 @@
+import { SEED_POUCH_ART } from '../art/sprites/seedPouch';
 import { GARDEN_ART } from '../art/sprites/garden';
 import { RUG_ART } from '../art/sprites/rugs';
 import { CUSTOMER_SANTA_ART } from '../art/sprites/customerClothing';
@@ -37,7 +38,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
-  ['Garden (native pixel art)', n => n in GARDEN_ART],
+  ['Garden (native pixel art and supplied seed pouch)', n => n in GARDEN_ART || n in SEED_POUCH_ART],
   ['Catalogue outfit samples', (n) => n in CATALOGUE_SAMPLES],
   ['Drawing template', (n) => n === 'critterSkeleton'],
   ['Stall vendor', (n) => n === 'deerVendorIdle'],

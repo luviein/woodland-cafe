@@ -1,6 +1,7 @@
+import { SeedPouchPanel } from '../ui/SeedPouchPanel';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { CROPS, CROP_IDS, GARDEN_PLOTS, type CropId } from '../data/crops';
+import { CROPS, GARDEN_PLOTS, type CropId } from '../data/crops';
 import { cropRemaining, cropStage, plantCrop, tendCrop } from '../logic/garden';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import { layoutPoint } from '../layout/positions';
@@ -19,7 +20,8 @@ const cropArt = (crop: CropId): ArtName => `garden${crop[0].toUpperCase()}${crop
 export class GardenScene extends Phaser.Scene {
   private from: 'cafe' | 'map' = 'map';
   private selected: CropId = 'mushroom';
-  private seeds: Button[] = [];
+  private pouchPanel: SeedPouchPanel | null = null;
+  private selectedLabel!: Phaser.GameObjects.Text;
   private plots: { crop: Phaser.GameObjects.Image; status: Phaser.GameObjects.Text }[] = [];
   private hint!: Phaser.GameObjects.Text;
   private player!: Mover;
@@ -32,7 +34,7 @@ export class GardenScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.selected = 'mushroom'; this.seeds = []; this.plots = [];
+    this.selected = 'mushroom'; this.pouchPanel = null; this.plots = [];
     const point = (name: string, x: number, y: number) => layoutPoint('garden', name, { x, y });
     const groundAt = point('ground', 0, 0);
     const ground = this.add.renderTexture(groundAt.x, groundAt.y, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
@@ -51,24 +53,23 @@ export class GardenScene extends Phaser.Scene {
     const back = new Button(this, doorAt.x, doorAt.y + 40, 100, 26, this.from === 'cafe' ? 'Cafe' : 'Map', COLORS.book, () => this.returnToEntrance());
     arrangeable(this, 'garden', 'returnDoor', doorAt, door, back);
     for (let i = 0; i < 2; i++) {
-      const at = point('tree.' + i, i === 0 ? 44 : 595, i === 0 ? 280 : 180);
+      const at = point('tree.' + i, i === 0 ? 25 : 595, i === 0 ? 280 : 180);
       arrangeable(this, 'garden', 'tree.' + i, at, addTree(this, at.x, at.y, i === 0 ? 'oak' : 'pine'));
     }
     const fenceAt = point('fence', 136, 324);
     const fences = this.add.container(fenceAt.x, fenceAt.y);
     for (let i = 0; i < 14; i++) fences.add(addArt(this, i * 32, 0, 'gardenFence').setOrigin(0, 1));
     arrangeable(this, 'garden', 'fence', fenceAt, fences);
-    CROP_IDS.forEach((crop, i) => {
-      const at = point('seed.' + crop, 212 + i * 144, 64);
-      const button = new Button(this, at.x, at.y, 132, 34, '', COLORS.book, () => {
-        this.selected = crop;
-        this.hint.setText(`${CROPS[crop].name}: tap an empty bed to plant, then tap again to water.`);
-        this.refresh();
-      });
-      button.add(this.add.text(0, 0, '', { ...TEXT.label, fontSize: '11px' }).setOrigin(0.5).setName('seedLabel'));
-      this.seeds.push(button);
-      arrangeable(this, 'garden', 'seed.' + crop, at, button);
-    });
+    const tableAt = point('seedTable', 84, 250);
+    const table = addArt(this, tableAt.x, tableAt.y, 'gardenTable').setInteractive({ useHandCursor: true });
+    const pouch = addArt(this, tableAt.x, tableAt.y - 16, 'seedPouch').setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+    table.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openPouch());
+    pouch.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openPouch());
+    const tableLabel = this.add.text(tableAt.x, tableAt.y + 30, 'Seed pouch', { ...TEXT.label, fontSize: '10px', stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
+    arrangeable(this, 'garden', 'seedTable', tableAt, table, pouch, tableLabel);
+    const selectedAt = point('selectedCrop', 356, 64);
+    this.selectedLabel = this.add.text(selectedAt.x, selectedAt.y, '', { ...TEXT.heading, fontSize: '12px', color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
+    arrangeable(this, 'garden', 'selectedCrop', selectedAt, this.selectedLabel);
     for (let i = 0; i < GARDEN_PLOTS; i++) {
       const at = point('plot.' + i, 212 + i % 3 * 144, 132 + Math.floor(i / 3) * 100);
       const bed = addArt(this, at.x, at.y + 6, 'gardenSoil').setScale(2).setInteractive({ useHandCursor: true });
@@ -78,19 +79,19 @@ export class GardenScene extends Phaser.Scene {
       this.plots.push({ crop, status });
       arrangeable(this, 'garden', 'plot.' + i, at, bed, crop, status);
     }
-    const entry = point('entry', 70, 214);
+    const entry = point('entry', 70, 180);
     this.player = createMover(entry);
     this.sprite = createPlayerSprite(this, () => false).setPosition(entry.x, entry.y).setDepth(500);
     arrangeable(this, 'garden', 'entry', entry, this.sprite);
     const hintAt = point('hint', 344, 344);
-    this.hint = this.add.text(hintAt.x, hintAt.y, 'Choose seeds, plant, then water once. Buy seeds at the Marketplace.', {
+    this.hint = this.add.text(hintAt.x, hintAt.y, 'Open the seed pouch on the table to choose seeds, then plant and water.', {
       ...TEXT.label, fontSize: '11px', align: 'center', wordWrap: { width: 520 }, stroke: css(COLORS.ink), strokeThickness: 3,
     }).setOrigin(0.5);
     arrangeable(this, 'garden', 'hint', hintAt, this.hint);
     watchGameState(this, state => { wallet.setLeaves(state.leaves); this.refresh(); });
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.refresh() });
     this.input.on(Phaser.Input.Events.POINTER_UP, (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (over.length) return;
+      if (over.length || this.pouchPanel) return;
       this.player = walkToward(this.player, { x: pointer.worldX, y: pointer.worldY }, { x: 32, y: 180, width: 560, height: 112 });
     });
     this.input.keyboard?.on('keydown-ESC', this.returnToEntrance, this);
@@ -118,12 +119,8 @@ export class GardenScene extends Phaser.Scene {
 
   private refresh(): void {
     const state = getGameState(this), now = Date.now();
-    CROP_IDS.forEach((crop, i) => {
-      const owned = state.ingredients.includes(crop), button = this.seeds[i];
-      button.setEnabled(owned);
-      (button.getAt(0) as Phaser.GameObjects.Rectangle).setStrokeStyle(2, crop === this.selected ? COLORS.paper : COLORS.ink);
-      (button.getByName('seedLabel') as Phaser.GameObjects.Text).setText(`${CROPS[crop].name}  ${owned ? 'x' + state.garden.seeds[crop] : 'Locked'}`);
-    });
+    this.selectedLabel.setText(`${CROPS[this.selected].name} seeds: x${state.garden.seeds[this.selected]}  |  Choose from the pouch`);
+    this.pouchPanel?.refresh(state.garden, state.ingredients);
     this.plots.forEach(({ crop, status }, i) => {
       const plant = state.garden.plots[i];
       crop.setVisible(plant !== null);
@@ -135,7 +132,26 @@ export class GardenScene extends Phaser.Scene {
     });
   }
 
+  private openPouch(): void {
+    if (this.pouchPanel) return;
+    this.player = { ...this.player, target: null };
+    this.pouchPanel = new SeedPouchPanel(this, this.selected, crop => {
+      this.selected = crop;
+      this.hint.setText(`${CROPS[crop].name}: tap an empty bed to plant, then tap again to water.`);
+      this.refresh();
+      this.closePouch();
+    }, () => this.closePouch());
+  }
+
+  private closePouch(): void {
+    const panel = this.pouchPanel;
+    // Keep the modal active until this pointer-up has finished dispatching.
+    this.time.delayedCall(0, () => { panel?.destroy(); if (this.pouchPanel === panel) this.pouchPanel = null; });
+  }
+
   private returnToEntrance(): void {
+    if (this.pouchPanel) { this.closePouch(); return; }
+
     if (this.from === 'cafe' && this.scene.isPaused('FloorScene')) {
       this.scene.resume('FloorScene');
       this.scene.stop();
