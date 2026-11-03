@@ -95,9 +95,9 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       this.cards.push({ button, image, label, outline, worn });
     }
     PLAYER_ANIMALS.forEach((animal, i) => {
-      const x = 350, y = 164 + i * 35;
+      const x = 320 + i % 2 * 138, y = 169 + Math.floor(i / 2) * 36;
       const icon = place(`animal.${animal}.portrait`, x, y, scene.add.image(0, 0, artKey(animal)));
-      const button = place(`animal.${animal}.choose`, 475, y, new Button(scene, 0, 0, 176, 26, ANIMAL_NAMES[animal], COLORS.serve, () => {
+      const button = place(`animal.${animal}.choose`, x + 70, y, new Button(scene, 0, 0, 94, 25, ANIMAL_NAMES[animal], COLORS.serve, () => {
         setGameState(scene, changeAnimal(getGameState(scene), animal));
         this.refresh();
       }));
