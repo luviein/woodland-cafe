@@ -99,7 +99,9 @@ export class GardenScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.player = stepMover(this.player, delta * 0.1);
-    this.sprite.setPosition(Math.round(this.player.position.x), Math.round(this.player.position.y));
+    // Keep movement precise for facing; pixelArt rounds only the rendered pixels.
+    // Rounding here made diagonal steps alternate between sideways and forwards.
+    this.sprite.setPosition(this.player.position.x, this.player.position.y);
   }
 
   private tend(index: number): void {
