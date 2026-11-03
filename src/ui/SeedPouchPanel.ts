@@ -37,7 +37,7 @@ export class SeedPouchPanel extends Phaser.GameObjects.Container {
       const slot = addArt(scene, 0, 0, 'seedPouchCard').setScale(2);
       button.addAt(slot, 0);
       const art = `seedPacket${crop[0].toUpperCase()}${crop.slice(1)}` as ArtName;
-      const packet = addArt(scene, 0, -17, art).setScale(2);
+      const packet = addArt(scene, 0, -17, art);
       button.add(packet);
       button.add(scene.add.text(0, 36, CROPS[crop].name, { ...TEXT.body, fontSize: '13px', fontStyle: 'bold' }).setOrigin(0.5));
       const count = scene.add.text(0, 56, '', { ...TEXT.body, fontSize: '13px' }).setOrigin(0.5);

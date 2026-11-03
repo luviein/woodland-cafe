@@ -1,3 +1,4 @@
+import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from '../art/sprites/seedPouch';
 import { GARDEN_ART } from '../art/sprites/garden';
@@ -39,6 +40,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
+  ['Seed packets (supplied sheet)', n => n in SEED_PACKET_ART],
   ['Garden (native pixel art and supplied seed pouch)', n => n in GARDEN_ART || n in SEED_POUCH_ART || n in SEED_PANEL_ART],
   ['Catalogue outfit samples', (n) => n in CATALOGUE_SAMPLES],
   ['Drawing template', (n) => n === 'critterSkeleton'],
