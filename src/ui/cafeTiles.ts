@@ -59,10 +59,11 @@ export function drawCafeTiles(
   origin: Point,
   placed: readonly PlacedPiece[],
   finishes?: readonly string[],
+  overlaysOnly = false,
 ): void {
   const px = (p: Point): Point => ({ x: origin.x + p.x * TILE_SIZE, y: origin.y + p.y * TILE_SIZE });
   canvas.clear();
-  layout.tiles.forEach((row, y) => {
+  if (!overlaysOnly) layout.tiles.forEach((row, y) => {
     row.forEach((tile, x) => {
       const p = px({ x, y });
       // Plank pattern picked from the position, so it's mixed but never changes.

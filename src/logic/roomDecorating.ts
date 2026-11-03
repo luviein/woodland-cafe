@@ -13,6 +13,34 @@ export function paintFinish(room: readonly string[], finishes: readonly string[]
   return finishes.map((row, y) => y === at.y ? row.slice(0, at.x) + style + row.slice(at.x + 1) : row);
 }
 
+/** Join sparse pointer events so quick strokes cannot leave unpainted gaps. */
+export function paintFinishStroke(room: readonly string[], finishes: readonly string[], from: Point, to: Point, surface: RoomSurface, style: number): string[] {
+  let result = [...finishes];
+  const steps = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
+  for (let step = 0; step <= steps; step++) {
+    const t = steps === 0 ? 0 : step / steps;
+    result = paintFinish(room, result, { x: Math.round(from.x + (to.x - from.x) * t), y: Math.round(from.y + (to.y - from.y) * t) }, surface, style);
+  }
+  return result;
+}
+
+/** Fill the connected surface, respecting structural boundaries, not colours. */
+export function paintFinishStretch(room: readonly string[], finishes: readonly string[], at: Point, surface: RoomSurface, style: number): string[] {
+  let result = [...finishes];
+  const pending = [at], visited = new Set<string>();
+  while (pending.length) {
+    const point = pending.pop()!;
+    const key = `${point.x},${point.y}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    const char = room[point.y]?.[point.x];
+    if (!char || (surface === 'wall' ? char !== 'W' : !'.PO123456789'.includes(char))) continue;
+    result = paintFinish(room, result, point, surface, style);
+    pending.push({ x: point.x - 1, y: point.y }, { x: point.x + 1, y: point.y }, { x: point.x, y: point.y - 1 }, { x: point.x, y: point.y + 1 });
+  }
+  return result;
+}
+
 export type CounterMove = { ok: true; room: string[]; furniture: Furniture } | { ok: false; reason: string };
 
 /** Service markers and counter decorations travel as one working station. */

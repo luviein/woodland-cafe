@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
-import { FLOOR_FINISHES, WALL_FINISHES, finishArt, type RoomSurface } from '../data/roomFinishes';
+import { FLOOR_FINISHES, WALL_FINISHES, finishArt, wallFinishTile, type RoomSurface } from '../data/roomFinishes';
+import { isWindow } from '../logic/furniture';
 import { buildLayout } from '../logic/furniture';
-import { paintFinish } from '../logic/roomDecorating';
+import { paintFinishStroke, paintFinishStretch } from '../logic/roomDecorating';
 import { artKey } from './art';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
@@ -19,6 +20,10 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
   private finishes: string[];
   private surface: RoomSurface = 'floor';
   private style = 0;
+  private wholeStretch = false;
+  private lastTile: Point | null = null;
+  private tileImages: { image: Phaser.GameObjects.Image; at: Point }[] = [];
+  private modeButtons: Button[] = [];
   private history: string[][] = [];
   private stroke: string[] | null = null;
   private canvas: Phaser.GameObjects.RenderTexture;
@@ -44,7 +49,16 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
     place('title', 320, 15, scene.add.text(0, 0, 'Paint your cafe', TEXT.heading).setOrigin(0.5));
     this.canvas = addCafeCanvas(scene).setScale(PREVIEW_SCALE);
     this.grid = scene.add.zone(0, 0, 576 * PREVIEW_SCALE, 288 * PREVIEW_SCALE).setOrigin(0).setInteractive();
-    const preview = scene.add.container(0, 0, [this.canvas, this.grid]);
+    const layout = buildLayout(getGameState(scene).furniture, getGameState(scene).room);
+    const tileLayer = scene.add.container(0, 0).setScale(PREVIEW_SCALE);
+    layout.tiles.forEach((row, y) => row.forEach((tile, x) => {
+      const art = tile === 'wall' ? 'wall' : tile === 'counter' ? 'counter' : tile === 'door' ? 'door' : 'floor';
+      const image = scene.add.image(x * TILE_SIZE, y * TILE_SIZE, artKey(art), 0).setOrigin(0);
+      tileLayer.add(image);
+      this.tileImages.push({ image, at: { x, y } });
+    }));
+    drawCafeTiles(this.canvas, layout, { x: 0, y: 0 }, getGameState(scene).furniture.placed, this.finishes, true);
+    const preview = scene.add.container(0, 0, [tileLayer, this.canvas, this.grid]);
     place('preview', 12, 44, preview);
     (['floor', 'wall'] as const).forEach((surface, i) => {
       this.tabs.push(place(surface + 'Tab', 487 + i * 94, 46,
@@ -62,7 +76,13 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
       button.add([image, label]);
       this.swatches.push({ button, image, label });
     }
-    this.status = place('status', 14, 270, scene.add.text(0, 0, '', { ...TEXT.label, wordWrap: { width: 612 } }));
+    ['Brush', 'Whole stretch'].forEach((name, i) => {
+      this.modeButtons.push(place('paintMode-' + i, 100 + i * 160, 282,
+        new Button(scene, 0, 0, 148, 24, name, COLORS.book, () => {
+          this.finishStroke(); this.wholeStretch = i === 1; this.refresh();
+        })));
+    });
+    this.status = place('paintHint', 14, 302, scene.add.text(0, 0, '', { ...TEXT.label, wordWrap: { width: 612 } }));
     this.undo = place('undoAction', 180, 334, new Button(scene, 0, 0, 100, 28, 'Undo', COLORS.book, () => this.undoStroke()));
     place('cancel', 452, 334, new Button(scene, 0, 0, 100, 28, 'Cancel', COLORS.reset, close));
     place('apply', 568, 334, new Button(scene, 0, 0, 112, 28, 'Apply', COLORS.serve, () => {
@@ -74,8 +94,15 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
       if (!this.stroke) return;
       const local = this.grid.getWorldTransformMatrix().applyInverse(pointer.worldX, pointer.worldY);
       const tile: Point = { x: Math.floor(local.x / (TILE_SIZE * PREVIEW_SCALE)), y: Math.floor(local.y / (TILE_SIZE * PREVIEW_SCALE)) };
-      this.finishes = paintFinish(getGameState(scene).room, this.finishes, tile, this.surface, this.style);
-      this.refresh();
+      const room = getGameState(scene).room;
+      if (!room[tile.y]?.[tile.x]) { this.lastTile = null; return; }
+      if (this.lastTile?.x === tile.x && this.lastTile.y === tile.y) return;
+      const previous = this.finishes;
+      this.finishes = this.wholeStretch
+        ? paintFinishStretch(room, this.finishes, tile, this.surface, this.style)
+        : paintFinishStroke(room, this.finishes, this.lastTile ?? tile, tile, this.surface, this.style);
+      this.lastTile = tile;
+      this.refreshTiles(previous);
     };
     this.grid.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
       this.finishStroke(); this.stroke = [...this.finishes]; paint(pointer);
@@ -103,6 +130,7 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
   private finishStroke(): void {
     if (this.stroke && this.stroke.join() !== this.finishes.join()) this.history.push(this.stroke);
     this.stroke = null;
+    this.lastTile = null;
     this.undo?.setEnabled(this.history.length > 0);
   }
 
@@ -113,10 +141,24 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
     this.refresh();
   }
 
+  private refreshTiles(previous?: readonly string[]): void {
+    const room = getGameState(this.scene).room;
+    for (const { image, at: { x, y } } of this.tileImages) {
+      if (previous?.[y]?.[x] === this.finishes[y][x]) continue;
+      const char = room[y][x], style = Number(this.finishes[y][x]);
+      if (char === 'W') {
+        const tile = wallFinishTile(style, x, y, room[y].length, y === 0 && isWindow(x, room[y].length), room.length);
+        image.setTexture(artKey(tile.art), tile.frame);
+      } else if (char !== 'C' && char !== 'D') {
+        image.setTexture(artKey(finishArt('floor', style)), (x * 3 + y * 2) % 2);
+      }
+    }
+  }
+
   private refresh(): void {
-    const state = getGameState(this.scene);
-    drawCafeTiles(this.canvas, buildLayout(state.furniture, state.room), { x: 0, y: 0 }, state.furniture.placed, this.finishes);
-    this.status.setText('Choose a finish, then drag over ' + (this.surface === 'floor' ? 'floor tiles.' : 'wall tiles.') + '\nCounter and queue stay in place. Move the counter from Decorate.');
+    this.refreshTiles();
+    this.status.setText(this.wholeStretch ? 'Tap a surface to paint its connected stretch.' : 'Drag to paint. Apply saves; Cancel discards.');
+    this.modeButtons.forEach((button, i) => button.setAlpha((this.wholeStretch ? 1 : 0) === i ? 1 : 0.65));
     this.undo.setEnabled(this.history.length > 0);
     const names = this.surface === 'floor' ? FLOOR_FINISHES : WALL_FINISHES;
     this.tabs.forEach((button, i) => button.setAlpha((this.surface === 'floor' ? 0 : 1) === i ? 1 : 0.65));

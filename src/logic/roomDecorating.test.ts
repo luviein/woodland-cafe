@@ -1,12 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { createNewGame } from './gameState';
 import { defaultFinishes, validFinishes } from '../data/roomFinishes';
-import { moveCounter, paintFinish } from './roomDecorating';
+import { moveCounter, paintFinish, paintFinishStroke, paintFinishStretch } from './roomDecorating';
 import { parseLayout } from './layout';
 import { roomProblems } from './roomPainter';
 import { loadGame, saveGame } from './save';
 
 describe('surface painting', () => {
+  it('fills tiles crossed by a quick stroke while preserving the input', () => {
+    const room = ['........'];
+    const finishes = defaultFinishes(room);
+    expect(paintFinishStroke(room, finishes, { x: 0, y: 0 }, { x: 7, y: 0 }, 'floor', 3)).toEqual(['33333333']);
+    expect(finishes).toEqual(['00000000']);
+  });
+
+  it('fills connected surfaces round corners, stopping at structure and other surfaces', () => {
+    const room = ['WWWWW', 'W.C.W', 'W.C.W', 'WWDWW'];
+    const finishes = defaultFinishes(room);
+    const wall = paintFinishStretch(room, finishes, { x: 0, y: 0 }, 'wall', 2);
+    expect(wall).toEqual(['22222', '20002', '20002', '22022']);
+    const floor = paintFinishStretch(room, wall, { x: 1, y: 1 }, 'floor', 7);
+    expect(floor).toEqual(['22222', '27002', '27002', '22022']);
+    expect(paintFinishStretch(room, finishes, { x: 2, y: 1 }, 'floor', 7)).toEqual(finishes);
+    expect(finishes).toEqual(defaultFinishes(room));
+  });
   it('changes only the selected surface finish and preserves structural markers', () => {
     const { room } = createNewGame();
     const original = [...room];
