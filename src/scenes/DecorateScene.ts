@@ -1,9 +1,11 @@
+import { STORAGE_CATEGORIES, type StorageCategory } from '../data/storageCategories';
+import { storageDesigns } from '../logic/storageCategories';
 import { moveCounter } from '../logic/roomDecorating';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import Phaser from 'phaser';
 import { RoomPainterPanel } from '../ui/RoomPainterPanel';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
-import { CHRISTMAS_CATALOGUE, DESIGN_IDS, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
+import { CHRISTMAS_CATALOGUE, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
 import {
   buildLayout,
   movePiece,
@@ -39,7 +41,7 @@ import type { WorldMapRequest } from './WorldMapScene';
  * The storage tray and Done, in the strip under the cafe: a card per design
  * (its picture and how many are in storage), a page at a time.
  */
-const TRAY = { x: 64, y: BASE_HEIGHT - 42, firstCard: 172, card: 40, gap: 4, perPage: 7 };
+const TRAY = { x: 64, y: BASE_HEIGHT - 30, firstCard: 172, card: 30, gap: 4, perPage: 7 };
 
 /** Where something goes in Decorate: by name, movable in Arrange mode (GAME_DESIGN.md §9.3). */
 const at = (name: string, x: number, y: number): Point => layoutPoint('decorate', name, { x, y });
@@ -52,9 +54,6 @@ function placeWords(design: DesignId): string {
   const words = { floor: 'the floor', wall: 'the back wall', counterFront: 'the counter', counterTop: 'the counter' } as const;
   return [...new Set(placesOf(design).map((p) => words[p]))].join(' or ');
 }
-
-/** Always in the tray, even with none in storage: the plain table and chair (Grandma's tip points at the table). */
-const ALWAYS_IN_TRAY: readonly DesignId[] = ['table', 'chair'];
 
 /** One card in the tray. */
 interface TrayCard {
@@ -95,6 +94,9 @@ export class DecorateScene extends Phaser.Scene {
   /** The tray's cards on show, the designs they're for, and which page of them. */
   private trayCards: TrayCard[] = [];
   private trayPage = 0;
+  private category: StorageCategory = 'tables';
+  private categoryButtons: Button[] = [];
+  private emptyStorage!: Phaser.GameObjects.Text;
   private trayPrev!: Button;
   private trayNext!: Button;
   private selectedOutline!: Phaser.GameObjects.Rectangle;
@@ -124,6 +126,8 @@ export class DecorateScene extends Phaser.Scene {
     this.menu = null;
     this.trayCards = [];
     this.trayPage = 0;
+    this.category = 'tables';
+    this.categoryButtons = [];
     this.catalogue = null;
     this.painter = null;
     this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.wall).setOrigin(0);
@@ -136,8 +140,8 @@ export class DecorateScene extends Phaser.Scene {
       .text(titleAt.x, titleAt.y, 'Decorate', { ...TEXT.heading, color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 4 })
       .setOrigin(0.5, 0);
     arrangeable(this, 'decorate', 'title', titleAt, title);
-    const hintAt = at('hint', BASE_WIDTH / 2, BASE_HEIGHT - 8);
-    this.hint = this.add.text(hintAt.x, hintAt.y, '', TEXT.label).setOrigin(0.5, 1);
+    const hintAt = at('hint', BASE_WIDTH / 2, BASE_HEIGHT - 1);
+    this.hint = this.add.text(hintAt.x, hintAt.y, '', { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5, 1);
     arrangeable(this, 'decorate', 'hint', hintAt, this.hint);
 
     // The storage tray, in the strip under the cafe (right of the corner buttons).
@@ -147,7 +151,21 @@ export class DecorateScene extends Phaser.Scene {
     const label = this.add
       .text(this.trayAt.x - (TRAY.firstCard - TRAY.x), this.trayAt.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) })
       .setOrigin(0, 0.5);
-    this.selectedOutline = this.add.rectangle(0, 0, TRAY.card + 4, TRAY.card + 4).setStrokeStyle(3, COLORS.paper).setVisible(false);
+    const categoryAt = at('storageCategories', 64, 302);
+    const categoryLayer = this.add.container(categoryAt.x, categoryAt.y);
+    const widths = [64, 64, 80, 80, 64];
+    let tabX = 0;
+    STORAGE_CATEGORIES.forEach((category, i) => {
+      const button = new Button(this, tabX + widths[i] / 2, 0, widths[i], 18, '', COLORS.book, () => this.selectCategory(category.id));
+      button.add(this.add.text(0, 0, category.label, { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5));
+      categoryLayer.add(button);
+      this.categoryButtons.push(button);
+      tabX += widths[i] + 6;
+    });
+    arrangeable(this, 'decorate', 'storageCategories', categoryAt, categoryLayer);
+    this.emptyStorage = this.add.text(this.trayAt.x + 120, this.trayAt.y, '', { ...TEXT.label, fontSize: '11px' }).setOrigin(0.5);
+    this.trayLayer.add(this.emptyStorage);
+    this.selectedOutline = this.add.rectangle(0, 0, TRAY.card + 2, TRAY.card + 2).setStrokeStyle(2, COLORS.paper).setVisible(false);
     const arrowY = this.trayAt.y;
     this.trayPrev = new Button(this, this.trayAt.x - TRAY.card / 2 - 14, arrowY, 18, TRAY.card, '<', COLORS.book, () => this.turnTray(-1));
     this.trayNext = new Button(this, this.cardX(TRAY.perPage - 1) + TRAY.card / 2 + 14, arrowY, 18, TRAY.card, '>', COLORS.book, () => this.turnTray(1));
@@ -628,10 +646,18 @@ export class DecorateScene extends Phaser.Scene {
     );
   }
 
-  /** The designs with a card in the tray: the plain table and chair, and anything else in storage. */
+  private selectCategory(category: StorageCategory): void {
+    this.cancelDrag();
+    this.closeMenu();
+    if (this.carrying) this.cancelCarrying();
+    this.selected = null;
+    this.category = category;
+    this.trayPage = 0;
+    this.refresh();
+  }
+
   private trayDesigns(): DesignId[] {
-    const { stored } = this.furniture();
-    return DESIGN_IDS.filter((d) => ALWAYS_IN_TRAY.includes(d) || stored[d] > 0);
+    return storageDesigns(this.furniture(), this.category);
   }
 
   private cardX(slot: number): number {
@@ -646,6 +672,9 @@ export class DecorateScene extends Phaser.Scene {
    */
   private refreshTray(): void {
     const designs = this.trayDesigns();
+    this.categoryButtons.forEach((button, i) => button.setEnabled(STORAGE_CATEGORIES[i].id !== this.category));
+    const category = STORAGE_CATEGORIES.find(item => item.id === this.category)!;
+    this.emptyStorage.setVisible(designs.length === 0).setText('No ' + category.label.toLowerCase() + ' in storage');
     const pages = Math.max(1, Math.ceil(designs.length / TRAY.perPage));
     this.trayPage = Math.min(this.trayPage, pages - 1);
     const onPage = designs.slice(this.trayPage * TRAY.perPage, (this.trayPage + 1) * TRAY.perPage);
