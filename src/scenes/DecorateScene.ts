@@ -1,11 +1,10 @@
 import { STORAGE_CATEGORIES, type StorageCategory } from '../data/storageCategories';
 import { storageDesigns } from '../logic/storageCategories';
 import { moveCounter } from '../logic/roomDecorating';
-import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import Phaser from 'phaser';
-import { RoomPainterPanel } from '../ui/RoomPainterPanel';
+import { DecorateFinishes } from '../ui/DecorateFinishes';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
-import { CHRISTMAS_CATALOGUE, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
+import { FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
 import {
   buildLayout,
   movePiece,
@@ -24,9 +23,6 @@ import type { Point } from '../logic/layout';
 import { addArt, artKey } from '../ui/art';
 import { Button } from '../ui/Button';
 import { addCafeCanvas, cafeOrigin, drawCafeTiles, pieceDrawing } from '../ui/cafeTiles';
-import { CataloguePanel } from '../ui/CataloguePanel';
-import { shopsAt } from '../logic/shop';
-import { devSettings } from '../debug/devSettings';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { getGameState, setGameState, tutorialEvent } from './gameStore';
 import { seeTip } from '../logic/gameState';
@@ -41,7 +37,10 @@ import type { WorldMapRequest } from './WorldMapScene';
  * The storage tray and Done, in the strip under the cafe: a card per design
  * (its picture and how many are in storage), a page at a time.
  */
-const TRAY = { x: 64, y: BASE_HEIGHT - 30, firstCard: 172, card: 30, gap: 4, perPage: 7 };
+const TRAY = { x: 64, y: BASE_HEIGHT - 30, firstCard: 172, card: 30, gap: 4, perPage: 8 };
+
+const DECORATE_TABS = [...STORAGE_CATEGORIES, { id: 'wallpaper', label: 'Wallpaper' }, { id: 'floor', label: 'Floor' }] as const;
+type DecorateTab = StorageCategory | 'wallpaper' | 'floor';
 
 /** Where something goes in Decorate: by name, movable in Arrange mode (GAME_DESIGN.md §9.3). */
 const at = (name: string, x: number, y: number): Point => layoutPoint('decorate', name, { x, y });
@@ -94,7 +93,7 @@ export class DecorateScene extends Phaser.Scene {
   /** The tray's cards on show, the designs they're for, and which page of them. */
   private trayCards: TrayCard[] = [];
   private trayPage = 0;
-  private category: StorageCategory = 'tables';
+  private category: DecorateTab = 'tables';
   private categoryButtons: Button[] = [];
   private emptyStorage!: Phaser.GameObjects.Text;
   private trayPrev!: Button;
@@ -104,8 +103,8 @@ export class DecorateScene extends Phaser.Scene {
   private trayAt!: Point;
   private trayLayer!: Phaser.GameObjects.Container;
   private hint!: Phaser.GameObjects.Text;
-  private painter: RoomPainterPanel | null = null;
-  private catalogue: CataloguePanel | null = null;
+  private finishes!: DecorateFinishes;
+  private storageLabel!: Phaser.GameObjects.Text;
   /** What the next floor tap places; null = nothing picked yet. */
   private selected: DesignId | null = null;
   /** A press that may turn into a drag; null when the pointer is up. */
@@ -128,9 +127,7 @@ export class DecorateScene extends Phaser.Scene {
     this.trayPage = 0;
     this.category = 'tables';
     this.categoryButtons = [];
-    this.catalogue = null;
-    this.painter = null;
-    this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.wall).setOrigin(0);
+    this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.wall).setOrigin(0).setDepth(-2);
     this.origin = cafeOrigin(buildLayout(this.furniture(), this.room()));
     this.tiles = addCafeCanvas(this);
 
@@ -148,14 +145,14 @@ export class DecorateScene extends Phaser.Scene {
     // The tray moves as one, by its first card: its label, arrows and cards (in their own layer).
     this.trayAt = at('tray', TRAY.firstCard, TRAY.y);
     this.trayLayer = this.add.container(0, 0);
-    const label = this.add
+    const label = this.storageLabel = this.add
       .text(this.trayAt.x - (TRAY.firstCard - TRAY.x), this.trayAt.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) })
       .setOrigin(0, 0.5);
     const categoryAt = at('storageCategories', 64, 302);
     const categoryLayer = this.add.container(categoryAt.x, categoryAt.y);
-    const widths = [64, 64, 80, 80, 64];
+    const widths = [54, 54, 76, 68, 48, 76, 54];
     let tabX = 0;
-    STORAGE_CATEGORIES.forEach((category, i) => {
+    DECORATE_TABS.forEach((category, i) => {
       const button = new Button(this, tabX + widths[i] / 2, 0, widths[i], 18, '', COLORS.book, () => this.selectCategory(category.id));
       button.add(this.add.text(0, 0, category.label, { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5));
       categoryLayer.add(button);
@@ -172,16 +169,9 @@ export class DecorateScene extends Phaser.Scene {
     arrangeable(this, 'decorate', 'tray', this.trayAt, label, this.trayPrev, this.trayNext, this.trayLayer, ...sizeBox(this, label.x, this.trayAt.y - TRAY.card / 2, this.cardX(TRAY.perPage - 1) + TRAY.card / 2 - label.x, TRAY.card));
     const doneAt = at('done', BASE_WIDTH - 64, TRAY.y);
     arrangeable(this, 'decorate', 'done', doneAt, new Button(this, doneAt.x, doneAt.y, 100, 30, 'Done', COLORS.serve, () => this.done()));
-    // The Christmas catalogue, to buy more without leaving (while the Christmas stall is open).
-    if (shopsAt('marketplace', new Date(), devSettings.allSeasons).includes('christmas')) {
-      const catalogueAt = at('catalogue', BASE_WIDTH - 60, 16);
-      arrangeable(this, 'decorate', 'catalogue', catalogueAt, new Button(this, catalogueAt.x, catalogueAt.y, 104, 22, 'Catalogue', COLORS.book, () => this.openCatalogue()));
-    }
-    const paintAt = at('paintRoom', 68, 16);
-    arrangeable(this, 'decorate', 'paintRoom', paintAt, new Button(this, paintAt.x, paintAt.y, 112, 22, 'Paint room', COLORS.book, () => this.openPainter()));
+    this.finishes = new DecorateFinishes(this, this.origin, this.trayAt, this.hint);
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
-      if (this.catalogue || this.painter) return; // panels own their keys
       if (event.key === 'Escape' && this.drag?.ghost) this.cancelDrag();
       else if (event.key === 'Escape' && this.carrying) this.cancelCarrying();
       else if (event.key === 'Escape' && this.menu) this.closeMenu();
@@ -197,8 +187,8 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (this.painter) return;
         if (over.length > 0) return; // a button: the tray handles its own
+        if (this.finishes.surface) { this.finishes.down(pointer); return; }
         if (this.carrying || this.selected) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
         if (this.room()[tile.y]?.[tile.x] === 'C' && !pieceAt(this.furniture(), tile)) {
@@ -214,7 +204,7 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (this.painter) return;
+        if (this.finishes.surface) { this.finishes.finishStroke(); return; }
         const drag = this.drag;
         this.drag = null;
         if (drag?.ghost) {
@@ -241,10 +231,10 @@ export class DecorateScene extends Phaser.Scene {
       },
     );
     // Let go outside the game window: the drag is called off.
-    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => this.cancelDrag());
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => { this.finishes.finishStroke(); this.cancelDrag(); });
     // The game lost focus mid-drag (e.g. a screenshot shortcut): the let-go
     // will never arrive, so call the drag off rather than leave its copy stuck.
-    const onBlur = () => this.cancelDrag();
+    const onBlur = () => { this.finishes.finishStroke(); this.cancelDrag(); };
     this.game.events.on(Phaser.Core.Events.BLUR, onBlur);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.events.off(Phaser.Core.Events.BLUR, onBlur));
     this.refresh();
@@ -302,7 +292,7 @@ export class DecorateScene extends Phaser.Scene {
    * becomes a drag: the pieces are lifted and follow it too.
    */
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
-    if (this.painter) return;
+    if (this.finishes.surface) { this.finishes.move(pointer); return; }
     if (this.carrying) {
       this.moveGhost(this.carrying, this.dragTile(this.carrying, pointer), pointer);
       return;
@@ -584,20 +574,6 @@ export class DecorateScene extends Phaser.Scene {
 
   private room(): readonly string[] { return getGameState(this).room; }
 
-  private openPainter(): void {
-    if (this.painter || this.catalogue) return;
-    this.cancelDrag();
-    this.closeMenu();
-    if (this.carrying) this.cancelCarrying();
-    this.selected = null;
-
-    this.painter = new RoomPainterPanel(this, () => {
-      const panel = this.painter;
-      // Defer releasing input until this pointer-up has finished dispatching.
-      this.time.delayedCall(0, () => { panel?.destroy(); this.painter = null; this.refresh(); });
-    });
-  }
-
   private furniture(): Furniture {
     return getGameState(this).furniture;
   }
@@ -639,6 +615,7 @@ export class DecorateScene extends Phaser.Scene {
     // Ran out of the picked piece: nothing left to place, so let go of it.
     if (this.selected && furniture.stored[this.selected] === 0) this.selected = null;
     this.refreshTray();
+    if (this.finishes.surface) return;
     this.hint.setText(
       this.selected
         ? `${FURNITURE[this.selected].name}: tap a spot to place it (${placeWords(this.selected)})`
@@ -646,18 +623,20 @@ export class DecorateScene extends Phaser.Scene {
     );
   }
 
-  private selectCategory(category: StorageCategory): void {
+  private selectCategory(category: DecorateTab): void {
     this.cancelDrag();
     this.closeMenu();
     if (this.carrying) this.cancelCarrying();
     this.selected = null;
     this.category = category;
+    this.finishes.select(category === 'wallpaper' ? 'wall' : category === 'floor' ? 'floor' : null);
+    this.tiles.setVisible(!this.finishes.surface);
     this.trayPage = 0;
     this.refresh();
   }
 
   private trayDesigns(): DesignId[] {
-    return storageDesigns(this.furniture(), this.category);
+    return this.category === 'wallpaper' || this.category === 'floor' ? [] : storageDesigns(this.furniture(), this.category);
   }
 
   private cardX(slot: number): number {
@@ -672,7 +651,12 @@ export class DecorateScene extends Phaser.Scene {
    */
   private refreshTray(): void {
     const designs = this.trayDesigns();
-    this.categoryButtons.forEach((button, i) => button.setEnabled(STORAGE_CATEGORIES[i].id !== this.category));
+    this.categoryButtons.forEach((button, i) => button.setEnabled(DECORATE_TABS[i].id !== this.category));
+    const painting = Boolean(this.finishes.surface);
+    this.storageLabel.setText(painting ? this.category === 'wallpaper' ? 'Wallpaper' : 'Floor' : 'Storage');
+    this.trayLayer.setVisible(!painting);
+    this.trayPrev.setVisible(false); this.trayNext.setVisible(false);
+    if (painting) return;
     const category = STORAGE_CATEGORIES.find(item => item.id === this.category)!;
     this.emptyStorage.setVisible(designs.length === 0).setText('No ' + category.label.toLowerCase() + ' in storage');
     const pages = Math.max(1, Math.ceil(designs.length / TRAY.perPage));
@@ -723,24 +707,6 @@ export class DecorateScene extends Phaser.Scene {
     return { design, parts: [frame, image, count], frame, count };
   }
 
-  /** The Christmas catalogue over Decorate: buying adds to storage, and the tray shows it straight away. */
-  private openCatalogue(): void {
-    if (this.catalogue) return;
-    this.closeMenu();
-    if (this.carrying) this.cancelCarrying();
-    const panel = new CataloguePanel(
-      this,
-      CHRISTMAS_CATALOGUE,
-      christmasCatalogueShop(this, () => { panel.refresh(); this.refresh(); }),
-      () => {
-        // Destroyed once the close tap is over (see OutdoorScene.closeShop).
-        this.catalogue = null;
-        this.time.delayedCall(0, () => panel.destroy());
-      },
-    ).setDepth(100);
-    this.catalogue = panel;
-  }
-
   /** Why a tap did nothing, drifting up from the tile. */
   private showMessage(tile: Point, message: string): void {
     const x = this.origin.x + tile.x * TILE_SIZE + TILE_SIZE / 2;
@@ -752,7 +718,7 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private done(): void {
-    if (this.painter) return;
+    this.finishes.finishStroke();
     const request: WorldMapRequest = { current: 'cafe' };
     this.scene.start('WorldMapScene', request);
   }
