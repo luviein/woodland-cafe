@@ -37,8 +37,8 @@ for (let i = 0; i < 7; i++) sprites[`roomFloor${i + 1}`] = { legend, frames: [ro
 // Keep the supplied festive garland, but remove conversion noise elsewhere.
 for (const style of [1, 2, 3, 4]) {
   const old = sprites['roomWall' + style];
-  const shades = style === 3 ? ['#943139', '#863035', '#b94b48'] : style === 4 ? ['#455d37', '#52683e', '#73884d'] : ['#f2d3a9', '#edc79a', '#dbaa79'];
-  const cleanLegend = { ...old.legend, 0: shades[0], 1: shades[1], 2: shades[2], 3: '#8d503b', 4: '#633c30', 5: '#b97050', 6: '#29485d', 7: '#a77850', 8: '#f4e2bb', 9: '#a43a3a' };
+  const shades = style === 3 ? ['#943139', '#863035', '#d57868'] : style === 4 ? ['#455d37', '#52683e', '#73884d'] : ['#f2d3a9', '#edc79a', '#dbaa79'];
+  const cleanLegend = { ...old.legend, 0: shades[0], 1: shades[1], 2: shades[2], 3: '#8d503b', 4: '#633c30', 5: '#b97050', 6: '#29485d', 7: '#a77850', 8: '#f4e2bb', 9: '#a43a3a', '!': '#f0b68b' };
   const make = window => Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => {
     if (y >= 18) {
       if (y === 18) return '5';
@@ -52,9 +52,14 @@ for (const style of [1, 2, 3, 4]) {
     }
     if (style === 2 && y < 6) return old.frames[0][y][x];
     const mx = x % 12 - 6, my = y % 8 - 4;
-    if (style === 4) {
+    if (style === 3) {
+      // Four rounded petals and a warm centre remain readable on a 24px tile.
+      if (mx === 0 && my === 0) return '!';
+      const petal = [[-2, 0], [2, 0], [0, -2], [0, 2]].some(([cx, cy]) => (mx - cx) ** 2 + (my - cy) ** 2 <= 2);
+      if (petal) return '2';
+    } else if (style === 4) {
       if ((my === -2 && mx === 0) || (my === -1 && Math.abs(mx) <= 1) || (my === 0 && Math.abs(mx) <= 2) || (my === 1 && mx === 0)) return '2';
-    } else if (style !== 2 && ((Math.abs(mx) === 1 && my === 0) || (mx === 0 && Math.abs(my) === 1))) return '2';
+    } else if (style === 1 && ((Math.abs(mx) === 1 && my === 0) || (mx === 0 && Math.abs(my) === 1))) return '2';
     return (style !== 1 && x % 6 === 0) ? '1' : '0';
   }).join(''));
   sprites['roomWall' + style] = { legend: cleanLegend, frames: [make(false), make(true)] };
