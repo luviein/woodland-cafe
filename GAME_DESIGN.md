@@ -712,3 +712,5 @@ The player can leave the counter **before taking an order** to clean messes; the
 ### Customer species expansion
 
 Arriving customers include fox, rabbit, deer, mouse, frog, badger and raccoon. Every species appears over the customer rotation, keeps its identity in the prep portrait, and uses fitted Christmas clothing during the seasonal period. Frog hats leave the raised eyes visible; badger and raccoon outfits preserve their tails. Existing frog mascot and raccoon cleaner roles remain available. This does not add new playable animal choices.
+
+Dev console: `spawn <fox|rabbit|deer|mouse|frog|badger|raccoon>` immediately adds one customer of that species at the cafe door during an open, unguided cafe day. Refuse outside the floor, during prep/tutorial, after closing, or when the queue is full. They join the normal queue and retain their species and seasonal outfit in prep.
