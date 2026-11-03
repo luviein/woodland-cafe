@@ -64,6 +64,9 @@ interface TrayCard {
 
 /** A press that may become a drag: of a placed piece, or one from storage (`from` null). */
 interface Drag {
+  /** Pointer offset from the carried tile, preserving where it was grabbed. */
+  grab?: Point;
+  checkedTile?: Point;
   design: DesignId;
   from: Point | null;
   /** The placed piece being moved, as a list for the ghost (empty when dragging from storage). */
@@ -199,12 +202,12 @@ export class DecorateScene extends Phaser.Scene {
         const drag = this.drag;
         this.drag = null;
         if (drag?.ghost) {
-          this.drop(drag, this.tileUnder(pointer), over.length > 0);
+          this.drop(drag, this.dragTile(drag, pointer), over.length > 0);
           return;
         }
         if (over.length > 0) return; // a button's tap (menu buttons close the menu themselves)
         if (this.carrying) {
-          this.putDownCarried(this.tileUnder(pointer));
+          this.putDownCarried(this.dragTile(this.carrying, pointer));
           return;
         }
         // A tap anywhere else closes the menu, and does only that.
@@ -275,7 +278,7 @@ export class DecorateScene extends Phaser.Scene {
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
     if (this.painter || this.movingCounter) return;
     if (this.carrying) {
-      this.moveGhost(this.carrying, this.tileUnder(pointer));
+      this.moveGhost(this.carrying, this.dragTile(this.carrying, pointer), pointer);
       return;
     }
     const drag = this.drag;
@@ -290,7 +293,7 @@ export class DecorateScene extends Phaser.Scene {
       this.closeMenu();
       this.lift(drag);
     }
-    this.moveGhost(drag, this.tileUnder(pointer));
+    this.moveGhost(drag, this.dragTile(drag, pointer), pointer);
   }
 
   /** Takes the pieces out of the drawn cafe and makes their see-through copy. */
@@ -308,6 +311,9 @@ export class DecorateScene extends Phaser.Scene {
   /** Starts a press that may become a drag, calling off any drag that lost its let-go first. */
   private startDrag(drag: Drag): void {
     if (this.drag?.ghost) this.cancelDrag();
+    drag.grab = drag.from
+      ? { x: drag.start.x - this.origin.x - drag.from.x * TILE_SIZE, y: drag.start.y - this.origin.y - drag.from.y * TILE_SIZE }
+      : { x: TILE_SIZE / 2, y: TILE_SIZE / 2 };
     this.drag = drag;
   }
 
@@ -320,13 +326,28 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   /**
-   * Snaps the see-through copy to `tile`, drawn exactly as it would be put
+   * Moves the copy with the pointer; `tile` controls how it would be put
    * down there (on the floor, on the wall, along the counter's front or on its
    * top), red if it couldn't be put down there.
    */
-  private moveGhost(drag: Drag, tile: Point): void {
+  private dragTile(drag: Drag, pointer: Phaser.Input.Pointer): Point {
+    const grab = drag.grab ?? { x: TILE_SIZE / 2, y: TILE_SIZE / 2 };
+    return {
+      x: Math.round((pointer.worldX - this.origin.x - grab.x) / TILE_SIZE),
+      y: Math.round((pointer.worldY - this.origin.y - grab.y) / TILE_SIZE),
+    };
+  }
+
+  private moveGhost(drag: Drag, tile: Point, pointer?: Phaser.Input.Pointer): void {
     if (!drag.ghost) return;
-    drag.ghost.setPosition(this.origin.x + tile.x * TILE_SIZE, this.origin.y + tile.y * TILE_SIZE);
+    const grab = drag.grab ?? { x: TILE_SIZE / 2, y: TILE_SIZE / 2 };
+    drag.ghost.setPosition(
+      pointer ? Math.round(pointer.worldX - grab.x) : this.origin.x + tile.x * TILE_SIZE,
+      pointer ? Math.round(pointer.worldY - grab.y) : this.origin.y + tile.y * TILE_SIZE,
+    );
+    // Flood-filling paths is unnecessary while the pointer stays on one tile.
+    if (drag.checkedTile?.x === tile.x && drag.checkedTile.y === tile.y) return;
+    drag.checkedTile = { ...tile };
     const ok = this.dropProblem(drag, tile) === null;
     const from = drag.from ?? { x: 0, y: 0 };
     this.ghostPieces(drag).forEach((p, i) => {
