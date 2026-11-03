@@ -1,3 +1,4 @@
+import { emptyGarden } from './garden';
 import { defaultFinishes } from '../data/roomFinishes';
 import { CAFE_ROOM } from '../data/cafeRoom';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +11,7 @@ import { availableRecipes } from './orders';
 describe('createNewGame', () => {
   it('starts on day 1 with no Leaves, the starter ingredients and their stock, no upgrades, and the tutorial ahead', () => {
     expect(createNewGame()).toEqual({
+      garden: emptyGarden(),
       room: [...CAFE_ROOM],
       roomFinishes: defaultFinishes(CAFE_ROOM),
       ownedFinishes: [],

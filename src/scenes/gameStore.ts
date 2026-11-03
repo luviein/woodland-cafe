@@ -1,4 +1,5 @@
-import Phaser from 'phaser';
+import { gardenCheckpoint } from '../logic/garden';
+import type Phaser from 'phaser';
 import { createNewGame, skipTutorial, type GameState } from '../logic/gameState';
 import { loadGame, saveGame, type LoadResult } from '../logic/save';
 import { advanceTutorial, type TutorialEvent, type TutorialState } from '../logic/tutorial';
@@ -17,6 +18,7 @@ import { browserSaveSlot, type SaveSlot } from '../storage/saveSlot';
 const KEY = 'gameState';
 /** True from opening the cafe until the day is over: no autosaves meanwhile. */
 const DAY_KEY = 'cafeDayInProgress';
+const CHECKPOINT_KEY = 'cafeDayCheckpoint';
 
 /** The one save slot. Module-level: there's one per game, set at startup. */
 let slot: SaveSlot = browserSaveSlot();
@@ -30,6 +32,7 @@ export function initGameState(game: Phaser.Game, saveSlot: SaveSlot = browserSav
   slot = saveSlot;
   game.registry.set(DAY_KEY, true);
   game.registry.set(KEY, createNewGame());
+  game.registry.set(CHECKPOINT_KEY, getGameState(game));
 }
 
 /** What's in the save slot: null if empty, else the loaded state or why it can't be loaded. */
@@ -47,8 +50,9 @@ export function continueGame(owner: HasRegistry, state: GameState): void {
 /** Title screen's New game: the old save is deleted, and Day 1 starts at once. */
 export function startNewGame(owner: HasRegistry): void {
   slot.clear();
-  beginCafeDay(owner);
   owner.registry.set(KEY, createNewGame());
+  owner.registry.set(CHECKPOINT_KEY, getGameState(owner));
+  owner.registry.set(DAY_KEY, true);
 }
 
 /**
@@ -57,6 +61,9 @@ export function startNewGame(owner: HasRegistry): void {
  * not finished.
  */
 export function beginCafeDay(owner: HasRegistry): void {
+  // WorldMap captures this before advancing the day; Floor must not overwrite it.
+  if (!owner.registry.get(DAY_KEY) || !owner.registry.get(CHECKPOINT_KEY))
+    owner.registry.set(CHECKPOINT_KEY, getGameState(owner));
   owner.registry.set(DAY_KEY, true);
 }
 
@@ -69,6 +76,7 @@ export function endCafeDay(owner: HasRegistry): void {
 /** Writes the save slot now, mid-day or not (the dev console's `save`). */
 export function saveNow(owner: HasRegistry): void {
   slot.write(saveGame(getGameState(owner)));
+  owner.registry.set(CHECKPOINT_KEY, getGameState(owner));
 }
 
 /** Empties the save slot (the dev console's `wipesave`). */
@@ -120,5 +128,17 @@ export function watchGameState(scene: Phaser.Scene, onChange: (state: GameState)
   // The registry belongs to the whole GAME, so it outlives the scene. Without
   // off() on shutdown, every visit to a scene would add one more listener,
   // each pointing at objects that no longer exist.
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.registry.events.off(event, listener));
+  scene.events.once('shutdown', () => scene.registry.events.off(event, listener));
+}
+
+/** Garden work persists even while the cafe day itself remains uncommitted. */
+export function setGardenGameState(owner: HasRegistry, state: GameState): void {
+  const before = getGameState(owner);
+  if (state === before) return;
+  if (owner.registry.get(DAY_KEY)) {
+    const checkpoint = gardenCheckpoint(owner.registry.get(CHECKPOINT_KEY) ?? before, before, state);
+    slot.write(saveGame(checkpoint));
+    owner.registry.set(CHECKPOINT_KEY, checkpoint);
+    owner.registry.set(KEY, state);
+  } else setGameState(owner, state);
 }

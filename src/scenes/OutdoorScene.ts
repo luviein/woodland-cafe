@@ -1,3 +1,5 @@
+import { CROP_IDS, CROPS } from '../data/crops';
+import { buySeed, canBuySeed } from '../logic/garden';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
@@ -408,6 +410,13 @@ export class OutdoorScene extends Phaser.Scene {
   /** What the open shop shows, from the current game state. */
   private shopRows(id: ShopId): ShopRowView[] {
     const state = getGameState(this);
+    if (id === 'seeds') {
+      return CROP_IDS.map(crop => ({
+        name: CROPS[crop].name,
+        detail: state.ingredients.includes(crop) ? `🍃${CROPS[crop].seedPrice}  x${state.garden.seeds[crop]}` : 'Unlock at Specialty',
+        buttons: [{ label: '+1', enabled: canBuySeed(state, crop), onPress: () => setGameState(this, buySeed(getGameState(this), crop)) }],
+      }));
+    }
     if (id === 'specialty') {
       // Every unlockable stays listed once bought, so the rows keep their
       // shape (ShopPanel.setRows) and the player sees what they own.

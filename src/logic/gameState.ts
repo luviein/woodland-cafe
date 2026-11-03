@@ -1,3 +1,4 @@
+import { emptyGarden, type Garden } from './garden';
 import type { FinishId } from '../data/roomFinishProducts';
 import { defaultFinishes } from '../data/roomFinishes';
 import { CAFE_ROOM } from '../data/cafeRoom';
@@ -27,6 +28,7 @@ import { STARTER_CLOTHING, type ClothingId } from '../data/clothing';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  garden: Garden;
   room: readonly string[];
   roomFinishes: readonly string[];
   ownedFinishes: readonly FinishId[];
@@ -58,6 +60,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    garden: emptyGarden(),
     room: [...CAFE_ROOM],
     roomFinishes: defaultFinishes(CAFE_ROOM),
     ownedFinishes: [],

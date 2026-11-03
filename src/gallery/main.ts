@@ -1,3 +1,4 @@
+import { GARDEN_ART } from '../art/sprites/garden';
 import { RUG_ART } from '../art/sprites/rugs';
 import { CUSTOMER_SANTA_ART } from '../art/sprites/customerClothing';
 import { WALLPAPER_CORNERS } from '../art/sprites/wallpaperCorners';
@@ -36,6 +37,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
+  ['Garden (native pixel art)', n => n in GARDEN_ART],
   ['Catalogue outfit samples', (n) => n in CATALOGUE_SAMPLES],
   ['Drawing template', (n) => n === 'critterSkeleton'],
   ['Stall vendor', (n) => n === 'deerVendorIdle'],

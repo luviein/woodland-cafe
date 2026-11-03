@@ -1,3 +1,5 @@
+import { Button } from '../ui/Button';
+import { addArt } from '../ui/art';
 import { spawnCustomer } from '../logic/customerSpawn';
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config/display';
@@ -185,6 +187,15 @@ export class FloorScene extends Phaser.Scene {
     // and one for the messes and plates on top, redrawn every frame.
     drawCafeTiles(addCafeCanvas(this), this.layout, this.origin, getGameState(this).furniture.placed, getGameState(this).roomFinishes);
     this.tableOverlay = addCafeCanvas(this);
+    const gardenAt = layoutPoint('floor', 'gardenDoor', { x: this.origin.x + 7.5 * TILE_SIZE, y: this.origin.y + 12 });
+    const gardenDoor = new Button(this, gardenAt.x, gardenAt.y, 24, 24, '', COLORS.counterEdge, () => {
+      if (this.prepOpen || this.summaryOpen || getGameState(this).tutorial !== 'done') return;
+      this.scene.launch('GardenScene');
+      this.scene.pause();
+    }).setIcon(addArt(this, 0, 0, 'gardenDoor')).setDepth(OVERLAY);
+    const gardenLabel = this.add.text(gardenAt.x, gardenAt.y + 14, 'Garden', { ...TEXT.label, fontSize: '8px', stroke: css(COLORS.ink), strokeThickness: 2 }).setOrigin(0.5, 0).setDepth(OVERLAY);
+    arrangeable(this, 'floor', 'gardenDoor', gardenAt, gardenDoor, gardenLabel);
+
     this.progressBar = this.add.graphics().setDepth(OVERLAY + 20);
     this.patienceBars = this.add.graphics().setDepth(OVERLAY + 15);
 
@@ -213,7 +224,10 @@ export class FloorScene extends Phaser.Scene {
     const walletAt = layoutPoint('floor', 'wallet', { x: 8, y: 8 });
     const wallet = new WalletDisplay(this, walletAt.x, walletAt.y);
     arrangeable(this, 'floor', 'wallet', walletAt, wallet);
-    watchGameState(this, (state) => wallet.setLeaves(state.leaves));
+    watchGameState(this, (state) => {
+      wallet.setLeaves(state.leaves);
+      gardenDoor.setEnabled(state.tutorial === 'done');
+    });
 
     // Small outline showing where the player is heading; hidden when idle.
     this.destinationMarker = this.add

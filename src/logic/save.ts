@@ -1,3 +1,4 @@
+import { validGarden } from './garden';
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { appliedFinishIds, ownedFinishGrid } from './roomFinishShop';
 import { defaultFinishes, validFinishes } from '../data/roomFinishes';
@@ -37,7 +38,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 10: rugs share floor coordinates with furniture.
 // 11: rugs use quarter-tile placement coordinates.
 // 12: each placed rug remembers its quarter-turn and mirror flags.
-export const SAVE_VERSION = 12;
+// 13: real-time garden crops and seed packets.
+export const SAVE_VERSION = 13;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -96,6 +98,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     if (item && !ownedClothing.includes(item)) outfit[slot] = null;
   }
   return {
+    garden: field(raw, 'garden', fresh.garden, validGarden),
     room,
     roomFinishes: ownedFinishGrid(room, finishes, ownedFinishes),
     ownedFinishes,

@@ -33,6 +33,13 @@ export interface ShopDef {
 export const STALL_COUNTER_HEIGHT = 16;
 
 export const SHOPS = {
+  seeds: {
+    name: 'Seeds', location: 'marketplace',
+    get stall() { return layoutPoint('marketplace', 'stall.seeds', { x: 350, y: 250 }); },
+    blurb: 'Seeds for your cafe garden.',
+    art: 'pantryStall',
+    counterHeight: 15,
+  },
   pantry: {
     name: 'Pantry',
     location: 'marketplace',
