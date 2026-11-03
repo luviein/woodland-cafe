@@ -1,17 +1,18 @@
+import { CUSTOMER_SANTA_ART } from './customerClothing';
 import type { PixelSprite } from '../pixelSprite';
 import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sheetCritters';
 import { SANTA_COAT, SANTA_HAT } from './wardrobe';
 import { DEER_SANTA_COAT, DEER_SANTA_HAT, MOUSE_SANTA_COAT, MOUSE_SANTA_HAT, RABBIT_SANTA_COAT, RABBIT_SANTA_HAT } from './wardrobeCritters';
 import { CLOTHING, CLOTHING_IDS, type ClothingId } from '../../data/clothing';
 import { CLOTHING_ANIMALS, type ClothingAnimal } from '../../data/clothingAnimals';
-import { FOX } from './sheetCritters2';
+import { FOX, FROG, BADGER, RACCOON } from './sheetCritters2';
 import { FOX_SANTA_COAT, FOX_SANTA_HAT } from './foxClothing';
 
 // These pieces inherit the reviewed fittings, rather than inventing another
 // set of offsets. All decoration stays inside the existing garment silhouette.
-const BODIES = { hedgehog: HEDGEHOG, rabbit: RABBIT, mouse: MOUSE, deer: DEER, fox: FOX };
-const HATS = { hedgehog: SANTA_HAT, rabbit: RABBIT_SANTA_HAT, mouse: MOUSE_SANTA_HAT, deer: DEER_SANTA_HAT, fox: FOX_SANTA_HAT };
-const TOPS = { hedgehog: SANTA_COAT, rabbit: RABBIT_SANTA_COAT, mouse: MOUSE_SANTA_COAT, deer: DEER_SANTA_COAT, fox: FOX_SANTA_COAT };
+const BODIES = { hedgehog: HEDGEHOG, rabbit: RABBIT, mouse: MOUSE, deer: DEER, fox: FOX, frog: FROG, badger: BADGER, raccoon: RACCOON };
+const HATS = { hedgehog: SANTA_HAT, rabbit: RABBIT_SANTA_HAT, mouse: MOUSE_SANTA_HAT, deer: DEER_SANTA_HAT, fox: FOX_SANTA_HAT, frog: CUSTOMER_SANTA_ART.frogSantaHat, badger: CUSTOMER_SANTA_ART.badgerSantaHat, raccoon: CUSTOMER_SANTA_ART.raccoonSantaHat };
+const TOPS = { hedgehog: SANTA_COAT, rabbit: RABBIT_SANTA_COAT, mouse: MOUSE_SANTA_COAT, deer: DEER_SANTA_COAT, fox: FOX_SANTA_COAT, frog: CUSTOMER_SANTA_ART.frogSantaCoat, badger: CUSTOMER_SANTA_ART.badgerSantaCoat, raccoon: CUSTOMER_SANTA_ART.raccoonSantaCoat };
 type NewItem = Exclude<ClothingId, 'santaHat' | 'santaCoat'>;
 export type CollectionArtName = `${ClothingAnimal}${Capitalize<NewItem>}`;
 const LEGEND = {
@@ -39,7 +40,7 @@ function garment(animal: ClothingAnimal, id: NewItem): PixelSprite {
         const band = bottom - 1;
         for (let x = centre - 5; x <= centre + 5; x++) put(x, band, 'O');
         for (const side of [-1, 1]) {
-          const stem = centre + side * 3;
+          const stem = centre + side * (animal === 'frog' ? 1 : 3);
           for (let y = Math.max(0, band - 7); y < band; y++) {
             put(stem, y, 'D'); put(stem - 1, y, 'O'); put(stem + 1, y, 'O');
           }
@@ -120,7 +121,7 @@ function garment(animal: ClothingAnimal, id: NewItem): PixelSprite {
       grid = frame.map(row => [...'.'.repeat(row.length)]);
       // Feet lift in the base frames: colour their existing pixels, rather
       // than placing static boots over an animation's moving legs.
-      const first = frame.length - 4;
+      const first = frame.length - (animal === 'frog' ? 3 : 4);
       for (let y = first; y < frame.length; y++) for (let x = 0; x < frame[y].length; x++) {
         const c = frame[y][x];
         if (c === '.') continue;
@@ -130,6 +131,8 @@ function garment(animal: ClothingAnimal, id: NewItem): PixelSprite {
         if ((animal === 'rabbit' || animal === 'deer') && ((view === 2 && x >= 16) || (view === 3 && x <= (animal === 'deer' ? 10 : 5)))) continue;
         if (animal === 'deer' && view === 1 && x >= 10 && x <= 16) continue;
         if (animal === 'hedgehog' && view === 1 && x >= 11 && x <= 17) continue;
+        if (animal === 'raccoon' && (view === 1 || (view === 2 && x >= 21) || (view === 3 && x <= 16))) continue;
+        if (animal === 'badger' && ((view === 0 && x >= 21) || (view === 1 && x <= 6) || (view === 2 && x >= 21) || (view === 3 && x <= 5))) continue;
         if (animal === 'fox' && (view === 1 || (view === 2 && x >= 19) || (view === 3 && x <= 13))) continue;
         grid[y][x] = 'ao'.includes(c) || y === frame.length - 1 ? 'O'
           : y === first ? id === 'brownBoots' || id === 'buckleBoots' ? 'T' : 'C'

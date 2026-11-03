@@ -10,6 +10,9 @@ export const CLOTHING_FITS = {
   mouse: { santaHat: 'mouseSantaHat', santaCoat: 'mouseSantaCoat' },
   deer: { santaHat: 'deerSantaHat', santaCoat: 'deerSantaCoat' },
   fox: { santaHat: 'foxSantaHat', santaCoat: 'foxSantaCoat' },
+  frog: { santaHat: 'frogSantaHat', santaCoat: 'frogSantaCoat' },
+  badger: { santaHat: 'badgerSantaHat', santaCoat: 'badgerSantaCoat' },
+  raccoon: { santaHat: 'raccoonSantaHat', santaCoat: 'raccoonSantaCoat' },
 } as const satisfies Record<ClothingAnimal, Record<'santaHat' | 'santaCoat', ArtName>>;
 
 export function clothingArt(animal: ClothingAnimal, item: ClothingId): ArtName {

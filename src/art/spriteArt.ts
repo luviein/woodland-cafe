@@ -1,3 +1,4 @@
+import { CUSTOMER_SANTA_ART } from './sprites/customerClothing';
 import { WALLPAPER_CORNERS } from './sprites/wallpaperCorners';
 import { SIDE_WALLPAPER_ART } from './sprites/sideWallpaper';
 import { ROOM_FINISH_ART } from './sprites/roomFinishes';
@@ -57,6 +58,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...CUSTOMER_SANTA_ART,
   ...ROOM_FINISH_ART,
   ...SIDE_WALLPAPER_ART,
   ...WALLPAPER_CORNERS,
@@ -195,13 +197,13 @@ export const CHRISTMAS_ART = [
 ] as const satisfies readonly ArtName[];
 
 /** The animals customers can be (GAME_DESIGN.md §8.2). */
-export const CUSTOMER_ART = ['fox', 'rabbit', 'deer', 'mouse'] as const satisfies readonly ArtName[];
+export const CUSTOMER_ART = ['fox', 'rabbit', 'deer', 'mouse', 'frog', 'badger', 'raccoon'] as const satisfies readonly ArtName[];
 export type CustomerArt = (typeof CUSTOMER_ART)[number];
 
 /**
  * Which animal a customer is, from their id: the same on the floor and at
- * the prep station. Stepping by 3 (which shares no factor with 4) mixes
- * them up, so customers in a row aren't always fox, rabbit, deer, mouse.
+ * the prep station. Stepping by 3 (which shares no factor with 7) mixes
+ * them up, so customers in a row cycle through all seven species.
  */
 export function customerArt(id: number): CustomerArt {
   return CUSTOMER_ART[(id * 3) % CUSTOMER_ART.length];

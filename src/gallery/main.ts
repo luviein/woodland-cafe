@@ -1,3 +1,4 @@
+import { CUSTOMER_SANTA_ART } from '../art/sprites/customerClothing';
 import { WALLPAPER_CORNERS } from '../art/sprites/wallpaperCorners';
 import { SIDE_WALLPAPER_ART } from '../art/sprites/sideWallpaper';
 import { ROOM_FINISH_ART } from '../art/sprites/roomFinishes';
@@ -37,7 +38,7 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Catalogue outfit samples', (n) => n in CATALOGUE_SAMPLES],
   ['Drawing template', (n) => n === 'critterSkeleton'],
   ['Stall vendor', (n) => n === 'deerVendorIdle'],
-  ['Wardrobe collection', (n) => WARDROBE_ART.includes(n)],
+  ['Wardrobe collection', (n) => WARDROBE_ART.includes(n) || n in CUSTOMER_SANTA_ART],
   ['Critters', (n) => CRITTER_ART.includes(n)],
   ['Room finishes', (n) => n in ROOM_FINISH_ART || n in SIDE_WALLPAPER_ART || n in WALLPAPER_CORNERS],
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],

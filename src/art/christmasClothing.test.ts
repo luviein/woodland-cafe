@@ -7,6 +7,20 @@ import { spriteSize, spriteProblems } from './pixelSprite';
 import { SPRITE_ART } from './spriteArt';
 
 describe('Christmas clothing collection', () => {
+  it('keeps frog eyes clear in hats, including their walking poses', () => {
+    const eyes = [[3, 6, 16, 19], [], [8, 11], [11, 14]];
+    for (const id of ['santaHat', 'antlers', 'winterBeanie', 'bobbleHat'] as const) {
+      const sprite = SPRITE_ART[clothingArt('frog', id)];
+      sprite.frames.forEach((frame, f) => {
+        const spans = eyes[Math.floor(f / 3)];
+        for (let pair = 0; pair < spans.length; pair += 2) {
+          for (let y = 3; y <= 6; y++) for (let x = spans[pair]; x <= spans[pair + 1]; x++) {
+            expect(frame[y][x], `${id} frame ${f}, eye ${x},${y}`).toBe('.');
+          }
+        }
+      });
+    }
+  });
   it('covers the two rabbit cuff gaps rather than showing base outline specks', () => {
     for (const id of ['treeJumper', 'reindeerSweater', 'festiveJumper'] as const) {
       for (const frame of SPRITE_ART[clothingArt('rabbit', id)].frames.slice(0, 3)) {
