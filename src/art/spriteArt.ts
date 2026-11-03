@@ -1,3 +1,4 @@
+import { SIDE_WALLPAPER_ART } from './sprites/sideWallpaper';
 import { ROOM_FINISH_ART } from './sprites/roomFinishes';
 import type { PixelSprite } from './pixelSprite';
 import { CATALOGUE_SAMPLES } from './sprites/catalogueSamples';
@@ -56,6 +57,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 
 export const SPRITE_ART = {
   ...ROOM_FINISH_ART,
+  ...SIDE_WALLPAPER_ART,
   ...CATALOGUE_SAMPLES,
   critterSkeleton: CRITTER_SKELETON,
   deerVendorIdle: DEER_VENDOR_IDLE,

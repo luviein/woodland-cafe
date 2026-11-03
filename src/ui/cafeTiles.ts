@@ -1,4 +1,4 @@
-import { finishArt } from '../data/roomFinishes';
+import { finishArt, wallFinishTile } from '../data/roomFinishes';
 import type Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
@@ -67,10 +67,13 @@ export function drawCafeTiles(
       const p = px({ x, y });
       // Plank pattern picked from the position, so it's mixed but never changes.
       if (ON_FLOOR.has(tile)) canvas.drawFrame(artKey(finishArt('floor', Number(finishes?.[y]?.[x] ?? 0))), (x * 3 + y * 2) % 2, p.x, p.y);
-      const art = tile === 'wall' ? finishArt('wall', Number(finishes?.[y]?.[x] ?? 0)) : TILE_ART[tile];
-      if (!art) return;
-      const window = tile === 'wall' && y === 0 && isWindow(x, row.length);
-      canvas.drawFrame(artKey(art), window ? 1 : 0, p.x, p.y);
+      if (tile === 'wall') {
+        const finish = wallFinishTile(Number(finishes?.[y]?.[x] ?? 0), x, y, row.length, y === 0 && isWindow(x, row.length));
+        canvas.drawFrame(artKey(finish.art), finish.frame, p.x, p.y);
+      } else {
+        const art = TILE_ART[tile];
+        if (art) canvas.drawFrame(artKey(art), 0, p.x, p.y);
+      }
     });
   });
 

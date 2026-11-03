@@ -8,6 +8,14 @@ export function finishArt(surface: RoomSurface, style: number): ArtName {
   return style === 0 ? surface : `room${surface === 'floor' ? 'Floor' : 'Wall'}${style}` as ArtName;
 }
 
+/** Side strips advance down the room; back walls retain their window frame. */
+export function wallFinishTile(style: number, x: number, y: number, width: number, window: boolean): { art: ArtName; frame: number } {
+  if (style > 0 && y > 0 && (x === 0 || x === width - 1)) {
+    return { art: ('roomSideWall' + style) as ArtName, frame: (y - 1) % 4 };
+  }
+  return { art: finishArt('wall', style), frame: window ? 1 : 0 };
+}
+
 export function defaultFinishes(room: readonly string[]): string[] {
   return room.map(row => '0'.repeat(row.length));
 }

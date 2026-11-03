@@ -1,0 +1,22 @@
+import { describe, expect, it } from 'vitest';
+import { wallFinishTile } from './roomFinishes';
+import { SPRITE_ART } from '../art/spriteArt';
+
+describe('wallpaper orientation', () => {
+  it('uses continuous vertical strips on both sides for every painted wallpaper', () => {
+    for (const style of [1, 2, 3, 4]) for (const x of [0, 23]) {
+      for (let y = 1; y < 12; y++) {
+        const tile = wallFinishTile(style, x, y, 24, false);
+        expect(tile.art).toBe(`roomSideWall${style}`);
+        expect(tile.frame).toBe((y - 1) % 4);
+        expect(SPRITE_ART[tile.art].frames[tile.frame]).toHaveLength(24);
+      }
+    }
+  });
+
+  it('keeps back-wall windows and the original log finish', () => {
+    expect(wallFinishTile(3, 2, 0, 24, true)).toEqual({ art: 'roomWall3', frame: 1 });
+    expect(wallFinishTile(3, 0, 0, 24, false)).toEqual({ art: 'roomWall3', frame: 0 });
+    expect(wallFinishTile(0, 0, 3, 24, false)).toEqual({ art: 'wall', frame: 0 });
+  });
+});
