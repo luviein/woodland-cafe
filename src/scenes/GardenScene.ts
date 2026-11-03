@@ -53,28 +53,28 @@ export class GardenScene extends Phaser.Scene {
     const back = new Button(this, doorAt.x, doorAt.y + 40, 100, 26, this.from === 'cafe' ? 'Cafe' : 'Map', COLORS.book, () => this.returnToEntrance());
     arrangeable(this, 'garden', 'returnDoor', doorAt, door, back);
     for (let i = 0; i < 2; i++) {
-      const at = point('tree.' + i, i === 0 ? 25 : 595, i === 0 ? 280 : 180);
-      arrangeable(this, 'garden', 'tree.' + i, at, addTree(this, at.x, at.y, i === 0 ? 'oak' : 'pine'));
+      const at = point('tree.' + i, i === 0 ? 50 : 590, i === 0 ? 312 : 240);
+      arrangeable(this, 'garden', 'tree.' + i, at, addTree(this, at.x, at.y, i === 0 ? 'oak' : 'pine').setScale(3));
     }
     const fenceAt = point('fence', 136, 324);
     const fences = this.add.container(fenceAt.x, fenceAt.y);
     for (let i = 0; i < 14; i++) fences.add(addArt(this, i * 32, 0, 'gardenFence').setOrigin(0, 1));
     arrangeable(this, 'garden', 'fence', fenceAt, fences);
-    const tableAt = point('seedTable', 84, 250);
+    const tableAt = point('seedTable', 124, 250);
     const table = addArt(this, tableAt.x, tableAt.y, 'gardenTable').setInteractive({ useHandCursor: true });
-    const pouch = addArt(this, tableAt.x, tableAt.y - 16, 'seedPouch').setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+    const pouch = addArt(this, tableAt.x, tableAt.y - 4, 'seedPouch').setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
     table.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openPouch());
     pouch.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.openPouch());
-    const tableLabel = this.add.text(tableAt.x, tableAt.y + 30, 'Seed pouch', { ...TEXT.label, fontSize: '10px', stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
+    const tableLabel = this.add.text(tableAt.x, tableAt.y + 24, 'Seed pouch', { ...TEXT.label, fontSize: '10px', stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
     arrangeable(this, 'garden', 'seedTable', tableAt, table, pouch, tableLabel);
     const selectedAt = point('selectedCrop', 356, 64);
     this.selectedLabel = this.add.text(selectedAt.x, selectedAt.y, '', { ...TEXT.heading, fontSize: '12px', color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
     arrangeable(this, 'garden', 'selectedCrop', selectedAt, this.selectedLabel);
     for (let i = 0; i < GARDEN_PLOTS; i++) {
       const at = point('plot.' + i, 212 + i % 3 * 144, 132 + Math.floor(i / 3) * 100);
-      const bed = addArt(this, at.x, at.y + 6, 'gardenSoil').setScale(2).setInteractive({ useHandCursor: true });
-      const crop = addArt(this, at.x, at.y - 10, 'gardenMushroom').setScale(2);
-      const status = this.add.text(at.x, at.y + 52, '', { ...TEXT.label, fontSize: '10px', align: 'center', color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
+      const bed = addArt(this, at.x, at.y + 6, 'gardenSoil').setInteractive({ useHandCursor: true });
+      const crop = addArt(this, at.x, at.y + 2, 'gardenMushroom');
+      const status = this.add.text(at.x, at.y + 36, '', { ...TEXT.label, fontSize: '10px', align: 'center', color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
       bed.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.tend(i));
       this.plots.push({ crop, status });
       arrangeable(this, 'garden', 'plot.' + i, at, bed, crop, status);
