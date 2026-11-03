@@ -53,7 +53,7 @@ for (let style = 0; style <= 4; style++) {
     // Each outer edge copies its neighbouring wall exactly. A diagonal
     // miter bends the lines without shrinking or shifting either sprite.
     if (distanceX >= distanceY) return letter(back.legend[source[y][x]]);
-    const frame = style ? (top ? 3 : 2) : (right ? 1 : 0);
+    const frame = style === 0 ? (right ? 1 : 0) : style === 2 ? (top ? 3 : 2) : (right ? 2 : 0) + (top ? 1 : 0);
     return letter(side.legend[side.frames[frame][y][x]]);
   }).join('')));
   art[`roomWallCorner${style}`] = { legend, frames };
