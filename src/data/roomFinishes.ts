@@ -14,7 +14,7 @@ export function wallFinishTile(style: number, x: number, y: number, width: numbe
     return { art: ('roomWallCorner' + style) as ArtName, frame: (y === 0 ? 0 : 2) + (x === 0 ? 0 : 1) };
   }
   if (y > 0 && (x === 0 || x === width - 1)) {
-    return { art: ('roomSideWall' + style) as ArtName, frame: style === 0 ? (x === 0 ? 0 : 1) : style === 2 ? (y - 1) % 4 : (y - 1) % 2 + (x === 0 ? 0 : 2) };
+    return { art: ('roomSideWall' + style) as ArtName, frame: style === 0 ? (x === 0 ? 0 : 1) : style === 2 ? (y - 1) % 4 + (x === 0 ? 0 : 4) : (y - 1) % 2 + (x === 0 ? 0 : 2) };
   }
   if (y === height - 1) return { art: ('roomBottomWall' + style) as ArtName, frame: 0 };
   return { art: finishArt('wall', style), frame: window ? 1 : 0 };

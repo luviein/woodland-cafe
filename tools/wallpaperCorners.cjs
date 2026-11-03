@@ -28,6 +28,7 @@ for (let style = 0; style <= 4; style++) {
     const top = corner < 2;
     const distanceX = right ? 23 - x : x;
     const distanceY = top ? y : 23 - y;
+    if (style === 2 && distanceX >= 18 && distanceX < distanceY) return letter(back.legend[source[distanceX][y]]);
     if (style === 2 && x !== (right ? 0 : 23)) {
       // Follow a rounded quarter-ellipse between the narrow side garland
       // and horizontal trim. Keep bows on straight runs, not on the bend.

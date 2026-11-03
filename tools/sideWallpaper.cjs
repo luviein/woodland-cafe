@@ -29,7 +29,11 @@ const back = JSON.parse(fs.readFileSync('src/art/sprites/roomFinishes.ts', 'utf8
 const slim = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) =>
   x >= 9 && x < 15 ? back.frames[0][x - 9][y] : back.frames[0][10][x],
 ).join(''));
-art.roomSideWall2 = { legend: back.legend, frames: Array.from({ length: 4 }, () => slim) };
+// Keep the approved garland, adding the same inward wood strip on each side.
+art.roomSideWall2 = { legend: back.legend, frames: [false, true].flatMap(right => Array.from({ length: 4 }, () => slim.map((row, y) => [...row].map((char, x) => {
+  const inward = right ? 23 - x : x;
+  return inward >= 18 ? back.frames[0][inward][y] : char;
+}).join('')))) };
 // Match the back-wall motif size on the other wallpapers. The wood trim
 // turns onto the inner vertical edge rather than disappearing at the corner.
 const wallArt = JSON.parse(fs.readFileSync('src/art/sprites/roomFinishes.ts', 'utf8').match(/= ([\s\S]*) as const/)[1]);

@@ -38,7 +38,7 @@ describe('wallpaper orientation', () => {
       for (let y = 1; y < 11; y++) {
         const tile = wallFinishTile(style, x, y, 24, false);
         expect(tile.art).toBe(`roomSideWall${style}`);
-        expect(tile.frame).toBe(style === 2 ? (y - 1) % 4 : (y - 1) % 2 + (x === 0 ? 0 : 2));
+        expect(tile.frame).toBe(style === 2 ? (y - 1) % 4 + (x === 0 ? 0 : 4) : (y - 1) % 2 + (x === 0 ? 0 : 2));
         expect(SPRITE_ART[tile.art].frames[tile.frame]).toHaveLength(24);
       }
     }
