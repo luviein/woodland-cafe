@@ -1,3 +1,4 @@
+import type { FinishId } from '../data/roomFinishProducts';
 import { defaultFinishes } from '../data/roomFinishes';
 import { CAFE_ROOM } from '../data/cafeRoom';
 import { STARTER_INGREDIENTS, type IngredientId } from '../data/ingredients';
@@ -28,6 +29,7 @@ import { STARTER_CLOTHING, type ClothingId } from '../data/clothing';
 export interface GameState {
   room: readonly string[];
   roomFinishes: readonly string[];
+  ownedFinishes: readonly FinishId[];
   ownedClothing: readonly ClothingId[];
   animal: PlayerAnimal;
   outfit: Outfit;
@@ -58,6 +60,7 @@ export function createNewGame(): GameState {
   return {
     room: [...CAFE_ROOM],
     roomFinishes: defaultFinishes(CAFE_ROOM),
+    ownedFinishes: [],
     ownedClothing: [...STARTER_CLOTHING],
     animal: 'hedgehog',
     outfit: emptyOutfit(),

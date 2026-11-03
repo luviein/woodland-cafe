@@ -1,3 +1,4 @@
+import { FINISH_IDS, type FinishId } from './roomFinishProducts';
 import type { ArtName } from '../art/spriteArt';
 import { CLOTHING_IDS, type ClothingId } from './clothing';
 
@@ -87,9 +88,10 @@ export const CHRISTMAS_CATALOGUE = {
     { name: 'Decor', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'floorDecor') },
     { name: 'Wall', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'wallDecor') },
     { name: 'Clothes', designs: CLOTHING_IDS },
+    { name: 'Room', designs: FINISH_IDS },
   ],
   cover: ['christmasTree', 'giftBoxes', 'snowman'],
-} as const satisfies { title: string; edition: string; tabs: readonly { name: string; designs: readonly (DesignId | ClothingId)[] }[]; cover: readonly ArtName[] };
+} as const satisfies { title: string; edition: string; tabs: readonly { name: string; designs: readonly (DesignId | ClothingId | FinishId)[] }[]; cover: readonly ArtName[] };
 
 /** How a kind is written in a layout grid (data/cafeLayout.ts). Wall decorations aren't on the floor, so they have none. */
 export const KIND_CHAR = { table: 'T', chair: 'S', floorDecor: 'X' } as const satisfies Partial<Record<FurnitureKind, string>>;

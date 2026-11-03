@@ -1,3 +1,4 @@
+import { ownsFinish, ownedFinishGrid } from '../logic/roomFinishShop';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { FLOOR_FINISHES, WALL_FINISHES, finishArt, wallFinishTile, type RoomSurface } from '../data/roomFinishes';
@@ -69,6 +70,7 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
     for (let i = 0; i < FLOOR_FINISHES.length; i++) {
       const button = place('swatch-' + i, 487 + i % 2 * 94, 88 + Math.floor(i / 2) * 49,
         new Button(scene, 0, 0, 86, 43, '', COLORS.book, () => {
+          if (!ownsFinish(getGameState(scene), this.surface, i)) return;
           this.finishStroke(); this.style = i; this.refresh();
         }));
       const image = scene.add.image(0, -6, artKey('floor')).setDisplaySize(24, 24);
@@ -87,11 +89,11 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
     place('cancel', 452, 334, new Button(scene, 0, 0, 100, 28, 'Cancel', COLORS.reset, close));
     place('apply', 568, 334, new Button(scene, 0, 0, 112, 28, 'Apply', COLORS.serve, () => {
       this.finishStroke();
-      setGameState(scene, { ...getGameState(scene), roomFinishes: [...this.finishes] });
+      setGameState(scene, { ...getGameState(scene), roomFinishes: ownedFinishGrid(getGameState(scene).room, this.finishes, getGameState(scene).ownedFinishes) });
       close();
     }));
     const paint = (pointer: Phaser.Input.Pointer) => {
-      if (!this.stroke) return;
+      if (!this.stroke || !ownsFinish(getGameState(scene), this.surface, this.style)) return;
       const local = this.grid.getWorldTransformMatrix().applyInverse(pointer.worldX, pointer.worldY);
       const tile: Point = { x: Math.floor(local.x / (TILE_SIZE * PREVIEW_SCALE)), y: Math.floor(local.y / (TILE_SIZE * PREVIEW_SCALE)) };
       const room = getGameState(scene).room;
@@ -157,16 +159,17 @@ export class RoomPainterPanel extends Phaser.GameObjects.Container {
 
   private refresh(): void {
     this.refreshTiles();
-    this.status.setText(this.wholeStretch ? 'Tap a surface to paint its connected stretch.' : 'Drag to paint. Apply saves; Cancel discards.');
+    this.status.setText(this.wholeStretch ? 'Tap a surface to paint its connected stretch.' : 'Drag to paint. Buy locked finishes from the catalogue.');
     this.modeButtons.forEach((button, i) => button.setAlpha((this.wholeStretch ? 1 : 0) === i ? 1 : 0.65));
     this.undo.setEnabled(this.history.length > 0);
     const names = this.surface === 'floor' ? FLOOR_FINISHES : WALL_FINISHES;
     this.tabs.forEach((button, i) => button.setAlpha((this.surface === 'floor' ? 0 : 1) === i ? 1 : 0.65));
     this.swatches.forEach(({ button, image, label }, i) => {
-      button.setVisible(i < names.length).setAlpha(i === this.style ? 1 : 0.65);
+      const owned = ownsFinish(getGameState(this.scene), this.surface, i);
+      button.setVisible(i < names.length).setEnabled(owned).setAlpha(owned ? (i === this.style ? 1 : 0.65) : 0.35);
       if (i < names.length) {
         image.setTexture(artKey(finishArt(this.surface, i)), 0);
-        label.setText(names[i]);
+        label.setText(owned ? names[i] : 'Locked');
       }
     });
   }

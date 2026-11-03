@@ -1,3 +1,5 @@
+import { FINISH_IDS } from '../data/roomFinishProducts';
+import { appliedFinishIds, ownedFinishGrid } from './roomFinishShop';
 import { defaultFinishes, validFinishes } from '../data/roomFinishes';
 import { roomProblems } from './roomPainter';
 import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
@@ -31,7 +33,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 6: clothing ownership; pre-shop saves retain the free collection.
 // 7: each cafe saves its own painted room.
 // 8: painted floor and wall finishes, separate from room structure.
-export const SAVE_VERSION = 8;
+// 9: one-time room finish purchases.
+export const SAVE_VERSION = 9;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -79,6 +82,8 @@ export function loadGame(text: string): LoadResult {
 function readState(raw: Record<string, unknown>, version: number): GameState {
   const fresh = createNewGame();
   const room = field<readonly string[]>(raw, 'room', fresh.room, value => Array.isArray(value) && value.every(row => typeof row === 'string') && roomProblems(value, [], false).length === 0);
+  const finishes = field<readonly string[]>(raw, 'roomFinishes', defaultFinishes(room), value => validFinishes(value, room));
+  const ownedFinishes = idList(raw, 'ownedFinishes', version < 9 ? appliedFinishIds(room, finishes) : [], FINISH_IDS);
   const furniture = readFurniture(raw.furniture, fresh.furniture, room);
   if (roomProblems(room, furniture.placed, false).length) throw new BadSave('room paths');
   const ownedClothing = idList(raw, 'ownedClothing', version < 6 ? CLOTHING_IDS : fresh.ownedClothing, CLOTHING_IDS);
@@ -89,7 +94,8 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
   }
   return {
     room,
-    roomFinishes: field<readonly string[]>(raw, 'roomFinishes', defaultFinishes(room), value => validFinishes(value, room)),
+    roomFinishes: ownedFinishGrid(room, finishes, ownedFinishes),
+    ownedFinishes,
     ownedClothing,
     animal: readPlayerAnimal(raw.animal),
     outfit,

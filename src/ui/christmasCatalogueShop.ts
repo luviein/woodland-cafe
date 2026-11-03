@@ -1,3 +1,5 @@
+import { isFinishItem } from '../data/roomFinishProducts';
+import { buyFinish, canBuyFinish } from '../logic/roomFinishShop';
 import type Phaser from 'phaser';
 import { isClothingItem } from '../data/catalogueProducts';
 import { buyClothing, canBuyClothing } from '../logic/clothingShop';
@@ -12,13 +14,14 @@ export function christmasCatalogueShop(scene: Phaser.Scene, onChange: () => void
     animal: () => getGameState(scene).animal,
     owned: id => {
       const state = getGameState(scene);
+      if (isFinishItem(id)) return state.ownedFinishes.includes(id) ? 1 : 0;
       if (isClothingItem(id)) return state.ownedClothing.includes(id) ? 1 : 0;
       return state.furniture.stored[id] + state.furniture.placed.filter(piece => piece.design === id).length;
     },
-    canBuy: id => isClothingItem(id) ? canBuyClothing(getGameState(scene), id) : canBuyFurniture(getGameState(scene), id),
+    canBuy: id => isFinishItem(id) ? canBuyFinish(getGameState(scene), id) : isClothingItem(id) ? canBuyClothing(getGameState(scene), id) : canBuyFurniture(getGameState(scene), id),
     buy: id => {
       const state = getGameState(scene);
-      setGameState(scene, isClothingItem(id) ? buyClothing(state, id) : buyFurniture(state, id));
+      setGameState(scene, isFinishItem(id) ? buyFinish(state, id) : isClothingItem(id) ? buyClothing(state, id) : buyFurniture(state, id));
       onChange();
     },
   };

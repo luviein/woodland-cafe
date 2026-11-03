@@ -12,6 +12,7 @@ describe('createNewGame', () => {
     expect(createNewGame()).toEqual({
       room: [...CAFE_ROOM],
       roomFinishes: defaultFinishes(CAFE_ROOM),
+      ownedFinishes: [],
       ownedClothing: ['santaHat', 'santaCoat'],
       animal: 'hedgehog',
       outfit: { hat: null, top: null, cape: null, shoes: null },

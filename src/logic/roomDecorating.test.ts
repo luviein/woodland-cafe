@@ -41,6 +41,7 @@ describe('surface painting', () => {
 
   it('saves finishes and defaults older games without them', () => {
     const state = createNewGame();
+    state.ownedFinishes = ['wallFinish4'];
     state.roomFinishes = paintFinish(state.room, state.roomFinishes, { x: 3, y: 0 }, 'wall', 4);
     expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
     const file = JSON.parse(saveGame(state));
