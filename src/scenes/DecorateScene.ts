@@ -9,6 +9,7 @@ import {
   movePiece,
   moveProblem,
   pieceAt,
+  snapPlacement,
   placePiece,
   placeProblem,
   removePiece,
@@ -67,6 +68,7 @@ interface Drag {
   counter?: boolean;
   /** Pointer offset from the carried tile, preserving where it was grabbed. */
   grab?: Point;
+  guide?: Phaser.GameObjects.Rectangle;
   checkedTile?: Point;
   design: DesignId;
   from: Point | null;
@@ -184,7 +186,8 @@ export class DecorateScene extends Phaser.Scene {
           this.startDrag({ counter: true, design: 'table', from: tile, pieces: this.furniture().placed.filter(p => this.room()[p.y]?.[p.x] === 'C'), start: pointer.position.clone(), ghost: null });
           return;
         }
-        const piece = pieceAt(this.furniture(), tile);
+        const solid = pieceAt(this.furniture(), tile);
+        const piece = solid && kindOf(solid.design) !== 'rug' ? solid : pieceAt(this.furniture(), this.pointUnder(pointer));
         if (piece) this.startDrag({ design: piece.design, from: { x: piece.x, y: piece.y }, pieces: [piece], start: pointer.position.clone(), ghost: null });
       },
     );
@@ -209,7 +212,13 @@ export class DecorateScene extends Phaser.Scene {
           this.closeMenu();
           return;
         }
-        this.onTileTapped(this.tileUnder(pointer));
+        if (drag?.from && !drag.counter && !this.selected) {
+          this.openMenu(drag.from, drag.design);
+          return;
+        }
+        const point = this.pointUnder(pointer);
+        this.onTileTapped(this.selected && kindOf(this.selected) === 'rug'
+          ? snapPlacement(this.selected, { x: point.x - 1, y: point.y - 1 }) : this.tileUnder(pointer));
       },
     );
     // Let go outside the game window: the drag is called off.
@@ -258,6 +267,10 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   /** The cafe tile under the pointer (it may be outside the grid). */
+  private pointUnder(pointer: Phaser.Input.Pointer): Point {
+    return { x: (pointer.worldX - this.origin.x) / TILE_SIZE, y: (pointer.worldY - this.origin.y) / TILE_SIZE };
+  }
+
   private tileUnder(pointer: Phaser.Input.Pointer): Point {
     return {
       x: Math.floor((pointer.worldX - this.origin.x) / TILE_SIZE),
@@ -308,6 +321,9 @@ export class DecorateScene extends Phaser.Scene {
     // Made last, so if anything above ever fails there's no copy left stuck
     // at the top-left corner (where a not-yet-placed copy sits).
     drag.ghost = this.createGhost(drag);
+    if (!drag.counter && kindOf(drag.design) === 'rug') {
+      drag.guide = this.add.rectangle(0, 0, TILE_SIZE * 2, TILE_SIZE * 2).setFillStyle(COLORS.paper, 0.06).setStrokeStyle(1, COLORS.paper).setDepth(49);
+    }
   }
 
   /** Starts a press that may become a drag, calling off any drag that lost its let-go first. */
@@ -315,7 +331,7 @@ export class DecorateScene extends Phaser.Scene {
     if (this.drag?.ghost) this.cancelDrag();
     drag.grab = drag.from
       ? { x: drag.start.x - this.origin.x - drag.from.x * TILE_SIZE, y: drag.start.y - this.origin.y - drag.from.y * TILE_SIZE }
-      : { x: TILE_SIZE / 2, y: TILE_SIZE / 2 };
+      : this.defaultGrab(drag);
     this.drag = drag;
   }
 
@@ -323,6 +339,7 @@ export class DecorateScene extends Phaser.Scene {
   private cancelDrag(): void {
     const hadGhost = Boolean(this.drag?.ghost);
     this.drag?.ghost?.destroy();
+    this.drag?.guide?.destroy();
     this.drag = null;
     if (hadGhost && !this.carrying) this.refresh();
   }
@@ -332,25 +349,30 @@ export class DecorateScene extends Phaser.Scene {
    * down there (on the floor, on the wall, along the counter's front or on its
    * top), red if it couldn't be put down there.
    */
+  private defaultGrab(drag: Drag): Point {
+    const half = !drag.counter && kindOf(drag.design) === 'rug' ? TILE_SIZE : TILE_SIZE / 2;
+    return { x: half, y: half };
+  }
+
   private dragTile(drag: Drag, pointer: Phaser.Input.Pointer): Point {
-    const grab = drag.grab ?? { x: TILE_SIZE / 2, y: TILE_SIZE / 2 };
-    return {
-      x: Math.round((pointer.worldX - this.origin.x - grab.x) / TILE_SIZE),
-      y: Math.round((pointer.worldY - this.origin.y - grab.y) / TILE_SIZE),
-    };
+    const grab = drag.grab ?? this.defaultGrab(drag);
+    const point = { x: (pointer.worldX - this.origin.x - grab.x) / TILE_SIZE, y: (pointer.worldY - this.origin.y - grab.y) / TILE_SIZE };
+    return drag.counter ? { x: Math.round(point.x), y: Math.round(point.y) } : snapPlacement(drag.design, point);
   }
 
   private moveGhost(drag: Drag, tile: Point, pointer?: Phaser.Input.Pointer): void {
     if (!drag.ghost) return;
-    const grab = drag.grab ?? { x: TILE_SIZE / 2, y: TILE_SIZE / 2 };
+    const grab = drag.grab ?? this.defaultGrab(drag);
     drag.ghost.setPosition(
       pointer ? Math.round(pointer.worldX - grab.x) : this.origin.x + tile.x * TILE_SIZE,
       pointer ? Math.round(pointer.worldY - grab.y) : this.origin.y + tile.y * TILE_SIZE,
     );
+    drag.guide?.setPosition(this.origin.x + (tile.x + 1) * TILE_SIZE, this.origin.y + (tile.y + 1) * TILE_SIZE);
     // Flood-filling paths is unnecessary while the pointer stays on one tile.
     if (drag.checkedTile?.x === tile.x && drag.checkedTile.y === tile.y) return;
     drag.checkedTile = { ...tile };
     const ok = this.dropProblem(drag, tile) === null;
+    drag.guide?.setStrokeStyle(1, ok ? COLORS.paper : COLORS.statusUpset);
     if (drag.counter) {
       for (const child of drag.ghost.list) {
         const image = child as Phaser.GameObjects.Image;
@@ -394,7 +416,7 @@ export class DecorateScene extends Phaser.Scene {
     this.closeMenu();
     const piece = pieceAt(this.furniture(), tile, design);
     if (!piece) return;
-    const under = kindOf(piece.design) === 'rug' ? undefined : this.furniture().placed.find(p => kindOf(p.design) === 'rug' && tile.x >= p.x && tile.x < p.x + 2 && tile.y >= p.y && tile.y < p.y + 2);
+    const under = kindOf(piece.design) === 'rug' ? undefined : this.furniture().placed.find(p => kindOf(p.design) === 'rug' && tile.x + 0.5 >= p.x && tile.x + 0.5 < p.x + 2 && tile.y + 0.5 >= p.y && tile.y + 0.5 < p.y + 2);
     tile = { x: piece.x, y: piece.y };
     const tileX = this.origin.x + tile.x * TILE_SIZE + TILE_SIZE / 2;
     const tileTop = this.origin.y + tile.y * TILE_SIZE;
@@ -450,6 +472,7 @@ export class DecorateScene extends Phaser.Scene {
       return;
     }
     carrying.ghost?.destroy();
+    carrying.guide?.destroy();
     this.carrying = null;
     this.applyMove(carrying.from, tile, carrying.design);
   }
@@ -457,6 +480,7 @@ export class DecorateScene extends Phaser.Scene {
   /** Esc while carrying: everything goes back where it was. */
   private cancelCarrying(): void {
     this.carrying?.ghost?.destroy();
+    this.carrying?.guide?.destroy();
     this.carrying = null;
     this.refresh();
   }
@@ -508,6 +532,7 @@ export class DecorateScene extends Phaser.Scene {
   /** Let go: move (or place) the pieces if they fit, else say why and put everything back. */
   private drop(drag: Drag, tile: Point, onButton: boolean): void {
     drag.ghost?.destroy();
+    drag.guide?.destroy();
     const layout = buildLayout(this.furniture(), this.room());
     const inCafe = tile.x >= 0 && tile.y >= 0 && tile.x < layout.width && tile.y < layout.height;
     // Dropped back on the tray, or off the cafe: called off, nothing to explain.
@@ -595,7 +620,7 @@ export class DecorateScene extends Phaser.Scene {
     this.hint.setText(
       this.selected
         ? `${FURNITURE[this.selected].name}: tap a spot to place it (${placeWords(this.selected)})`
-        : 'Drag furniture or the counter to move it. Tap a piece for more.',
+        : 'Drag to move. Rugs use fine steps; the outline marks where they land.',
     );
   }
 

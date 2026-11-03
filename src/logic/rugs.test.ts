@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createNewGame } from './gameState';
-import { buildLayout, movePiece, noneStored, pieceAt, placePiece, placeProblem, removePiece, type Furniture } from './furniture';
+import { buildLayout, movePiece, noneStored, pieceAt, placePiece, placeProblem, removePiece, snapPlacement, validPiecePosition, type Furniture } from './furniture';
 import { buyFurniture } from './shop';
 import { loadGame, saveGame } from './save';
 
@@ -8,6 +8,21 @@ const stocked = (): Furniture => ({ placed: [], stored: { ...noneStored(), table
 const at = { x: 4, y: 5 };
 
 describe('rugs', () => {
+  it('centres rugs beneath single-tile tables and preserves quarter-tile placement in saves', () => {
+    expect(snapPlacement('treeRug', { x: 4.49, y: 4.54 })).toEqual({ x: 4.5, y: 4.5 });
+    expect(snapPlacement('table', { x: 4.49, y: 4.54 })).toEqual({ x: 4, y: 5 });
+    const furniture = placePiece(placePiece(stocked(), 'treeRug', { x: 4.5, y: 4.5 }), 'table', { x: 5, y: 5 });
+    expect(furniture.placed[0].x + 1).toBe(furniture.placed[1].x + 0.5);
+    expect(furniture.placed[0].y + 1).toBe(furniture.placed[1].y + 0.5);
+    const moved = movePiece(furniture, { x: 4.5, y: 4.5 }, { x: 4.75, y: 4.5 }, undefined, 'treeRug');
+    expect(moved.placed[1]).toEqual(furniture.placed[1]);
+    const state = { ...createNewGame(), furniture: moved };
+    expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
+    expect(validPiecePosition('table', 4.5, 4.5)).toBe(false);
+    expect(validPiecePosition('treeRug', 4.1, 4.5)).toBe(false);
+    expect(validPiecePosition('treeRug', Infinity, 4)).toBe(false);
+    expect(placeProblem(stocked(), 'treeRug', { x: 21.25, y: 5 })).not.toBeNull();
+  });
   it('goes under furniture in either placement order without changing the walking layout', () => {
     const base = placePiece(stocked(), 'table', at);
     const under = placePiece(base, 'treeRug', at);

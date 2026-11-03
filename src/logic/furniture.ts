@@ -17,6 +17,18 @@ export interface PlacedPiece extends Point {
   design: DesignId;
 }
 
+/** Rugs have a visual floor layer; seating furniture stays on whole tiles. */
+export function snapPlacement(design: DesignId, point: Point): Point {
+  const divisions = kindOf(design) === 'rug' ? 4 : 1;
+  return { x: Math.round(point.x * divisions) / divisions, y: Math.round(point.y * divisions) / divisions };
+}
+
+export function validPiecePosition(design: DesignId, x: unknown, y: unknown): boolean {
+  const divisions = kindOf(design) === 'rug' ? 4 : 1;
+  return typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y)
+    && x >= 0 && y >= 0 && Number.isInteger(x * divisions) && Number.isInteger(y * divisions);
+}
+
 /** All the player's furniture. Plain data, so it lives in the game state. */
 export interface Furniture {
   placed: readonly PlacedPiece[];
@@ -173,8 +185,9 @@ export function placeProblem(
 /** Whether a design can go on this tile at all (before the rules for the cafe as a whole), or why not. */
 export function spotProblemFor(design: DesignId, at: Point, room: readonly string[]): string | null {
   if (kindOf(design) === 'rug') {
-    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
-      const char = room[at.y + dy]?.[at.x + dx];
+    if (!validPiecePosition(design, at.x, at.y)) return 'Place rugs on the fine placement grid';
+    for (let y = Math.floor(at.y); y < Math.ceil(at.y + 2); y++) for (let x = Math.floor(at.x); x < Math.ceil(at.x + 2); x++) {
+      const char = room[y]?.[x];
       if (!char || !'.PO123456789'.includes(char)) return 'Keep the whole rug on floor tiles, clear of walls, counter and door';
     }
     return null;

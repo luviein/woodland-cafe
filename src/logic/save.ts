@@ -6,7 +6,7 @@ import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
 import { DESIGN_IDS, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, type IngredientId } from '../data/ingredients';
 import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
-import { buildLayout, placementOverlap, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
+import { buildLayout, placementOverlap, validPiecePosition, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
@@ -35,7 +35,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 8: painted floor and wall finishes, separate from room structure.
 // 9: one-time room finish purchases.
 // 10: rugs share floor coordinates with furniture.
-export const SAVE_VERSION = 10;
+// 11: rugs use quarter-tile placement coordinates.
+export const SAVE_VERSION = 11;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -173,7 +174,7 @@ function readFurniture(value: unknown, fallback: Furniture, room: readonly strin
   const stored = countsById<DesignId>(value.stored, 'furniture.stored', fallback.stored, DESIGN_IDS);
   const placed: PlacedPiece[] = value.placed.map((p: unknown) => {
     const design = isObject(p) ? (p.design ?? p.kind) : undefined;
-    const ok = isObject(p) && DESIGN_IDS.includes(design as DesignId) && isWhole(p.x) && isWhole(p.y);
+    const ok = isObject(p) && DESIGN_IDS.includes(design as DesignId) && validPiecePosition(design as DesignId, p.x, p.y);
     if (!ok) throw new BadSave('furniture.placed');
     return { design: design as DesignId, x: p.x as number, y: p.y as number };
   });
