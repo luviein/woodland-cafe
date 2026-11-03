@@ -1,3 +1,4 @@
+import { moveCounter } from '../logic/roomDecorating';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import Phaser from 'phaser';
 import { RoomPainterPanel } from '../ui/RoomPainterPanel';
@@ -94,6 +95,7 @@ export class DecorateScene extends Phaser.Scene {
   private trayAt!: Point;
   private trayLayer!: Phaser.GameObjects.Container;
   private hint!: Phaser.GameObjects.Text;
+  private movingCounter = false;
   private painter: RoomPainterPanel | null = null;
   private catalogue: CataloguePanel | null = null;
   /** What the next floor tap places; null = nothing picked yet. */
@@ -111,6 +113,7 @@ export class DecorateScene extends Phaser.Scene {
 
   create(): void {
     this.selected = null;
+    this.movingCounter = false;
     this.drag = null;
     this.carrying = null;
     this.menu = null;
@@ -153,10 +156,20 @@ export class DecorateScene extends Phaser.Scene {
     }
     const paintAt = at('paintRoom', 68, 16);
     arrangeable(this, 'decorate', 'paintRoom', paintAt, new Button(this, paintAt.x, paintAt.y, 112, 22, 'Paint room', COLORS.book, () => this.openPainter()));
+    const counterAt = at('moveCounter', 196, 16);
+    arrangeable(this, 'decorate', 'moveCounter', counterAt, new Button(this, counterAt.x, counterAt.y, 112, 22, 'Move counter', COLORS.book, () => {
+      if (this.painter || this.catalogue) return;
+      this.cancelDrag(); this.closeMenu();
+      if (this.carrying) this.cancelCarrying();
+      this.selected = null;
+      this.movingCounter = !this.movingCounter;
+      this.refresh();
+    }));
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
       if (this.catalogue || this.painter) return; // panels own their keys
-      if (event.key === 'Escape' && this.carrying) this.cancelCarrying();
+      if (event.key === 'Escape' && this.movingCounter) { this.movingCounter = false; this.refresh(); }
+      else if (event.key === 'Escape' && this.carrying) this.cancelCarrying();
       else if (event.key === 'Escape' && this.menu) this.closeMenu();
       else if ((event.key === 'Escape' || event.key === 'Enter') && !this.carrying && !this.menu) this.done();
     };
@@ -170,7 +183,7 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (this.painter) return;
+        if (this.painter || this.movingCounter) return;
         if (over.length > 0) return; // a button: the tray handles its own
         if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
@@ -260,7 +273,7 @@ export class DecorateScene extends Phaser.Scene {
    * becomes a drag: the pieces are lifted and follow it too.
    */
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
-    if (this.painter) return;
+    if (this.painter || this.movingCounter) return;
     if (this.carrying) {
       this.moveGhost(this.carrying, this.tileUnder(pointer));
       return;
@@ -285,7 +298,7 @@ export class DecorateScene extends Phaser.Scene {
     if (drag.from) {
       // Show the cafe without the lifted pieces while they're in the air.
       const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
-      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }, this.room()), this.origin, lifted);
+      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }, this.room()), this.origin, lifted, getGameState(this).roomFinishes);
     }
     // Made last, so if anything above ever fails there's no copy left stuck
     // at the top-left corner (where a not-yet-placed copy sits).
@@ -471,6 +484,7 @@ export class DecorateScene extends Phaser.Scene {
     this.closeMenu();
     if (this.carrying) this.cancelCarrying();
     this.selected = null;
+    this.movingCounter = false;
     this.painter = new RoomPainterPanel(this, () => {
       const panel = this.painter;
       // Defer releasing input until this pointer-up has finished dispatching.
@@ -488,6 +502,7 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private select(design: DesignId): void {
+    this.movingCounter = false;
     this.closeMenu();
     if (this.carrying) this.cancelCarrying();
     this.selected = this.selected === design ? null : design; // tap again to put it down
@@ -495,6 +510,14 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private onTileTapped(tile: Point): void {
+    if (this.movingCounter) {
+      const result = moveCounter(this.room(), this.furniture(), tile);
+      if (!result.ok) { this.showMessage(tile, result.reason); return; }
+      setGameState(this, { ...getGameState(this), room: result.room, furniture: result.furniture });
+      this.movingCounter = false;
+      this.refresh();
+      return;
+    }
     const layout = buildLayout(this.furniture(), this.room());
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
 
@@ -514,12 +537,12 @@ export class DecorateScene extends Phaser.Scene {
   /** Redraws the cafe and the tray from the game state. */
   private refresh(): void {
     const furniture = this.furniture();
-    drawCafeTiles(this.tiles, buildLayout(furniture, this.room()), this.origin, furniture.placed);
+    drawCafeTiles(this.tiles, buildLayout(furniture, this.room()), this.origin, furniture.placed, getGameState(this).roomFinishes);
     // Ran out of the picked piece: nothing left to place, so let go of it.
     if (this.selected && furniture.stored[this.selected] === 0) this.selected = null;
     this.refreshTray();
     this.hint.setText(
-      this.selected
+      this.movingCounter ? 'Tap the new player service spot to move the counter and queue. Esc cancels.' : this.selected
         ? `${FURNITURE[this.selected].name}: tap a spot to place it (${placeWords(this.selected)})`
         : 'Drag pieces to move or place them. Tap a piece for more.',
     );

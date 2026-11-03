@@ -1,3 +1,4 @@
+import { defaultFinishes, validFinishes } from '../data/roomFinishes';
 import { roomProblems } from './roomPainter';
 import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
 import { DESIGN_IDS, type DesignId } from '../data/furniture';
@@ -29,7 +30,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 5: capes and shoes; older outfits retain their hat and top.
 // 6: clothing ownership; pre-shop saves retain the free collection.
 // 7: each cafe saves its own painted room.
-export const SAVE_VERSION = 7;
+// 8: painted floor and wall finishes, separate from room structure.
+export const SAVE_VERSION = 8;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -87,6 +89,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
   }
   return {
     room,
+    roomFinishes: field<readonly string[]>(raw, 'roomFinishes', defaultFinishes(room), value => validFinishes(value, room)),
     ownedClothing,
     animal: readPlayerAnimal(raw.animal),
     outfit,

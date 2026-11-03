@@ -1,3 +1,4 @@
+import { defaultFinishes } from '../data/roomFinishes';
 import { CAFE_ROOM } from '../data/cafeRoom';
 import { describe, expect, it } from 'vitest';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
@@ -10,6 +11,7 @@ describe('createNewGame', () => {
   it('starts on day 1 with no Leaves, the starter ingredients and their stock, no upgrades, and the tutorial ahead', () => {
     expect(createNewGame()).toEqual({
       room: [...CAFE_ROOM],
+      roomFinishes: defaultFinishes(CAFE_ROOM),
       ownedClothing: ['santaHat', 'santaCoat'],
       animal: 'hedgehog',
       outfit: { hat: null, top: null, cape: null, shoes: null },

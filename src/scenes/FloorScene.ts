@@ -182,7 +182,7 @@ export class FloorScene extends Phaser.Scene {
 
     // One canvas for the whole static floor (it never changes during a day),
     // and one for the messes and plates on top, redrawn every frame.
-    drawCafeTiles(addCafeCanvas(this), this.layout, this.origin, getGameState(this).furniture.placed);
+    drawCafeTiles(addCafeCanvas(this), this.layout, this.origin, getGameState(this).furniture.placed, getGameState(this).roomFinishes);
     this.tableOverlay = addCafeCanvas(this);
     this.progressBar = this.add.graphics().setDepth(OVERLAY + 20);
     this.patienceBars = this.add.graphics().setDepth(OVERLAY + 15);

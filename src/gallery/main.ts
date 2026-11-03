@@ -1,3 +1,4 @@
+import { ROOM_FINISH_ART } from '../art/sprites/roomFinishes';
 import './gallery.css';
 import { COLLECTION_ART } from '../art/sprites/christmasClothing';
 import { CATALOGUE_SAMPLES } from '../art/sprites/catalogueSamples';
@@ -36,6 +37,7 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Stall vendor', (n) => n === 'deerVendorIdle'],
   ['Wardrobe collection', (n) => WARDROBE_ART.includes(n)],
   ['Critters', (n) => CRITTER_ART.includes(n)],
+  ['Room finishes', (n) => n in ROOM_FINISH_ART],
   ['Cafe', (n) => ['floor', 'wall', 'door', 'counter', 'table', 'chair', 'orderRug', 'pawPrint', 'mess', 'plate'].includes(n)],
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
   ['Christmas', (n) => (CHRISTMAS_ART as readonly ArtName[]).includes(n)],

@@ -1,3 +1,4 @@
+import { ROOM_FINISH_ART } from './sprites/roomFinishes';
 import type { PixelSprite } from './pixelSprite';
 import { CATALOGUE_SAMPLES } from './sprites/catalogueSamples';
 import { CRITTER_SKELETON } from './sprites/critterSkeleton';
@@ -54,6 +55,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...ROOM_FINISH_ART,
   ...CATALOGUE_SAMPLES,
   critterSkeleton: CRITTER_SKELETON,
   deerVendorIdle: DEER_VENDOR_IDLE,
