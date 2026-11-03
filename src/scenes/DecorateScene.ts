@@ -1,10 +1,10 @@
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import Phaser from 'phaser';
+import { RoomPainterPanel } from '../ui/RoomPainterPanel';
 import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { CHRISTMAS_CATALOGUE, DESIGN_IDS, FURNITURE, kindOf, placesOf, type DesignId } from '../data/furniture';
 import {
   buildLayout,
-  CAFE_ROOM,
   movePiece,
   moveProblem,
   pieceAt,
@@ -94,6 +94,7 @@ export class DecorateScene extends Phaser.Scene {
   private trayAt!: Point;
   private trayLayer!: Phaser.GameObjects.Container;
   private hint!: Phaser.GameObjects.Text;
+  private painter: RoomPainterPanel | null = null;
   private catalogue: CataloguePanel | null = null;
   /** What the next floor tap places; null = nothing picked yet. */
   private selected: DesignId | null = null;
@@ -116,8 +117,9 @@ export class DecorateScene extends Phaser.Scene {
     this.trayCards = [];
     this.trayPage = 0;
     this.catalogue = null;
+    this.painter = null;
     this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.wall).setOrigin(0);
-    this.origin = cafeOrigin(buildLayout(this.furniture()));
+    this.origin = cafeOrigin(buildLayout(this.furniture(), this.room()));
     this.tiles = addCafeCanvas(this);
 
     // On the cafe's top wall, outlined so it reads on the logs.
@@ -149,9 +151,11 @@ export class DecorateScene extends Phaser.Scene {
       const catalogueAt = at('catalogue', BASE_WIDTH - 60, 16);
       arrangeable(this, 'decorate', 'catalogue', catalogueAt, new Button(this, catalogueAt.x, catalogueAt.y, 104, 22, 'Catalogue', COLORS.book, () => this.openCatalogue()));
     }
+    const paintAt = at('paintRoom', 68, 16);
+    arrangeable(this, 'decorate', 'paintRoom', paintAt, new Button(this, paintAt.x, paintAt.y, 112, 22, 'Paint room', COLORS.book, () => this.openPainter()));
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
-      if (this.catalogue) return; // the catalogue has its own keys
+      if (this.catalogue || this.painter) return; // panels own their keys
       if (event.key === 'Escape' && this.carrying) this.cancelCarrying();
       else if (event.key === 'Escape' && this.menu) this.closeMenu();
       else if ((event.key === 'Escape' || event.key === 'Enter') && !this.carrying && !this.menu) this.done();
@@ -166,6 +170,7 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+        if (this.painter) return;
         if (over.length > 0) return; // a button: the tray handles its own
         if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
@@ -177,6 +182,7 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+        if (this.painter) return;
         const drag = this.drag;
         this.drag = null;
         if (drag?.ghost) {
@@ -254,6 +260,7 @@ export class DecorateScene extends Phaser.Scene {
    * becomes a drag: the pieces are lifted and follow it too.
    */
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
+    if (this.painter) return;
     if (this.carrying) {
       this.moveGhost(this.carrying, this.tileUnder(pointer));
       return;
@@ -278,7 +285,7 @@ export class DecorateScene extends Phaser.Scene {
     if (drag.from) {
       // Show the cafe without the lifted pieces while they're in the air.
       const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
-      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }), this.origin, lifted);
+      drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }, this.room()), this.origin, lifted);
     }
     // Made last, so if anything above ever fails there's no copy left stuck
     // at the top-left corner (where a not-yet-placed copy sits).
@@ -330,7 +337,7 @@ export class DecorateScene extends Phaser.Scene {
    * it could go) as on its usual place.
    */
   private ghostDrawing(p: PlacedPiece, offset: Point, over: Point): ReturnType<typeof pieceDrawing> {
-    const spot = spotAt(CAFE_ROOM, over);
+    const spot = spotAt(this.room(), over);
     const usual = placesOf(p.design)[0];
     const on = spot ?? (usual === 'wall' ? 'wall' : usual === 'floor' ? 'floor' : 'counter');
     return pieceDrawing([], p, { x: offset.x * TILE_SIZE, y: offset.y * TILE_SIZE }, on);
@@ -386,9 +393,9 @@ export class DecorateScene extends Phaser.Scene {
   private putDownCarried(tile: Point): void {
     const carrying = this.carrying;
     if (!carrying?.from) return;
-    const layout = buildLayout(this.furniture());
+    const layout = buildLayout(this.furniture(), this.room());
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
-    const problem = moveProblem(this.furniture(), carrying.from, tile);
+    const problem = moveProblem(this.furniture(), carrying.from, tile, this.room());
     if (problem) {
       this.showMessage(tile, problem);
       return;
@@ -426,14 +433,14 @@ export class DecorateScene extends Phaser.Scene {
   /** Why dropping here wouldn't work, or null if it would. */
   private dropProblem(drag: Drag, tile: Point): string | null {
     return drag.from
-      ? moveProblem(this.furniture(), drag.from, tile)
-      : placeProblem(this.furniture(), drag.design, tile);
+      ? moveProblem(this.furniture(), drag.from, tile, this.room())
+      : placeProblem(this.furniture(), drag.design, tile, this.room());
   }
 
   /** Let go: move (or place) the pieces if they fit, else say why and put everything back. */
   private drop(drag: Drag, tile: Point, onButton: boolean): void {
     drag.ghost?.destroy();
-    const layout = buildLayout(this.furniture());
+    const layout = buildLayout(this.furniture(), this.room());
     const inCafe = tile.x >= 0 && tile.y >= 0 && tile.x < layout.width && tile.y < layout.height;
     // Dropped back on the tray, or off the cafe: called off, nothing to explain.
     if (onButton || !inCafe) {
@@ -447,13 +454,28 @@ export class DecorateScene extends Phaser.Scene {
     } else if (drag.from) {
       this.applyMove(drag.from, tile);
     } else {
-      this.setFurniture(placePiece(this.furniture(), drag.design, tile));
+      this.setFurniture(placePiece(this.furniture(), drag.design, tile, this.room()));
     }
   }
 
   /** Moves a piece (already checked). */
   private applyMove(from: Point, to: Point): void {
-    this.setFurniture(movePiece(this.furniture(), from, to));
+    this.setFurniture(movePiece(this.furniture(), from, to, this.room()));
+  }
+
+  private room(): readonly string[] { return getGameState(this).room; }
+
+  private openPainter(): void {
+    if (this.painter || this.catalogue) return;
+    this.cancelDrag();
+    this.closeMenu();
+    if (this.carrying) this.cancelCarrying();
+    this.selected = null;
+    this.painter = new RoomPainterPanel(this, () => {
+      const panel = this.painter;
+      // Defer releasing input until this pointer-up has finished dispatching.
+      this.time.delayedCall(0, () => { panel?.destroy(); this.painter = null; this.refresh(); });
+    });
   }
 
   private furniture(): Furniture {
@@ -473,7 +495,7 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private onTileTapped(tile: Point): void {
-    const layout = buildLayout(this.furniture());
+    const layout = buildLayout(this.furniture(), this.room());
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
 
     if (pieceAt(this.furniture(), tile)) {
@@ -484,15 +506,15 @@ export class DecorateScene extends Phaser.Scene {
       this.showMessage(tile, 'Pick something from storage first');
       return;
     }
-    const problem = placeProblem(this.furniture(), this.selected, tile);
+    const problem = placeProblem(this.furniture(), this.selected, tile, this.room());
     if (problem) this.showMessage(tile, problem);
-    else this.setFurniture(placePiece(this.furniture(), this.selected, tile));
+    else this.setFurniture(placePiece(this.furniture(), this.selected, tile, this.room()));
   }
 
   /** Redraws the cafe and the tray from the game state. */
   private refresh(): void {
     const furniture = this.furniture();
-    drawCafeTiles(this.tiles, buildLayout(furniture), this.origin, furniture.placed);
+    drawCafeTiles(this.tiles, buildLayout(furniture, this.room()), this.origin, furniture.placed);
     // Ran out of the picked piece: nothing left to place, so let go of it.
     if (this.selected && furniture.stored[this.selected] === 0) this.selected = null;
     this.refreshTray();
@@ -598,6 +620,7 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private done(): void {
+    if (this.painter) return;
     const request: WorldMapRequest = { current: 'cafe' };
     this.scene.start('WorldMapScene', request);
   }

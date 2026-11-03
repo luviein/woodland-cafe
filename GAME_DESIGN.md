@@ -321,7 +321,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - A chair can touch **at most one** table (so it's clear where its customer eats). A table can't go where it would make a chair touch two.
   - Nothing may cut the floor into pieces: everywhere walkable must stay connected, and every table and chair must have floor next to it, so customers can reach their seat and the player can clean.
 - A table with no chairs, or a chair with no table next to it, is allowed but unused: nobody can sit there. (So moving a table away from its chairs just leaves them standing.)
-- **Furniture is in the game state** (§6): what's placed where, and how many of each are in storage. The room itself (walls, door, counter, queue) stays in `data/cafeLayout.ts`.
+- **Furniture is in the game state** (§6): what's placed where, and how many of each are in storage. The room itself (walls, door, counter, queue) also lives in the player save and is edited with **Paint room** in Decorate (§9.3).
 - Decorating is only between days, from the map, so nobody is ever sitting at a table that moves.
 
 ### 5.8 Employees
@@ -661,7 +661,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### Milestone 7 scope: Furniture (as built)
 
-- **Furniture in the game state** (§5.7): which tables and chairs are placed where, plus how many of each are in storage. The cafe starts with today's 4 tables and 8 chairs. The empty room (walls, door, counter, queue) still comes from `data/cafeLayout.ts`, and the floor is built from the room plus the furniture each day.
+- **Furniture in the game state** (§5.7): which tables and chairs are placed where, plus how many of each are in storage. The cafe starts with today's 4 tables and 8 chairs. The default empty room comes from `data/cafeRoom.json`; each player saves their own room through Decorate, and the floor is built from that room plus the furniture each day.
 - **Carpenter stall** at the Marketplace: **+1** buys a table (🍃30) or chair (🍃10) into storage. The other stalls moved left to make room.
 - **Decorate** from the map's Cafe panel (Open cafe / Decorate / Not yet, `D` for Decorate): pick a piece from the storage tray, tap the floor to place it, tap a placed piece to put it away (a table takes its chairs). Moving is free. Later (during milestone 10): **dragging** a placed piece moves just that piece, a table's chairs staying put (`moveProblem` / `movePiece` in `logic/furniture.ts`), and pieces can be dragged out of the tray too. Tapping a placed piece then opens a **Move / Put away** icon menu instead of putting it away at once.
 - **Placement rules:** plain floor only; a chair touches exactly one table; nothing may cut the floor into pieces (checked with a flood fill from the door), so every seat stays reachable. Refused taps say why.

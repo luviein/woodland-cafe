@@ -177,7 +177,7 @@ export class FloorScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => endCafeDay(this));
 
     // The room plus today's furniture (the player arranges it from the map).
-    this.layout = buildLayout(getGameState(this).furniture);
+    this.layout = buildLayout(getGameState(this).furniture, getGameState(this).room);
     this.origin = cafeOrigin(this.layout);
 
     // One canvas for the whole static floor (it never changes during a day),

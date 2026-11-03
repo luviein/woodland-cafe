@@ -17,7 +17,7 @@ export function paintRoom(rows: readonly string[], at: Point, brush: RoomBrush):
 }
 
 /** Check both the room and each furniture arrangement before writing a file. */
-export function roomProblems(rows: readonly string[], placed: readonly PlacedPiece[] = []): string[] {
+export function roomProblems(rows: readonly string[], placed: readonly PlacedPiece[] = [], includeStarter = true): string[] {
   if (rows.length !== CAFE_LAYOUT.length || rows.some(row => row.length !== CAFE_LAYOUT[0].length)) return ['Keep the room at 24 columns by 12 rows.'];
   if (rows.some(row => [...row].some(char => !ROOM_BRUSHES.includes(char as RoomBrush)))) return ['Use only floor, wall, counter, D, P, O and queue 1-9 tiles.'];
   try {
@@ -28,7 +28,8 @@ export function roomProblems(rows: readonly string[], placed: readonly PlacedPie
     const errors: string[] = [];
     if (!across || middle !== 'C') errors.push('P and O must face each other across one counter tile.');
     if (!staysConnected(layout)) errors.push('All walkable tiles must connect to the door.');
-    const arrangements = [['Starter furniture', startingFurniture().placed], ['Saved furniture', placed]] as const;
+    const arrangements: [string, readonly PlacedPiece[]][] = [['Saved furniture', placed]];
+    if (includeStarter) arrangements.unshift(['Starter furniture', startingFurniture().placed]);
     for (const [label, pieces] of arrangements) {
       const invalid = pieces.find(piece => spotProblemFor(piece.design, piece, rows));
       if (invalid) {

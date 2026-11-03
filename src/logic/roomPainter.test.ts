@@ -3,6 +3,11 @@ import { CAFE_ROOM } from '../data/cafeRoom';
 import { isRoomSaveInput, paintRoom, roomProblems } from './roomPainter';
 
 describe('room painter', () => {
+  it('uses only current furniture for a player room, allowing former starter spots to change', () => {
+    const room = paintRoom(CAFE_ROOM, { x: 4, y: 5 }, 'W');
+    expect(roomProblems(room, [], false)).toEqual([]);
+    expect(roomProblems(room, [{ design: 'table', x: 4, y: 5 }], false).join()).toContain('Saved furniture');
+  });
   it('accepts the current room and its starter furniture', () => {
     expect(roomProblems(CAFE_ROOM)).toEqual([]);
   });

@@ -1,8 +1,9 @@
+import { roomProblems } from './roomPainter';
 import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
 import { DESIGN_IDS, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, type IngredientId } from '../data/ingredients';
 import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
-import { CAFE_ROOM, buildLayout, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
+import { buildLayout, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
@@ -27,7 +28,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 4: player animal; older saves keep the hedgehog.
 // 5: capes and shoes; older outfits retain their hat and top.
 // 6: clothing ownership; pre-shop saves retain the free collection.
-export const SAVE_VERSION = 6;
+// 7: each cafe saves its own painted room.
+export const SAVE_VERSION = 7;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -74,7 +76,9 @@ export function loadGame(text: string): LoadResult {
 
 function readState(raw: Record<string, unknown>, version: number): GameState {
   const fresh = createNewGame();
-  const furniture = readFurniture(raw.furniture, fresh.furniture);
+  const room = field<readonly string[]>(raw, 'room', fresh.room, value => Array.isArray(value) && value.every(row => typeof row === 'string') && roomProblems(value, [], false).length === 0);
+  const furniture = readFurniture(raw.furniture, fresh.furniture, room);
+  if (roomProblems(room, furniture.placed, false).length) throw new BadSave('room paths');
   const ownedClothing = idList(raw, 'ownedClothing', version < 6 ? CLOTHING_IDS : fresh.ownedClothing, CLOTHING_IDS);
   const outfit = readOutfit(raw.outfit);
   for (const slot of CLOTHING_SLOTS) {
@@ -82,6 +86,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     if (item && !ownedClothing.includes(item)) outfit[slot] = null;
   }
   return {
+    room,
     ownedClothing,
     animal: readPlayerAnimal(raw.animal),
     outfit,
@@ -152,7 +157,7 @@ function countsById<T extends string>(
  * storage instead of refusing the save: the player can put them back with
  * Decorate.
  */
-function readFurniture(value: unknown, fallback: Furniture): Furniture {
+function readFurniture(value: unknown, fallback: Furniture, room: readonly string[]): Furniture {
   if (value === undefined) return fallback;
   if (!isObject(value) || !Array.isArray(value.placed)) throw new BadSave('furniture');
   const stored = countsById<DesignId>(value.stored, 'furniture.stored', fallback.stored, DESIGN_IDS);
@@ -163,23 +168,23 @@ function readFurniture(value: unknown, fallback: Furniture): Furniture {
     return { design: design as DesignId, x: p.x as number, y: p.y as number };
   });
   const furniture = { placed, stored };
-  if (allPlacedOk(furniture)) return furniture;
+  if (allPlacedOk(furniture, room)) return furniture;
   const allStored = { ...stored };
   for (const p of placed) allStored[p.design] += 1;
   return { placed: [], stored: allStored };
 }
 
 /** Every piece on a spot it may stand on, one per spot, making a valid cafe. */
-function allPlacedOk(furniture: Furniture): boolean {
+function allPlacedOk(furniture: Furniture, room: readonly string[]): boolean {
   const spots = new Set(furniture.placed.map((p) => `${p.x},${p.y}`));
   if (spots.size !== furniture.placed.length) return false;
-  const onItsSpot = (p: PlacedPiece) => spotProblemFor(p.design, p, CAFE_ROOM) === null;
-  return furniture.placed.every(onItsSpot) && buildsValidCafe(furniture);
+  const onItsSpot = (p: PlacedPiece) => spotProblemFor(p.design, p, room) === null;
+  return furniture.placed.every(onItsSpot) && buildsValidCafe(furniture, room);
 }
 
-function buildsValidCafe(furniture: Furniture): boolean {
+function buildsValidCafe(furniture: Furniture, room: readonly string[]): boolean {
   try {
-    buildLayout(furniture);
+    buildLayout(furniture, room);
     return true;
   } catch {
     return false;

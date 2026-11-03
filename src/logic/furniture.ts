@@ -4,9 +4,9 @@ export { CAFE_ROOM } from '../data/cafeRoom';
 import { DESIGN_IDS, FURNITURE, KIND_CHAR, kindOf, placesOf, type DesignId, type Place } from '../data/furniture';
 import { isWalkable, neighbours, parseLayout, pointKey, samePoint, type Layout, type Point } from './layout';
 
-// The cafe = a fixed ROOM (walls, door, counter, queue) + the player's
-// FURNITURE (tables, chairs, decorations), kept apart so furniture can live in
-// the game state and be moved, while the room stays in data/cafeLayout.ts
+// The cafe = the player's ROOM (walls, door, counter, queue) + their
+// FURNITURE (tables, chairs, decorations), stored separately in game state.
+// CAFE_ROOM is the new-game default; scenes pass the player's saved room.
 // (GAME_DESIGN.md §5.7, §5.10). To build the floor, the floor pieces are
 // written back into the room's rows and parsed like any hand-written layout,
 // so all of parseLayout()'s checks still apply. Pieces on the back wall or
@@ -90,8 +90,6 @@ export function splitLayout(rows: readonly string[]): { room: string[]; placed: 
   );
   return { room, placed };
 }
-
-/** The cafe's room with no furniture in it. */
 
 /** A new game's furniture: what cafeLayout.ts shows, all placed, nothing stored. */
 export function startingFurniture(): Furniture {

@@ -3,6 +3,8 @@ import { hire } from './employees';
 import { placePiece, storePieces } from './furniture';
 import { createNewGame, earnLeaves, startNextDay, type GameState } from './gameState';
 import { loadGame, saveGame, SAVE_VERSION } from './save';
+import { CAFE_ROOM } from '../data/cafeRoom';
+import { paintRoom } from './roomPainter';
 import { addIngredient, addUpgrade } from './shop';
 
 /** A game some way in: everything that can change has changed. */
@@ -29,6 +31,22 @@ const loaded = (text: string): GameState => {
 };
 
 describe('saving and loading', () => {
+  it('retains a painted room and checks furniture against that room', () => {
+    const fresh = createNewGame();
+    // The former door becomes floor, so a table can stand there only in
+    // this player's room. Loading must not use the default room's spots.
+    const room = paintRoom(paintRoom(fresh.room, { x: 17, y: 11 }, 'D'), { x: 18, y: 11 }, '.');
+    const furniture = { ...fresh.furniture, placed: [{ design: 'table' as const, x: 18, y: 11 }] };
+    const state = { ...fresh, room, furniture };
+    expect(loaded(saveGame(state))).toEqual(state);
+    expect(createNewGame().room).toEqual(CAFE_ROOM);
+  });
+
+  it('gives older saves the default room and refuses malformed rooms', () => {
+    expect(loaded(savedWith(s => delete s.room, 6)).room).toEqual(CAFE_ROOM);
+    expect(loadGame(savedWith(s => { s.room = ['broken']; })).ok).toBe(false);
+    expect(loadGame(savedWith(s => { s.room = paintRoom(CAFE_ROOM, { x: 18, y: 11 }, '.'); })).ok).toBe(false);
+  });
   it('gives back exactly the same state', () => {
     expect(loaded(saveGame(playedGame()))).toEqual(playedGame());
     expect(loaded(saveGame(createNewGame()))).toEqual(createNewGame());
