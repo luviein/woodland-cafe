@@ -9,7 +9,10 @@ export function finishArt(surface: RoomSurface, style: number): ArtName {
 }
 
 /** Side strips advance down the room; back walls retain their window frame. */
-export function wallFinishTile(style: number, x: number, y: number, width: number, window: boolean): { art: ArtName; frame: number } {
+export function wallFinishTile(style: number, x: number, y: number, width: number, window: boolean, height = 12): { art: ArtName; frame: number } {
+  if ((x === 0 || x === width - 1) && (y === 0 || y === height - 1)) {
+    return { art: ('roomWallCorner' + style) as ArtName, frame: (y === 0 ? 0 : 2) + (x === 0 ? 0 : 1) };
+  }
   if (style > 0 && y > 0 && (x === 0 || x === width - 1)) {
     return { art: ('roomSideWall' + style) as ArtName, frame: (y - 1) % 4 };
   }

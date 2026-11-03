@@ -68,7 +68,7 @@ export function drawCafeTiles(
       // Plank pattern picked from the position, so it's mixed but never changes.
       if (ON_FLOOR.has(tile)) canvas.drawFrame(artKey(finishArt('floor', Number(finishes?.[y]?.[x] ?? 0))), (x * 3 + y * 2) % 2, p.x, p.y);
       if (tile === 'wall') {
-        const finish = wallFinishTile(Number(finishes?.[y]?.[x] ?? 0), x, y, row.length, y === 0 && isWindow(x, row.length));
+        const finish = wallFinishTile(Number(finishes?.[y]?.[x] ?? 0), x, y, row.length, y === 0 && isWindow(x, row.length), layout.height);
         canvas.drawFrame(artKey(finish.art), finish.frame, p.x, p.y);
       } else {
         const art = TILE_ART[tile];

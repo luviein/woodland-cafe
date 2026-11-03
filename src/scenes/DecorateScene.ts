@@ -64,6 +64,7 @@ interface TrayCard {
 
 /** A press that may become a drag: of a placed piece, or one from storage (`from` null). */
 interface Drag {
+  counter?: boolean;
   /** Pointer offset from the carried tile, preserving where it was grabbed. */
   grab?: Point;
   checkedTile?: Point;
@@ -98,7 +99,6 @@ export class DecorateScene extends Phaser.Scene {
   private trayAt!: Point;
   private trayLayer!: Phaser.GameObjects.Container;
   private hint!: Phaser.GameObjects.Text;
-  private movingCounter = false;
   private painter: RoomPainterPanel | null = null;
   private catalogue: CataloguePanel | null = null;
   /** What the next floor tap places; null = nothing picked yet. */
@@ -116,7 +116,6 @@ export class DecorateScene extends Phaser.Scene {
 
   create(): void {
     this.selected = null;
-    this.movingCounter = false;
     this.drag = null;
     this.carrying = null;
     this.menu = null;
@@ -159,19 +158,10 @@ export class DecorateScene extends Phaser.Scene {
     }
     const paintAt = at('paintRoom', 68, 16);
     arrangeable(this, 'decorate', 'paintRoom', paintAt, new Button(this, paintAt.x, paintAt.y, 112, 22, 'Paint room', COLORS.book, () => this.openPainter()));
-    const counterAt = at('moveCounter', 196, 16);
-    arrangeable(this, 'decorate', 'moveCounter', counterAt, new Button(this, counterAt.x, counterAt.y, 112, 22, 'Move counter', COLORS.book, () => {
-      if (this.painter || this.catalogue) return;
-      this.cancelDrag(); this.closeMenu();
-      if (this.carrying) this.cancelCarrying();
-      this.selected = null;
-      this.movingCounter = !this.movingCounter;
-      this.refresh();
-    }));
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {
       if (this.catalogue || this.painter) return; // panels own their keys
-      if (event.key === 'Escape' && this.movingCounter) { this.movingCounter = false; this.refresh(); }
+      if (event.key === 'Escape' && this.drag?.ghost) this.cancelDrag();
       else if (event.key === 'Escape' && this.carrying) this.cancelCarrying();
       else if (event.key === 'Escape' && this.menu) this.closeMenu();
       else if ((event.key === 'Escape' || event.key === 'Enter') && !this.carrying && !this.menu) this.done();
@@ -186,10 +176,14 @@ export class DecorateScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (this.painter || this.movingCounter) return;
+        if (this.painter) return;
         if (over.length > 0) return; // a button: the tray handles its own
         if (this.carrying) return; // the coming tap puts the carried pieces down
         const tile = this.tileUnder(pointer);
+        if (this.room()[tile.y]?.[tile.x] === 'C' && !pieceAt(this.furniture(), tile)) {
+          this.startDrag({ counter: true, design: 'table', from: tile, pieces: this.furniture().placed.filter(p => this.room()[p.y]?.[p.x] === 'C'), start: pointer.position.clone(), ghost: null });
+          return;
+        }
         const piece = pieceAt(this.furniture(), tile);
         if (piece) this.startDrag({ design: piece.design, from: tile, pieces: [piece], start: pointer.position.clone(), ghost: null });
       },
@@ -276,7 +270,7 @@ export class DecorateScene extends Phaser.Scene {
    * becomes a drag: the pieces are lifted and follow it too.
    */
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
-    if (this.painter || this.movingCounter) return;
+    if (this.painter) return;
     if (this.carrying) {
       this.moveGhost(this.carrying, this.dragTile(this.carrying, pointer), pointer);
       return;
@@ -298,7 +292,15 @@ export class DecorateScene extends Phaser.Scene {
 
   /** Takes the pieces out of the drawn cafe and makes their see-through copy. */
   private lift(drag: Drag): void {
-    if (drag.from) {
+    if (drag.counter) {
+      const furniture = this.furniture();
+      const placed = furniture.placed.filter(piece => !drag.pieces.includes(piece));
+      const layout = buildLayout(furniture, this.room());
+      layout.tiles = layout.tiles.map(row => row.map(tile => tile === 'counter' ? 'floor' : tile));
+      layout.orderSpot = { x: -100, y: -100 };
+      layout.queueSpots = [];
+      drawCafeTiles(this.tiles, layout, this.origin, placed, getGameState(this).roomFinishes);
+    } else if (drag.from) {
       // Show the cafe without the lifted pieces while they're in the air.
       const lifted = this.furniture().placed.filter((p) => !drag.pieces.includes(p));
       drawCafeTiles(this.tiles, buildLayout({ ...this.furniture(), placed: lifted }, this.room()), this.origin, lifted, getGameState(this).roomFinishes);
@@ -349,6 +351,13 @@ export class DecorateScene extends Phaser.Scene {
     if (drag.checkedTile?.x === tile.x && drag.checkedTile.y === tile.y) return;
     drag.checkedTile = { ...tile };
     const ok = this.dropProblem(drag, tile) === null;
+    if (drag.counter) {
+      for (const child of drag.ghost.list) {
+        const image = child as Phaser.GameObjects.Image;
+        if (ok) image.clearTint(); else image.setTint(COLORS.statusUpset);
+      }
+      return;
+    }
     const from = drag.from ?? { x: 0, y: 0 };
     this.ghostPieces(drag).forEach((p, i) => {
       const image = drag.ghost!.list[i] as Phaser.GameObjects.Image;
@@ -456,16 +465,35 @@ export class DecorateScene extends Phaser.Scene {
   private createGhost(drag: Drag): Phaser.GameObjects.Container {
     const from = drag.from ?? { x: 0, y: 0 };
     // Placed for where they are now; moveGhost() redraws them for each tile they pass over.
-    const images = this.ghostPieces(drag).map((p) => {
+    const images: Phaser.GameObjects.Image[] = [];
+    if (drag.counter) {
+      this.room().forEach((row, y) => [...row].forEach((char, x) => {
+        const art = char === 'C' ? 'counter' : char === 'O' ? 'orderRug' : /[1-9]/.test(char) ? 'pawPrint' : null;
+        if (!art) return;
+        const image = addArt(this, (x - from.x) * TILE_SIZE, (y - from.y) * TILE_SIZE, art).setOrigin(0);
+        if (art === 'pawPrint') image.setPosition(image.x + 10, image.y + 10);
+        images.push(image);
+      }));
+    }
+    images.push(...this.ghostPieces(drag).map((p) => {
       const offset = { x: p.x - from.x, y: p.y - from.y };
       const { art, frame, at } = this.ghostDrawing(p, offset, drag.from ? p : { x: -1, y: -1 });
       return this.add.image(at.x, at.y, artKey(art), frame).setOrigin(0);
-    });
+    }));
     return this.add.container(0, 0, images).setAlpha(0.75).setDepth(50);
   }
 
   /** Why dropping here wouldn't work, or null if it would. */
+  private counterDestination(drag: Drag, tile: Point): Point {
+    const service = buildLayout(this.furniture(), this.room()).counterSpot;
+    return { x: service.x + tile.x - drag.from!.x, y: service.y + tile.y - drag.from!.y };
+  }
+
   private dropProblem(drag: Drag, tile: Point): string | null {
+    if (drag.counter) {
+      const result = moveCounter(this.room(), this.furniture(), this.counterDestination(drag, tile));
+      return result.ok ? null : result.reason;
+    }
     return drag.from
       ? moveProblem(this.furniture(), drag.from, tile, this.room())
       : placeProblem(this.furniture(), drag.design, tile, this.room());
@@ -484,6 +512,10 @@ export class DecorateScene extends Phaser.Scene {
     const problem = this.dropProblem(drag, tile);
     if (problem) {
       this.showMessage(tile, problem);
+      this.refresh();
+    } else if (drag.counter) {
+      const result = moveCounter(this.room(), this.furniture(), this.counterDestination(drag, tile));
+      if (result.ok) setGameState(this, { ...getGameState(this), room: result.room, furniture: result.furniture });
       this.refresh();
     } else if (drag.from) {
       this.applyMove(drag.from, tile);
@@ -505,7 +537,7 @@ export class DecorateScene extends Phaser.Scene {
     this.closeMenu();
     if (this.carrying) this.cancelCarrying();
     this.selected = null;
-    this.movingCounter = false;
+
     this.painter = new RoomPainterPanel(this, () => {
       const panel = this.painter;
       // Defer releasing input until this pointer-up has finished dispatching.
@@ -523,7 +555,7 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private select(design: DesignId): void {
-    this.movingCounter = false;
+
     this.closeMenu();
     if (this.carrying) this.cancelCarrying();
     this.selected = this.selected === design ? null : design; // tap again to put it down
@@ -531,14 +563,6 @@ export class DecorateScene extends Phaser.Scene {
   }
 
   private onTileTapped(tile: Point): void {
-    if (this.movingCounter) {
-      const result = moveCounter(this.room(), this.furniture(), tile);
-      if (!result.ok) { this.showMessage(tile, result.reason); return; }
-      setGameState(this, { ...getGameState(this), room: result.room, furniture: result.furniture });
-      this.movingCounter = false;
-      this.refresh();
-      return;
-    }
     const layout = buildLayout(this.furniture(), this.room());
     if (tile.x < 0 || tile.y < 0 || tile.x >= layout.width || tile.y >= layout.height) return;
 
@@ -563,9 +587,9 @@ export class DecorateScene extends Phaser.Scene {
     if (this.selected && furniture.stored[this.selected] === 0) this.selected = null;
     this.refreshTray();
     this.hint.setText(
-      this.movingCounter ? 'Tap the new player service spot to move the counter and queue. Esc cancels.' : this.selected
+      this.selected
         ? `${FURNITURE[this.selected].name}: tap a spot to place it (${placeWords(this.selected)})`
-        : 'Drag pieces to move or place them. Tap a piece for more.',
+        : 'Drag furniture or the counter to move it. Tap a piece for more.',
     );
   }
 
