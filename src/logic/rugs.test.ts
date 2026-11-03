@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createNewGame } from './gameState';
-import { buildLayout, movePiece, noneStored, pieceAt, placePiece, placeProblem, removePiece, rugFrame, snapPlacement, transformRug, validPiecePosition, type Furniture } from './furniture';
+import { buildLayout, movePiece, noneStored, pieceAt, placePiece, placeProblem, removePiece, rugFrame, snapPlacement, rotateRug, validPiecePosition, type Furniture } from './furniture';
 import { RUG_ART } from '../art/sprites/rugs';
 import { buyFurniture } from './shop';
 import { loadGame, saveGame } from './save';
@@ -9,29 +9,26 @@ const stocked = (): Furniture => ({ placed: [], stored: { ...noneStored(), table
 const at = { x: 4, y: 5 };
 
 describe('rugs', () => {
-  it('rotates and flips displayed pixels on screen axes without moving the rug or furniture', () => {
+  it('rotates displayed pixels without moving the rug or furniture', () => {
     for (let variant = 0; variant < 16; variant++) {
       const rug = { design: 'treeRug' as const, x: 4.5, y: 4.5, rugRotation: variant % 4, rugFlipX: !!(variant & 4), rugFlipY: !!(variant & 8) };
       const table = { design: 'table' as const, x: 5, y: 5 };
       const furniture = { ...stocked(), placed: [rug, table] };
       const before = RUG_ART.treeRug.frames[rugFrame(rug)];
-      for (const action of ['rotate', 'flipX', 'flipY'] as const) {
-        const result = transformRug(furniture, rug, rug.design, action);
-        const pixels = RUG_ART.treeRug.frames[rugFrame(result.placed[0])];
-        const expected = action === 'flipX' ? before.map(row => [...row].reverse().join('')) : action === 'flipY' ? [...before].reverse()
-          : Array.from({ length: 48 }, (_, y) => Array.from({ length: 48 }, (_, x) => before[47 - x][y]).join(''));
-        expect(pixels).toEqual(expected);
-        expect(result.placed[0]).toMatchObject({ x: 4.5, y: 4.5 });
-        expect(result.placed[1]).toBe(table);
-        expect(buildLayout(result)).toEqual(buildLayout(furniture));
-      }
+      const result = rotateRug(furniture, rug, rug.design);
+      const pixels = RUG_ART.treeRug.frames[rugFrame(result.placed[0])];
+      const expected = Array.from({ length: 48 }, (_, y) => Array.from({ length: 48 }, (_, x) => before[47 - x][y]).join(''));
+      expect(pixels).toEqual(expected);
+      expect(result.placed[0]).toMatchObject({ x: 4.5, y: 4.5 });
+      expect(result.placed[1]).toBe(table);
+      expect(buildLayout(result)).toEqual(buildLayout(furniture));
     }
   });
 
   it('saves rug orientation and defaults older placements without transforms', () => {
     const furniture = placePiece(stocked(), 'treeRug', { x: 4.5, y: 4.5 });
-    let oriented = transformRug(furniture, { x: 4.5, y: 4.5 }, 'treeRug', 'rotate');
-    oriented = transformRug(oriented, { x: 4.5, y: 4.5 }, 'treeRug', 'flipX');
+    let oriented = rotateRug(furniture, { x: 4.5, y: 4.5 }, 'treeRug');
+    oriented = { ...oriented, placed: oriented.placed.map(piece => ({ ...piece, rugFlipX: true })) };
     const state = { ...createNewGame(), furniture: oriented };
     expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
     const old = { ...state, furniture };

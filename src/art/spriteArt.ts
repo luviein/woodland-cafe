@@ -1,3 +1,4 @@
+import { ROTATE_ICON } from './sprites/rotateIcon';
 import { RUG_ART } from './sprites/rugs';
 import { CUSTOMER_SANTA_ART } from './sprites/customerClothing';
 import { WALLPAPER_CORNERS } from './sprites/wallpaperCorners';
@@ -59,6 +60,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  rotateIcon: ROTATE_ICON,
   ...RUG_ART,
   ...CUSTOMER_SANTA_ART,
   ...ROOM_FINISH_ART,

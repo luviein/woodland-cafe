@@ -31,16 +31,10 @@ export function rugFrame(piece: PlacedPiece): number {
   return (piece.rugRotation ?? 0) + (piece.rugFlipX ? 4 : 0) + (piece.rugFlipY ? 8 : 0);
 }
 
-export function transformRug(furniture: Furniture, at: Point, design: DesignId, action: 'rotate' | 'flipX' | 'flipY'): Furniture {
+export function rotateRug(furniture: Furniture, at: Point, design: DesignId): Furniture {
   const piece = pieceAt(furniture, at, design);
   if (!piece || kindOf(piece.design) !== 'rug') return furniture;
-  let changed: PlacedPiece;
-  if (action === 'rotate') changed = { ...piece, rugRotation: ((piece.rugRotation ?? 0) + 1) % 4 };
-  else {
-    // The labels describe screen axes even after a quarter-turn.
-    const horizontal = (action === 'flipX') !== ((piece.rugRotation ?? 0) % 2 === 1);
-    changed = horizontal ? { ...piece, rugFlipX: !piece.rugFlipX } : { ...piece, rugFlipY: !piece.rugFlipY };
-  }
+  const changed = { ...piece, rugRotation: ((piece.rugRotation ?? 0) + 1) % 4 };
   return { ...furniture, placed: furniture.placed.map(p => p === piece ? changed : p) };
 }
 
