@@ -718,3 +718,5 @@ Dev console: `spawn <fox|rabbit|deer|mouse|frog|badger|raccoon>` immediately add
 ### Placeable rugs
 
 Four supplied rug designs (Snowflake, Tree, Floral and Tartan) are sold in the Christmas catalogue Decor section for ??35 each. Purchases add copies to furniture storage. Each rug occupies a 2x2 floor footprint, drawn below service markers, furniture and critters; rugs never block walking or seating. Furniture may share rug tiles, while rugs cannot overlap other rugs or extend onto walls, counters, the door or beyond the room. Drag, Move and Put away operate on one layer at a time. A covered rug can be picked through the furniture context menu. Rugs and their counts persist in the normal furniture save, with defaults for older saves.
+
+Rug precision: rugs snap in quarter-tile (6px) steps while tables/chairs keep whole-tile seating positions. A live footprint outline shows the actual drop position; new or menu-carried rugs are centred on the pointer. All overlapped floor tiles are validated, fractional rug anchors persist in version 11 saves, and older integer positions remain unchanged.
