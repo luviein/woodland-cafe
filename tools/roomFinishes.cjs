@@ -33,6 +33,34 @@ const { rows, legend } = P.toRows(grids, colours);
 const sprites = {};
 for (let i = 0; i < 4; i++) sprites[`roomWall${i + 1}`] = { legend, frames: rows.slice(i * 2, i * 2 + 2) };
 for (let i = 0; i < 7; i++) sprites[`roomFloor${i + 1}`] = { legend, frames: [rows[8 + i], rows[8 + i]] };
+// Reconstruct the geometric floors at native resolution. Shrinking the
+// reference made straight plank joints and diagonal brick seams fragment.
+const mod = (n, size) => (n % size + size) % size;
+for (const [style, colours] of [[1, { b: '#d38e67', c: '#ce8863', s: '#ab6649', h: '#e1a279' }], [2, { b: '#754234', c: '#6b3c31', s: '#492924', h: '#814a39' }]]) {
+  const clean = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => {
+    const board = Math.floor(y / 6), offset = board % 2 * 12;
+    if (y % 6 === 5 || mod(x - offset, 24) === 0) return 's';
+    if (y % 6 === 0) return 'h';
+    return board % 2 ? 'b' : 'c';
+  }).join(''));
+  sprites['roomFloor' + style] = { legend: colours, frames: [clean, clean] };
+}
+const parquet = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => {
+  const u = x + y, v = x - y;
+  const column = Math.floor(u / 4), row = Math.floor(v / 4);
+  const direction = mod(column - row, 4), ux = mod(u, 4), vy = mod(v, 4);
+  const horizontal = direction < 2;
+  if (horizontal ? vy === 0 || (ux === 0 && direction === 0) : ux === 0 || (vy === 0 && direction === 3)) return 's';
+  return horizontal ? 'b' : 'c';
+}).join(''));
+sprites.roomFloor3 = { legend: { b: '#ab6649', c: '#c47c58', s: '#754234' }, frames: [parquet, parquet] };
+const terracotta = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => {
+  const dx = Math.min(x % 12, 12 - x % 12), dy = Math.min(y % 12, 12 - y % 12);
+  if (dx + dy <= 1) return 'd';
+  if (dx === 0 || dy === 0) return 's';
+  return (Math.floor(x / 12) + Math.floor(y / 12)) % 2 ? 'b' : 'c';
+}).join(''));
+sprites.roomFloor4 = { legend: { b: '#db9c73', c: '#e2a27b', s: '#c7865e', d: '#9f5f45' }, frames: [terracotta, terracotta] };
 // The generated reference has warped checker squares. Keep its two main
 // colours, but rebuild an exact 6px grid so neighbouring 24px tiles join.
 for (const style of [5, 6, 7]) {
