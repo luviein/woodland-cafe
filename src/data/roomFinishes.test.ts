@@ -3,6 +3,20 @@ import { wallFinishTile } from './roomFinishes';
 import { SPRITE_ART } from '../art/spriteArt';
 
 describe('wallpaper orientation', () => {
+  it('joins the horizontal wall without shifting or compressing its edge pixels', () => {
+    for (let style = 0; style <= 4; style++) {
+      const wall = SPRITE_ART[style === 0 ? 'wall' : `roomWall${style}` as 'roomWall1'];
+      const corner = SPRITE_ART[`roomWallCorner${style}` as 'roomWallCorner0'];
+      for (let frame = 0; frame < 4; frame++) {
+        const x = frame % 2 === 0 ? 23 : 0;
+        for (let y = 0; y < 24; y++) {
+          const cornerColour = corner.legend[corner.frames[frame][y][x] as keyof typeof corner.legend];
+          const wallColour = wall.legend[wall.frames[0][y][x] as keyof typeof wall.legend];
+          expect(cornerColour).toBe(wallColour);
+        }
+      }
+    }
+  });
   it('selects the matching L-shaped trim at all four corners', () => {
     for (let style = 0; style <= 4; style++) {
       [[0, 0], [23, 0], [0, 11], [23, 11]].forEach(([x, y], frame) => {
@@ -24,6 +38,6 @@ describe('wallpaper orientation', () => {
   it('keeps back-wall windows and the original log finish', () => {
     expect(wallFinishTile(3, 2, 0, 24, true)).toEqual({ art: 'roomWall3', frame: 1 });
     expect(wallFinishTile(3, 0, 0, 24, false)).toEqual({ art: 'roomWallCorner3', frame: 0 });
-    expect(wallFinishTile(0, 0, 3, 24, false)).toEqual({ art: 'wall', frame: 0 });
+    expect(wallFinishTile(0, 0, 3, 24, false)).toEqual({ art: 'roomSideWall0', frame: 0 });
   });
 });

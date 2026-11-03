@@ -13,8 +13,8 @@ export function wallFinishTile(style: number, x: number, y: number, width: numbe
   if ((x === 0 || x === width - 1) && (y === 0 || y === height - 1)) {
     return { art: ('roomWallCorner' + style) as ArtName, frame: (y === 0 ? 0 : 2) + (x === 0 ? 0 : 1) };
   }
-  if (style > 0 && y > 0 && (x === 0 || x === width - 1)) {
-    return { art: ('roomSideWall' + style) as ArtName, frame: (y - 1) % 4 };
+  if (y > 0 && (x === 0 || x === width - 1)) {
+    return { art: ('roomSideWall' + style) as ArtName, frame: style === 0 ? (x === 0 ? 0 : 1) : (y - 1) % 4 };
   }
   return { art: finishArt('wall', style), frame: window ? 1 : 0 };
 }
