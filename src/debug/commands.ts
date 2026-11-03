@@ -1,3 +1,4 @@
+import { CUSTOMER_ART } from '../art/spriteArt';
 import { DESIGN_IDS, FURNITURE } from '../data/furniture';
 import { EMPLOYEE_ROLES, EMPLOYEES, type EmployeeRole } from '../data/employees';
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
@@ -101,6 +102,17 @@ export function createDevCommands(
         Object.values(commands)
           .map((c) => `${c.usage} - ${c.description}`)
           .join('\n'),
+    },
+
+    spawn: {
+      usage: 'spawn <animal>',
+      description: 'Spawn one customer: ' + CUSTOMER_ART.join(', '),
+      run: args => {
+        const requested = args[0]?.toLowerCase();
+        const animal = CUSTOMER_ART.find(animal => animal === (requested === 'racoon' ? 'raccoon' : requested));
+        if (args.length !== 1 || !animal) return 'Usage: spawn <' + CUSTOMER_ART.join('|') + '>';
+        return actions.spawnCustomer ? actions.spawnCustomer(animal) : 'Open the cafe floor first';
+      },
     },
 
     speed: {

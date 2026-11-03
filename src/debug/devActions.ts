@@ -1,3 +1,4 @@
+import type { CustomerArt } from '../art/spriteArt';
 import type { LocationId } from '../data/locations';
 import type { GameState } from '../logic/gameState';
 import type { Score } from '../logic/types';
@@ -12,6 +13,7 @@ import type { SoundName } from '../audio/sounds';
  */
 export interface DevActions {
   /** Prep station open: serve the current order as if it scored `score`. */
+  spawnCustomer: ((animal: CustomerArt) => string) | null;
   serve: ((score: Score) => void) | null;
   /** Floor running: mess up every free seat (true) or wipe every mess (false). Returns how many changed. */
   setMessy: ((messy: boolean) => number) | null;
@@ -33,7 +35,7 @@ export interface DevActions {
 
 /** Nothing registered: every scene-specific command says "not available". */
 export function noDevActions(): DevActions {
-  return { serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null, save: null, playSound: null, arrange: null };
+  return { spawnCustomer: null, serve: null, setMessy: null, dayTime: null, endDay: null, game: null, goto: null, save: null, playSound: null, arrange: null };
 }
 
 export const devActions: DevActions = noDevActions();

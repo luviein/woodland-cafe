@@ -12,6 +12,19 @@ const setup = () => {
 };
 
 describe('runCommand', () => {
+  it('spawns a validated species through the active floor action', () => {
+    const actions = noDevActions();
+    const spawned: string[] = [];
+    actions.spawnCustomer = animal => { spawned.push(animal); return `Spawned ${animal}`; };
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], actions);
+    for (const name of ['frog', 'badger', 'raccoon']) expect(runCommand(commands, `spawn ${name}`)).toBe(`Spawned ${name}`);
+    expect(runCommand(commands, 'spawn racoon')).toBe('Spawned raccoon');
+    expect(runCommand(commands, 'spawn dragon')).toMatch(/Usage/);
+    expect(runCommand(commands, 'spawn frog badger')).toMatch(/Usage/);
+    expect(spawned).toEqual(['frog', 'badger', 'raccoon', 'raccoon']);
+    actions.spawnCustomer = null;
+    expect(runCommand(commands, 'spawn frog')).toBe('Open the cafe floor first');
+  });
   it('ignores empty input', () => {
     const { commands } = setup();
     expect(runCommand(commands, '   ')).toBe('');

@@ -1,3 +1,4 @@
+import { spawnCustomer } from '../logic/customerSpawn';
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config/display';
 import { buildLayout } from '../logic/furniture';
@@ -239,6 +240,14 @@ export class FloorScene extends Phaser.Scene {
 
     // Dev console `mess` / `clean`. Only FREE seats get messy: a reserved or
     // occupied seat with a mess would be a state normal play can't reach.
+    devActions.spawnCustomer = animal => {
+      if (this.prepOpen) return 'Close the prep station first';
+      const result = spawnCustomer(this.floor, this.layout, animal);
+      if (!result.ok) return result.reason;
+      this.floor = result.state;
+      this.syncCustomerSprites();
+      return 'Spawned ' + animal + ' customer #' + result.id;
+    };
     devActions.setMessy = (messy) => {
       const before = this.floor.messySeats.length;
       if (!messy) {
@@ -261,6 +270,7 @@ export class FloorScene extends Phaser.Scene {
       this.floor = clearCustomers(this.floor);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      devActions.spawnCustomer = null;
       devActions.setMessy = null;
       devActions.dayTime = null;
       devActions.endDay = null;
