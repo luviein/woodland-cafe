@@ -708,3 +708,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **The story box** (`ui/StoryBox.ts`): portrait, one line at a time, Next / OK, a quiet "Skip tutorial" link that asks first, and a bouncing arrow (pointing down, or up from below) that follows its target. Placed per screen so it never covers what the step needs: under the cafe, left of the plate, over the summary's title, under the map.
 - **Follow-ups:** the prep arrow follows the dish (next bin, then Serve, or Reset after a wrong layer) and Grandma mentions extras; the map step tours every place with the arrow on its sign (`pointsAt` in the data); **Decorate tips** the first time only (`tipsSeen` in the game state, skipped along with the tutorial); **Grandma's notes** behind a **?** button next to the speaker (`HudScene`, `ui/NotesPanel.ts`, topics in `data/tutorial.ts`), pausing the game while open; Skip never sits under Next; mushroom layers are tan and brown.
 - **Dev console:** `tutorial [restart|skip|<step>]`.
+
+### Customer species expansion
+
+Arriving customers include fox, rabbit, deer, mouse, frog, badger and raccoon. Every species appears over the customer rotation, keeps its identity in the prep portrait, and uses fitted Christmas clothing during the seasonal period. Frog hats leave the raised eyes visible; badger and raccoon outfits preserve their tails. Existing frog mascot and raccoon cleaner roles remain available. This does not add new playable animal choices.
