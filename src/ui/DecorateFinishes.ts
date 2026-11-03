@@ -39,22 +39,23 @@ export class DecorateFinishes {
       arrangeable(scene, 'decorate', name, point, object);
       return object;
     };
+    // The tab already names the surface: use the label's space for a wider swatch row.
+    const swatchAt = layoutPoint('decorate', 'finishSwatches', { x: trayAt.x - 84, y: trayAt.y });
     for (let i = 0; i < FLOOR_FINISHES.length; i++) {
-      const button = new Button(scene, trayAt.x + i * 34, trayAt.y, 30, 30, '', COLORS.paper, () => {
+      const button = new Button(scene, swatchAt.x + i * 36, swatchAt.y, 28, 28, '', COLORS.paper, () => {
         if (!this.surface || !ownsFinish(getGameState(scene), this.surface, i)) return;
         this.finishStroke(); this.style = i; this.refreshControls();
       });
       const image = scene.add.image(0, 0, artKey('floor')).setDisplaySize(24, 24);
-      const label = scene.add.text(0, 9, '', { ...TEXT.label, fontSize: '7px' }).setOrigin(0.5);
+      const label = scene.add.text(0, 8, '', { ...TEXT.label, fontSize: '7px' }).setOrigin(0.5);
       button.add([image, label]);
       this.controls.add(button);
       this.swatches.push({ button, image, label });
     }
-    // Register the swatches as one tray, keeping the user's saved tray position.
-    arrangeable(scene, 'decorate', 'finishSwatches', trayAt, ...this.swatches.map(s => s.button));
+    arrangeable(scene, 'decorate', 'finishSwatches', swatchAt, ...this.swatches.map(s => s.button));
     ['Brush', 'Whole stretch'].forEach((name, i) => {
-      const button = place('finishMode-' + i, 480, 320 + i * 20,
-        new Button(scene, 0, 0, 72, 18, '', COLORS.book, () => {
+      const button = place('finishMode-' + i, i === 0 ? 396 : 478, 330,
+        new Button(scene, 0, 0, i === 0 ? 64 : 84, 26, '', COLORS.book, () => {
           this.finishStroke(); this.wholeStretch = i === 1; this.refreshControls();
         }));
       button.add(scene.add.text(0, 0, name, { ...TEXT.label, fontSize: '9px' }).setOrigin(0.5));

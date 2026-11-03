@@ -653,7 +653,7 @@ export class DecorateScene extends Phaser.Scene {
     const designs = this.trayDesigns();
     this.categoryButtons.forEach((button, i) => button.setEnabled(DECORATE_TABS[i].id !== this.category));
     const painting = Boolean(this.finishes.surface);
-    this.storageLabel.setText(painting ? this.category === 'wallpaper' ? 'Wallpaper' : 'Floor' : 'Storage');
+    this.storageLabel.setVisible(!painting).setText('Storage');
     this.trayLayer.setVisible(!painting);
     this.trayPrev.setVisible(false); this.trayNext.setVisible(false);
     if (painting) return;
