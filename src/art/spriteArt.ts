@@ -1,3 +1,4 @@
+import { SEED_PANEL_ART } from './sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from './sprites/seedPouch';
 import { GARDEN_ART } from './sprites/garden';
 import { ROTATE_ICON } from './sprites/rotateIcon';
@@ -62,6 +63,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...SEED_PANEL_ART,
   ...SEED_POUCH_ART,
   ...GARDEN_ART,
   rotateIcon: ROTATE_ICON,

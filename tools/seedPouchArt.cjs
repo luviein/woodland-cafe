@@ -26,7 +26,16 @@ rect(table,4,22,56,2,'d');for(const x of [7,55])for(const y of [6,18])rect(table
 rect(table,13,8,8,1,'h');rect(table,38,14,12,1,'h');art.gardenTable={legend,frames:[rows(table)]};
 const flower=grid(16,16);oval(flower,8,8,7,7,'g');for(const[x,y]of[[8,4],[4,8],[12,8],[8,12]])oval(flower,x,y,3,3,'c');oval(flower,8,8,3,3,'h');oval(flower,8,8,2,2,'b');art.seedFlower={legend,frames:[rows(flower)]};
 for(const crop of ['Mushroom','Tomato','Chilli']){
-  const g=grid(24,32);rect(g,3,1,18,30,'o');rect(g,4,2,16,28,'h');rect(g,5,3,14,26,'c');rect(g,2,2,20,5,'o');rect(g,3,3,18,3,'b');rect(g,4,7,16,1,'h');rect(g,6,9,12,1,'w');
+  const g=grid(28,34);
+  // Slanted paper sides, a folded lip and worn corners match the reference packets.
+  for(let y=7;y<=31;y++){
+    const left=5-Math.floor((y-7)/8),right=25-Math.floor((y-7)/10);
+    rect(g,left,y,right-left+1,1,'o');rect(g,left+1,y,right-left-1,1,'c');
+    rect(g,left+1,y,1,1,'w');rect(g,right-2,y,2,1,'h');
+  }
+  rect(g,4,32,19,1,'o');rect(g,5,31,17,1,'h');
+  rect(g,5,1,21,7,'o');rect(g,6,2,19,5,'b');rect(g,7,2,16,1,'c');
+  for(const x of [8,12,16,20])rect(g,x,4,2,1,'r');
   if(crop==='Mushroom'){rect(g,10,19,5,8,'o');rect(g,11,20,3,6,'c');oval(g,12,17,7,5,'o');oval(g,12,16,6,4,'r');rect(g,9,14,3,2,'c');rect(g,15,16,2,2,'c');}
   if(crop==='Tomato'){oval(g,12,20,7,7,'o');oval(g,12,20,6,6,'r');oval(g,10,18,2,2,'a');rect(g,11,11,2,6,'g');rect(g,7,14,10,2,'g');}
   if(crop==='Chilli'){

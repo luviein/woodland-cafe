@@ -39,3 +39,8 @@ by lifting one foot, then the other.
    skeleton when you're done.
 4. Export just your drawing as a PNG (128x40, transparent background), and it's
    ready to go into the game.
+# Seed pouch references
+
+`seed-pouch-source.png` is the supplied pouch sheet; `seed-pouch-panel-source.png` is the supplied panel reference. Run `node tools/seedPouchArt.cjs` and `node tools/seedPouchPanelArt.cjs` from the repository root to regenerate their letter-grid assets. Both scripts use the project's PowerShell image decoder.
+
+The panel import removes only the exterior backdrop and sample inventory area. It retains the decorative pouch, wooden title and border; game code draws packet choices, quantities and hit areas over the cleared centre. Keep all future cleanup in those scripts so regenerating preserves the fixes.

@@ -13,7 +13,7 @@ import { COLORS, TEXT } from './theme';
 
 /** An inventory picker; choosing a packet never spends or plants a seed. */
 export class SeedPouchPanel extends Phaser.GameObjects.Container {
-  private cards: { button: Button; count: Phaser.GameObjects.Text; status: Phaser.GameObjects.Text }[] = [];
+  private cards: { button: Button; count: Phaser.GameObjects.Text; status: Phaser.GameObjects.Text; slot: Phaser.GameObjects.Image; packet: Phaser.GameObjects.Image }[] = [];
 
   constructor(scene: Phaser.Scene, selected: CropId, choose: (crop: CropId) => void, close: () => void) {
     super(scene, 0, 0);
@@ -23,30 +23,29 @@ export class SeedPouchPanel extends Phaser.GameObjects.Container {
     const at = layoutPoint('seedPouch', 'frame', { x: 320, y: 180 });
     const panel = scene.add.container(at.x, at.y);
     this.add(panel);
-    // Stepped cream borders and olive edging echo the supplied pouch panel.
-    panel.add(scene.add.rectangle(0, 0, 490, 260, 0x526334).setStrokeStyle(3, COLORS.ink));
-    panel.add(scene.add.rectangle(0, 0, 480, 250, 0x8e9b46));
-    panel.add(scene.add.rectangle(0, 0, 470, 240, 0xffe0ad).setStrokeStyle(2, 0xc18a5c));
-    panel.add(scene.add.rectangle(0, -94, 256, 36, 0x916044).setStrokeStyle(3, 0xc18a5c));
-    panel.add(scene.add.text(0, -94, 'Seed Pouch', { ...TEXT.heading, fontSize: '22px', color: '#fff0ca' }).setOrigin(0.5));
-    panel.add(addArt(scene, -194, -102, 'seedPouch').setScale(2));
-    panel.add(addArt(scene, -113, -94, 'seedFlower'));
-    panel.add(addArt(scene, 113, -94, 'seedFlower'));
-    for (const x of [-222, 222]) panel.add(addArt(scene, x, 105, 'seedFlower').setScale(2));
-    panel.add(scene.add.text(0, -62, 'Choose a packet for planting', { ...TEXT.body, fontSize: '11px' }).setOrigin(0.5));
-    panel.add(new Button(scene, 218, -104, 24, 24, 'X', COLORS.reset, close));
+    // The supplied decorative frame keeps its shaped edge and carved header.
+    // Inventory samples were cleared in the import script, so counts stay live.
+    panel.add(addArt(scene, 0, 0, 'seedPouchFrame').setScale(2));
+    panel.add(scene.add.text(0, -56, 'Choose a packet for planting', { ...TEXT.body, fontSize: '11px' }).setOrigin(0.5));
+    const closeButton = new Button(scene, 210, -110, 36, 36, '', COLORS.reset, close);
+    (closeButton.getAt(0) as Phaser.GameObjects.Rectangle).setVisible(false);
+    panel.add(closeButton); // Its hit area sits over the reference's drawn X.
     CROP_IDS.forEach((crop, i) => {
-      const x = (i - 1) * 144;
-      const button = new Button(scene, x, 18, 122, 130, '', 0xffe8bd, () => choose(crop));
+      const x = (i - 1) * 142;
+      const button = new Button(scene, x, 30, 124, 148, '', 0xffe8bd, () => choose(crop));
+      (button.getAt(0) as Phaser.GameObjects.Rectangle).setVisible(false);
+      const slot = addArt(scene, 0, 0, 'seedPouchCard').setScale(2);
+      button.addAt(slot, 0);
       const art = `seedPacket${crop[0].toUpperCase()}${crop.slice(1)}` as ArtName;
-      button.add(addArt(scene, 0, -17, art).setScale(2));
-      button.add(scene.add.text(0, 28, CROPS[crop].name, { ...TEXT.body, fontSize: '13px', fontStyle: 'bold' }).setOrigin(0.5));
-      const count = scene.add.text(0, 46, '', { ...TEXT.body, fontSize: '13px' }).setOrigin(0.5);
-      const status = scene.add.text(0, -58, crop === selected ? 'Selected' : '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5);
+      const packet = addArt(scene, 0, -17, art).setScale(2);
+      button.add(packet);
+      button.add(scene.add.text(0, 36, CROPS[crop].name, { ...TEXT.body, fontSize: '13px', fontStyle: 'bold' }).setOrigin(0.5));
+      const count = scene.add.text(0, 56, '', { ...TEXT.body, fontSize: '13px' }).setOrigin(0.5);
+      const status = scene.add.text(0, -63, crop === selected ? 'Selected' : '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5);
       button.add([count, status]); panel.add(button);
-      this.cards.push({ button, count, status });
+      this.cards.push({ button, count, status, slot, packet });
     });
-    panel.add(scene.add.text(0, 101, 'More seeds: Marketplace  |  Locked crops: Specialty', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
+    panel.add(scene.add.text(0, 126, 'More seeds: Marketplace  |  Locked crops: Specialty', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
     const state = getGameState(scene);
     this.refresh(state.garden, state.ingredients);
     arrangeablePanel(scene, 'seedPouch', 'panel', this);
@@ -56,6 +55,8 @@ export class SeedPouchPanel extends Phaser.GameObjects.Container {
     CROP_IDS.forEach((crop, i) => {
       const owned = ingredients.includes(crop), card = this.cards[i];
       card.button.setEnabled(owned);
+      card.slot.setAlpha(owned ? 1 : 0.65);
+      card.packet.setAlpha(owned ? 1 : 0.45);
       card.count.setText(owned ? 'x' + garden.seeds[crop] : 'Locked');
       if (!owned) card.status.setText('Unlock at Specialty');
     });
