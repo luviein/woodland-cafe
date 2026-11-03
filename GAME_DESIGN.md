@@ -469,7 +469,7 @@ The player can leave the counter **before taking an order** to clean messes; the
   - **Safety, from the start:** a word filter on chat and names, block and report buttons, and limits on how fast messages can be sent. Worth deciding early who the game is for (e.g. younger players need stricter chat rules).
   - **Fairness:** the server decides what counts (Leaves picked up, purchases), so a changed copy of the game can't cheat in shared places.
 - **Appearance and wardrobe:** the player changes how their critter looks from a **profile and inventory menu**: a portrait of their critter on a backdrop, their name, and an inventory of cosmetic items in **category tabs** (e.g. Hats, Clothes, Held items, Colours, Backs), shown as cards, paged. Items are bought or earned in the game and are cosmetic only. Drawn as layers on top of the critter, so each item needs a version for each of the four views (§8.2), lined up with the critter's head and body. Shown to other players in the multiplayer places. Pairs with **choose your animal** below.
-- **Choose your animal:** available in the wardrobe (§5.11) for hedgehog, rabbit, mouse and deer. A choice at new-game setup and the remaining animals can follow later.
+- **Choose your animal:** available in the wardrobe (§5.11) for hedgehog, rabbit, mouse, deer, frog, badger and raccoon. A choice at new-game setup and the remaining animals can follow later.
 
 ---
 
@@ -711,6 +711,6 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### Customer species expansion
 
-Arriving customers include fox, rabbit, deer, mouse, frog, badger and raccoon. Every species appears over the customer rotation, keeps its identity in the prep portrait, and uses fitted Christmas clothing during the seasonal period. Frog hats leave the raised eyes visible; badger and raccoon outfits preserve their tails. Existing frog mascot and raccoon cleaner roles remain available. This does not add new playable animal choices.
+Arriving customers include fox, rabbit, deer, mouse, frog, badger and raccoon. Every species appears over the customer rotation, keeps its identity in the prep portrait, and uses fitted Christmas clothing during the seasonal period. Frog hats leave the raised eyes visible; badger and raccoon outfits preserve their tails. Existing frog mascot and raccoon cleaner roles remain available. Frog, badger and raccoon are also selectable in the wardrobe Animal tab, retaining the player outfit and progress. All seven player choices stay visible in a two-column grid; the fitting mirror rotates through four views, and catalogue clothing samples use the selected species.
 
 Dev console: `spawn <fox|rabbit|deer|mouse|frog|badger|raccoon>` immediately adds one customer of that species at the cafe door during an open, unguided cafe day. Refuse outside the floor, during prep/tutorial, after closing, or when the queue is full. They join the normal queue and retain their species and seasonal outfit in prep.
