@@ -23,5 +23,12 @@ const { rows, legend } = P.toRows(grids, colours);
 const art = Object.fromEntries(rows.map((strip, i) => [`roomSideWall${i + 1}`, {
   legend, frames: Array.from({ length: 4 }, (_, frame) => strip.slice(frame * 24, frame * 24 + 24)),
 }]));
+// Reuse the horizontal garland at its actual pixel scale: the reference's
+// oversized vertical bows were much thicker than the back-wall trim.
+const back = JSON.parse(fs.readFileSync('src/art/sprites/roomFinishes.ts', 'utf8').match(/= ([\s\S]*) as const/)[1]).roomWall2;
+const slim = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) =>
+  x >= 9 && x < 15 ? back.frames[0][x - 9][y] : back.frames[0][10][x],
+).join(''));
+art.roomSideWall2 = { legend: back.legend, frames: Array.from({ length: 4 }, () => slim) };
 fs.writeFileSync('src/art/sprites/sideWallpaper.ts', `// From the supplied vertical wallpaper sheet; regenerate with tools/sideWallpaper.cjs.\nimport type { PixelSprite } from '../pixelSprite';\nexport const SIDE_WALLPAPER_ART = ${JSON.stringify(art, null, 2)} as const satisfies Record<string, PixelSprite>;\n`);
-P.preview(process.argv[3], rows.map(rows => ({ rows, legend })), { scale: 5 });
+P.preview(process.argv[3], Object.values(art).map(sprite => ({ rows: sprite.frames.flat(), legend: sprite.legend })), { scale: 5 });
