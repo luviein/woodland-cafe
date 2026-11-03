@@ -1,6 +1,6 @@
 import { CAFE_LAYOUT } from '../data/cafeLayout';
 import { DESIGN_IDS } from '../data/furniture';
-import { buildLayout, validPiecePosition, noneStored, spotProblemFor, startingFurniture, staysConnected, type PlacedPiece } from './furniture';
+import { buildLayout, validPiecePosition, validRugOrientation, noneStored, spotProblemFor, startingFurniture, staysConnected, type PlacedPiece } from './furniture';
 import { parseLayout, type Point } from './layout';
 
 export const ROOM_BRUSHES = ['.', 'W', 'C', 'D', 'P', 'O', '1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
@@ -52,6 +52,6 @@ export function isRoomSaveInput(value: unknown): value is RoomSaveInput {
   const data = value as Record<string, unknown>;
   const rows = (v: unknown): v is string[] => Array.isArray(v) && v.length === 12 && v.every(row => typeof row === 'string' && row.length === 24);
   return rows(data.rows) && rows(data.base) && Array.isArray(data.placed) && data.placed.length <= 288 && data.placed.every(p =>
-    p && typeof p === 'object' && DESIGN_IDS.includes(p.design) && validPiecePosition(p.design, p.x, p.y) && p.x >= 0 && p.x < 24 && p.y >= 0 && p.y < 12,
+    p && typeof p === 'object' && DESIGN_IDS.includes(p.design) && validPiecePosition(p.design, p.x, p.y) && validRugOrientation(p) && p.x >= 0 && p.x < 24 && p.y >= 0 && p.y < 12,
   );
 }

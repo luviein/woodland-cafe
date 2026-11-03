@@ -10,6 +10,7 @@ import {
   moveProblem,
   pieceAt,
   snapPlacement,
+  transformRug,
   placePiece,
   placeProblem,
   removePiece,
@@ -420,10 +421,11 @@ export class DecorateScene extends Phaser.Scene {
     tile = { x: piece.x, y: piece.y };
     const tileX = this.origin.x + tile.x * TILE_SIZE + TILE_SIZE / 2;
     const tileTop = this.origin.y + tile.y * TILE_SIZE;
-    const y = tile.y <= 1 ? tileTop + TILE_SIZE + 16 : tileTop - 16;
-    const x = Phaser.Math.Clamp(tileX, 32, BASE_WIDTH - 64);
+    const rug = kindOf(piece.design) === 'rug';
+    const y = rug ? Phaser.Math.Clamp(tile.y <= 2 ? tileTop + 64 : tileTop - 46, 16, BASE_HEIGHT - 46) : tile.y <= 1 ? tileTop + TILE_SIZE + 16 : tileTop - 16;
+    const x = Phaser.Math.Clamp(tileX, rug ? 104 : 32, BASE_WIDTH - (rug ? 108 : 64));
     // Interactive only so a tap on the panel between the buttons doesn't count as "elsewhere".
-    const panel = this.add.rectangle(x + (under ? 14 : 0), y, under ? 90 : 56, 30, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
+    const panel = this.add.rectangle(x + (under ? 14 : 0), y + (rug ? 14 : 0), rug ? 204 : under ? 90 : 56, rug ? 60 : 30, COLORS.paper).setStrokeStyle(2, COLORS.ink).setInteractive();
     // An outline around the tapped piece, so it's clear which one the menu is for.
     const span = kindOf(piece.design) === 'rug' ? 2 : 1;
     const outline = this.add
@@ -437,6 +439,13 @@ export class DecorateScene extends Phaser.Scene {
       addArt(this, 0, 0, 'storeIcon'),
     );
     const parts = [panel, outline, move, store];
+    if (rug) {
+      const actions = [['Rotate', 'rotate'], ['Flip X', 'flipX'], ['Flip Y', 'flipY']] as const;
+      actions.forEach(([label, action], i) => parts.push(new Button(this, x + (i - 1) * 64, y + 28, 60, 24, label, COLORS.book, () => {
+        this.setFurniture(transformRug(this.furniture(), tile, piece.design, action));
+        this.openMenu(tile, piece.design);
+      })));
+    }
     if (under) parts.push(new Button(this, x + 43, y, 28, 22, 'Rug', COLORS.book, () => this.openMenu({ x: under.x, y: under.y }, under.design)));
     for (const o of parts) o.setDepth(60);
     this.menu = parts;

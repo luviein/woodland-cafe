@@ -15,6 +15,33 @@ import { isWalkable, neighbours, parseLayout, pointKey, samePoint, type Layout, 
 export interface PlacedPiece extends Point {
   /** Which design it is (the plain table, the Christmas tree...); its kind follows from that. */
   design: DesignId;
+  rugRotation?: number;
+  rugFlipX?: boolean;
+  rugFlipY?: boolean;
+}
+
+export function validRugOrientation(piece: { rugRotation?: unknown; rugFlipX?: unknown; rugFlipY?: unknown }): boolean {
+  return (piece.rugRotation === undefined || (typeof piece.rugRotation === 'number' && Number.isInteger(piece.rugRotation) && piece.rugRotation >= 0 && piece.rugRotation < 4))
+    && (piece.rugFlipX === undefined || typeof piece.rugFlipX === 'boolean')
+    && (piece.rugFlipY === undefined || typeof piece.rugFlipY === 'boolean');
+}
+
+/** Frames contain exact pixel transforms, avoiding resampling during drawing. */
+export function rugFrame(piece: PlacedPiece): number {
+  return (piece.rugRotation ?? 0) + (piece.rugFlipX ? 4 : 0) + (piece.rugFlipY ? 8 : 0);
+}
+
+export function transformRug(furniture: Furniture, at: Point, design: DesignId, action: 'rotate' | 'flipX' | 'flipY'): Furniture {
+  const piece = pieceAt(furniture, at, design);
+  if (!piece || kindOf(piece.design) !== 'rug') return furniture;
+  let changed: PlacedPiece;
+  if (action === 'rotate') changed = { ...piece, rugRotation: ((piece.rugRotation ?? 0) + 1) % 4 };
+  else {
+    // The labels describe screen axes even after a quarter-turn.
+    const horizontal = (action === 'flipX') !== ((piece.rugRotation ?? 0) % 2 === 1);
+    changed = horizontal ? { ...piece, rugFlipX: !piece.rugFlipX } : { ...piece, rugFlipY: !piece.rugFlipY };
+  }
+  return { ...furniture, placed: furniture.placed.map(p => p === piece ? changed : p) };
 }
 
 /** Rugs have a visual floor layer; seating furniture stays on whole tiles. */

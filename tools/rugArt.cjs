@@ -18,5 +18,17 @@ const art = Object.fromEntries(rows.map((source, i) => {
     ? '.'.repeat(left) + clean[y - top] + '.'.repeat(48 - left - clean[0].length) : '.'.repeat(48));
   return [names[i], { legend, frames: [frame] }];
 }));
+// Precompute all exact quarter-turn / mirror combinations on the fixed 48px canvas.
+for (const sprite of Object.values(art)) {
+  const source = sprite.frames[0];
+  sprite.frames = Array.from({ length: 16 }, (_, variant) => {
+    let rows = source.map(row => variant & 4 ? [...row].reverse().join('') : row);
+    if (variant & 8) rows = [...rows].reverse();
+    for (let turn = 0; turn < variant % 4; turn++) {
+      rows = Array.from({ length: 48 }, (_, y) => Array.from({ length: 48 }, (_, x) => rows[47 - x][y]).join(''));
+    }
+    return rows;
+  });
+}
 fs.writeFileSync('src/art/sprites/rugs.ts', `// From the supplied floor accent sheet; regenerate with tools/rugArt.cjs.\nimport type { PixelSprite } from '../pixelSprite';\nexport const RUG_ART = ${JSON.stringify(art, null, 2)} as const satisfies Record<string, PixelSprite>;\n`);
 P.preview(process.argv[3], Object.values(art).map(sprite => ({ rows: sprite.frames[0], legend })), { scale: 5 });

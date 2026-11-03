@@ -3,10 +3,10 @@ import { appliedFinishIds, ownedFinishGrid } from './roomFinishShop';
 import { defaultFinishes, validFinishes } from '../data/roomFinishes';
 import { roomProblems } from './roomPainter';
 import { EMPLOYEE_ROLES, type EmployeeRole } from '../data/employees';
-import { DESIGN_IDS, type DesignId } from '../data/furniture';
+import { DESIGN_IDS, kindOf, type DesignId } from '../data/furniture';
 import { INGREDIENT_IDS, type IngredientId } from '../data/ingredients';
 import { UPGRADE_IDS, type UpgradeId } from '../data/upgrades';
-import { buildLayout, placementOverlap, validPiecePosition, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
+import { buildLayout, placementOverlap, validPiecePosition, validRugOrientation, spotProblemFor, type Furniture, type PlacedPiece } from './furniture';
 import { createNewGame, type GameState } from './gameState';
 import { isTutorialState } from './tutorial';
 import { TIP_IDS, type TipId } from '../data/tutorial';
@@ -36,7 +36,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 9: one-time room finish purchases.
 // 10: rugs share floor coordinates with furniture.
 // 11: rugs use quarter-tile placement coordinates.
-export const SAVE_VERSION = 11;
+// 12: each placed rug remembers its quarter-turn and mirror flags.
+export const SAVE_VERSION = 12;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -176,7 +177,14 @@ function readFurniture(value: unknown, fallback: Furniture, room: readonly strin
     const design = isObject(p) ? (p.design ?? p.kind) : undefined;
     const ok = isObject(p) && DESIGN_IDS.includes(design as DesignId) && validPiecePosition(design as DesignId, p.x, p.y);
     if (!ok) throw new BadSave('furniture.placed');
-    return { design: design as DesignId, x: p.x as number, y: p.y as number };
+    const piece: PlacedPiece = { design: design as DesignId, x: p.x as number, y: p.y as number };
+    if (kindOf(piece.design) === 'rug') {
+      if (!validRugOrientation(p)) throw new BadSave('rug orientation');
+      if (p.rugRotation !== undefined) piece.rugRotation = p.rugRotation as number;
+      if (p.rugFlipX !== undefined) piece.rugFlipX = p.rugFlipX as boolean;
+      if (p.rugFlipY !== undefined) piece.rugFlipY = p.rugFlipY as boolean;
+    }
+    return piece;
   });
   const furniture = { placed, stored };
   if (allPlacedOk(furniture, room)) return furniture;

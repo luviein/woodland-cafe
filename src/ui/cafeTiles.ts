@@ -4,7 +4,7 @@ import { BASE_HEIGHT, BASE_WIDTH, TILE_SIZE } from '../config/display';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
 import { CHAIR_VIEWS, FURNITURE, kindOf, placesOf, type FurnitureDesign } from '../data/furniture';
-import { chairFacing, isWindow, type PlacedPiece } from '../logic/furniture';
+import { chairFacing, isWindow, rugFrame, type PlacedPiece } from '../logic/furniture';
 import type { Layout, Point, TileKind } from '../logic/layout';
 import { artKey } from './art';
 
@@ -118,7 +118,7 @@ export function pieceDrawing(
   on: TileKind | undefined,
 ): { art: ArtName; frame: number; at: Point } {
   const def: FurnitureDesign = FURNITURE[piece.design];
-  if (def.kind === 'rug') return { art: def.art, frame: 0, at: { ...tile } };
+  if (def.kind === 'rug') return { art: def.art, frame: rugFrame(piece), at: { ...tile } };
   const sprite = SPRITE_ART[def.art];
   const { width, height } = spriteSize(sprite);
   const frame = kindOf(piece.design) === 'chair' && sprite.frames.length >= 3 ? CHAIR_VIEWS[chairFacing(placed, piece)] : 0;
