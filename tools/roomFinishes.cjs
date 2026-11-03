@@ -33,6 +33,32 @@ const { rows, legend } = P.toRows(grids, colours);
 const sprites = {};
 for (let i = 0; i < 4; i++) sprites[`roomWall${i + 1}`] = { legend, frames: rows.slice(i * 2, i * 2 + 2) };
 for (let i = 0; i < 7; i++) sprites[`roomFloor${i + 1}`] = { legend, frames: [rows[8 + i], rows[8 + i]] };
+// Crisp wallpaper motifs and continuous, evenly spaced wood panelling.
+// Keep the supplied festive garland, but remove conversion noise elsewhere.
+for (const style of [1, 2, 3, 4]) {
+  const old = sprites['roomWall' + style];
+  const shades = style === 3 ? ['#943139', '#863035', '#b94b48'] : style === 4 ? ['#455d37', '#52683e', '#73884d'] : ['#f2d3a9', '#edc79a', '#dbaa79'];
+  const cleanLegend = { ...old.legend, 0: shades[0], 1: shades[1], 2: shades[2], 3: '#8d503b', 4: '#633c30', 5: '#b97050', 6: '#29485d', 7: '#a77850', 8: '#f4e2bb', 9: '#a43a3a' };
+  const make = window => Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => {
+    if (y >= 18) {
+      if (y === 18) return '5';
+      if (y === 19 || (x % 8 === 0 && y >= 20)) return '4';
+      return '3';
+    }
+    if (window && x >= 5 && x <= 18 && y >= 5 && y <= 16) {
+      if (x === 5 || x === 18 || y === 5 || y === 16) return '4';
+      if (x === 6 || x === 17 || y === 6 || y === 15 || x === 11 || y === 10) return '7';
+      return (x === 8 && y === 8) || (x === 14 && y === 13) ? '8' : '6';
+    }
+    if (style === 2 && y < 6) return old.frames[0][y][x];
+    const mx = x % 12 - 6, my = y % 8 - 4;
+    if (style === 4) {
+      if ((my === -2 && mx === 0) || (my === -1 && Math.abs(mx) <= 1) || (my === 0 && Math.abs(mx) <= 2) || (my === 1 && mx === 0)) return '2';
+    } else if (style !== 2 && ((Math.abs(mx) === 1 && my === 0) || (mx === 0 && Math.abs(my) === 1))) return '2';
+    return (style !== 1 && x % 6 === 0) ? '1' : '0';
+  }).join(''));
+  sprites['roomWall' + style] = { legend: cleanLegend, frames: [make(false), make(true)] };
+}
 // Reconstruct the geometric floors at native resolution. Shrinking the
 // reference made straight plank joints and diagonal brick seams fragment.
 const mod = (n, size) => (n % size + size) % size;
