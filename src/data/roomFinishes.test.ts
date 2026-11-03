@@ -3,6 +3,15 @@ import { wallFinishTile } from './roomFinishes';
 import { SPRITE_ART } from '../art/spriteArt';
 
 describe('wallpaper orientation', () => {
+  it('faces the bottom wall trim towards the floor', () => {
+    for (let style = 0; style <= 4; style++) {
+      const tile = wallFinishTile(style, 5, 11, 24, false);
+      expect(tile.art).toBe(`roomBottomWall${style}`);
+      const bottom = SPRITE_ART[tile.art];
+      const top = SPRITE_ART[style === 0 ? 'wall' : `roomWall${style}` as 'roomWall1'];
+      expect(bottom.frames[0]).toEqual([...top.frames[0]].reverse());
+    }
+  });
   it('joins the horizontal wall without shifting or compressing its edge pixels', () => {
     for (let style = 0; style <= 4; style++) {
       const wall = SPRITE_ART[style === 0 ? 'wall' : `roomWall${style}` as 'roomWall1'];
@@ -11,7 +20,7 @@ describe('wallpaper orientation', () => {
         const x = frame % 2 === 0 ? 23 : 0;
         for (let y = 0; y < 24; y++) {
           const cornerColour = corner.legend[corner.frames[frame][y][x] as keyof typeof corner.legend];
-          const wallColour = wall.legend[wall.frames[0][y][x] as keyof typeof wall.legend];
+          const wallColour = wall.legend[wall.frames[0][frame < 2 ? y : 23 - y][x] as keyof typeof wall.legend];
           expect(cornerColour).toBe(wallColour);
         }
       }

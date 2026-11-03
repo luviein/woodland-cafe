@@ -10,6 +10,7 @@ const art = {};
 for (let style = 0; style <= 4; style++) {
   const back = style ? backs[`roomWall${style}`] : original;
   const source = back.frames[0];
+  art[`roomBottomWall${style}`] = { legend: back.legend, frames: [[...source].reverse()] };
   // Original logs also run vertically on the side walls.
   const logSides = [0, 1].map(right => Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x) => source[right ? 23 - x : x][y]).join('')));
   if (style === 0) art.roomSideWall0 = { legend: original.legend, frames: logSides };
@@ -31,7 +32,7 @@ for (let style = 0; style <= 4; style++) {
       // Follow a rounded quarter-ellipse between the narrow side garland
       // and horizontal trim. Keep bows on straight runs, not on the bend.
       const cx = right ? 0 : 23, cy = top ? 23 : 0;
-      const rx = right ? 11 : 12, ry = top ? 21 : 2;
+      const rx = right ? 11 : 12, ry = 21;
       let nearest = Infinity;
       for (let step = 0; step <= 90; step++) {
         const angle = step * Math.PI / 180;
@@ -47,12 +48,15 @@ for (let style = 0; style <= 4; style++) {
         return letter(green[nearest < 0.65 ? Math.min(1, green.length - 1) : 0]);
       }
       // Plain striped paper underneath the bend, retaining the skirting.
-      if (distanceX >= distanceY) return letter(back.legend[source[y < 6 ? 10 : y][x]]);
+      if (distanceX >= distanceY) {
+        const sy = top ? y : 23 - y;
+        return letter(back.legend[source[sy < 6 ? 10 : sy][x]]);
+      }
       return letter(back.legend[source[10][x]]);
     }
     // Each outer edge copies its neighbouring wall exactly. A diagonal
     // miter bends the lines without shrinking or shifting either sprite.
-    if (distanceX >= distanceY) return letter(back.legend[source[y][x]]);
+    if (distanceX >= distanceY) return letter(back.legend[source[top ? y : 23 - y][x]]);
     const frame = style === 0 ? (right ? 1 : 0) : style === 2 ? (top ? 3 : 2) : (right ? 2 : 0) + (top ? 1 : 0);
     return letter(side.legend[side.frames[frame][y][x]]);
   }).join('')));
