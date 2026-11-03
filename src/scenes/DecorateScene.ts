@@ -37,7 +37,7 @@ import type { WorldMapRequest } from './WorldMapScene';
  * The storage tray and Done, in the strip under the cafe: a card per design
  * (its picture and how many are in storage), a page at a time.
  */
-const TRAY = { x: 64, y: BASE_HEIGHT - 30, firstCard: 172, card: 30, gap: 4, perPage: 8 };
+const TRAY = { x: 64, y: BASE_HEIGHT - 27, firstCard: 172, card: 26, gap: 4, perPage: 8 };
 
 const DECORATE_TABS = [...STORAGE_CATEGORIES, { id: 'wallpaper', label: 'Wallpaper' }, { id: 'floor', label: 'Floor' }] as const;
 type DecorateTab = StorageCategory | 'wallpaper' | 'floor';
@@ -138,7 +138,7 @@ export class DecorateScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
     arrangeable(this, 'decorate', 'title', titleAt, title);
     const hintAt = at('hint', BASE_WIDTH / 2, BASE_HEIGHT - 1);
-    this.hint = this.add.text(hintAt.x, hintAt.y, '', { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5, 1);
+    this.hint = this.add.text(hintAt.x, hintAt.y, '', { ...TEXT.label, fontSize: '9px' }).setOrigin(0.5, 1);
     arrangeable(this, 'decorate', 'hint', hintAt, this.hint);
 
     // The storage tray, in the strip under the cafe (right of the corner buttons).
@@ -148,12 +148,12 @@ export class DecorateScene extends Phaser.Scene {
     const label = this.storageLabel = this.add
       .text(this.trayAt.x - (TRAY.firstCard - TRAY.x), this.trayAt.y, 'Storage', { ...TEXT.heading, color: css(COLORS.paper) })
       .setOrigin(0, 0.5);
-    const categoryAt = at('storageCategories', 64, 302);
+    const categoryAt = at('storageCategories', 64, 306);
     const categoryLayer = this.add.container(categoryAt.x, categoryAt.y);
     const widths = [54, 54, 76, 68, 48, 76, 54];
     let tabX = 0;
     DECORATE_TABS.forEach((category, i) => {
-      const button = new Button(this, tabX + widths[i] / 2, 0, widths[i], 18, '', COLORS.book, () => this.selectCategory(category.id));
+      const button = new Button(this, tabX + widths[i] / 2, 0, widths[i], 16, '', COLORS.book, () => this.selectCategory(category.id));
       button.add(this.add.text(0, 0, category.label, { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5));
       categoryLayer.add(button);
       this.categoryButtons.push(button);
@@ -168,7 +168,7 @@ export class DecorateScene extends Phaser.Scene {
     this.trayNext = new Button(this, this.cardX(TRAY.perPage - 1) + TRAY.card / 2 + 14, arrowY, 18, TRAY.card, '>', COLORS.book, () => this.turnTray(1));
     arrangeable(this, 'decorate', 'tray', this.trayAt, label, this.trayPrev, this.trayNext, this.trayLayer, ...sizeBox(this, label.x, this.trayAt.y - TRAY.card / 2, this.cardX(TRAY.perPage - 1) + TRAY.card / 2 - label.x, TRAY.card));
     const doneAt = at('done', BASE_WIDTH - 64, TRAY.y);
-    arrangeable(this, 'decorate', 'done', doneAt, new Button(this, doneAt.x, doneAt.y, 100, 30, 'Done', COLORS.serve, () => this.done()));
+    arrangeable(this, 'decorate', 'done', doneAt, new Button(this, doneAt.x, doneAt.y, 100, 26, 'Done', COLORS.serve, () => this.done()));
     this.finishes = new DecorateFinishes(this, this.origin, this.trayAt, this.hint);
     // Esc backs out one step at a time: a carried piece, then the menu, then the screen.
     const onKey = (event: KeyboardEvent) => {

@@ -42,7 +42,7 @@ export class DecorateFinishes {
     // The tab already names the surface: use the label's space for a wider swatch row.
     const swatchAt = layoutPoint('decorate', 'finishSwatches', { x: trayAt.x - 84, y: trayAt.y });
     for (let i = 0; i < FLOOR_FINISHES.length; i++) {
-      const button = new Button(scene, swatchAt.x + i * 36, swatchAt.y, 28, 28, '', COLORS.paper, () => {
+      const button = new Button(scene, swatchAt.x + i * 36, swatchAt.y, 26, 26, '', COLORS.paper, () => {
         if (!this.surface || !ownsFinish(getGameState(scene), this.surface, i)) return;
         this.finishStroke(); this.style = i; this.refreshControls();
       });
@@ -54,14 +54,14 @@ export class DecorateFinishes {
     }
     arrangeable(scene, 'decorate', 'finishSwatches', swatchAt, ...this.swatches.map(s => s.button));
     ['Brush', 'Whole stretch'].forEach((name, i) => {
-      const button = place('finishMode-' + i, i === 0 ? 396 : 478, 330,
-        new Button(scene, 0, 0, i === 0 ? 64 : 84, 26, '', COLORS.book, () => {
+      const button = place('finishMode-' + i, i === 0 ? 396 : 478, trayAt.y,
+        new Button(scene, 0, 0, i === 0 ? 64 : 84, 24, '', COLORS.book, () => {
           this.finishStroke(); this.wholeStretch = i === 1; this.refreshControls();
         }));
       button.add(scene.add.text(0, 0, name, { ...TEXT.label, fontSize: '9px' }).setOrigin(0.5));
       this.modes.push(button);
     });
-    this.undo = place('finishUndo', 581, 302, new Button(scene, 0, 0, 62, 18, '', COLORS.book, () => this.undoStroke()));
+    this.undo = place('finishUndo', 581, 306, new Button(scene, 0, 0, 62, 16, '', COLORS.book, () => this.undoStroke()));
     this.undo.add(scene.add.text(0, 0, 'Undo', { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5));
   }
 
