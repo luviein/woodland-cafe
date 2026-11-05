@@ -1,8 +1,12 @@
+import { finishGardenWork, gardenStandPoint, gardenWorkProgress, startGardenWork, stepGardenWork, type GardenWork } from '../logic/gardenWork';
+import { GardenWorkEffect } from '../ui/GardenWorkEffect';
+import { setFacing } from '../ui/sprites';
+import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { SeedPouchPanel } from '../ui/SeedPouchPanel';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { CROPS, GARDEN_PLOTS, type CropId } from '../data/crops';
-import { cropRemaining, cropStage, plantCrop, tendCrop } from '../logic/garden';
+import { cropRemaining, cropStage } from '../logic/garden';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, sizeBox } from '../layout/arrangeable';
@@ -18,11 +22,14 @@ const cropArt = (crop: CropId): ArtName => `garden${crop[0].toUpperCase()}${crop
 
 /** A separate visit: FloorScene stays paused, so returning resumes its live orders. */
 export class GardenScene extends Phaser.Scene {
+  private work: GardenWork | null = null;
+  private workEffect!: GardenWorkEffect;
+  private workOffset = { x: 0, y: 0 };
   private from: 'cafe' | 'map' = 'map';
   private selected: CropId = 'mushroom';
   private pouchPanel: SeedPouchPanel | null = null;
   private selectedLabel!: Phaser.GameObjects.Text;
-  private plots: { crop: Phaser.GameObjects.Image; status: Phaser.GameObjects.Text }[] = [];
+  private plots: { bed: Phaser.GameObjects.Image; crop: Phaser.GameObjects.Image; status: Phaser.GameObjects.Text }[] = [];
   private hint!: Phaser.GameObjects.Text;
   private player!: Mover;
   private sprite!: Phaser.GameObjects.Container;
@@ -34,7 +41,7 @@ export class GardenScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.selected = 'mushroom'; this.pouchPanel = null; this.plots = [];
+    this.work = null; this.selected = 'mushroom'; this.pouchPanel = null; this.plots = [];
     const point = (name: string, x: number, y: number) => layoutPoint('garden', name, { x, y });
     const groundAt = point('ground', 0, 0);
     const ground = this.add.renderTexture(groundAt.x, groundAt.y, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
@@ -74,15 +81,20 @@ export class GardenScene extends Phaser.Scene {
       const at = point('plot.' + i, 212 + i % 3 * 144, 132 + Math.floor(i / 3) * 100);
       const bed = addArt(this, at.x, at.y + 6, 'gardenSoil').setInteractive({ useHandCursor: true });
       const crop = addArt(this, at.x, at.y + 2, 'gardenMushroom');
-      const status = this.add.text(at.x, at.y + 36, '', { ...TEXT.label, fontSize: '10px', align: 'center', color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
+      const status = this.add.text(at.x, at.y + 46, '', { ...TEXT.label, fontSize: '10px', align: 'center', color: css(COLORS.paper), stroke: css(COLORS.ink), strokeThickness: 3 }).setOrigin(0.5);
       bed.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.tend(i));
-      this.plots.push({ crop, status });
+      this.plots.push({ bed, crop, status });
       arrangeable(this, 'garden', 'plot.' + i, at, bed, crop, status);
     }
     const entry = point('entry', 70, 180);
     this.player = createMover(entry);
     this.sprite = createPlayerSprite(this, () => false).setPosition(entry.x, entry.y).setDepth(500);
+    // Standing in front of a bed must not block the next tap to water or harvest it.
+    this.sprite.disableInteractive();
     arrangeable(this, 'garden', 'entry', entry, this.sprite);
+    this.workOffset = point('actionEffect', 0, 0);
+    this.workEffect = new GardenWorkEffect(this);
+    arrangeable(this, 'garden', 'actionEffect', this.workOffset, this.workEffect);
     const hintAt = point('hint', 344, 344);
     this.hint = this.add.text(hintAt.x, hintAt.y, 'Open the seed pouch on the table to choose seeds, then plant and water.', {
       ...TEXT.label, fontSize: '11px', align: 'center', wordWrap: { width: 520 }, stroke: css(COLORS.ink), strokeThickness: 3,
@@ -92,29 +104,67 @@ export class GardenScene extends Phaser.Scene {
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.refresh() });
     this.input.on(Phaser.Input.Events.POINTER_UP, (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (over.length || this.pouchPanel) return;
-      this.player = walkToward(this.player, { x: pointer.worldX, y: pointer.worldY }, { x: 32, y: 180, width: 560, height: 112 });
+      this.cancelWork();
+      this.player = walkToward(this.player, { x: pointer.worldX, y: pointer.worldY }, { x: 32, y: 82, width: 560, height: 210 });
     });
     this.input.keyboard?.on('keydown-ESC', this.returnToEntrance, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown-ESC', this.returnToEntrance, this));
   }
 
   update(_time: number, delta: number): void {
+    const wasWalking = this.player.target !== null;
     this.player = stepMover(this.player, delta * 0.1);
     // Keep movement precise for facing; pixelArt rounds only the rendered pixels.
     // Rounding here made diagonal steps alternate between sideways and forwards.
     this.sprite.setPosition(this.player.position.x, this.player.position.y);
+    // Arrival starts the animation; time spent walking never shortens the work.
+    this.updateWork(wasWalking ? 0 : delta / 1000);
   }
 
   private tend(index: number): void {
-    const state = getGameState(this), plant = state.garden.plots[index];
-    const next = plant ? tendCrop(state, index, Date.now()) : plantCrop(state, index, this.selected);
-    if (next === state) {
-      this.hint.setText(plant ? 'Still growing — you can leave and come back later.' : 'No seeds for this crop. Visit the Marketplace Seeds stall.');
+    if (this.pouchPanel || this.work?.index === index) return;
+    const state = getGameState(this), work = startGardenWork(state, index, this.selected, Date.now());
+    this.cancelWork();
+    if (!work) {
+      this.hint.setText(state.garden.plots[index] ? 'Still growing. Come back when it is ready.' : 'No seeds for this crop. Visit the Marketplace Seeds stall.');
       return;
     }
-    setGardenGameState(this, next);
-    this.hint.setText(!plant ? 'Planted! Tap this bed to water it.' : plant.wateredAt === null
-      ? 'Watered! Your crop keeps growing even when the game is closed.' : `Harvested ${CROPS[plant.crop].yield} ${CROPS[plant.crop].name} into your stock.`);
+    this.work = work;
+    this.player = walkToward(this.player, gardenStandPoint(this.plots[index].bed), { x: 32, y: 82, width: 560, height: 210 });
+    this.hint.setText(`Walking to ${work.action} the bed.`);
+  }
+
+  private cancelWork(): void {
+    this.work = null;
+    this.player = { ...this.player, target: null };
+    this.workEffect.setVisible(false);
+    setFacing(this.sprite, null);
+    for (const image of this.sprite.list) if (image instanceof Phaser.GameObjects.Image) image.y = 24;
+  }
+
+  private updateWork(seconds: number): void {
+    const work = this.work;
+    if (!work) return;
+    const stepped = stepGardenWork(work, this.player, seconds);
+    if (stepped.finished) {
+      this.cancelWork();
+      const state = getGameState(this), next = finishGardenWork(state, work, Date.now());
+      if (next === state) { this.hint.setText('That bed changed. Choose it again.'); return; }
+      setGardenGameState(this, next);
+      this.hint.setText(work.action === 'plant' ? 'Planted! Tap this bed to water it.' : work.action === 'water'
+        ? 'Watered! Your crop keeps growing while you are away.' : `Harvested ${CROPS[work.crop].yield} ${CROPS[work.crop].name} into your stock.`);
+      return;
+    }
+    this.work = stepped.work;
+    if (this.player.target || !this.work) return;
+    const bed = this.plots[work.index].bed;
+    if (!this.workEffect.visible) this.hint.setText(`${{ plant: 'Planting', water: 'Watering', harvest: 'Harvesting' }[work.action]}. Click elsewhere to cancel.`);
+    this.workEffect.setPosition(bed.x + this.workOffset.x, bed.y + this.workOffset.y).show(this.work);
+    setFacing(this.sprite, 'back');
+    const bob = Math.floor(gardenWorkProgress(this.work) * 8) % 2;
+    for (const image of this.sprite.list) if (image instanceof Phaser.GameObjects.Image) {
+      image.setFrame(viewFrame(VIEW.back, 0)); image.y = 24 + bob;
+    }
   }
 
   private refresh(): void {
@@ -134,7 +184,7 @@ export class GardenScene extends Phaser.Scene {
 
   private openPouch(): void {
     if (this.pouchPanel) return;
-    this.player = { ...this.player, target: null };
+    this.cancelWork();
     this.pouchPanel = new SeedPouchPanel(this, this.selected, crop => {
       this.selected = crop;
       this.hint.setText(`${CROPS[crop].name}: tap an empty bed to plant, then tap again to water.`);
@@ -152,6 +202,7 @@ export class GardenScene extends Phaser.Scene {
   private returnToEntrance(): void {
     if (this.pouchPanel) { this.closePouch(); return; }
 
+    this.cancelWork();
     if (this.from === 'cafe' && this.scene.isPaused('FloorScene')) {
       this.scene.resume('FloorScene');
       this.scene.stop();
