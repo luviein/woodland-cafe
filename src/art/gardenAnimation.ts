@@ -1,5 +1,10 @@
 import type { GardenAction } from '../logic/gardenWork';
 
+/** Relative to the critter's centre line and container top; includes tall ears/antlers. */
+export function harvestDisplayPose(critterHeight: number) {
+  return { item: { x: 0, y: 24 - critterHeight - 8 } };
+}
+
 /** Shared visual poses keep the gallery preview identical to tending in the garden. */
 export function gardenAnimationPose(action: GardenAction, progress: number) {
   const p = Math.max(0, Math.min(1, progress));

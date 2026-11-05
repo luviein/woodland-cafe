@@ -7,6 +7,14 @@ import type { Mover } from './outdoor';
 export const GARDEN_WORK_SECONDS = { plant: 0.65, water: 0.9, harvest: 0.7 } as const;
 export type GardenAction = keyof typeof GARDEN_WORK_SECONDS;
 export interface GardenWork { index: number; crop: CropId; action: GardenAction; secondsLeft: number }
+export const HARVEST_DISPLAY_SECONDS = 0.5;
+export interface HarvestDisplay { crop: CropId; secondsLeft: number }
+
+/** Presentation only: stock was already granted when the harvest finished. */
+export function stepHarvestDisplay(display: HarvestDisplay, seconds: number): HarvestDisplay | null {
+  const secondsLeft = display.secondsLeft - Math.max(0, seconds);
+  return secondsLeft <= 0 ? null : { ...display, secondsLeft };
+}
 
 /** Mover positions are the critter container's top left; feet are 12 across, 24 down. */
 export function gardenStandPoint(bed: Point): Point { return { x: bed.x - 12, y: bed.y }; }

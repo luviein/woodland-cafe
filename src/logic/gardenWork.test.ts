@@ -1,9 +1,19 @@
 import { expect, it } from 'vitest';
 import { createNewGame } from './gameState';
 import { buySeed, plantCrop, tendCrop } from './garden';
-import { finishGardenWork, gardenStandPoint, gardenWorkProgress, startGardenWork, stepGardenWork } from './gardenWork';
+import { finishGardenWork, gardenStandPoint, gardenWorkProgress, startGardenWork, stepGardenWork, HARVEST_DISPLAY_SECONDS, stepHarvestDisplay } from './gardenWork';
 
 const fresh = () => buySeed({ ...createNewGame(), leaves: 5 }, 'mushroom');
+
+it('keeps the picked crop in the display for half a second, then puts it away', () => {
+  const display = { crop: 'tomato' as const, secondsLeft: HARVEST_DISPLAY_SECONDS };
+  const remaining = stepHarvestDisplay(display, 0.2)!;
+  expect(remaining.crop).toBe('tomato');
+  expect(remaining.secondsLeft).toBeCloseTo(0.3);
+  expect(stepHarvestDisplay(remaining, 0.3)).toBeNull();
+  expect(display.secondsLeft).toBe(0.5);
+  expect(stepHarvestDisplay(display, -1)).toEqual(display);
+});
 
 it('walks before working and changes no stock until completion', () => {
   const state = fresh(), work = startGardenWork(state, 0, 'mushroom', 1000)!;
