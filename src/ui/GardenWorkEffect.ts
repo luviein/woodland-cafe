@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { gardenAnimationPose } from '../art/gardenAnimation';
 import { gardenWorkProgress, type GardenWork } from '../logic/gardenWork';
 import { addArt } from './art';
 import { COLORS, TEXT } from './theme';
@@ -22,14 +23,13 @@ export class GardenWorkEffect extends Phaser.GameObjects.Container {
   }
 
   show(work: GardenWork): void {
-    const progress = gardenWorkProgress(work), frame = { plant: 0, water: 1, harvest: 2 }[work.action];
+    const progress = gardenWorkProgress(work), pose = gardenAnimationPose(work.action, progress);
     this.setVisible(true);
     this.label.setText({ plant: 'Planting', water: 'Watering', harvest: 'Harvesting' }[work.action]);
-    this.tool.setFrame(frame).setPosition(14, 12 + Math.floor(progress * 8) % 2 * 2);
+    this.tool.setFrame(pose.frame).setPosition(pose.tool.x, pose.tool.y);
     this.fill.setScale(Math.max(0.001, progress), 1);
     this.particles.forEach((particle, i) => {
-      const phase = (progress * 3 + i / 3) % 1;
-      particle.setFrame(frame).setPosition(-8 + i * 6, work.action === 'harvest' ? -4 - Math.floor(phase * 12) : -14 + Math.floor(phase * 10));
+      particle.setFrame(pose.frame).setPosition(pose.particles[i].x, pose.particles[i].y);
     });
   }
 }

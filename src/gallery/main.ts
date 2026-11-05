@@ -1,4 +1,5 @@
 import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
+import { createGardenPreviews } from './gardenPreview';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from '../art/sprites/seedPouch';
 import { GARDEN_ART } from '../art/sprites/garden';
@@ -109,7 +110,9 @@ const scaleFor = (name: ArtName, target: number) => {
 
 /** Animations that run on the page: each redraws its canvas from the frame list, one step at a time. */
 const walkers: { canvas: HTMLCanvasElement; name: ArtName; frames: number[]; flip: boolean; scale: number }[] = [];
+let gardening: ReturnType<typeof createGardenPreviews> | null = null;
 function animate(time: number): void {
+  gardening?.animate(time);
   for (const w of walkers) {
     const ctx = w.canvas.getContext('2d')!;
     ctx.clearRect(0, 0, w.canvas.width, w.canvas.height);
@@ -222,6 +225,8 @@ function build(): void {
   const main = el('main');
   let total = 0;
   main.append(group('Side by side (real proportions)', 0, scaleView()));
+  gardening = createGardenPreviews(paint);
+  main.append(group('Gardening animations', 0, gardening.node));
   for (const [title] of GROUPS) {
     const names = ART_NAMES.filter((n) => groupOf(n) === title);
     const cards = el('div', { className: 'cards' });

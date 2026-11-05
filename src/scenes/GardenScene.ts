@@ -3,6 +3,7 @@ import { GardenWorkEffect } from '../ui/GardenWorkEffect';
 import { setFacing } from '../ui/sprites';
 import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { SeedPouchPanel } from '../ui/SeedPouchPanel';
+import { gardenAnimationPose } from '../art/gardenAnimation';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { CROPS, GARDEN_PLOTS, type CropId } from '../data/crops';
@@ -161,7 +162,7 @@ export class GardenScene extends Phaser.Scene {
     if (!this.workEffect.visible) this.hint.setText(`${{ plant: 'Planting', water: 'Watering', harvest: 'Harvesting' }[work.action]}. Click elsewhere to cancel.`);
     this.workEffect.setPosition(bed.x + this.workOffset.x, bed.y + this.workOffset.y).show(this.work);
     setFacing(this.sprite, 'back');
-    const bob = Math.floor(gardenWorkProgress(this.work) * 8) % 2;
+    const bob = gardenAnimationPose(work.action, gardenWorkProgress(this.work)).bodyY;
     for (const image of this.sprite.list) if (image instanceof Phaser.GameObjects.Image) {
       image.setFrame(viewFrame(VIEW.back, 0)); image.y = 24 + bob;
     }

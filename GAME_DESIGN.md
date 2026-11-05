@@ -560,6 +560,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 - Each sprite shows its **name, size, frames and where it comes from** (drawn in code, the player's PNG in `src/art/drawn/`, or converted from the player's critter sheet), its frames at game size and enlarged, and, for critters, its **walk playing** in every view.
 - **Quality checks**, flagged with a warning like the text editor: for critters, see-through holes inside the outline, uneven front/back views (eyes that don't match), stray single pixels; for every sprite, a broken grid (uneven rows, unknown colours). The same checks run as tests.
 - **Side by side:** every critter at real scale next to a table, chairs and the counter, to see proportions before playing.
+- **Gardening animations:** looping Planting, Watering and Harvesting previews use the same poses, tools, effects and durations as gameplay. Choose any playable animal, pause/play, or slow playback to inspect pixels. The gallery never reads or changes the player's save.
 - Read-only for now. Later: drop a PNG onto a sprite to replace it, and import new critters drawn on the skeleton template.
 
 ### 9.3 Arrange mode (dev only)
