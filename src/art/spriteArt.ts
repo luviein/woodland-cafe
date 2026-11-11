@@ -2,6 +2,7 @@ import { SEED_PACKET_ART } from './sprites/seedPackets';
 import { SEED_PANEL_ART } from './sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from './sprites/seedPouch';
 import { GARDEN_ART } from './sprites/garden';
+import { CROP_MUTATION_ART } from './sprites/cropMutations';
 import { ROTATE_ICON } from './sprites/rotateIcon';
 import { RUG_ART } from './sprites/rugs';
 import { CUSTOMER_SANTA_ART } from './sprites/customerClothing';
@@ -64,6 +65,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...CROP_MUTATION_ART,
   ...SEED_PACKET_ART,
   ...SEED_PANEL_ART,
   ...SEED_POUCH_ART,
