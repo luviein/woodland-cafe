@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDevCommands, runCommand } from './commands';
+import { cropRemaining, plantCrop, tendCrop } from '../logic/garden';
 import type { Score } from '../logic/types';
 import { createNewGame, type GameState } from '../logic/gameState';
 import { noDevActions, type DevActions } from './devActions';
@@ -45,6 +46,59 @@ describe('runCommand', () => {
     const { commands } = setup();
     const text = runCommand(commands, 'help');
     for (const name of Object.keys(commands)) expect(text).toContain(name);
+  });
+});
+
+describe('garden commands', () => {
+  const gardenSetup = () => {
+    let state = createNewGame();
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(), game: { get: () => state, set: next => { state = next; } },
+    });
+    return { commands, get: () => state, set: (next: GameState) => { state = next; } };
+  };
+
+  it('adds seeds with a default count and validates crops, counts and locks', () => {
+    const { commands, get } = gardenSetup();
+    expect(runCommand(commands, 'seed MUSHROOM')).toBe('Mushroom seeds = 1');
+    runCommand(commands, 'seed mushroom 4');
+    expect(get().garden.seeds.mushroom).toBe(5);
+    const before = get();
+    for (const input of ['seed', 'seed bread', 'seed mushroom 0', 'seed mushroom -1',
+      'seed mushroom 1.5', 'seed mushroom Infinity', 'seed mushroom 9007199254740992', 'seed mushroom 1 extra']) {
+      expect(runCommand(commands, input)).toMatch(/Usage/);
+      expect(get()).toBe(before);
+    }
+    expect(runCommand(commands, 'seed tomato')).toMatch(/Unlock tomato first/);
+    runCommand(commands, 'unlock tomato');
+    runCommand(commands, 'seed tomato 2');
+    expect(get().garden.seeds.tomato).toBe(2);
+    expect(get().leaves).toBe(before.leaves);
+  });
+
+  it('rejects seed totals that cannot be saved safely', () => {
+    const { commands, get } = gardenSetup();
+    runCommand(commands, `seed mushroom ${Number.MAX_SAFE_INTEGER}`);
+    expect(runCommand(commands, 'seed mushroom')).toBe('Too many seeds');
+    expect(get().garden.seeds.mushroom).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  it('skips watered timers but leaves harvesting, unwatered beds and stock alone', () => {
+    const { commands, get, set } = gardenSetup();
+    runCommand(commands, 'seed mushroom 2');
+    const now = Date.now();
+    set(tendCrop(plantCrop(plantCrop(get(), 0, 'mushroom'), 1, 'mushroom'), 0, now));
+    const before = get();
+    expect(runCommand(commands, 'grow extra')).toBe('Usage: grow');
+    expect(get()).toBe(before);
+    expect(runCommand(commands, 'grow')).toBe('1 watered crops ready to harvest');
+    expect(cropRemaining(get().garden.plots[0]!, Date.now())).toBe(0);
+    expect(get().garden.plots[1]).toBe(before.garden.plots[1]);
+    expect(get().garden.plots[2]).toBeNull();
+    expect(get().stock).toBe(before.stock);
+    const harvested = tendCrop(get(), 0, Date.now());
+    expect(harvested.stock.mushroom).toBe(before.stock.mushroom + 4);
+    expect(tendCrop(harvested, 0, Date.now())).toBe(harvested);
   });
 });
 

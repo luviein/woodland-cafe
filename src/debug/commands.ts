@@ -1,4 +1,5 @@
 import { CUSTOMER_ART } from '../art/spriteArt';
+import { CROPS, CROP_IDS } from '../data/crops';
 import { DESIGN_IDS, FURNITURE } from '../data/furniture';
 import { EMPLOYEE_ROLES, EMPLOYEES, type EmployeeRole } from '../data/employees';
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
@@ -225,6 +226,43 @@ export function createDevCommands(
         const n = count(value, 'leaves <n>');
         game().set({ ...game().get(), leaves: n });
         return `Wallet = ${n}`;
+      },
+    },
+
+    seed: {
+      usage: 'seed <mushroom|tomato|chilli> [n]',
+      description: 'Add seeds for free (default one); locked crops still need unlock',
+      run: args => {
+        const crop = CROP_IDS.find(id => id === args[0]?.toLowerCase());
+        const n = args[1] === undefined ? 1 : Number(args[1]);
+        if (!crop || args.length > 2 || !Number.isSafeInteger(n) || n <= 0) {
+          throw new Error('Usage: seed <mushroom|tomato|chilli> [n] (a positive safe whole number)');
+        }
+        const state = game().get();
+        if (!state.ingredients.includes(crop)) throw new Error(`Unlock ${crop} first: unlock ${crop}`);
+        const total = state.garden.seeds[crop] + n;
+        if (!Number.isSafeInteger(total)) throw new Error('Too many seeds');
+        game().set({ ...state, garden: { ...state.garden, seeds: { ...state.garden.seeds, [crop]: total } } });
+        return `${CROPS[crop].name} seeds = ${total}`;
+      },
+    },
+
+    grow: {
+      usage: 'grow',
+      description: 'Make all watered garden crops ready; harvest normally to collect them',
+      run: args => {
+        if (args.length) throw new Error('Usage: grow');
+        const state = game().get();
+        const now = Date.now();
+        let grown = 0;
+        const plots = state.garden.plots.map(plant => {
+          if (!plant || plant.wateredAt === null) return plant;
+          grown++;
+          // Keep the ordinary harvest path and reward; only skip the real-time wait.
+          return { ...plant, wateredAt: Math.max(0, now - CROPS[plant.crop].minutes * 60000) };
+        });
+        game().set({ ...state, garden: { ...state.garden, plots } });
+        return `${grown} watered crops ready to harvest`;
       },
     },
 
