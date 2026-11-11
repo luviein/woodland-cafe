@@ -732,6 +732,8 @@ Storage has Tables, Chairs, Decorations, Wall items and Rugs tabs, all visible b
 
 ### Garden — real-time farming
 
+Dev console testing shortcuts: `seed <mushroom|tomato|chilli> [n]` adds seeds for free (default one; positive safe whole numbers only). Locked crops still require their usual unlock. `grow` makes every watered crop ready immediately by moving its watering timestamp back by its growth duration; unwatered plants and empty beds stay unchanged. It grants no stock: harvest normally to test the animation and rewards.
+
 A labelled garden door on the cafe back wall opens a separate Garden map. Visiting pauses the cafe scene (customers, player, orders and clock); returning through the garden door resumes that same day. It never starts another cafe day. The door is unavailable during the guided tutorial or another cafe overlay.
 
 The world map also has a small planted Garden landmark and signpost beside the cafe, connected by a dotted path. It opens the garden between cafe days without starting or advancing a day. A map visit returns to the world map with Garden highlighted; a cafe-door visit returns to the paused cafe. The return control says Map or Cafe to match the entrance. Map gardening saves normally between days and uses the same plots and seed stock as the cafe door.
