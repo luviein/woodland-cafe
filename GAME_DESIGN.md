@@ -732,6 +732,8 @@ Storage has Tables, Chairs, Decorations, Wall items and Rugs tabs, all visible b
 
 ### Garden — real-time farming
 
+The harvested mushroom's overhead icon has a soft golden pixel aura behind it during the half-second display. The aura follows the icon, fades out as it is put away, and disappears on cancellation or leaving. Keep the mushroom's colours and outline readable. The sprite gallery uses the same aura and fade.
+
 Dev console testing shortcuts: `seed <mushroom|tomato|chilli> [n]` adds seeds for free (default one; positive safe whole numbers only). Locked crops still require their usual unlock. `grow` makes every watered crop ready immediately by moving its watering timestamp back by its growth duration; unwatered plants and empty beds stay unchanged. It grants no stock: harvest normally to test the animation and rewards.
 
 A labelled garden door on the cafe back wall opens a separate Garden map. Visiting pauses the cafe scene (customers, player, orders and clock); returning through the garden door resumes that same day. It never starts another cafe day. The door is unavailable during the guided tutorial or another cafe overlay.
