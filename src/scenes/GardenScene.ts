@@ -4,7 +4,7 @@ import { GardenWorkEffect } from '../ui/GardenWorkEffect';
 import { setFacing } from '../ui/sprites';
 import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { SeedPouchPanel } from '../ui/SeedPouchPanel';
-import { gardenAnimationPose, harvestDisplayPose } from '../art/gardenAnimation';
+import { gardenAnimationPose, harvestDisplayPose, HARVEST_AURA, harvestAuraOpacity } from '../art/gardenAnimation';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { CROPS, GARDEN_PLOTS, type CropId } from '../data/crops';
@@ -26,6 +26,7 @@ const cropArt = (crop: CropId): ArtName => `garden${crop[0].toUpperCase()}${crop
 export class GardenScene extends Phaser.Scene {
   private harvestDisplay: HarvestDisplay | null = null;
   private heldHarvest!: Phaser.GameObjects.Image;
+  private harvestAura!: Phaser.GameObjects.Graphics;
   private harvestOffset = { x: 0, y: 0 };
   private work: GardenWork | null = null;
   private workEffect!: GardenWorkEffect;
@@ -101,8 +102,11 @@ export class GardenScene extends Phaser.Scene {
     this.workEffect = new GardenWorkEffect(this);
     arrangeable(this, 'garden', 'actionEffect', this.workOffset, this.workEffect);
     this.harvestOffset = point('harvestDisplay', 0, 0);
+    this.harvestAura = this.add.graphics().setDepth(609).setVisible(false);
+    for (const pixel of HARVEST_AURA) this.harvestAura.fillStyle(0xffd46b, pixel.alpha).fillRect(pixel.x, pixel.y, 1, 1);
     this.heldHarvest = addArt(this, 0, 0, 'mushroom').setVisible(false).setDepth(610);
-    arrangeable(this, 'garden', 'harvestDisplay', this.harvestOffset, this.heldHarvest);
+    arrangeable(this, 'garden', 'harvestDisplay', this.harvestOffset, this.heldHarvest, this.harvestAura,
+      ...sizeBox(this, 0, 0, 30, 30));
     const hintAt = point('hint', 344, 344);
     this.hint = this.add.text(hintAt.x, hintAt.y, 'Open the seed pouch on the table to choose seeds, then plant and water.', {
       ...TEXT.label, fontSize: '11px', align: 'center', wordWrap: { width: 520 }, stroke: css(COLORS.ink), strokeThickness: 3,
@@ -123,7 +127,7 @@ export class GardenScene extends Phaser.Scene {
     if (this.harvestDisplay) {
       this.harvestDisplay = stepHarvestDisplay(this.harvestDisplay, delta / 1000);
       if (this.harvestDisplay) this.showHarvestDisplay();
-      else { this.heldHarvest.setVisible(false); setFacing(this.sprite, null); }
+      else { this.heldHarvest.setVisible(false); this.harvestAura.setVisible(false); setFacing(this.sprite, null); }
       return;
     }
     const wasWalking = this.player.target !== null;
@@ -151,6 +155,7 @@ export class GardenScene extends Phaser.Scene {
   private cancelWork(): void {
     this.harvestDisplay = null;
     this.heldHarvest.setVisible(false);
+    this.harvestAura.setVisible(false);
     this.work = null;
     this.player = { ...this.player, target: null };
     this.workEffect.setVisible(false);
@@ -199,6 +204,9 @@ export class GardenScene extends Phaser.Scene {
       this.player.position.x + 12 + pose.item.x + this.harvestOffset.x,
       this.player.position.y + pose.item.y + this.harvestOffset.y,
     );
+    this.harvestAura.setPosition(this.heldHarvest.x, this.heldHarvest.y)
+      .setVisible(this.harvestDisplay.crop === 'mushroom')
+      .setAlpha(harvestAuraOpacity(this.harvestDisplay.secondsLeft));
   }
 
   private refresh(): void {

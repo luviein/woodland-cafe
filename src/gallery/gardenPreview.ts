@@ -1,5 +1,5 @@
 import { CROPS, CROP_IDS, type CropId } from '../data/crops';
-import { gardenAnimationPose, harvestDisplayPose } from '../art/gardenAnimation';
+import { gardenAnimationPose, harvestDisplayPose, HARVEST_AURA, harvestAuraOpacity } from '../art/gardenAnimation';
 import { spriteSize } from '../art/pixelSprite';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
 import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
@@ -47,7 +47,7 @@ export function createGardenPreviews(paint: Paint) {
   for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) paint(background, 'grass', (row + col) % 4, col * 48, row * 48, 3);
   paint(background, 'gardenSoil', 0, 24 * 3, 32 * 3, 3);
 
-  function draw(canvas: HTMLCanvasElement, action: GardenAction, progress: number, working: boolean, holding: boolean): void {
+  function draw(canvas: HTMLCanvasElement, action: GardenAction, progress: number, working: boolean, holding: boolean, secondsLeft: number): void {
     const ctx = canvas.getContext('2d')!, scale = 3, x = 48, y = 48;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(backdrop, 0, 0);
@@ -71,6 +71,12 @@ export function createGardenPreviews(paint: Paint) {
     }
     if (holding) {
       const display = harvestDisplayPose(size.height);
+      if (selectedCrop === 'mushroom') {
+        for (const pixel of HARVEST_AURA) {
+          ctx.fillStyle = `rgba(255,212,107,${pixel.alpha * harvestAuraOpacity(secondsLeft)})`;
+          ctx.fillRect((x + display.item.x + pixel.x) * scale, (y + display.item.y + pixel.y) * scale, scale, scale);
+        }
+      }
       drawAt(selectedCrop, 0, x + display.item.x, y + display.item.y);
     }
     canvas.dataset.phase = holding ? 'display' : working ? 'work' : 'idle';
@@ -86,7 +92,7 @@ export function createGardenPreviews(paint: Paint) {
       const duration = GARDEN_WORK_SECONDS[action] * 1000;
       const display = action === 'harvest' ? HARVEST_DISPLAY_SECONDS * 1000 : 0;
       const phase = elapsed % (duration + display + 600);
-      draw(canvas, action, Math.min(1, phase / duration), phase < duration, phase >= duration && phase < duration + display);
+      draw(canvas, action, Math.min(1, phase / duration), phase < duration, phase >= duration && phase < duration + display, (duration + display - phase) / 1000);
     });
   } };
 }

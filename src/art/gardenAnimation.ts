@@ -1,5 +1,14 @@
 import type { GardenAction } from '../logic/gardenWork';
 
+/** Layered translucent pixels soften the light without blurring the ingredient art. */
+export const HARVEST_AURA = Array.from({ length: 29 * 29 }, (_, i) => {
+  const x = i % 29 - 14, y = Math.floor(i / 29) - 14;
+  const distance = Math.sqrt(x * x + y * y);
+  return { x, y, alpha: Math.max(0, 1 - distance / 15) ** 2 * 0.55 };
+}).filter(pixel => pixel.alpha > 0);
+
+export const harvestAuraOpacity = (secondsLeft: number): number => Math.max(0, Math.min(1, secondsLeft / 0.18));
+
 /** Relative to the critter's centre line and container top; includes tall ears/antlers. */
 export function harvestDisplayPose(critterHeight: number) {
   return { item: { x: 0, y: 24 - critterHeight - 8 } };
