@@ -106,7 +106,7 @@ export class GardenScene extends Phaser.Scene {
     for (const pixel of HARVEST_AURA) this.harvestAura.fillStyle(0xffd46b, pixel.alpha).fillRect(pixel.x, pixel.y, 1, 1);
     this.heldHarvest = addArt(this, 0, 0, 'mushroom').setVisible(false).setDepth(610);
     arrangeable(this, 'garden', 'harvestDisplay', this.harvestOffset, this.heldHarvest, this.harvestAura,
-      ...sizeBox(this, 0, 0, 30, 30));
+      ...sizeBox(this, 0, 0, 38, 38));
     const hintAt = point('hint', 344, 344);
     this.hint = this.add.text(hintAt.x, hintAt.y, 'Open the seed pouch on the table to choose seeds, then plant and water.', {
       ...TEXT.label, fontSize: '11px', align: 'center', wordWrap: { width: 520 }, stroke: css(COLORS.ink), strokeThickness: 3,

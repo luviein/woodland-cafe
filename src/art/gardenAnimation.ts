@@ -1,10 +1,10 @@
 import type { GardenAction } from '../logic/gardenWork';
 
 /** Layered translucent pixels soften the light without blurring the ingredient art. */
-export const HARVEST_AURA = Array.from({ length: 29 * 29 }, (_, i) => {
-  const x = i % 29 - 14, y = Math.floor(i / 29) - 14;
+export const HARVEST_AURA = Array.from({ length: 37 * 37 }, (_, i) => {
+  const x = i % 37 - 18, y = Math.floor(i / 37) - 18;
   const distance = Math.sqrt(x * x + y * y);
-  return { x, y, alpha: Math.max(0, 1 - distance / 15) ** 2 * 0.55 };
+  return { x, y, alpha: Math.max(0, 1 - distance / 19) * 0.85 };
 }).filter(pixel => pixel.alpha > 0);
 
 export const harvestAuraOpacity = (secondsLeft: number): number => Math.max(0, Math.min(1, secondsLeft / 0.18));
