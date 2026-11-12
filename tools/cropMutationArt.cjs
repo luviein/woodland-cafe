@@ -27,12 +27,29 @@ function variant(sprite, mutation, planted, crop) {
     }) };
   }
   if (planted && crop === 'mushroom') {
-    // The base ellipses paint over their upper rim. Restore the silhouette's
-    // boundary before adding colour or snow, keeping the original 24px frame.
-    sprite = { ...sprite, frames: sprite.frames.map((frame, index) => index === 0 ? frame :
-      frame.map((row,y) => [...row].map((char,x) => char !== '.' &&
-        [[-1,0],[1,0],[0,-1],[0,1]].some(([dx,dy]) =>
-          (frame[y + dy]?.[x + dx] ?? '.') === '.') ? 'o' : char).join(''))) };
+    sprite = { ...sprite, frames: sprite.frames.map((frame, index) => {
+      if (index === 0) return frame;
+      const rows = frame.map(row => [...row].map(() => '.'));
+      const mushrooms = index === 1 ? [[12,17,3]] : index === 2 ? [[12,15,5]] : [[8,17,5],[17,14,5]];
+      for (const [cx,cy,radius] of mushrooms) {
+        // Explicit dome widths avoid the ellipse's one-pixel spikes. Draw a
+        // complete cap rim separately from its stem, including where they meet.
+        for (let y = cy + 1; y <= cy + 6; y++) for (let x = cx - 2; x <= cx + 2; x++) {
+          rows[y][x] = x === cx - 2 || x === cx + 2 || y === cy + 6 ? 'o' : 'c';
+        }
+        const widths = [radius - 2, radius - 1, radius, radius, radius, radius];
+        widths.forEach((half,dy) => {
+          const y = cy - 4 + dy;
+          for (let x = cx - half; x <= cx + half; x++) {
+            rows[y][x] = dy === 0 || dy === widths.length - 1 || x === cx - half || x === cx + half
+              ? 'o' : index === 3 ? 'r' : 's';
+          }
+        });
+        rows[cy - 2][cx - 2] = 'c';
+        rows[cy - 2][cx - 1] = 'c';
+      }
+      return rows.map(row => row.join(''));
+    }) };
   }
   const legend = Object.fromEntries(Object.entries(sprite.legend).map(([key, value]) => [key,
     value.startsWith('#') ? value : '#' + palette[value].toString(16).padStart(6, '0')]));
