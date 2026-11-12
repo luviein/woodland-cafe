@@ -18,9 +18,11 @@ function variant(sprite, mutation, planted, crop) {
       if (index < 2) return frame;
       const rows = frame.map(row => [...row]);
       // Ellipse extrema leave isolated-looking points. Flatten the exposed
-      // sides and bottoms, then close the rim without touching the main stalk.
+      // sides and bottoms, then close both sides of each rim. The inner
+      // extrema share the stalk's outline, but their coloured pixels must
+      // still be inset just like the exposed outer edges.
       for (const [x,y] of [[3,14], [21,18], [7,18], [17,22]]) rows[y][x] = '.';
-      for (const [x,y] of [[4,14], [20,18], [7,17], [17,21]]) rows[y][x] = 'o';
+      for (const [x,y] of [[4,14], [10,14], [14,18], [20,18], [7,17], [17,21]]) rows[y][x] = 'o';
       return rows.map(row => row.join(''));
     }) };
   }
