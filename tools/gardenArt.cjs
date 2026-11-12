@@ -1,5 +1,6 @@
 // Small native sprites; regeneration preserves the outlines and connected stems.
 const fs = require('fs');
+const polishCrop = require('./gardenCropShapes.cjs');
 const legend = { o: '#493026', d: '#684232', s: '#916044', h: '#b98157', g: '#3e6835', l: '#77a34d', r: '#bb4436', a: '#e8734e', c: '#f5d6a3', w: '#fff0ca' };
 function grid(w = 24, h = 24) { return Array.from({ length: h }, () => Array(w).fill('.')); }
 function rect(g, x, y, w, h, c) { for (let j=y;j<y+h;j++) for(let i=x;i<x+w;i++) if(g[j]?.[i]!==undefined)g[j][i]=c; }
@@ -30,13 +31,13 @@ for(const crop of ['mushroom','tomato','chilli']) {
     }
     frames.push(rows(g));
   }
-  art['garden'+crop[0].toUpperCase()+crop.slice(1)]={legend,frames};
+  art['garden'+crop[0].toUpperCase()+crop.slice(1)]=polishCrop({legend,frames},crop);
 }
-const door=grid();rect(door,3,0,18,24,'o');rect(door,5,2,14,22,'s');rect(door,6,3,12,1,'h');rect(door,7,5,10,10,'o');rect(door,8,6,8,8,'g');rect(door,10,8,4,1,'l');rect(door,11,7,2,5,'l');rect(door,6,17,12,1,'o');rect(door,15,18,2,2,'c');art.gardenDoor={legend,frames:[rows(door)]};
-const fence=grid(32,24);rect(fence,0,9,32,3,'o');rect(fence,0,10,32,1,'h');rect(fence,0,18,32,3,'o');rect(fence,0,19,32,1,'s');for(const x of [3,19]){rect(fence,x,4,7,20,'o');rect(fence,x+1,3,5,20,'s');rect(fence,x+2,4,1,18,'h');}art.gardenFence={legend,frames:[rows(fence)]};
+const door=grid();rect(door,3,0,18,24,'o');rect(door,5,2,14,22,'s');rect(door,6,3,12,1,'h');rect(door,7,5,10,10,'o');rect(door,8,6,8,8,'g');rect(door,10,8,4,1,'l');rect(door,11,7,2,5,'l');rect(door,6,17,12,1,'o');rect(door,15,18,2,2,'c');rect(door,3,23,18,1,'o');art.gardenDoor={legend,frames:[rows(door)]};
+const fence=grid(32,24);rect(fence,0,9,32,3,'o');rect(fence,0,10,32,1,'h');rect(fence,0,18,32,3,'o');rect(fence,0,19,32,1,'s');for(const x of [3,19]){rect(fence,x,4,7,20,'o');rect(fence,x+1,3,5,20,'s');rect(fence,x+2,4,1,18,'h');}for(const x of [3,19])rect(fence,x+1,3,5,1,'o');art.gardenFence={legend,frames:[rows(fence)]};
 const tools=[];
-const trowel=grid(16,16);rect(trowel,10,1,3,6,'o');rect(trowel,11,2,1,5,'h');rect(trowel,7,6,6,7,'o');rect(trowel,8,7,4,5,'v');rect(trowel,9,12,2,2,'o');rect(trowel,9,7,1,5,'w');tools.push(rows(trowel));
-const can=grid(16,16);rect(can,5,6,9,8,'o');rect(can,6,7,7,6,'b');rect(can,7,4,6,3,'o');rect(can,8,5,4,1,'b');rect(can,2,7,4,3,'o');rect(can,1,5,3,3,'o');rect(can,1,6,2,1,'v');rect(can,13,7,3,5,'o');rect(can,14,8,1,3,'b');tools.push(rows(can));
+const trowel=grid(16,16);rect(trowel,10,1,3,6,'o');rect(trowel,11,2,1,5,'h');rect(trowel,7,6,6,7,'o');rect(trowel,8,7,4,5,'v');rect(trowel,9,12,2,2,'o');rect(trowel,9,7,1,4,'w');rect(trowel,7,12,6,1,'.');rect(trowel,8,12,4,1,'o');rect(trowel,9,13,2,1,'o');tools.push(rows(trowel));
+const can=grid(16,16);rect(can,5,6,9,8,'o');rect(can,6,7,7,6,'b');rect(can,7,4,6,3,'o');rect(can,8,5,4,1,'b');rect(can,2,7,4,3,'o');rect(can,1,5,3,3,'o');rect(can,1,6,2,1,'v');rect(can,13,7,3,5,'o');rect(can,14,8,1,3,'.');tools.push(rows(can));
 const basket=grid(16,16);rect(basket,4,3,9,8,'o');rect(basket,5,4,7,6,'h');rect(basket,6,5,5,5,'.');rect(basket,2,8,13,6,'o');rect(basket,3,9,11,4,'h');rect(basket,4,10,9,1,'b');rect(basket,4,7,4,3,'r');rect(basket,9,7,3,3,'g');tools.push(rows(basket));
 art.gardenWorkTools={legend:{...legend,v:'#9cb9bc',b:'#6a9ba3'},frames:tools};
 const particles=[];for(const colour of ['h','v','w']){const p=grid(5,7);rect(p,2,1,1,1,colour);rect(p,1,2,3,3,colour);rect(p,2,5,1,1,colour);particles.push(rows(p));}

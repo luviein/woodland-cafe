@@ -13,44 +13,6 @@ const garden = load('src/art/sprites/garden.ts').GARDEN_ART;
 const palette = load('src/art/palette.ts').PALETTE;
 const art = {};
 function variant(sprite, mutation, planted, crop) {
-  if (planted && crop === 'tomato') {
-    sprite = { ...sprite, frames: sprite.frames.map((frame, index) => {
-      if (index < 2) return frame;
-      const rows = frame.map(row => [...row]);
-      // Ellipse extrema leave isolated-looking points. Flatten the exposed
-      // sides and bottoms, then close both sides of each rim. The inner
-      // extrema share the stalk's outline, but their coloured pixels must
-      // still be inset just like the exposed outer edges.
-      for (const [x,y] of [[3,14], [21,18], [7,18], [17,22]]) rows[y][x] = '.';
-      for (const [x,y] of [[4,14], [10,14], [14,18], [20,18], [7,17], [17,21]]) rows[y][x] = 'o';
-      return rows.map(row => row.join(''));
-    }) };
-  }
-  if (planted && crop === 'mushroom') {
-    sprite = { ...sprite, frames: sprite.frames.map((frame, index) => {
-      if (index === 0) return frame;
-      const rows = frame.map(row => [...row].map(() => '.'));
-      const mushrooms = index === 1 ? [[12,17,3]] : index === 2 ? [[12,15,5]] : [[8,17,5],[17,14,5]];
-      for (const [cx,cy,radius] of mushrooms) {
-        // Explicit dome widths avoid the ellipse's one-pixel spikes. Draw a
-        // complete cap rim separately from its stem, including where they meet.
-        for (let y = cy + 1; y <= cy + 6; y++) for (let x = cx - 2; x <= cx + 2; x++) {
-          rows[y][x] = x === cx - 2 || x === cx + 2 || y === cy + 6 ? 'o' : 'c';
-        }
-        const widths = [radius - 2, radius - 1, radius, radius, radius, radius];
-        widths.forEach((half,dy) => {
-          const y = cy - 4 + dy;
-          for (let x = cx - half; x <= cx + half; x++) {
-            rows[y][x] = dy === 0 || dy === widths.length - 1 || x === cx - half || x === cx + half
-              ? 'o' : index === 3 ? 'r' : 's';
-          }
-        });
-        rows[cy - 2][cx - 2] = 'c';
-        rows[cy - 2][cx - 1] = 'c';
-      }
-      return rows.map(row => row.join(''));
-    }) };
-  }
   const legend = Object.fromEntries(Object.entries(sprite.legend).map(([key, value]) => [key,
     value.startsWith('#') ? value : '#' + palette[value].toString(16).padStart(6, '0')]));
   Object.assign(legend, { Z: '#fff4d6', H: '#246342', L: '#62a353', B: '#e24a42',
@@ -73,15 +35,6 @@ function variant(sprite, mutation, planted, crop) {
       return key;
     }).join(''));
     const rows = frame.map(row => [...row]);
-    if (planted && crop === 'chilli') {
-      // A stepped shoulder and tapered tip read as peppers instead of rectangles.
-      for (const [x, y] of [[7,14], [17,18]]) {
-        const pepper = ['ooooo', 'ogrro', 'oraro', 'orrro', '.orro', '.oro.', '..o..'];
-        for (let dy = 0; dy < pepper.length; dy++) for (let dx = 0; dx < 5; dx++) {
-          rows[y - 2 + dy][x - 2 + dx] = pepper[dy][dx];
-        }
-      }
-    }
     // Find each fruit separately so highlights and snow follow its own contour.
     const source = rows.map(row => [...row]);
     const seen = new Set();
