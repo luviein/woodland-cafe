@@ -13,6 +13,14 @@ const garden = load('src/art/sprites/garden.ts').GARDEN_ART;
 const palette = load('src/art/palette.ts').PALETTE;
 const art = {};
 function variant(sprite, mutation, planted, crop) {
+  if (planted && crop === 'mushroom') {
+    // The base ellipses paint over their upper rim. Restore the silhouette's
+    // boundary before adding colour or snow, keeping the original 24px frame.
+    sprite = { ...sprite, frames: sprite.frames.map((frame, index) => index === 0 ? frame :
+      frame.map((row,y) => [...row].map((char,x) => char !== '.' &&
+        [[-1,0],[1,0],[0,-1],[0,1]].some(([dx,dy]) =>
+          (frame[y + dy]?.[x + dx] ?? '.') === '.') ? 'o' : char).join(''))) };
+  }
   const legend = Object.fromEntries(Object.entries(sprite.legend).map(([key, value]) => [key,
     value.startsWith('#') ? value : '#' + palette[value].toString(16).padStart(6, '0')]));
   Object.assign(legend, { Z: '#fff4d6', H: '#246342', L: '#62a353', B: '#e24a42',
@@ -83,12 +91,13 @@ function variant(sprite, mutation, planted, crop) {
       // Keep holly on the mushroom's rim, joined to the cap rather than floating.
       if (crop === 'mushroom') {
         const top = source.findIndex(row => row.includes('r'));
-        const cx = source[top].indexOf('r') + 2;
-        for (const [dx,dy,colour] of [[-1,-1,'H'],[0,-1,'L'],[1,-1,'H'],[0,0,'B']]) {
-          rows[top + dy][cx + dx] = colour;
+        const cx = Math.floor((source[top].indexOf('r') + source[top].lastIndexOf('r')) / 2);
+        for (const [dx,dy,colour] of [[-1,0,'H'],[0,0,'L'],[1,0,'H'],[0,1,'B']]) {
+          // Holly sits inside the cap; it must never replace the dark rim.
+          if (source[top + dy]?.[cx + dx] !== 'o' && source[top + dy]?.[cx + dx] !== '.') {
+            rows[top + dy][cx + dx] = colour;
+          }
         }
-        // Join the sprig to a pointed cap without trapping a transparent pixel.
-        if (rows[top][cx - 1] === '.') rows[top][cx - 1] = 'Z';
       }
     }
     return rows.map(row => row.join(''));
