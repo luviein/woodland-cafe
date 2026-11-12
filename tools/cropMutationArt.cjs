@@ -13,6 +13,17 @@ const garden = load('src/art/sprites/garden.ts').GARDEN_ART;
 const palette = load('src/art/palette.ts').PALETTE;
 const art = {};
 function variant(sprite, mutation, planted, crop) {
+  if (planted && crop === 'tomato') {
+    sprite = { ...sprite, frames: sprite.frames.map((frame, index) => {
+      if (index < 2) return frame;
+      const rows = frame.map(row => [...row]);
+      // Ellipse extrema leave isolated-looking points. Flatten the exposed
+      // sides and bottoms, then close the rim without touching the main stalk.
+      for (const [x,y] of [[3,14], [21,18], [7,18], [17,22]]) rows[y][x] = '.';
+      for (const [x,y] of [[4,14], [20,18], [7,17], [17,21]]) rows[y][x] = 'o';
+      return rows.map(row => row.join(''));
+    }) };
+  }
   if (planted && crop === 'mushroom') {
     // The base ellipses paint over their upper rim. Restore the silhouette's
     // boundary before adding colour or snow, keeping the original 24px frame.
