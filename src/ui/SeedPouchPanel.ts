@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { CROP_IDS, CROPS, type CropId } from '../data/crops';
-import type { Garden } from '../logic/garden';
+import { CROP_IDS, CROPS, type CropId, type SeedType } from '../data/crops';
+import { seedCount, type Garden } from '../logic/garden';
 import type { IngredientId } from '../data/ingredients';
 import type { ArtName } from '../art/spriteArt';
 import { getGameState } from '../scenes/gameStore';
-import { arrangeablePanel } from '../layout/arrangeable';
+import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
 import { addArt } from './art';
 import { Button } from './Button';
@@ -14,9 +14,15 @@ import { COLORS, TEXT } from './theme';
 /** An inventory picker; choosing a packet never spends or plants a seed. */
 export class SeedPouchPanel extends Phaser.GameObjects.Container {
   private cards: { button: Button; count: Phaser.GameObjects.Text; status: Phaser.GameObjects.Text; slot: Phaser.GameObjects.Image; packet: Phaser.GameObjects.Image }[] = [];
+  private seed: SeedType;
+  private description: Phaser.GameObjects.Text;
+  private garden!: Garden;
+  private ingredients: readonly IngredientId[] = [];
+  private tabs: { seed: SeedType; button: Button }[] = [];
 
-  constructor(scene: Phaser.Scene, selected: CropId, choose: (crop: CropId) => void, close: () => void) {
+  constructor(scene: Phaser.Scene, private readonly selected: CropId, choose: (crop: CropId, seed: SeedType) => void, close: () => void, private readonly selectedSeed: SeedType = 'normal') {
     super(scene, 0, 0);
+    this.seed = selectedSeed;
     scene.add.existing(this);
     this.setDepth(10000).setName('seedPouchPanel');
     this.add(scene.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.55).setOrigin(0).setInteractive());
@@ -26,13 +32,25 @@ export class SeedPouchPanel extends Phaser.GameObjects.Container {
     // The supplied decorative frame keeps its shaped edge and carved header.
     // Inventory samples were cleared in the import script, so counts stay live.
     panel.add(addArt(scene, 0, 0, 'seedPouchFrame').setScale(2));
-    panel.add(scene.add.text(0, -56, 'Choose a packet for planting', { ...TEXT.body, fontSize: '11px' }).setOrigin(0.5));
+    this.description = scene.add.text(0, -56, '', { ...TEXT.body, fontSize: '11px' }).setOrigin(0.5);
+    panel.add(this.description);
+    (['normal', 'christmas'] as const).forEach((seed, i) => {
+      const at = layoutPoint('seedPouch', `tab.${seed}`, { x: i === 0 ? -76 : 76, y: -80 });
+      const tab = new Button(scene, at.x, at.y, 136, 22, seed === 'normal' ? 'Normal' : 'Christmas', COLORS.book, () => {
+        this.seed = seed;
+        this.refresh(this.garden, this.ingredients);
+      });
+      (tab.getAt(1) as Phaser.GameObjects.Text).setFontSize('12px');
+      panel.add(tab);
+      this.tabs.push({ seed, button: tab });
+      arrangeable(scene, 'seedPouch', `tab.${seed}`, at, tab);
+    });
     const closeButton = new Button(scene, 210, -110, 36, 36, '', COLORS.reset, close);
     (closeButton.getAt(0) as Phaser.GameObjects.Rectangle).setVisible(false);
     panel.add(closeButton); // Its hit area sits over the reference's drawn X.
     CROP_IDS.forEach((crop, i) => {
       const x = (i - 1) * 142;
-      const button = new Button(scene, x, 30, 124, 148, '', 0xffe8bd, () => choose(crop));
+      const button = new Button(scene, x, 30, 124, 148, '', 0xffe8bd, () => choose(crop, this.seed));
       (button.getAt(0) as Phaser.GameObjects.Rectangle).setVisible(false);
       const slot = addArt(scene, 0, 0, 'seedPouchCard').setScale(2);
       button.addAt(slot, 0);
@@ -52,13 +70,16 @@ export class SeedPouchPanel extends Phaser.GameObjects.Container {
   }
 
   refresh(garden: Garden, ingredients: readonly IngredientId[]): void {
+    this.garden = garden; this.ingredients = ingredients;
+    for (const tab of this.tabs) tab.button.setAlpha(tab.seed === this.seed ? 1 : 0.6);
+    this.description.setText(this.seed === 'normal' ? 'Normal seeds: rare Golden or seasonal crops' : 'Christmas seeds: guaranteed Christmas crop');
     CROP_IDS.forEach((crop, i) => {
       const owned = ingredients.includes(crop), card = this.cards[i];
       card.button.setEnabled(owned);
       card.slot.setAlpha(owned ? 1 : 0.65);
       card.packet.setAlpha(owned ? 1 : 0.45);
-      card.count.setText(owned ? 'x' + garden.seeds[crop] : 'Locked');
-      if (!owned) card.status.setText('Unlock at Specialty');
+      card.count.setText(owned ? 'x' + seedCount(garden, crop, this.seed) : 'Locked');
+      card.status.setText(!owned ? 'Unlock at Specialty' : crop === this.selected && this.seed === this.selectedSeed ? 'Selected' : '');
     });
   }
 }

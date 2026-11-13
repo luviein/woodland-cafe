@@ -7,8 +7,9 @@ import { SeedPouchPanel } from '../ui/SeedPouchPanel';
 import { gardenAnimationPose, harvestDisplayPose, HARVEST_AURA, harvestAuraOpacity } from '../art/gardenAnimation';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { CROPS, GARDEN_PLOTS, type CropId } from '../data/crops';
-import { cropRemaining, cropStage } from '../logic/garden';
+import { CROPS, GARDEN_PLOTS, type CropId, type SeedType } from '../data/crops';
+import { activeCropEvent, cropArtName, cropName, cropRemaining, cropStage, harvestYield, seedCount } from '../logic/garden';
+import { devSettings } from '../debug/devSettings';
 import { createMover, stepMover, walkToward, type Mover } from '../logic/outdoor';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, sizeBox } from '../layout/arrangeable';
@@ -19,8 +20,6 @@ import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGardenGameState, watchGameState } from './gameStore';
 import { SPRITE_ART, type ArtName } from '../art/spriteArt';
-
-const cropArt = (crop: CropId): ArtName => `garden${crop[0].toUpperCase()}${crop.slice(1)}` as ArtName;
 
 /** A separate visit: FloorScene stays paused, so returning resumes its live orders. */
 export class GardenScene extends Phaser.Scene {
@@ -33,6 +32,7 @@ export class GardenScene extends Phaser.Scene {
   private workOffset = { x: 0, y: 0 };
   private from: 'cafe' | 'map' = 'map';
   private selected: CropId = 'mushroom';
+  private selectedSeed: SeedType = 'normal';
   private pouchPanel: SeedPouchPanel | null = null;
   private selectedLabel!: Phaser.GameObjects.Text;
   private plots: { bed: Phaser.GameObjects.Image; crop: Phaser.GameObjects.Image; status: Phaser.GameObjects.Text }[] = [];
@@ -47,7 +47,7 @@ export class GardenScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.harvestDisplay = null; this.work = null; this.selected = 'mushroom'; this.pouchPanel = null; this.plots = [];
+    this.harvestDisplay = null; this.work = null; this.selected = 'mushroom'; this.selectedSeed = 'normal'; this.pouchPanel = null; this.plots = [];
     const point = (name: string, x: number, y: number) => layoutPoint('garden', name, { x, y });
     const groundAt = point('ground', 0, 0);
     const ground = this.add.renderTexture(groundAt.x, groundAt.y, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
@@ -141,7 +141,7 @@ export class GardenScene extends Phaser.Scene {
 
   private tend(index: number): void {
     if (this.pouchPanel || this.harvestDisplay || this.work?.index === index) return;
-    const state = getGameState(this), work = startGardenWork(state, index, this.selected, Date.now());
+    const state = getGameState(this), work = startGardenWork(state, index, this.selected, Date.now(), this.selectedSeed);
     this.cancelWork();
     if (!work) {
       this.hint.setText(state.garden.plots[index] ? 'Still growing. Come back when it is ready.' : 'No seeds for this crop. Visit the Marketplace Seeds stall.');
@@ -169,15 +169,17 @@ export class GardenScene extends Phaser.Scene {
     const stepped = stepGardenWork(work, this.player, seconds);
     if (stepped.finished) {
       this.cancelWork();
-      const state = getGameState(this), next = finishGardenWork(state, work, Date.now());
+      const state = getGameState(this), roll = Math.random();
+      const next = finishGardenWork(state, work, Date.now(), activeCropEvent(new Date(), !!devSettings.allSeasons), roll);
       if (next === state) { this.hint.setText('That bed changed. Choose it again.'); return; }
       setGardenGameState(this, next);
       if (work.action === 'harvest') {
-        this.harvestDisplay = { crop: work.crop, secondsLeft: HARVEST_DISPLAY_SECONDS };
+        this.harvestDisplay = { crop: work.crop, variant: work.variant, secondsLeft: HARVEST_DISPLAY_SECONDS };
         this.showHarvestDisplay();
       }
       this.hint.setText(work.action === 'plant' ? 'Planted! Tap this bed to water it.' : work.action === 'water'
-        ? 'Watered! Your crop keeps growing while you are away.' : `Harvested ${CROPS[work.crop].yield} ${CROPS[work.crop].name} into your stock.`);
+        ? 'Watered! Your crop keeps growing while you are away.'
+        : `${harvestYield(work.crop, roll) === 8 ? 'Double harvest! ' : ''}Harvested ${harvestYield(work.crop, roll)} ${cropName(work.crop, work.variant)}${work.variant === 'ordinary' ? ' into your stock.' : '. Saved with your special crops.'}`);
       return;
     }
     this.work = stepped.work;
@@ -200,7 +202,7 @@ export class GardenScene extends Phaser.Scene {
     for (const image of this.sprite.list) if (image instanceof Phaser.GameObjects.Image) {
       image.setFrame(viewFrame(VIEW.front)); image.y = 24;
     }
-    this.heldHarvest.setTexture(artKey(this.harvestDisplay.crop), 0).setVisible(true).setPosition(
+    this.heldHarvest.setTexture(artKey(cropArtName(this.harvestDisplay.crop, this.harvestDisplay.variant) as ArtName), 0).setVisible(true).setPosition(
       this.player.position.x + 12 + pose.item.x + this.harvestOffset.x,
       this.player.position.y + pose.item.y + this.harvestOffset.y,
     );
@@ -211,28 +213,29 @@ export class GardenScene extends Phaser.Scene {
 
   private refresh(): void {
     const state = getGameState(this), now = Date.now();
-    this.selectedLabel.setText(`${CROPS[this.selected].name} seeds: x${state.garden.seeds[this.selected]}  |  Choose from the pouch`);
+    this.selectedLabel.setText(`${this.selectedSeed === 'christmas' ? 'Christmas ' : ''}${CROPS[this.selected].name} seeds: x${seedCount(state.garden, this.selected, this.selectedSeed)}  |  Choose from the pouch`);
     this.pouchPanel?.refresh(state.garden, state.ingredients);
     this.plots.forEach(({ crop, status }, i) => {
       const plant = state.garden.plots[i];
       crop.setVisible(plant !== null);
       if (!plant) { status.setText('Empty bed'); return; }
-      crop.setTexture(artKey(cropArt(plant.crop)), cropStage(plant, now));
+      crop.setTexture(artKey(cropArtName(plant.crop, plant.variant, true) as ArtName), cropStage(plant, now));
       const seconds = Math.ceil(cropRemaining(plant, now) / 1000);
       const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-      status.setText(`${CROPS[plant.crop].name}\n${plant.wateredAt === null ? 'Tap to water' : seconds === 0 ? 'Ready — tap to harvest' : time}`);
+      status.setText(`${cropName(plant.crop, plant.variant)}\n${plant.wateredAt === null ? 'Tap to water' : seconds === 0 ? 'Ready — tap to harvest' : time}`);
     });
   }
 
   private openPouch(): void {
     if (this.pouchPanel || this.harvestDisplay) return;
     this.cancelWork();
-    this.pouchPanel = new SeedPouchPanel(this, this.selected, crop => {
+    this.pouchPanel = new SeedPouchPanel(this, this.selected, (crop, seed) => {
       this.selected = crop;
+      this.selectedSeed = seed;
       this.hint.setText(`${CROPS[crop].name}: tap an empty bed to plant, then tap again to water.`);
       this.refresh();
       this.closePouch();
-    }, () => this.closePouch());
+    }, () => this.closePouch(), this.selectedSeed);
   }
 
   private closePouch(): void {

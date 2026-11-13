@@ -32,3 +32,31 @@ it('saves garden work against the pre-day checkpoint, then resumes and saves the
   endCafeDay(owner);
   expect(loadGame(slot.read()!)).toEqual({ ok: true, state: getGameState(owner) });
 });
+
+it('immediately saves seasonal packets, planted outcomes and double special harvests during a cafe day', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  const beforeDay = buySeed({ ...createNewGame(), leaves: 20 }, 'mushroom', 'christmas', 'christmas');
+  continueGame(owner, beforeDay);
+  beginCafeDay(owner);
+  setGameState(owner, { ...beforeDay, day: 2, leaves: 99, stock: { ...beforeDay.stock, mushroom: 1 } });
+  setGardenGameState(owner, plantCrop(getGameState(owner), 0, 'mushroom', 'christmas'));
+  const planted = loadGame(slot.read()!);
+  expect(planted.ok && planted.state.garden.plots[0]?.variant).toBe('christmas');
+  expect(planted.ok && planted.state.garden.seasonalSeeds.mushroom).toBe(0);
+  setGardenGameState(owner, tendCrop(getGameState(owner), 0, 1000));
+  setGardenGameState(owner, tendCrop(getGameState(owner), 0, 301000, 0));
+  const saved = loadGame(slot.read()!);
+  expect(saved.ok).toBe(true);
+  if (!saved.ok) return;
+  expect(saved.state.day).toBe(1);
+  expect(saved.state.leaves).toBe(15);
+  expect(saved.state.stock).toEqual(beforeDay.stock);
+  expect(saved.state.garden.harvests.christmas.mushroom).toBe(8);
+  expect(saved.state.garden.plots[0]).toBeNull();
+  const savedText = slot.read();
+  setGardenGameState(owner, tendCrop(getGameState(owner), 0, 301000, 0));
+  expect(slot.read()).toBe(savedText);
+});

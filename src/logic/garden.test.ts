@@ -16,7 +16,7 @@ describe('real-time garden', () => {
     const state = planted();
     expect(state.leaves).toBe(19);
     expect(state.garden.seeds.mushroom).toBe(0);
-    expect(state.garden.plots[0]).toEqual({ crop: 'mushroom', wateredAt: null });
+    expect(state.garden.plots[0]).toEqual({ crop: 'mushroom', variant: 'ordinary', wateredAt: null });
     expect(plantCrop(state, 1, 'mushroom')).toBe(state);
     const stocked = buySeed(state, 'mushroom');
     expect(plantCrop(stocked, 0, 'mushroom')).toBe(stocked);

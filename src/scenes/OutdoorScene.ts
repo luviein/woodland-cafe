@@ -1,5 +1,5 @@
-import { CROP_IDS, CROPS } from '../data/crops';
-import { buySeed, canBuySeed } from '../logic/garden';
+import { CROP_IDS, CROPS, type SeedType } from '../data/crops';
+import { activeCropEvent, buySeed, canBuySeed, seedCount, seedPrice } from '../logic/garden';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
@@ -411,11 +411,15 @@ export class OutdoorScene extends Phaser.Scene {
   private shopRows(id: ShopId): ShopRowView[] {
     const state = getGameState(this);
     if (id === 'seeds') {
-      return CROP_IDS.map(crop => ({
+      const event = activeCropEvent(new Date(), !!devSettings.allSeasons);
+      return (['normal', 'christmas'] as SeedType[]).flatMap(seed => CROP_IDS.map(crop => ({
         name: CROPS[crop].name,
-        detail: state.ingredients.includes(crop) ? `🍃${CROPS[crop].seedPrice}  x${state.garden.seeds[crop]}` : 'Unlock at Specialty',
-        buttons: [{ label: '+1', enabled: canBuySeed(state, crop), onPress: () => setGameState(this, buySeed(getGameState(this), crop)) }],
-      }));
+        detail: !state.ingredients.includes(crop) ? 'Unlock at Specialty'
+          : seed === 'christmas' && !event ? 'Christmas: December'
+          : `🍃${seedPrice(crop, seed)} ${seed === 'christmas' ? 'Christmas ' : ''}x${seedCount(state.garden, crop, seed)}`,
+        buttons: [{ label: '+1', enabled: canBuySeed(state, crop, seed, event), onPress: () =>
+          setGameState(this, buySeed(getGameState(this), crop, seed, activeCropEvent(new Date(), !!devSettings.allSeasons))) }],
+      })));
     }
     if (id === 'specialty') {
       // Every unlockable stays listed once bought, so the rows keep their
