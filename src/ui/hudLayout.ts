@@ -18,11 +18,18 @@ export function notesButton(): { x: number; y: number; size: number } {
   return { ...layoutPoint('hud', 'notes', { x: speaker.x + speaker.size + 4, y: speaker.y }), size: SIZE };
 }
 
+/** The basket icon sits beside the speaker and notes without crowding footer hints. */
+export function inventoryButton(): { x: number; y: number; width: number; height: number } {
+  const notes = notesButton();
+  return { ...layoutPoint('hud', 'inventory', { x: notes.x + notes.size + 4, y: notes.y }), width: SIZE, height: SIZE };
+}
+
 /**
  * Story boxes along the bottom start here: right of both buttons while
  * they're in the bottom-left corner, else at the screen's own margin.
  */
 export function bottomBoxLeft(): number {
-  const right = Math.max(...[speakerButton(), notesButton()].filter((b) => b.y > BASE_HEIGHT - 70 && b.x < 160).map((b) => b.x + b.size / 2 + 8), 8);
+  const inventory = inventoryButton();
+  const right = Math.max(...[speakerButton(), notesButton(), { ...inventory, size: inventory.width }].filter((b) => b.y > BASE_HEIGHT - 70 && b.x < 160).map((b) => b.x + b.size / 2 + 8), 8);
   return right;
 }

@@ -33,7 +33,8 @@ export function mountDevConsole(game: Phaser.Game): void {
   devActions.arrange = () => arrange.toggle();
   devActions.goto = (place) => {
     // Overlays included (prep, summary): a clean jump, like a fresh visit.
-    for (const scene of game.scene.getScenes(true)) game.scene.stop(scene.scene.key);
+    // Keep the persistent HUD: jumping places must not remove notes or inventory.
+    for (const scene of game.scene.getScenes(true)) if (scene.scene.key !== 'HudScene') game.scene.stop(scene.scene.key);
     if (place === 'map') {
       const request: WorldMapRequest = { current: 'cafe' };
       game.scene.start('WorldMapScene', request);

@@ -4,9 +4,11 @@ import { volumeLabel } from '../audio/soundSettings';
 import { addArt } from '../ui/art';
 import { Button } from '../ui/Button';
 import { NotesPanel } from '../ui/NotesPanel';
-import { notesButton as notesButtonAt, speakerButton } from '../ui/hudLayout';
+import { InventoryPanel } from '../ui/InventoryPanel';
+import inventoryWords from '../data/texts/inventory.json';
+import { inventoryButton as inventoryButtonAt, notesButton as notesButtonAt, speakerButton } from '../ui/hudLayout';
 import { arrangeable } from '../layout/arrangeable';
-import { watchGameState } from './gameStore';
+import { getGameState, watchGameState } from './gameStore';
 import { COLORS, TEXT } from '../ui/theme';
 
 /** The volume panel: opening up and to the right of the speaker button. */
@@ -30,6 +32,9 @@ export class HudScene extends Phaser.Scene {
   private label!: Phaser.GameObjects.Text;
   /** Grandma's notes while open, and the scenes paused underneath meanwhile. */
   private notes: { panel: NotesPanel; paused: string[] } | null = null;
+  private inventory: { panel: InventoryPanel; paused: string[] } | null = null;
+  private inventoryButton!: Button;
+  private closingInventory = false;
 
   constructor() {
     super('HudScene');
@@ -48,10 +53,18 @@ export class HudScene extends Phaser.Scene {
     const notesButton = new Button(this, notesAt.x, notesAt.y, notesAt.size, notesAt.size, '?', COLORS.book, () =>
       this.toggleNotes(),
     );
-    watchGameState(this, (state) => notesButton.setVisible(state.tutorial === 'farewell' || state.tutorial === 'done'));
+    const inventoryAt = inventoryButtonAt();
+    this.inventoryButton = new Button(this, inventoryAt.x, inventoryAt.y, inventoryAt.width, inventoryAt.height,
+      '', COLORS.book, () => this.toggleInventory()).setIcon(addArt(this, 0, 0, 'gardenWorkTools', 2)).setVisible(false);
+    this.inventoryButton.setName(inventoryWords.button);
+    watchGameState(this, (state) => {
+      notesButton.setVisible(state.tutorial === 'farewell' || state.tutorial === 'done');
+      this.inventory?.panel.refresh(state);
+    });
     // Esc closes the notes (the game underneath is paused, so it won't hear it).
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && this.notes) this.toggleNotes();
+      else if (event.key === 'Escape' && this.inventory) this.toggleInventory();
     };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
 
@@ -59,6 +72,7 @@ export class HudScene extends Phaser.Scene {
     // Arrange mode: the corner buttons, on every screen; the volume panel goes with the speaker.
     arrangeable(this, 'hud', 'speaker', icon, speaker, this.panel);
     arrangeable(this, 'hud', 'notes', notesAt, notesButton);
+    arrangeable(this, 'hud', 'inventory', inventoryAt, this.inventoryButton);
     // A tap anywhere else closes the panel. (Scene-wide: it hears taps
     // even when they land on the scene below.)
     this.input.on(Phaser.Input.Events.POINTER_DOWN, (_p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
@@ -71,11 +85,38 @@ export class HudScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, stop);
   }
 
+  update(): void {
+    const playing = this.scene.manager.getScenes(true).some(scene =>
+      !['HudScene', 'BootScene', 'TitleScene'].includes(scene.scene.key));
+    this.inventoryButton.setVisible(playing && getGameState(this).tutorial === 'done' && !this.notes && !this.inventory);
+  }
+
+  private toggleInventory(): void {
+    if (this.closingInventory || this.notes) return;
+    if (this.inventory) {
+      this.closingInventory = true;
+      const inventory = this.inventory;
+      // Resume after the input event so closing cannot also click or leave the map below.
+      this.time.delayedCall(0, () => {
+        inventory.panel.destroy();
+        for (const key of inventory.paused) if (this.scene.isPaused(key)) this.scene.resume(key);
+        this.inventory = null;
+        this.closingInventory = false;
+      });
+      return;
+    }
+    this.panel.setVisible(false);
+    const paused = this.scene.manager.getScenes(true).filter(scene => scene !== this).map(scene => scene.scene.key);
+    for (const key of paused) this.scene.pause(key);
+    this.inventory = { panel: new InventoryPanel(this, () => this.toggleInventory()), paused };
+  }
+
   /**
    * Opens or closes Grandma's notes. While open, every other running scene
    * is paused (nothing moves, no patience runs out) and resumed on close.
    */
   private toggleNotes(): void {
+    if (this.inventory) return;
     if (this.notes) {
       this.notes.panel.destroy();
       for (const key of this.notes.paused) this.scene.resume(key);

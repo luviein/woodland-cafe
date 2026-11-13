@@ -1,0 +1,10 @@
+{
+  "title": "Your inventory",
+  "button": "Inventory",
+  "close": "Close",
+  "tabs": { "ingredients": "Ingredients", "seasonal": "Seasonal" },
+  "locked": "Locked",
+  "ingredientsHelp": "Cooking ingredients used to prepare cafe orders.",
+  "seasonalHelp": "Golden and seasonal harvests are kept separately from cooking stock.",
+  "emptySeasonalHelp": "No special crops yet. Harvest Golden or seasonal crops to start your collection."
+}
