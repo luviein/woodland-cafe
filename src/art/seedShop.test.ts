@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { SEED_SHOP_ART } from './sprites/seedShop';
+import { holes, strayPixels } from './checks';
 
 it('keeps every seed-shop row enclosed, including all four corners', () => {
   const frame = SEED_SHOP_ART.seedShopBoard.frames[0];
@@ -19,4 +20,15 @@ it('keeps every seed-shop row enclosed, including all four corners', () => {
       expect(visited.has(`${x},${y}`), `outside reached row interior at ${x},${y}`).toBe(false);
     }
   }
+});
+
+it.each(['Mushroom', 'Tomato', 'Chilli'] as const)('%s shop packet has an unbroken, consistent outer contour', crop => {
+  const sprite = SEED_SHOP_ART[`seedShopPacket${crop}`], frame = sprite.frames[0];
+  expect(holes(frame)).toBe(0);
+  expect(strayPixels(frame)).toBe(0);
+  frame.forEach((row,y) => [...row].forEach((char,x) => {
+    if (char === '.') return;
+    const edge = [[-1,0],[1,0],[0,-1],[0,1]].some(([dx,dy]) => (frame[y+dy]?.[x+dx] ?? '.') === '.');
+    if (edge) expect(sprite.legend[char as keyof typeof sprite.legend], `off-colour rim at ${x},${y}`).toBe('#493026');
+  }));
 });
