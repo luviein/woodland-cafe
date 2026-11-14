@@ -1,5 +1,4 @@
-import { CROP_IDS, CROPS, type SeedType } from '../data/crops';
-import { activeCropEvent, buySeed, canBuySeed, seedCount, seedPrice } from '../logic/garden';
+import { activeCropEvent, buySeed } from '../logic/garden';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
@@ -46,6 +45,7 @@ import {
 } from '../logic/shop';
 import { Button } from '../ui/Button';
 import { ShopPanel, type ShopRowView } from '../ui/ShopPanel';
+import { SeedShopPanel } from '../ui/SeedShopPanel';
 import { CataloguePanel } from '../ui/CataloguePanel';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel, arrangeRule, sizeBox } from '../layout/arrangeable';
@@ -105,7 +105,7 @@ export class OutdoorScene extends Phaser.Scene {
   private shops: ShopId[] = [];
   private walkingToShop: ShopId | null = null;
   /** The open stall: a shop list, or (the Christmas stall) a catalogue. */
-  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel } | null = null;
+  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel | SeedShopPanel } | null = null;
   /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
   private leafCount!: Phaser.GameObjects.Text;
   private bareGround!: Phaser.GameObjects.Text;
@@ -182,6 +182,7 @@ export class OutdoorScene extends Phaser.Scene {
       this.redrawSpots();
       const panel = this.shop?.panel;
       if (panel instanceof ShopPanel) panel.setRows(this.shopRows(this.shop!.id));
+      else if (panel instanceof SeedShopPanel) panel.refresh(state);
       else panel?.refresh();
     });
     const titleAt = hud('title', BASE_WIDTH / 2, 10);
@@ -382,6 +383,9 @@ export class OutdoorScene extends Phaser.Scene {
     const panel =
       id === 'christmas'
         ? this.openCatalogue()
+        : id === 'seeds' ? new SeedShopPanel(this, () => activeCropEvent(new Date(), !!devSettings.allSeasons),
+          (crop, seed) => setGameState(this, buySeed(getGameState(this), crop, seed, activeCropEvent(new Date(), !!devSettings.allSeasons))),
+          () => this.closeShop())
         : new ShopPanel(this, SHOPS[id].name, SHOPS[id].blurb, this.shopRows(id), () => this.closeShop());
     // Movable in Arrange mode (one place for every stall's list); the catalogue moves itself.
     if (panel instanceof ShopPanel) arrangeablePanel(this, 'shop', 'panel', panel);
@@ -410,17 +414,6 @@ export class OutdoorScene extends Phaser.Scene {
   /** What the open shop shows, from the current game state. */
   private shopRows(id: ShopId): ShopRowView[] {
     const state = getGameState(this);
-    if (id === 'seeds') {
-      const event = activeCropEvent(new Date(), !!devSettings.allSeasons);
-      return (['normal', 'christmas'] as SeedType[]).flatMap(seed => CROP_IDS.map(crop => ({
-        name: CROPS[crop].name,
-        detail: !state.ingredients.includes(crop) ? 'Unlock at Specialty'
-          : seed === 'christmas' && !event ? 'Christmas: December'
-          : `🍃${seedPrice(crop, seed)} ${seed === 'christmas' ? 'Christmas ' : ''}x${seedCount(state.garden, crop, seed)}`,
-        buttons: [{ label: '+1', enabled: canBuySeed(state, crop, seed, event), onPress: () =>
-          setGameState(this, buySeed(getGameState(this), crop, seed, activeCropEvent(new Date(), !!devSettings.allSeasons))) }],
-      })));
-    }
     if (id === 'specialty') {
       // Every unlockable stays listed once bought, so the rows keep their
       // shape (ShopPanel.setRows) and the player sees what they own.
