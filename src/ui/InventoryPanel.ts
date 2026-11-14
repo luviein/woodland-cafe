@@ -33,25 +33,27 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
       arrangeable(scene, 'inventory', name, at, object);
       return object;
     };
-    place('frame', 320, 180, scene.add.rectangle(0, 0, 566, 316, COLORS.counter).setStrokeStyle(3, COLORS.ink));
-    place('paper', 320, 180, scene.add.rectangle(0, 0, 550, 300, COLORS.paper).setStrokeStyle(2, COLORS.paperEdge));
-    place('title', 320, 50, scene.add.text(0, 0, words.title, TEXT.heading).setOrigin(0.5));
-    place('close', 548, 50, new Button(scene, 0, 0, 76, 24, words.close, COLORS.reset, close));
+    place('frame', 320, 180, scene.add.rectangle(0, 0, 566, 344, COLORS.counter).setStrokeStyle(3, COLORS.ink));
+    place('paper', 320, 180, scene.add.rectangle(0, 0, 550, 328, COLORS.paper).setStrokeStyle(2, COLORS.paperEdge));
+    place('title', 320, 36, scene.add.text(0, 0, words.title, TEXT.heading).setOrigin(0.5));
+    place('close', 548, 36, new Button(scene, 0, 0, 76, 24, words.close, COLORS.reset, close));
     (['ingredients', 'seasonal'] as const).forEach((key, i) => {
-      const button = place(`tab.${key}`, i === 0 ? 232 : 408, 86,
+      const button = place(`tab.${key}`, i === 0 ? 232 : 408, 68,
         new Button(scene, 0, 0, 160, 26, words.tabs[key], COLORS.book, () => {
           this.tab = key;
           this.refresh(getGameState(scene));
         }));
       this.tabs.push({ key, button });
     });
-    this.tickets = place('christmasTickets', 320, 107, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '11px', fontStyle: 'bold' }).setOrigin(0.5));
+    this.tickets = place('christmasTickets', 320, 94, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '11px', fontStyle: 'bold' }).setOrigin(0.5));
     for (let i = 0; i < 6; i++) {
-      const x = 150 + i % 3 * 170, y = 163 + Math.floor(i / 3) * 102;
-      const back = place(`card.${i}`, x, y, scene.add.rectangle(0, 0, 154, 100, 0xffe8bd).setStrokeStyle(2, COLORS.paperEdge));
-      const image = place(`card.${i}.art`, x, y - 28, addArt(scene, 0, 0, 'mushroom').setScale(2));
-      const name = place(`card.${i}.name`, x, y - 5, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5));
-      const count = place(`card.${i}.count`, x, y + 9, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
+      // Golden cards need only a picture and count; leave room below for sales.
+      const lowerRow = i >= 3;
+      const x = 150 + i % 3 * 170, y = lowerRow ? 249 : 144;
+      const back = place(`card.${i}`, x, y, scene.add.rectangle(0, 0, 154, lowerRow ? 114 : 76, 0xffe8bd).setStrokeStyle(2, COLORS.paperEdge));
+      const image = place(`card.${i}.art`, x, y + (lowerRow ? -33 : -15), addArt(scene, 0, 0, 'mushroom').setScale(2));
+      const name = place(`card.${i}.name`, x, y + (lowerRow ? -8 : 13), scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5));
+      const count = place(`card.${i}.count`, x, y + (lowerRow ? 7 : 27), scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
       const rate = place(`card.${i}.rate`, x, y + 22, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
       const sell = (amount: number | 'all') => {
         const state = getGameState(scene);
@@ -61,8 +63,8 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
         setGardenGameState(scene, sellChristmasCrop(state, crop, amount));
         this.refresh(getGameState(scene));
       };
-      const sellOne = place(`card.${i}.sellOne`, x - 37, y + 39, new Button(scene, 0, 0, 68, 20, exchangeWords.sellOne, COLORS.serve, () => sell(1)).setFontSize(12));
-      const sellAll = place(`card.${i}.sellAll`, x + 37, y + 39, new Button(scene, 0, 0, 68, 20, exchangeWords.sellAll, COLORS.serve, () => sell('all')).setFontSize(12));
+      const sellOne = place(`card.${i}.sellOne`, x - 36, y + 42, new Button(scene, 0, 0, 64, 20, exchangeWords.sellOne, COLORS.serve, () => sell(1)).setFontSize(11));
+      const sellAll = place(`card.${i}.sellAll`, x + 36, y + 42, new Button(scene, 0, 0, 64, 20, exchangeWords.sellAll, COLORS.serve, () => sell('all')).setFontSize(11));
       this.cards.push({ back, image, name, count, rate, sellOne, sellAll });
     }
     this.help = place('help', 320, 324, scene.add.text(0, 0, '', {
