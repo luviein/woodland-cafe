@@ -1,0 +1,8 @@
+{
+  "balance": "Christmas tickets: {amount}",
+  "rate": "{amount} tickets each",
+  "rateOne": "1 ticket each",
+  "sellOne": "Sell 1",
+  "sellAll": "Sell All",
+  "help": "Sell Christmas crops for tickets, or keep them. Tickets never expire."
+}

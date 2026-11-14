@@ -40,7 +40,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 12: each placed rug remembers its quarter-turn and mirror flags.
 // 13: real-time garden crops and seed packets.
 // 14: saved mutations, seasonal seeds and separately stored special harvests.
-export const SAVE_VERSION = 14;
+// 15: permanent Christmas ticket balance.
+export const SAVE_VERSION = 15;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -99,6 +100,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     if (item && !ownedClothing.includes(item)) outfit[slot] = null;
   }
   return {
+    christmasTickets: field(raw, 'christmasTickets', fresh.christmasTickets, (v) => Number.isSafeInteger(v) && (v as number) >= 0),
     garden: field(version < 14 && 'garden' in raw ? { ...raw, garden: migrateGarden(raw.garden) } : raw, 'garden', fresh.garden, validGarden),
     room,
     roomFinishes: ownedFinishGrid(room, finishes, ownedFinishes),

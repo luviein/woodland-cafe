@@ -110,5 +110,6 @@ export function tendCrop(state: GameState, index: number, now: number, roll = 1)
 export function gardenCheckpoint(checkpoint: GameState, before: GameState, after: GameState): GameState {
   const stock = { ...checkpoint.stock };
   for (const crop of CROP_IDS) stock[crop] += after.stock[crop] - before.stock[crop];
-  return { ...checkpoint, garden: after.garden, stock, leaves: checkpoint.leaves + after.leaves - before.leaves };
+  return { ...checkpoint, garden: after.garden, stock, leaves: checkpoint.leaves + after.leaves - before.leaves,
+    christmasTickets: checkpoint.christmasTickets + after.christmasTickets - before.christmasTickets };
 }

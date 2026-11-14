@@ -1,22 +1,25 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import words from '../data/texts/inventory.json';
+import exchangeWords from '../data/texts/cropExchange.json';
+import { CHRISTMAS_TICKET_RATES, exchangeCrop, sellChristmasCrop } from '../logic/cropExchange';
 import type { ArtName } from '../art/spriteArt';
 import type { GameState } from '../logic/gameState';
 import { inventoryEntries, type InventoryTab } from '../logic/inventory';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
-import { getGameState } from '../scenes/gameStore';
+import { getGameState, setGardenGameState } from '../scenes/gameStore';
 import { addArt, artKey } from './art';
 import { Button } from './Button';
 import { COLORS, TEXT } from './theme';
 
-/** Viewing a collection never moves items or spends any of the player's stock. */
+/** Collection sales use the garden checkpoint so the cafe day stays uncommitted. */
 export class InventoryPanel extends Phaser.GameObjects.Container {
   private tab: InventoryTab = 'seasonal';
   private readonly tabs: { key: InventoryTab; button: Button }[] = [];
-  private readonly cards: { back: Phaser.GameObjects.Rectangle; image: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text }[] = [];
+  private readonly cards: { back: Phaser.GameObjects.Rectangle; image: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text; rate: Phaser.GameObjects.Text; sellOne: Button; sellAll: Button }[] = [];
   private readonly help: Phaser.GameObjects.Text;
+  private readonly tickets: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, close: () => void) {
     super(scene, 0, 0);
@@ -42,15 +45,27 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
         }));
       this.tabs.push({ key, button });
     });
+    this.tickets = place('christmasTickets', 320, 107, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '11px', fontStyle: 'bold' }).setOrigin(0.5));
     for (let i = 0; i < 6; i++) {
-      const x = 150 + i % 3 * 170, y = 152 + Math.floor(i / 3) * 94;
-      const back = place(`card.${i}`, x, y, scene.add.rectangle(0, 0, 154, 84, 0xffe8bd).setStrokeStyle(2, COLORS.paperEdge));
-      const image = place(`card.${i}.art`, x, y - 17, addArt(scene, 0, 0, 'mushroom').setScale(2));
-      const name = place(`card.${i}.name`, x, y + 12, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '11px', fontStyle: 'bold' }).setOrigin(0.5));
-      const count = place(`card.${i}.count`, x, y + 30, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '13px' }).setOrigin(0.5));
-      this.cards.push({ back, image, name, count });
+      const x = 150 + i % 3 * 170, y = 163 + Math.floor(i / 3) * 102;
+      const back = place(`card.${i}`, x, y, scene.add.rectangle(0, 0, 154, 100, 0xffe8bd).setStrokeStyle(2, COLORS.paperEdge));
+      const image = place(`card.${i}.art`, x, y - 28, addArt(scene, 0, 0, 'mushroom').setScale(2));
+      const name = place(`card.${i}.name`, x, y - 5, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', fontStyle: 'bold' }).setOrigin(0.5));
+      const count = place(`card.${i}.count`, x, y + 9, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
+      const rate = place(`card.${i}.rate`, x, y + 22, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
+      const sell = (amount: number | 'all') => {
+        const state = getGameState(scene);
+        const entry = inventoryEntries(state, this.tab)[i];
+        const crop = exchangeCrop(entry.id);
+        if (!crop) return;
+        setGardenGameState(scene, sellChristmasCrop(state, crop, amount));
+        this.refresh(getGameState(scene));
+      };
+      const sellOne = place(`card.${i}.sellOne`, x - 37, y + 39, new Button(scene, 0, 0, 68, 20, exchangeWords.sellOne, COLORS.serve, () => sell(1)).setFontSize(12));
+      const sellAll = place(`card.${i}.sellAll`, x + 37, y + 39, new Button(scene, 0, 0, 68, 20, exchangeWords.sellAll, COLORS.serve, () => sell('all')).setFontSize(12));
+      this.cards.push({ back, image, name, count, rate, sellOne, sellAll });
     }
-    this.help = place('help', 320, 312, scene.add.text(0, 0, '', {
+    this.help = place('help', 320, 324, scene.add.text(0, 0, '', {
       ...TEXT.body, fontSize: '11px', align: 'center', wordWrap: { width: 506 },
     }).setOrigin(0.5));
     this.refresh(getGameState(scene));
@@ -58,6 +73,7 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
   }
 
   refresh(state: GameState): void {
+    this.tickets.setText(exchangeWords.balance.replace('{amount}', String(state.christmasTickets)));
     const entries = inventoryEntries(state, this.tab);
     entries.forEach((entry, i) => {
       const card = this.cards[i], faded = entry.locked || entry.amount === 0;
@@ -65,9 +81,13 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
       card.back.setAlpha(faded ? 0.65 : 1);
       card.name.setText(entry.name);
       card.count.setText(entry.locked ? words.locked : `x${entry.amount}`);
+      const crop = exchangeCrop(entry.id);
+      card.rate.setVisible(!!crop).setText(crop ? CHRISTMAS_TICKET_RATES[crop] === 1 ? exchangeWords.rateOne : exchangeWords.rate.replace('{amount}', String(CHRISTMAS_TICKET_RATES[crop])) : '');
+      card.sellOne.setVisible(!!crop).setEnabled(!!crop && entry.amount > 0);
+      card.sellAll.setVisible(!!crop).setEnabled(!!crop && entry.amount > 0);
     });
     for (const tab of this.tabs) tab.button.setAlpha(tab.key === this.tab ? 1 : 0.6);
     this.help.setText(this.tab === 'ingredients' ? words.ingredientsHelp
-      : entries.some(entry => entry.amount > 0) ? words.seasonalHelp : words.emptySeasonalHelp);
+      : entries.some(entry => entry.amount > 0) ? exchangeWords.help : words.emptySeasonalHelp);
   }
 }

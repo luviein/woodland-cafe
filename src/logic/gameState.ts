@@ -28,6 +28,8 @@ import { STARTER_CLOTHING, type ClothingId } from '../data/clothing';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  /** Christmas tickets carry over between events. */
+  christmasTickets: number;
   garden: Garden;
   room: readonly string[];
   roomFinishes: readonly string[];
@@ -60,6 +62,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    christmasTickets: 0,
     garden: emptyGarden(),
     room: [...CAFE_ROOM],
     roomFinishes: defaultFinishes(CAFE_ROOM),

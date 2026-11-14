@@ -86,6 +86,11 @@ export class Button extends Phaser.GameObjects.Container {
     return this;
   }
 
+  setFontSize(size: number): this {
+    this.label.setFontSize(size);
+    return this;
+  }
+
   /**
    * Puts a picture in the middle (e.g. an ingredient on its bin). It presses
    * and fades with the button, and the label becomes a small number in the

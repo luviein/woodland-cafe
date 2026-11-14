@@ -3,6 +3,7 @@ import { expect, it } from 'vitest';
 import { createNewGame, skipTutorial, startNextDay } from '../logic/gameState';
 import { buySeed, plantCrop, tendCrop } from '../logic/garden';
 import { loadGame } from '../logic/save';
+import { sellChristmasCrop } from '../logic/cropExchange';
 import { memorySaveSlot } from '../storage/saveSlot';
 import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState } from './gameStore';
 
@@ -56,6 +57,15 @@ it('immediately saves seasonal packets, planted outcomes and double special harv
   expect(saved.state.stock).toEqual(beforeDay.stock);
   expect(saved.state.garden.harvests.christmas.mushroom).toBe(8);
   expect(saved.state.garden.plots[0]).toBeNull();
+  setGardenGameState(owner, sellChristmasCrop(getGameState(owner), 'mushroom', 1));
+  const soldOne = getGameState(owner);
+  setGardenGameState(owner, sellChristmasCrop(soldOne, 'mushroom', 'all'));
+  const exchanged = loadGame(slot.read()!);
+  expect(exchanged.ok && exchanged.state.christmasTickets).toBe(8);
+  expect(exchanged.ok && exchanged.state.garden.harvests.christmas.mushroom).toBe(0);
+  expect(exchanged.ok && exchanged.state.leaves).toBe(15);
+  expect(exchanged.ok && exchanged.state.stock).toEqual(beforeDay.stock);
+  expect(exchanged.ok && exchanged.state.day).toBe(1);
   const savedText = slot.read();
   setGardenGameState(owner, tendCrop(getGameState(owner), 0, 301000, 0));
   expect(slot.read()).toBe(savedText);
