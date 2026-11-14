@@ -1,4 +1,6 @@
 import { gardenCheckpoint } from '../logic/garden';
+import { buyChristmasItem } from '../logic/christmasShop';
+import type { CatalogueItem } from '../data/catalogueProducts';
 import type Phaser from 'phaser';
 import { createNewGame, skipTutorial, type GameState } from '../logic/gameState';
 import { loadGame, saveGame, type LoadResult } from '../logic/save';
@@ -141,4 +143,16 @@ export function setGardenGameState(owner: HasRegistry, state: GameState): void {
     owner.registry.set(CHECKPOINT_KEY, checkpoint);
     owner.registry.set(KEY, state);
   } else setGameState(owner, state);
+}
+
+/** Persist the same purchase against the pre-day save, without saving cafe work. */
+export function purchaseChristmasItem(owner: HasRegistry, id: CatalogueItem): void {
+  const before = getGameState(owner);
+  const after = buyChristmasItem(before, id);
+  if (owner.registry.get(DAY_KEY)) {
+    const checkpoint = buyChristmasItem(owner.registry.get(CHECKPOINT_KEY) ?? before, id);
+    slot.write(saveGame(checkpoint));
+    owner.registry.set(CHECKPOINT_KEY, checkpoint);
+    owner.registry.set(KEY, after);
+  } else setGameState(owner, after);
 }

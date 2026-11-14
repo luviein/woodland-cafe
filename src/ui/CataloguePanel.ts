@@ -11,6 +11,7 @@ import { arrangeable } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
 import { Button } from './Button';
 import { COLORS, TEXT, css } from './theme';
+import words from '../data/texts/christmasShop.json';
 
 // The catalogue (GAME_DESIGN.md §5.10): a book. Closed, it shows its cover;
 // tapped, the cover swings open on the spine to two pages of item cards.
@@ -41,7 +42,7 @@ export interface CatalogueBook {
 /** What the catalogue needs from the game: what's owned and the wallet, and how to buy. */
 export interface CatalogueShop {
   animal?: () => PlayerAnimal;
-  leaves: () => number;
+  tickets: () => number;
   /** Furniture counts include placed and stored pieces; clothing is owned once. */
   owned: (design: CatalogueItem) => number;
   canBuy: (design: CatalogueItem) => boolean;
@@ -82,8 +83,8 @@ interface Page {
   side: Side;
   container: Phaser.GameObjects.Container;
   cards: { design: CatalogueItem; button: Button; owned: Phaser.GameObjects.Text }[];
-  /** Only on the right page: "Your leaves:", the leaf, the amount. */
-  wallet?: { label: Phaser.GameObjects.Text; leaf: Phaser.GameObjects.Image; amount: Phaser.GameObjects.Text };
+  /** The Christmas ticket balance on the right page. */
+  wallet?: { label: Phaser.GameObjects.Text; amount: Phaser.GameObjects.Text };
 }
 
 /**
@@ -150,18 +151,17 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     if (!this.pages) return;
     const wallet = this.pages.right.wallet;
     if (wallet) {
-      // Laid out right to left from the page's edge: "Your leaves: (leaf) 120".
+      // Lay out the balance from the page's right edge so long counts fit.
       const right = PAGE_WIDTH + SPINE_GAP - 12;
-      wallet.amount.setText(String(this.shop.leaves())).setX(right);
-      wallet.leaf.setX(right - wallet.amount.width - 4);
-      wallet.label.setX(wallet.leaf.x - wallet.leaf.displayWidth - 4);
+      wallet.amount.setText(String(this.shop.tickets())).setX(right);
+      wallet.label.setX(right - wallet.amount.width - 6);
     }
     for (const page of [this.pages.left, this.pages.right]) {
       for (const { design, button, owned } of page.cards) {
         button.setEnabled(this.shop.canBuy(design));
         const n = this.shop.owned(design);
         const unique = catalogueProduct(design).unique;
-        owned.setText(n > 0 ? unique ? 'Owned' : `have ${n}` : '');
+        owned.setText(n > 0 ? unique ? 'Owned' : `x${n}` : '');
       }
     }
   }
@@ -364,11 +364,10 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     } else {
       // The wallet, plain on the paper in dark ink; refresh() lays it out.
       page.wallet = {
-        label: s.add.text(0, headerY, 'Your leaves:', TEXT.body).setOrigin(1, 0.5),
-        leaf: addArt(s, 0, headerY, 'leaf').setOrigin(1, 0.5),
+        label: s.add.text(0, headerY, words.balance, { ...TEXT.body, fontSize: '12px' }).setOrigin(1, 0.5),
         amount: s.add.text(0, headerY, '', TEXT.heading).setOrigin(1, 0.5),
       };
-      c.add([page.wallet.label, page.wallet.leaf, page.wallet.amount]);
+      c.add([page.wallet.label, page.wallet.amount]);
     }
     // The cards.
     const perSpread = CARDS_PER_PAGE * 2;
@@ -429,10 +428,10 @@ export class CataloguePanel extends Phaser.GameObjects.Container {
     const name = s.add.text(midX, y + ART_BOX + 20, def.name, { ...NAME, align: 'center', wordWrap: { width: CARD.width - 8 } }).setOrigin(0.5, 0);
     // Right under the name, however many lines it took.
     const blurb = s.add.text(midX, name.y + name.height + 1, def.blurb, { ...SMALL, align: 'center', wordWrap: { width: CARD.width - 10 } }).setOrigin(0.5, 0);
-    // The price (the leaf, as on the ground, and the amount) and the count along the bottom.
-    const button = new Button(s, x + 40, y + CARD.height - 18, 64, 22, String(def.price), COLORS.serve, () => {
+    // Ticket units remain explicit on every price button.
+    const button = new Button(s, x + 44, y + CARD.height - 18, 80, 22, words.price.replace('{amount}', String(def.price)), COLORS.serve, () => {
       if (this.shop.canBuy(design)) this.shop.buy(design);
-    }).setLeadingIcon(addArt(s, 0, 0, 'leaf'));
+    }).setFontSize(11);
     const owned = s.add.text(x + CARD.width - 8, y + CARD.height - 18, '', SMALL).setOrigin(1, 0.5);
     page.add([name, blurb, button, owned]);
     return { design, button, owned };

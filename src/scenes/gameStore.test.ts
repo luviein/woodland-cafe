@@ -4,8 +4,39 @@ import { createNewGame, skipTutorial, startNextDay } from '../logic/gameState';
 import { buySeed, plantCrop, tendCrop } from '../logic/garden';
 import { loadGame } from '../logic/save';
 import { sellChristmasCrop } from '../logic/cropExchange';
+import { catalogueProduct, type CatalogueItem } from '../data/catalogueProducts';
+import { FINISH_IDS } from '../data/roomFinishProducts';
 import { memorySaveSlot } from '../storage/saveSlot';
-import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState } from './gameStore';
+import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState, purchaseChristmasItem } from './gameStore';
+
+it('persists ticket purchases without committing cafe-day earnings or consumption', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  const checkpoint = { ...createNewGame(), christmasTickets: 1000 };
+  continueGame(owner, checkpoint);
+  beginCafeDay(owner);
+  setGameState(owner, { ...checkpoint, day: 2, leaves: 999, stock: { ...checkpoint.stock, mushroom: 1 } });
+  const purchases: CatalogueItem[] = ['christmasTree', 'christmasTree', 'redCape', FINISH_IDS[0]];
+  for (const id of purchases) purchaseChristmasItem(owner, id);
+  const saved = loadGame(slot.read()!);
+  expect(saved.ok).toBe(true);
+  if (!saved.ok) return;
+  expect(saved.state.christmasTickets).toBe(1000 - purchases.reduce((sum, id) => sum + catalogueProduct(id).price, 0));
+  expect(saved.state.furniture.stored.christmasTree).toBe(2);
+  expect(saved.state.ownedClothing).toContain('redCape');
+  expect(saved.state.ownedFinishes).toContain(FINISH_IDS[0]);
+  expect(saved.state.day).toBe(1);
+  expect(saved.state.leaves).toBe(0);
+  expect(saved.state.stock).toEqual(checkpoint.stock);
+  const previous = slot.read();
+  expect(() => purchaseChristmasItem(owner, 'redCape')).toThrow();
+  expect(slot.read()).toBe(previous);
+  expect(getGameState(owner).leaves).toBe(999);
+  endCafeDay(owner);
+  expect(loadGame(slot.read()!)).toEqual({ ok: true, state: getGameState(owner) });
+});
 
 it('saves garden work against the pre-day checkpoint, then resumes and saves the live cafe normally', () => {
   const values = new Map<string, unknown>();
