@@ -40,17 +40,17 @@ export class SeedShopPanel extends Phaser.GameObjects.Container {
       return object;
     };
     place('board', 320, 180, addArt(scene, 0, 0, 'seedShopBoard'));
-    [131,172,213,256].forEach((y, i) => {
-      const packet = place(`row.${i}.packet`, 156, y, addArt(scene, 0, 0, 'seedPacketMushroom'));
-      // Every packet uses the same native scale as the pouch, preserving its own artwork.
+    [137,178,219,262].forEach((y, i) => {
+      const packet = place(`row.${i}.packet`, 156, y, addArt(scene, 0, 0, 'seedShopPacketMushroom'));
+      // Smaller copies of the existing bags keep whole pixels and clear row padding.
       const name = place(`row.${i}.name`, 186, y, scene.add.text(0, 0, '', {
         ...TEXT.heading, fontSize: '11px', lineSpacing: 1,
       }).setOrigin(0, 0.5));
       const price = place(`row.${i}.price`, 321, y, new LeafText(scene, 0, 0, '', { ...TEXT.heading, fontSize: '14px' }, 0.5, 0.5));
       const owned = place(`row.${i}.ownedBadge`, 386, y, addArt(scene, 0, 0, 'seedShopOwnedBadge'));
       const locked = place(`row.${i}.lockedBadge`, 398, y, addArt(scene, 0, 0, 'seedShopLockedBadge'));
-      const status = place(`row.${i}.status`, 386, y, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(0.5));
-      const lockedStatus = place(`row.${i}.lockedStatus`, 398, y, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '8px' }).setOrigin(0.5));
+      const status = place(`row.${i}.status`, 386, y, scene.add.text(0, 0, '', { ...TEXT.heading, fontSize: '12px' }).setOrigin(0.5));
+      const lockedStatus = place(`row.${i}.lockedStatus`, 398, y, scene.add.text(0, 0, '', { ...TEXT.heading, fontSize: '11px', align: 'center' }).setOrigin(0.5));
       const buttonArt = addArt(scene, 0, 0, 'seedShopBuy');
       const button = place(`row.${i}.buy`, 480, y, new Button(scene, 0, 0, 56, 28, '', COLORS.serve, () => {
         const entry = this.entries[this.page * 4 + i];
@@ -84,7 +84,7 @@ export class SeedShopPanel extends Phaser.GameObjects.Container {
       row.status.setVisible(row.owned.visible);
       row.lockedStatus.setVisible(row.locked.visible);
       if (!entry) return;
-      row.packet.setTexture(artKey(entry.art as ArtName), 0);
+      row.packet.setTexture(artKey(entry.art.replace('seedPacket', 'seedShopPacket') as ArtName), 0);
       row.name.setText(`${entry.seed === 'christmas' ? words.christmas + '\n' : ''}${entry.name} ${words.seed}`);
       row.price.setText(`🍃${entry.price}`);
       row.status.setText(`${words.owned} ${entry.owned}`);
