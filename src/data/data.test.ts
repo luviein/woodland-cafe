@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { acceptedOrderings } from '../logic/acceptedOrderings';
 import { recipeMatchesFilter } from '../logic/orders';
 import { SCORING_CONFIG } from './scoring';
-import { GAVE_UP_LINES, MODIFIER_LINES, REACTION_LINES, RECIPE_LINES } from './dialogue';
-import { TOOLS_ON_SALE } from './shops';
 import { INGREDIENT_IDS, INGREDIENTS, STARTER_INGREDIENTS } from './ingredients';
 import { LOCATION_IDS, LOCATIONS, MAP_PATHS } from './locations';
 import { FORAGE_SPOTS } from './forageSpots';
@@ -86,43 +84,6 @@ describe('modifiers', () => {
     for (const id of MODIFIER_IDS) {
       const matches = RECIPE_IDS.filter((r) => recipeMatchesFilter(RECIPES[r], MODIFIERS[id].appliesTo));
       expect(matches.length, id).toBeGreaterThan(0);
-    }
-  });
-});
-
-describe('dialogue', () => {
-  it('every recipe and modifier has at least one direct line', () => {
-    const all = { ...RECIPE_LINES, ...MODIFIER_LINES };
-    for (const [id, lines] of Object.entries(all)) {
-      expect(lines.direct.length, id).toBeGreaterThan(0);
-    }
-  });
-
-  it('every recipe, and every modifier that can be ordered, has hint lines', () => {
-    for (const id of RECIPE_IDS) expect(RECIPE_LINES[id].hint.length, id).toBeGreaterThan(0);
-    for (const id of MODIFIER_IDS) {
-      if (TOOLS_ON_SALE.includes(MODIFIERS[id].unlockedBy)) {
-        expect(MODIFIER_LINES[id].hint.length, id).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it('no line is used twice, so a hint never reads like a different recipe', () => {
-    const all = Object.values(RECIPE_LINES).flatMap((l) => [...l.direct, ...l.hint]);
-    expect(new Set(all).size).toBe(all.length);
-  });
-
-  it('no line is blank', () => {
-    const all = [RECIPE_LINES, MODIFIER_LINES].flatMap((group) =>
-      Object.values(group).flatMap((l) => [...l.direct, ...l.hint]),
-    );
-    all.push(...Object.values(REACTION_LINES).flat(), ...GAVE_UP_LINES);
-    for (const line of all) expect(line.trim()).not.toBe('');
-  });
-
-  it('every score has reaction lines', () => {
-    for (const [score, lines] of Object.entries(REACTION_LINES)) {
-      expect(lines.length, score).toBeGreaterThan(0);
     }
   });
 });

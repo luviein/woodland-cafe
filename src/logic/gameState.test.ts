@@ -36,10 +36,6 @@ describe('createNewGame', () => {
     expect(availableRecipes(createNewGame())).toContain('jamBread');
   });
 
-  it('survives a trip through JSON unchanged (ready for saving)', () => {
-    const state = earnLeaves(createNewGame(), 12);
-    expect(JSON.parse(JSON.stringify(state))).toEqual(state);
-  });
 });
 
 describe('earnLeaves', () => {

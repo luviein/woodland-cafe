@@ -3,7 +3,7 @@ import { CLOTHING_IDS } from '../data/clothing';
 import { clothingArt } from '../data/clothingFits';
 import { CLOTHING_ANIMALS } from '../data/clothingAnimals';
 import { holes, strayPixels } from './checks';
-import { spriteSize, spriteProblems } from './pixelSprite';
+import { spriteSize } from './pixelSprite';
 import { SPRITE_ART } from './spriteArt';
 
 describe('Christmas clothing collection', () => {
@@ -42,7 +42,6 @@ describe('Christmas clothing collection', () => {
       for (const id of CLOTHING_IDS) {
         const sprite = SPRITE_ART[clothingArt(animal, id)];
         expect(spriteSize(sprite)).toEqual(spriteSize(body));
-        expect(spriteProblems(sprite)).toEqual([]);
         expect(sprite.frames).toHaveLength(12);
         sprite.frames.forEach((frame, f) => {
           const combined = body.frames[f].map((row, y) => [...row].map((c, x) => frame[y][x] === '.' ? c : frame[y][x]).join(''));

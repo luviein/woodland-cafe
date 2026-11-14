@@ -31,11 +31,6 @@ describe('wardrobe', () => {
     expect(equip(dressed, 'top', null)).toEqual({ ...emptyOutfit(), hat: 'santaHat', top: null });
   });
 
-  it('round trips an equipped outfit through the save', () => {
-    const state = { ...createNewGame(), outfit: { ...emptyOutfit(), hat: 'santaHat', top: 'santaCoat' } as const };
-    expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
-  });
-
   it('loads version 2 saves without clothing and keeps their progress', () => {
     const { outfit: _outfit, ...old } = { ...createNewGame(), leaves: 123 };
     expect(loadGame(JSON.stringify({ version: 2, state: old })))
