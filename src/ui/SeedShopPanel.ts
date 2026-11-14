@@ -4,7 +4,7 @@ import type { CropEvent, CropId, SeedType } from '../data/crops';
 import words from '../data/texts/seedShop.json';
 import type { ArtName } from '../art/spriteArt';
 import type { GameState } from '../logic/gameState';
-import { seedShopEntries } from '../logic/seedShop';
+import { seedPacketArtName, seedShopEntries } from '../logic/seedShop';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { getGameState } from '../scenes/gameStore';
@@ -84,7 +84,7 @@ export class SeedShopPanel extends Phaser.GameObjects.Container {
       row.status.setVisible(row.owned.visible);
       row.lockedStatus.setVisible(row.locked.visible);
       if (!entry) return;
-      row.packet.setTexture(artKey(entry.art.replace('seedPacket', 'seedShopPacket') as ArtName), 0);
+      row.packet.setTexture(artKey(seedPacketArtName(entry.crop, entry.seed, true) as ArtName), 0);
       row.name.setText(`${entry.seed === 'christmas' ? words.christmas + '\n' : ''}${entry.name} ${words.seed}`);
       row.price.setText(`🍃${entry.price}`);
       row.status.setText(`${words.owned} ${entry.owned}`);

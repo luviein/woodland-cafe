@@ -2,12 +2,13 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { CROP_IDS, CROPS, type CropId, type SeedType } from '../data/crops';
 import { seedCount, type Garden } from '../logic/garden';
+import { seedPacketArtName } from '../logic/seedShop';
 import type { IngredientId } from '../data/ingredients';
 import type { ArtName } from '../art/spriteArt';
 import { getGameState } from '../scenes/gameStore';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
-import { addArt } from './art';
+import { addArt, artKey } from './art';
 import { Button } from './Button';
 import { COLORS, TEXT } from './theme';
 
@@ -78,6 +79,7 @@ export class SeedPouchPanel extends Phaser.GameObjects.Container {
       card.button.setEnabled(owned);
       card.slot.setAlpha(owned ? 1 : 0.65);
       card.packet.setAlpha(owned ? 1 : 0.45);
+      card.packet.setTexture(artKey(seedPacketArtName(crop, this.seed) as ArtName), 0);
       card.count.setText(owned ? 'x' + seedCount(garden, crop, this.seed) : 'Locked');
       card.status.setText(!owned ? 'Unlock at Specialty' : crop === this.selected && this.seed === this.selectedSeed ? 'Selected' : '');
     });

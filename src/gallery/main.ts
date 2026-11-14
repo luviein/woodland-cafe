@@ -1,4 +1,5 @@
 import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
+import { CHRISTMAS_SEED_PACKET_ART } from '../art/sprites/christmasSeedPackets';
 import { SEED_SHOP_ART } from '../art/sprites/seedShop';
 import { createGardenPreviews } from './gardenPreview';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
@@ -43,6 +44,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
+  ['Christmas seed packets (supplied reference)', n => n in CHRISTMAS_SEED_PACKET_ART],
   ['Seed Shop (supplied board)', n => n in SEED_SHOP_ART],
   ['Seed packets (supplied sheet)', n => n in SEED_PACKET_ART],
   ['Crop mutations (Golden and Christmas previews)', n => n in CROP_MUTATION_ART],
@@ -66,6 +68,7 @@ function groupOf(name: ArtName): string {
 }
 
 function source(name: ArtName): string {
+  if (name in CHRISTMAS_SEED_PACKET_ART) return 'your supplied Christmas wrapping with existing native crop pictures (tools/christmasSeedPackets.cjs)';
   if (name in SEED_SHOP_ART) return 'your supplied Seed Shop board, with live row fields cleared (tools/seedShopArt.cjs)';
   if (DRAWN_ART.has(name)) return `your PNG (src/art/drawn/${name}.png)`;
   if (name in CATALOGUE_SAMPLES) return 'the selected critter wearing the advertised item with its gameplay fitting (sprites/catalogueSamples.ts)';
