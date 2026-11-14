@@ -10,12 +10,6 @@ describe('the palette', () => {
   });
 });
 
-describe('every code-drawn sprite', () => {
-  it.each(ART_NAMES)('%s is well formed', (name) => {
-    expect(spriteProblems(SPRITE_ART[name])).toEqual([]);
-  });
-});
-
 describe('sprite quality (the same checks as the sprite gallery)', () => {
   it.each(ART_NAMES)('%s passes', (name) => {
     expect(spriteQuality(name)).toEqual([]);

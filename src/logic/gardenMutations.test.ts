@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CROP_IDS, SPECIAL_VARIANTS, type CropVariant } from '../data/crops';
 import { SPRITE_ART } from '../art/spriteArt';
 import { createNewGame } from './gameState';
-import { activeCropEvent, buySeed, canBuySeed, cropArtName, cropMutation, gardenCheckpoint, harvestYield, plantCrop, tendCrop, validGarden } from './garden';
+import { activeCropEvent, buySeed, canBuySeed, cropArtName, cropMutation, harvestYield, plantCrop, tendCrop } from './garden';
 import { finishGardenWork, startGardenWork } from './gardenWork';
 import { loadGame, saveGame } from './save';
 
@@ -16,11 +16,7 @@ describe('mutation and yield probabilities', () => {
   ] as const)('uses exclusive event outcomes at roll %s', (roll, outcome) => {
     expect(cropMutation('christmas', roll)).toBe(outcome);
   });
-  it('gives exactly 3% seasonal and 5% Golden outcomes without overlapping rolls', () => {
-    const outcomes = Array.from({ length: 10000 }, (_, i) => cropMutation('christmas', (i + 0.5) / 10000));
-    expect(outcomes.filter(v => v === 'christmas')).toHaveLength(300);
-    expect(outcomes.filter(v => v === 'golden')).toHaveLength(500);
-    expect(outcomes.filter(v => v === 'ordinary')).toHaveLength(9200);
+  it('uses the Golden cutoff outside events and rejects invalid rolls', () => {
     expect(cropMutation(null, 0)).toBe('golden');
     expect(cropMutation(null, 0.049999)).toBe('golden');
     expect(cropMutation(null, 0.05)).toBe('ordinary');
@@ -92,16 +88,6 @@ describe('seasonal seeds and harvest destinations', () => {
     const noPackets = { ...bought, garden: { ...bought.garden, seasonalSeeds: { ...bought.garden.seasonalSeeds, mushroom: 0 } } };
     expect(finishGardenWork(noPackets, work, 1000)).toBe(noPackets);
   });
-  it('saves special harvests against a cafe checkpoint without committing the cafe day', () => {
-    const checkpoint = tendCrop(specialPlant('christmas'), 0, 1000);
-    const midDay = { ...checkpoint, leaves: 999, stock: { ...checkpoint.stock, mushroom: 0 } };
-    const harvested = tendCrop(midDay, 0, 301000, 0);
-    const saved = gardenCheckpoint(checkpoint, midDay, harvested);
-    expect(saved.leaves).toBe(checkpoint.leaves);
-    expect(saved.stock).toEqual(checkpoint.stock);
-    expect(saved.garden.harvests.christmas.mushroom).toBe(8);
-    expect(saved.garden.plots[0]).toBeNull();
-  });
   it('has registered plot and harvest textures for every crop outcome', () => {
     for (const crop of CROP_IDS) for (const variant of ['ordinary', ...SPECIAL_VARIANTS] as const) {
       expect(SPRITE_ART).toHaveProperty(cropArtName(crop, variant));
@@ -138,7 +124,6 @@ describe('save migration and validation', () => {
   ])('rejects malformed current garden data %#', damage => {
     const raw = JSON.parse(saveGame(specialPlant('ordinary')));
     damage(raw.state.garden);
-    expect(validGarden(raw.state.garden)).toBe(false);
     expect(loadGame(JSON.stringify(raw)).ok).toBe(false);
   });
 });

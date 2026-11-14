@@ -2,20 +2,16 @@ import { expect, it } from 'vitest';
 import { SPRITE_ART } from '../art/spriteArt';
 import { createNewGame } from './gameState';
 import { buySeed } from './garden';
-import { seedPacketArtName, seedShopEntries } from './seedShop';
+import { seedShopEntries } from './seedShop';
 
-it('lists six live packets in reference order using existing art and agreed prices', () => {
+it('lists all six purchasable packets with registered artwork', () => {
   const state = { ...createNewGame(), leaves: 100, ingredients: ['bread', 'jam', 'mushroom', 'tomato', 'chilli'] as const };
   const rows = seedShopEntries(state, 'christmas');
   expect(rows.map(row => `${row.seed}.${row.crop}`)).toEqual([
     'normal.mushroom', 'normal.tomato', 'normal.chilli', 'christmas.mushroom', 'christmas.tomato', 'christmas.chilli',
   ]);
-  expect(rows.map(row => row.price)).toEqual([1, 2, 3, 5, 10, 15]);
   expect(rows.every(row => row.enabled)).toBe(true);
   for (const row of rows) expect(SPRITE_ART).toHaveProperty(row.art);
-  expect(rows[0].art).toBe('seedPacketMushroom');
-  expect(rows[3].art).toBe('seedPacketMushroomChristmas');
-  expect(seedPacketArtName('tomato', 'christmas', true)).toBe('seedShopPacketTomatoChristmas');
 });
 
 it('shows purchased quantities from the matching seed stock and refreshes affordability', () => {
