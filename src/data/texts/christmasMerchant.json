@@ -1,0 +1,9 @@
+{
+  "name": "Christmas shopkeeper",
+  "greeting": "Welcome, friend! Looking for something festive, or bringing in your Christmas harvest? Would you like to buy or sell?",
+  "buy": "Buy",
+  "sell": "Sell",
+  "goodbye": "Goodbye",
+  "sellTitle": "Sell Christmas crops",
+  "emptySales": "No Christmas crops to sell yet. Grow Christmas seeds or find seasonal mutations."
+}

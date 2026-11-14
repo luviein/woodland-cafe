@@ -1,5 +1,7 @@
 import { activeCropEvent, buySeed } from '../logic/garden';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
+import { ChristmasMerchantPanel, type MerchantChoice } from '../ui/ChristmasMerchantPanel';
+import { InventoryPanel } from '../ui/InventoryPanel';
 import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
@@ -105,7 +107,8 @@ export class OutdoorScene extends Phaser.Scene {
   private shops: ShopId[] = [];
   private walkingToShop: ShopId | null = null;
   /** The open stall: a shop list, or (the Christmas stall) a catalogue. */
-  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel | SeedShopPanel } | null = null;
+  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel | SeedShopPanel | ChristmasMerchantPanel | InventoryPanel } | null = null;
+  private shopTransition = false;
   /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
   private leafCount!: Phaser.GameObjects.Text;
   private bareGround!: Phaser.GameObjects.Text;
@@ -183,7 +186,8 @@ export class OutdoorScene extends Phaser.Scene {
       const panel = this.shop?.panel;
       if (panel instanceof ShopPanel) panel.setRows(this.shopRows(this.shop!.id));
       else if (panel instanceof SeedShopPanel) panel.refresh(state);
-      else panel?.refresh();
+      else if (panel instanceof InventoryPanel) panel.refresh(state);
+      else if (panel instanceof CataloguePanel) panel.refresh();
     });
     const titleAt = hud('title', BASE_WIDTH / 2, 10);
     const title = this.add
@@ -382,7 +386,7 @@ export class OutdoorScene extends Phaser.Scene {
     this.children.getByName('wardrobe')?.destroy();
     const panel =
       id === 'christmas'
-        ? this.openCatalogue()
+        ? new ChristmasMerchantPanel(this, choice => this.chooseChristmasShop(choice))
         : id === 'seeds' ? new SeedShopPanel(this, () => activeCropEvent(new Date(), !!devSettings.allSeasons),
           (crop, seed) => setGameState(this, buySeed(getGameState(this), crop, seed, activeCropEvent(new Date(), !!devSettings.allSeasons))),
           () => this.closeShop())
@@ -391,6 +395,20 @@ export class OutdoorScene extends Phaser.Scene {
     if (panel instanceof ShopPanel) arrangeablePanel(this, 'shop', 'panel', panel);
     // Above the HUD, so its dim layer covers the Map button too.
     this.shop = { id, panel: panel.setDepth(HUD_DEPTH + 1) };
+  }
+
+  private chooseChristmasShop(choice: MerchantChoice): void {
+    if (this.shopTransition || !this.shop) return;
+    if (choice === 'goodbye') { this.closeShop(); return; }
+    this.shopTransition = true;
+    const previous = this.shop.panel;
+    // Keep the old overlay through pointer-up so the choice cannot hit the map.
+    this.time.delayedCall(0, () => {
+      const panel = choice === 'buy' ? this.openCatalogue() : new InventoryPanel(this, () => this.closeShop(), true);
+      this.shop = { id: 'christmas', panel: panel.setDepth(HUD_DEPTH + 1) };
+      previous.destroy();
+      this.shopTransition = false;
+    });
   }
 
   /** Furniture goes to storage; one-time clothing purchases unlock the wardrobe. */
