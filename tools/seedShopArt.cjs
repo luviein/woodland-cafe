@@ -65,6 +65,24 @@ for(const sourceX of [196,1340]){
   for(let x=cx-half;x<=cx+half;x++)frame[105+dy][x]=colour;
  });
 }
+// Clearing reference text and shifting rectangular strips clipped the row corners.
+// Rebuild the complete row surface and closed outlines, rather than patching edges.
+const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+const lowerPaper=img.px(1146,822);
+for(let y=110;y<=275;y++)for(let x=62;x<=454;x++)frame[y][x]=nearest(mix(paper,lowerPaper,(y-110)/165));
+const rowBounds=[[110,147],[151,188],[191,230],[233,273]];
+const rim=nearest([237,189,131]),glint=nearest([255,240,209]);
+for(const [top,bottom] of rowBounds){
+ const left=63,right=453,height=bottom-top+1;
+ const inset=y=>{const end=Math.min(y,height-1-y);return end===0?4:end===1?2:end===2?1:0;};
+ const inside=(x,y)=>y>=0&&y<height&&x>=left+inset(y)&&x<=right-inset(y);
+ for(let y=0;y<height;y++)for(let x=left;x<=right;x++){
+  if(!inside(x,y))continue;
+  const edge=[[-1,0],[1,0],[0,-1],[0,1]].some(([dx,dy])=>!inside(x+dx,y+dy));
+  frame[top+y][x]=edge?rim:y===1||x===left+inset(y)+1?glint:nearest(mix([255,232,198],[255,223,180],y/(height-1)));
+ }
+ for(let y=top+8;y<=bottom-8;y++)frame[y][235]=rim;
+}
 const crop=(x0,y0,w,h)=>Array.from({length:Math.ceil(h/step)},(_,y)=>Array.from({length:Math.ceil(w/step)},(_,x)=>nearest(img.px(Math.min(x0+w-1,x0+x*step+1),Math.min(y0+h-1,y0+y*step+1)))));
 const buy=crop(1164,328,168,84),disabled=crop(1164,448,168,84);
 const badge=(x,y,w,h)=>{
