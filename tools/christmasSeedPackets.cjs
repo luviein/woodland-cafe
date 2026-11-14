@@ -32,17 +32,49 @@ const base=(w,h)=>Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>{
  return outside[sy*img.W+sx]?null:nearest(clean.px(sx,sy));
 }));
 const kitchen={};new Function('exports',ts.transpileModule(fs.readFileSync('src/art/sprites/kitchen.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(kitchen);
+// At shop size, draw connected clusters rather than sampling tiny stitches
+// and snowflakes into disconnected stripes. Keep the reference's wrapping.
+const shopWrapper=()=>{
+ const g=Array.from({length:27},()=>Array(24).fill(null));
+ const ink={...print,R:colour('#e9583e'),D:colour('#a6322e'),Y:colour('#ffcf64'),B:colour('#b9782e'),G:colour('#879a45')};
+ const run=(y,a,b,c)=>{for(let x=a;x<=b;x++)g[y][x]=ink[c];};
+ const stamp=(x,y,rows)=>rows.forEach((row,j)=>[...row].forEach((c,i)=>{if(c!=='.')g[y+j][x+i]=ink[c];}));
+ for(let y=0;y<27;y++){
+  const left=y<3?5:y<8?4:y<17?3:2;
+  const right=y<2?20:y<8?22:y<24?21:20;
+  run(y,left,right,'o');
+  if(y>0&&y<26){run(y,left+1,right-1,'r');g[y][right-1]=ink.D;g[y][left+1]=ink.R;}
+ }
+ run(1,6,19,'R');run(2,5,21,'R');
+ run(3,5,21,'r');for(const x of [6,9,12,15,18])g[3][x]=ink.Y;
+ run(4,5,21,'c');run(5,5,21,'w');run(6,5,20,'c');
+ run(7,5,20,'o');run(8,4,20,'g');
+ // A cream label with deliberate stepped corners, clear of the side seams.
+ for(let y=10;y<=22;y++)run(y,y===10||y===22?8:6,y===10||y===22?15:17,'c');
+ run(11,7,16,'w');
+ stamp(6,5,['ooo.....ooo','oYYoo.ooYYo','oYhYoYoYhYo','.oooYhYooo.','...oYoYo...','..oYY.YYo..','...oo.oo...']);
+ stamp(5,20,['gGg.......gGg','.gGg.....gGg.','..gg..r..gg..','.....rRr.....']);
+ run(24,3,19,'c');run(25,3,19,'w');
+ for(const x of [5,8,11,14,17])g[23][x]=ink.Y;
+ return g;
+};
 const grids=[],names=[];
+// Eight-pixel prints need closed contours: point sampling loses the underside
+// of the mushroom and reduces the chilli to a disconnected diagonal.
+const shopPrints={
+ Mushroom:['..oooo..','.orhhro.','orrrrrro','oooooooo','..occo..','..occo..','..oooo..','........'],
+ Tomato:['...gg...','..oggo..','.orhhro.','orrrrrro','orrrrrro','.orrrro.','..oooo..','........'],
+ Chilli:['.....gg.','....ogo.','...orro.','..orrro.','.orrro..','orrro...','oooo....','........'],
+};
 for(const small of [false,true])for(const crop of ['Mushroom','Tomato','Chilli']){
- const grid=base(small?24:48,small?27:54),icon=kitchen.INGREDIENT_ICONS[crop.toLowerCase()].frames[0];
- const size=small?8:16,ox=small?8:15,oy=small?11:22;
- const ink=Array.from({length:size},(_,y)=>Array.from({length:size},(_,x)=>icon[Math.floor((y+0.5)*16/size)][Math.floor((x+0.5)*16/size)]));
+ const grid=small?shopWrapper():base(48,54),icon=kitchen.INGREDIENT_ICONS[crop.toLowerCase()].frames[0];
+ const size=small?8:16,ox=small?8:15,oy=small?12:22;
+ const ink=small?shopPrints[crop].map(row=>[...row]):Array.from({length:size},(_,y)=>Array.from({length:size},(_,x)=>icon[y][x]));
  ink.forEach((row,y)=>row.forEach((char,x)=>{
   if(char==='.')return;
-  // Keep thin stems and crop contours readable in the shop's half-size print.
-  const edge=small&&char!=='g'&&[[-1,0],[1,0],[0,-1],[0,1]].some(([dx,dy])=>(ink[y+dy]?.[x+dx]??'.')==='.');
+  // Retain the ingredient's own shading instead of thickening every edge.
   if(grid[y+oy]?.[x+ox]===null||grid[y+oy]?.[x+ox]===undefined)throw Error('Crop lies outside the festive label');
-  grid[y+oy][x+ox]=print[edge?'o':char];
+  grid[y+oy][x+ox]=print[char];
  }));
  // The shop keeps the same padded 24x29 canvas as its ordinary packets.
  const padded=small?[Array(24).fill(null),...grid,Array(24).fill(null)]:grid;
