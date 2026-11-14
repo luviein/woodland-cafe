@@ -374,26 +374,26 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **A seasonal stall:** the **Christmas stall** (the player's own stall art: snowy roof, a wreath, a candy-striped awning, a red counter with stockings) stands in the open lower middle of the Marketplace. It's there from **1 December to 31 December** (the player's own date). **While testing it's always there** (a dev setting, on in the dev build; the release build goes by the date).
 - **The catalogue:** tapping the stall opens a **catalogue** instead of a shop list, in the cafe's own look (wood and cream paper, not copied from other games):
   - **Cover:** "Woodland Cafe Catalogue", "Christmas Edition", a snowy picture and **Tap to open**. A close button in the corner; `Esc` closes it too.
-  - **Opened:** a **two-page book**. Each page holds **2 tall item cards** side by side: the item's picture, its name, one line about it, and its **price button** (🍃). Every picture is drawn **at the same scale (2x)**, so sizes compare as they do in the cafe (the tree taller than the poinsettia). **Opening** is like a book: the cover swings open on its spine and the left page unfolds. **Turning a page:** tap a page's folded bottom corner (it stays still, lifting slightly only while the pointer is over it) (right to go on, left to go back; the arrow keys too): the page folds over the spine and its back lands on the other side. Page numbers at the bottom of each page, and the wallet as plain dark text on the paper: "Your leaves:", the leaf, the amount; **tabs down the side** for the catalogue's sections: **Furniture** (its tables and chairs), **Decor** (floor decorations) and **Wall** (wall decorations). How many of each you have shows on its card. Left/right arrow keys turn the pages.
+  - **Opened:** a **two-page book**. Each page holds **2 tall item cards** side by side: the item's picture, its name, one line about it, and its **price button** (tickets). Every picture is drawn **at the same scale (2x)**, so sizes compare as they do in the cafe (the tree taller than the poinsettia). **Opening** is like a book: the cover swings open on its spine and the left page unfolds. **Turning a page:** tap a page's folded bottom corner (it stays still, lifting slightly only while the pointer is over it) (right to go on, left to go back; the arrow keys too): the page folds over the spine and its back lands on the other side. Page numbers at the bottom of each page, and the wallet as plain dark text on the paper: "Christmas tickets:", the amount; **tabs down the side** for the catalogue's sections: **Furniture** (its tables and chairs), **Decor** (floor decorations) and **Wall** (wall decorations). How many of each you have shows on its card. Left/right arrow keys turn the pages.
   - **Buying** is like the Carpenter: one tap buys one, straight into **storage**; the button is greyed out when the wallet can't pay.
 - **The Christmas edition** (the player's own item art, converted to the game's pixel grid like the critters):
 
   | Item | Placed | Price |
   | ---- | ------ | ----- |
-  | Christmas Tree | floor, one tile (drawn taller) | 🍃80 |
-  | Snowman | floor | 🍃60 |
-  | Table & Candle | floor, **a table** (customers eat at it) | 🍃50 |
-  | Chair with Bow | floor, **a chair** (customers sit on it) | 🍃20 |
-  | Gift Boxes | floor | 🍃35 |
-  | Poinsettia Plant | floor | 🍃20 |
-  | Snow Globe | floor | 🍃15 |
-  | Pine Garland | back wall | 🍃35 |
-  | Fairy Lights | back wall | 🍃25 |
-  | Stockings | back wall | 🍃20 |
-  | Bauble Ornaments | back wall | 🍃20 |
-  | Christmas Wreath | back wall | 🍃35 |
-  | Lantern | back wall | 🍃20 |
-  | Christmas Tree Picture | back wall | 🍃40 |
+  | Christmas Tree | floor, one tile (drawn taller) | 80 tickets |
+  | Snowman | floor | 60 tickets |
+  | Table & Candle | floor, **a table** (customers eat at it) | 50 tickets |
+  | Chair with Bow | floor, **a chair** (customers sit on it) | 20 tickets |
+  | Gift Boxes | floor | 35 tickets |
+  | Poinsettia Plant | floor | 20 tickets |
+  | Snow Globe | floor | 15 tickets |
+  | Pine Garland | back wall | 35 tickets |
+  | Fairy Lights | back wall | 25 tickets |
+  | Stockings | back wall | 20 tickets |
+  | Bauble Ornaments | back wall | 20 tickets |
+  | Christmas Wreath | back wall | 35 tickets |
+  | Lantern | back wall | 20 tickets |
+  | Christmas Tree Picture | back wall | 40 tickets |
 
 - **Furniture designs:** a placed piece and a stored piece now say **which design** it is (e.g. the plain chair or the Chair with Bow), not only table or chair. Every design has a **kind**: table, chair, floor decoration or wall decoration. Tables and chairs follow the seating rules of §5.7 whatever their design.
 - **Floor decorations** take one floor tile, by the same rules as a table (only plain floor; the floor must stay connected), but nobody sits at them and a chair next to one isn't next to a table.
@@ -770,3 +770,7 @@ Mutations, seasonal seeds, double harvests, inventory viewing and Christmas tick
 - **Event rewards:** an event catalogue for spending Christmas tickets and a **museum/gallery display** are future steps. Catalogue contents/prices and museum donation/display behaviour still need design decisions before implementation. Stored crops and tickets must not be automatically spent or discarded when an event ends.
 
 Build in small steps: (1) mutations, seasonal seeds, double harvests and persistence; (2) the Seasonal inventory tab; (3) ticket exchanges and the event catalogue; (4) the museum/gallery. Confirm the outstanding design choices for each step before building its dependent behaviour. New controls and screens follow named Arrange positions; amounts of Leaves use LeafText.
+
+### Christmas catalogue currency
+
+The existing Christmas catalogue uses Christmas event tickets for every Furniture, Decor, Wall, Clothes and Room purchase. Keep all current numeric prices. Price buttons and the catalogue balance explicitly show tickets, with no leaf icon. Leaves cannot pay for Christmas catalogue items. Furniture remains repeatable; clothing and room finishes remain one-time unlocks, and existing ownership is retained. All other shops, including seasonal seeds, retain their current Leaves prices. Purchases persist immediately, including during cafe days: save the ticket deduction and catalogue ownership together without committing cafe-day earnings or consumption. Tickets carry over between Christmas events.
