@@ -1,7 +1,7 @@
 import { activeCropEvent, buySeed } from '../logic/garden';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import { ChristmasMerchantPanel, type MerchantChoice } from '../ui/ChristmasMerchantPanel';
-import { InventoryPanel } from '../ui/InventoryPanel';
+import { ChristmasSellPanel } from '../ui/ChristmasSellPanel';
 import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE, TILE_SIZE } from '../config/display';
@@ -107,7 +107,7 @@ export class OutdoorScene extends Phaser.Scene {
   private shops: ShopId[] = [];
   private walkingToShop: ShopId | null = null;
   /** The open stall: a shop list, or (the Christmas stall) a catalogue. */
-  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel | SeedShopPanel | ChristmasMerchantPanel | InventoryPanel } | null = null;
+  private shop: { id: ShopId; panel: ShopPanel | CataloguePanel | SeedShopPanel | ChristmasMerchantPanel | ChristmasSellPanel } | null = null;
   private shopTransition = false;
   /** "Leaves today: 6/15", and the line shown once the day's leaves are gone. */
   private leafCount!: Phaser.GameObjects.Text;
@@ -186,7 +186,7 @@ export class OutdoorScene extends Phaser.Scene {
       const panel = this.shop?.panel;
       if (panel instanceof ShopPanel) panel.setRows(this.shopRows(this.shop!.id));
       else if (panel instanceof SeedShopPanel) panel.refresh(state);
-      else if (panel instanceof InventoryPanel) panel.refresh(state);
+      else if (panel instanceof ChristmasSellPanel) panel.refresh(state);
       else if (panel instanceof CataloguePanel) panel.refresh();
     });
     const titleAt = hud('title', BASE_WIDTH / 2, 10);
@@ -404,7 +404,7 @@ export class OutdoorScene extends Phaser.Scene {
     const previous = this.shop.panel;
     // Keep the old overlay through pointer-up so the choice cannot hit the map.
     this.time.delayedCall(0, () => {
-      const panel = choice === 'buy' ? this.openCatalogue() : new InventoryPanel(this, () => this.closeShop(), true);
+      const panel = choice === 'buy' ? this.openCatalogue() : new ChristmasSellPanel(this, () => this.closeShop());
       this.shop = { id: 'christmas', panel: panel.setDepth(HUD_DEPTH + 1) };
       previous.destroy();
       this.shopTransition = false;

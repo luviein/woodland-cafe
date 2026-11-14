@@ -91,6 +91,12 @@ export class Button extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /** A full button sprite supplies its own outline, including stepped corners. */
+  setBackgroundVisible(visible: boolean): this {
+    this.bg.setVisible(visible);
+    return this;
+  }
+
   /**
    * Puts a picture in the middle (e.g. an ingredient on its bin). It presses
    * and fades with the button, and the label becomes a small number in the
