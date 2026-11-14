@@ -17,24 +17,27 @@ const colours=P.palette(P.samplesOf(img,[{x0:0,y0:0,x1:1535,y1:1023}],{step:4,is
 const nearest=c=>{let best=0,score=Infinity;colours.forEach((p,i)=>{const d=p.reduce((n,v,k)=>n+(v-c[k])**2,0);if(d<score){score=d;best=i;}});return best;};
 const rowRanges=[[312,424],[434,545],[555,671],[682,801]];
 const step=3;
+// Protect the complete soft shadow geometrically. A darkness threshold kept
+// the ink but erased the lighter shadow colours, leaving square gaps.
+const lanternShadow=(x,y)=>{
+ if(y<306||y>=330)return false;
+ const half=y<=317?44:y<=323?38:30;
+ return Math.abs(x-196)<=half||Math.abs(x-1340)<=half;
+};
 const frame=Array.from({length:342},(_,y)=>Array.from({length:512},(_,x)=>{
  const sx=x*step+1,originalY=Math.min(1023,y*step+1);if(exterior[originalY*1536+sx])return null;
  // Drop the whole row stack six native pixels, leaving the lanterns above it.
  let sy=originalY;
  const shifted=sx>=186&&sx<=1362&&originalY>=306&&originalY<=822;
  if(shifted){
-  const original=img.px(sx,originalY);
-  // The first row's old live-field masks cut the right lantern's bottom shadow.
-  // Preserve the original dark lantern/shadow pixels, not the pale old row line.
-  if(originalY<330&&(sx<240||sx>1296)&&original[0]<220&&original[1]<160)return nearest(original);
+  if(lanternShadow(sx,originalY))return nearest(img.px(sx,originalY));
   sy=originalY-18;
   if(sy<312)return nearest(img.px(1146,300));
  }
  const row=rowRanges.find(([top,bottom])=>sy>=top&&sy<=bottom-5);
  if(row){
   // Do not carry a second copy of the lantern bases down with the moved row.
-  const pixel=img.px(sx,sy);
-  if(shifted&&row[0]===312&&sy<330&&(sx<240||sx>1296)&&pixel[0]<220&&pixel[1]<160)return nearest(img.px(684,sy));
+  if(shifted&&row[0]===312&&lanternShadow(sx,sy))return nearest(img.px(684,sy));
   // Replace baked-in sample bags/names and prices/counts with the row's own paper.
   // The row border, centre divider and purchase button remain from the reference.
   if(sx>=210&&sx<=692)return nearest(img.px(684,sy));
@@ -43,6 +46,25 @@ const frame=Array.from({length:342},(_,y)=>Array.from({length:512},(_,x)=>{
  }
  return nearest(img.px(sx,sy));
 }));
+// Rebuild the few pixels below each base as one continuous, fading shadow.
+// The reference's old row line runs through this area; copying it would leave
+// disconnected gold strips even after the original colour clipping is fixed.
+const paper=img.px(1146,300);
+for(const sourceX of [196,1340]){
+ const cx=Math.round(sourceX/step),shade=img.px(sourceX,316);
+ const base=[];
+ for(let x=cx-16;x<=cx+16;x++){
+  const colour=colours[frame[104][x]];
+  if(colour&&colour[0]<180&&colour[1]<130)base.push(x);
+ }
+ if(base.length)for(let x=cx-16;x<=cx+16;x++)if(x<base[0]||x>base.at(-1))frame[104][x]=nearest(paper);
+ for(let y=105;y<=109;y++)for(let x=cx-16;x<=cx+16;x++)frame[y][x]=nearest(paper);
+ [1,0.65,0.4,0.2].forEach((strength,dy)=>{
+  const half=[11,10,8,6][dy];
+  const colour=nearest(paper.map((value,i)=>value+(shade[i]-value)*strength));
+  for(let x=cx-half;x<=cx+half;x++)frame[105+dy][x]=colour;
+ });
+}
 const crop=(x0,y0,w,h)=>Array.from({length:Math.ceil(h/step)},(_,y)=>Array.from({length:Math.ceil(w/step)},(_,x)=>nearest(img.px(Math.min(x0+w-1,x0+x*step+1),Math.min(y0+h-1,y0+y*step+1)))));
 const buy=crop(1164,328,168,84),disabled=crop(1164,448,168,84);
 const badge=(x,y,w,h)=>{
