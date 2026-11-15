@@ -1,6 +1,6 @@
 # Woodland Cafe — guide for coding agents
 
-A cosy 2D pixel-art cafe game with woodland critters. The player (a hedgehog)
+A cosy 2D pixel-art cafe game with customisable woodland critters. The player
 takes orders on the cafe floor, builds dishes at the prep station, earns
 **Leaves** (the currency), shops at the Marketplace, forages in the Forest and
 decorates the cafe. Built with **Phaser 3 + TypeScript**, **Vite** and
@@ -15,7 +15,7 @@ changing a feature, and keep it in sync (see Workflow).
 ```
 npm run dev        # dev server (also serves editor.html, sprites.html, the dev console, Arrange mode)
 npm run typecheck  # tsc --noEmit
-npx vitest run     # all tests (~600, fast, no browser)
+npx vitest run     # all tests (Node environment, no browser)
 npm run build      # typecheck + production build
 ```
 
@@ -87,7 +87,45 @@ bump the version and make older saves load with sensible defaults; add a test.
 5. **Leaves** are written as the 🍃 emoji in strings and drawn as the leaf
    sprite by `LeafText` — use it for any text showing an amount of Leaves.
 
-## Art pipeline
+## Technical development scope
+
+The user generates and approves artwork separately. Do technical integration
+only: do not generate replacement artwork, redraw, recolour or invent missing
+sprite views. Request approved assets when a fix needs visual changes. The
+legacy art tools below do not override this constraint.
+
+Never delete, reset or overwrite player progress without explicit approval.
+This includes clearing storage, `wipesave`, destructive migrations and silently
+replacing an unreadable save with a new game. Use isolated test data.
+
+Inspect related code and design before editing. Reuse working architecture;
+avoid unnecessary rewrites or dependencies without justification. Preserve
+strict TypeScript, typed content IDs and immutable, serializable state.
+Inject randomness/time into pure logic where needed. Use the domain helpers
+in `gameStore.ts`: garden, museum and Christmas purchases have special
+cafe-day checkpoint behaviour. Do not use `saveNow` merely to force autosave.
+
+## Project skills — select automatically
+
+Read the relevant skill before work in its domain; the user need not invoke
+it explicitly. Combine skills for tasks spanning domains and briefly announce
+which apply. Descriptions support automatic discovery; full instructions load
+when selected. Explicit invocation such as `$game-ui` also works.
+
+| Skill | Use for |
+| --- | --- |
+| [game-systems](.agents/skills/game-systems/SKILL.md) | Mechanics, progression, inventory transactions, economy and unlocks |
+| [game-data-and-saves](.agents/skills/game-data-and-saves/SKILL.md) | State, persistence, compatibility, migrations and integrity |
+| [sprite-integration](.agents/skills/sprite-integration/SKILL.md) | Approved assets, frame mapping, movement views, tiles and wearable layering |
+| [game-ui](.agents/skills/game-ui/SKILL.md) | Panels, padding, input, shops, inventories and decoration controls |
+| [game-testing](.agents/skills/game-testing/SKILL.md) | Meaningful tests, regressions, debugging and measured performance checks |
+
+Check current dependency versions in `package.json` and the lockfile. Additional
+architecture includes `src/storage/` save slots, `src/roomEditor/` and room
+save routes. Standard rendering uses a 640×360 canvas with integer scaling
+when it fits and FIT fallback on smaller viewports; outdoor tiles are 16px.
+
+## Legacy art tools
 
 The user makes or generates art and sends images; they become letter-grid
 sprites. Tools (plain Node, no installs) are in
@@ -105,9 +143,9 @@ any agent:
   (broken outlines, missing pixels in thin lines, background bleed, views
   that don't match...). Check new art against it.
 
-Keep fixes in a regeneration script rather than hand-editing big grids, so a
-rerun keeps them. Register new sprites in `spriteArt.ts` and give them a
-gallery group in `src/gallery/main.ts`.
+For authorised technical integration, preserve regeneration sources rather
+than editing generated output alone. Register new approved sprites in
+`spriteArt.ts` and give them a gallery group in `src/gallery/main.ts`.
 
 ## How the user likes to work
 
@@ -125,21 +163,16 @@ gallery group in `src/gallery/main.ts`.
   ("colour").
 - Report honestly: say what you checked and what you couldn't (e.g. "not
   seen in the running game").
+- Check rendered padding, positioning, readability and disabled behaviour
+  for UI changes. Add meaningful rule/regression tests, avoiding tests that
+  merely mirror implementation or add bloat for reversible cosmetic changes.
+- In PowerShell use `npm.cmd`/`npx.cmd` if `.ps1` execution is blocked. Use
+  UTF-8 when reading/writing files. Do not start new approval flows for
+  routine work already authorised. Instruction setup alone is not gameplay
+  and does not require a game-design change.
 
-## Where things stand
+## Current feature status
 
-Done: milestones 1-11 (prep, floor, connected cafe, Leaves and day cycle,
-stock and world map, Marketplace shops, furniture and decorating, employees,
-saving, art/animation/sound, tutorial and mini story), the player's own critter
-art, the Christmas edition (stall, catalogue book with page turning, 14
-items placed on floor / back wall / counter), new Marketplace stall art,
-and Arrange mode on every screen.
-
-Open / next options:
-- **Cafe room painter** (optional step 5 of Arrange mode): paint the room's
-  tiles (walls, counter, door, queue spots) instead of editing
-  `src/data/cafeLayout.ts`; would allow a bigger room. Ask the user first.
-- Later features are listed in `GAME_DESIGN.md` §7 (customer groups, more
-  furniture and a bigger room, staff roles, farming, choose your animal,
-  wardrobe, music, pixel font, multiplayer places with chat safety, desktop
-  build — postponed).
+Read current code and `GAME_DESIGN.md` for implemented features and future
+milestones. Gardening, crop weights/records, museum displays, room editing
+and wardrobe systems already exist; inspect them before proposing replacements.
