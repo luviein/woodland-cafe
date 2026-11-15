@@ -58,6 +58,47 @@ describe('garden commands', () => {
     return { commands, get: () => state, set: (next: GameState) => { state = next; } };
   };
 
+  it('adds every crop and mutation to the right bag counts without changing unlocks or progress', () => {
+    const { commands, get } = gardenSetup();
+    for (const crop of ['mushroom', 'tomato', 'chilli'] as const) {
+      for (const variant of ['normal', 'golden', 'christmas'] as const) {
+        const before = get();
+        const original = variant === 'normal' ? before.stock[crop] : before.garden.harvests[variant][crop];
+        expect(runCommand(commands, `crop ${crop.toUpperCase()} ${variant.toUpperCase()} 3`)).toContain(`= ${original + 3}`);
+        expect(variant === 'normal' ? get().stock[crop] : get().garden.harvests[variant][crop]).toBe(original + 3);
+        expect(get().ingredients).toEqual(before.ingredients);
+        expect(get().garden.plots).toBe(before.garden.plots);
+        expect(get().garden.seeds).toBe(before.garden.seeds);
+        expect(get().christmasTickets).toBe(before.christmasTickets);
+        expect(get().cropCollection).toEqual(before.cropCollection);
+        expect(get().museum).toBe(before.museum);
+      }
+    }
+    expect(runCommand(commands, 'crop tomato christmas')).toBe('Christmas Tomato = 4');
+    expect(runCommand(commands, 'crop tomato ordinary')).toBe('Tomato = 4');
+  });
+
+  it('rejects invalid crop gifts and overflow without changing any state', () => {
+    const { commands, get, set } = gardenSetup();
+    for (const input of ['crop', 'crop tomato', 'crop bread golden', 'crop mushroom shiny', 'crop tomato normal 0',
+      'crop tomato normal -1', 'crop chilli christmas 1.5', 'crop mushroom golden Infinity',
+      'crop tomato golden 9007199254740992', 'crop tomato normal 1 extra']) {
+      const before = get();
+      expect(runCommand(commands, input)).toMatch(/Usage/);
+      expect(get()).toBe(before);
+    }
+    for (const variant of ['normal', 'golden', 'christmas'] as const) {
+      const state = get();
+      set(variant === 'normal' ? { ...state, stock: { ...state.stock, tomato: Number.MAX_SAFE_INTEGER } }
+        : { ...state, garden: { ...state.garden, harvests: { ...state.garden.harvests,
+          [variant]: { ...state.garden.harvests[variant], tomato: Number.MAX_SAFE_INTEGER },
+        } } });
+      const before = get();
+      expect(runCommand(commands, `crop tomato ${variant}`)).toBe('Too many crops');
+      expect(get()).toBe(before);
+    }
+  });
+
   it('adds seeds with a default count and validates crops, counts and locks', () => {
     const { commands, get } = gardenSetup();
     expect(runCommand(commands, 'seed MUSHROOM')).toBe('Mushroom seeds = 1');

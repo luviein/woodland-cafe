@@ -1,5 +1,6 @@
 import { CUSTOMER_ART } from '../art/spriteArt';
-import { CROPS, CROP_IDS } from '../data/crops';
+import { CROPS, CROP_IDS, SPECIAL_VARIANTS } from '../data/crops';
+import { cropName } from '../logic/garden';
 import { DESIGN_IDS, FURNITURE } from '../data/furniture';
 import { EMPLOYEE_ROLES, EMPLOYEES, type EmployeeRole } from '../data/employees';
 import { INGREDIENT_IDS, INGREDIENTS } from '../data/ingredients';
@@ -226,6 +227,28 @@ export function createDevCommands(
         const n = count(value, 'leaves <n>');
         game().set({ ...game().get(), leaves: n });
         return `Wallet = ${n}`;
+      },
+    },
+
+    crop: {
+      usage: 'crop <mushroom|tomato|chilli> <normal|golden|christmas> [n]',
+      description: 'Add harvested crops directly to the bag for testing (default one; ignores unlocks and season)',
+      run: args => {
+        const crop = CROP_IDS.find(id => id === args[0]?.toLowerCase());
+        const word = args[1]?.toLowerCase();
+        const variant = word === 'normal' || word === 'ordinary' ? 'ordinary' : SPECIAL_VARIANTS.find(id => id === word);
+        const n = args[2] === undefined ? 1 : Number(args[2]);
+        if (!crop || !variant || args.length > 3 || !Number.isSafeInteger(n) || n <= 0) {
+          throw new Error('Usage: crop <mushroom|tomato|chilli> <normal|golden|christmas> [n] (a positive safe whole number)');
+        }
+        const state = game().get();
+        const total = (variant === 'ordinary' ? state.stock[crop] : state.garden.harvests[variant][crop]) + n;
+        if (!Number.isSafeInteger(total)) throw new Error('Too many crops');
+        game().set(variant === 'ordinary' ? { ...state, stock: { ...state.stock, [crop]: total } }
+          : { ...state, garden: { ...state.garden, harvests: { ...state.garden.harvests,
+            [variant]: { ...state.garden.harvests[variant], [crop]: total },
+          } } });
+        return `${cropName(crop, variant)} = ${total}`;
       },
     },
 
