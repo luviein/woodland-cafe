@@ -20,6 +20,8 @@ import { COLORS, TEXT } from '../ui/theme';
 import { getGameState, setMuseumGameState, museumLeavesAvailable, watchGameState } from './gameStore';
 
 const TILE = 24, FLOOR_TOP = -70;
+const CASE_DRAG_THRESHOLD = 4;
+interface CaseDrag { id: number; pointerId: number; start: Point; offset: Point; active: boolean }
 
 export class MuseumScene extends Phaser.Scene {
   private room!: Phaser.GameObjects.Container;
@@ -32,6 +34,10 @@ export class MuseumScene extends Phaser.Scene {
   private editing = false;
   private placing = false;
   private movingId: number | null = null;
+  private caseDrag: CaseDrag | null = null;
+  private caseGhost: Phaser.GameObjects.Container | null = null;
+  private ignoredCaseRelease: number | null = null;
+  private grabOffset: Point = { x: 0, y: 16 };
   private modal: CropCollectionPanel | MuseumExhibitPanel | null = null;
   private level = 0;
   private arrangeButton!: Button;
@@ -49,6 +55,7 @@ export class MuseumScene extends Phaser.Scene {
 
   create(): void {
     this.editing = false; this.placing = false; this.movingId = null; this.modal = null;
+    this.caseDrag = null; this.caseGhost = null; this.ignoredCaseRelease = null;
     this.route = []; this.pendingCase = null;
     this.keys = (this.input.keyboard?.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT', false) ?? {}) as Record<string, Phaser.Input.Keyboard.Key>;
     const state = getGameState(this);
@@ -84,33 +91,53 @@ export class MuseumScene extends Phaser.Scene {
       this.modal = new CropCollectionPanel(this, () => this.closeModal(), () => this.closeModal()).setDepth(5000);
     });
     this.placeButton = control('placeCase', 205, 321, 112, words.place, () => {
-      this.placing = true; this.movingId = null; this.updateSelection(); this.refreshControls(getGameState(this));
+      this.clearCasePreview(); this.placing = true; this.movingId = null;
+      this.createCasePreview({ x: 0, y: 16 }); this.moveCasePreview(this.input.activePointer);
+      this.updateSelection(); this.refreshControls(getGameState(this));
     });
     this.storeButton = control('storeCase', 334, 321, 126, words.store, () => {
       if (this.movingId === null) return;
       const next = storeMuseumCase(getGameState(this), this.movingId);
+      this.clearCasePreview();
       this.movingId = null; this.placing = false; this.commit(next);
     });
     this.cancelButton = control('cancel', 449, 321, 82, words.cancel, () => this.finishArranging());
     this.wallet = place('wallet', 10, 321, new LeafText(this, 0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#ffe4b6' }, 0, 0.5));
     this.stored = place('stored', 630, 321, this.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#ffe4b6' }).setOrigin(1, 0.5));
     this.help = place('help', 320, 346, this.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#ffe4b6', align: 'center', wordWrap: { width: 610 } }).setOrigin(0.5));
+    this.input.on('pointerdown', () => { this.ignoredCaseRelease = null; });
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      if (this.ignoredCaseRelease === pointer.id) { this.ignoredCaseRelease = null; return; }
+      if (this.caseDrag) {
+        if (pointer.id !== this.caseDrag.pointerId) return;
+        const active = this.caseDrag.active; this.caseDrag = null;
+        if (active) this.dropCasePreview(pointer, true, over.some(object => object.getData('museumControl')));
+        return;
+      }
       if (this.modal || over.some(object => object.getData('museumControl') || object.getData('museumCase'))) return;
+      if (this.editing && this.caseGhost) { this.dropCasePreview(pointer, false); return; }
       const tile = this.tileAt(pointer.x, pointer.y);
       if (!tile) return;
-      if (this.editing) {
-        if (!this.placing && this.movingId === null) return;
-        const before = getGameState(this), after = placeMuseumCase(before, tile, this.movingId);
-        if (after === before) { this.help.setText(words.invalid); return; }
-        this.placing = false; this.movingId = null; this.commit(after);
-      } else {
-        const width = museumColumns(getGameState(this).museum);
-        this.walk({ x: (pointer.x - this.room.x + width * TILE / 2 - 12) / TILE,
-          y: (pointer.y - this.room.y - FLOOR_TOP - 24) / TILE });
-      }
+      if (this.editing) return;
+      const width = museumColumns(getGameState(this).museum);
+      this.walk({ x: (pointer.x - this.room.x + width * TILE / 2 - 12) / TILE,
+        y: (pointer.y - this.room.y - FLOOR_TOP - 24) / TILE });
     });
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.showGuide(pointer));
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (this.modal || !this.editing) return;
+      const drag = this.caseDrag;
+      if (drag && drag.pointerId !== pointer.id) return;
+      if (drag && !drag.active && Math.hypot(pointer.x - drag.start.x, pointer.y - drag.start.y) >= CASE_DRAG_THRESHOLD) {
+        drag.active = true; this.movingId = drag.id; this.placing = false;
+        this.createCasePreview(drag.offset); this.updateSelection(); this.refreshControls(getGameState(this));
+      }
+      if (this.caseGhost) this.moveCasePreview(pointer);
+      else this.showGuide(pointer);
+    });
+    this.input.on('pointerupoutside', () => this.cancelCasePreview());
+    const onBlur = () => { if (this.caseGhost || this.caseDrag) this.cancelCasePreview(); };
+    this.game.events.on(Phaser.Core.Events.BLUR, onBlur);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.events.off(Phaser.Core.Events.BLUR, onBlur));
     this.input.keyboard?.on('keydown-ESC', () => {
       if (this.modal) this.closeModal();
       else this.finishArranging();
@@ -121,6 +148,7 @@ export class MuseumScene extends Phaser.Scene {
   private commit(state: GameState): void { setMuseumGameState(this, state); }
 
   private finishArranging(): void {
+    this.clearCasePreview();
     this.placing = false; this.movingId = null; this.editing = false;
     this.route = []; this.pendingCase = null;
     const state = getGameState(this);
@@ -142,7 +170,69 @@ export class MuseumScene extends Phaser.Scene {
     this.editing = true; this.placing = false; this.movingId = id;
     this.route = []; this.pendingCase = null;
     this.refresh(getGameState(this));
+    this.movingId = id; this.createCasePreview({ x: 0, y: 16 }); this.updateSelection();
     this.closeModal();
+  }
+
+  private createCasePreview(offset: Point): void {
+    this.caseGhost?.destroy(); this.grabOffset = offset;
+    const item = getGameState(this).museum.cases.find(item => item.id === this.movingId);
+    const p = this.local(item ?? museumDoor(getGameState(this).museum));
+    const ghost = this.add.container(p.x + 12, p.y + 24).setAlpha(0.8).setDepth(1000).setName('museumCasePreview');
+    ghost.add(addArt(this, 0, 0, 'museumCase').setOrigin(0.5, 1));
+    const exhibit = COLLECTION_ITEMS.find(entry => entry.id === item?.exhibit);
+    if (exhibit) ghost.add(addArt(this, 0, -10, cropArtName(exhibit.crop, exhibit.variant) as ArtName).setOrigin(0.5, 1));
+    ghost.add(addArt(this, 0, 0, 'museumGlass').setOrigin(0.5, 1));
+    ghost.add(this.add.rectangle(0, -16, 36, 36, 0, 0).setName('dropOutline').setStrokeStyle(2, 0x6eac52));
+    this.caseGhost = ghost; this.room.add(ghost); this.room.sort('depth');
+    if (item) (this.room.getByName(`museumCase.${item.id}`) as Phaser.GameObjects.Container | null)?.setAlpha(0.25);
+  }
+
+  private caseDropPoint(pointer: Phaser.Input.Pointer): Point {
+    const width = museumColumns(getGameState(this).museum);
+    return { x: Math.round((pointer.x - this.room.x + this.grabOffset.x + width * TILE / 2 - 12) / TILE),
+      y: Math.round((pointer.y - this.room.y + this.grabOffset.y - FLOOR_TOP - 24) / TILE) };
+  }
+
+  private moveCasePreview(pointer: Phaser.Input.Pointer): void {
+    if (!this.caseGhost) return;
+    this.caseGhost.setPosition(Math.round(pointer.x - this.room.x + this.grabOffset.x), Math.round(pointer.y - this.room.y + this.grabOffset.y));
+    const tile = this.caseDropPoint(pointer), p = this.local(tile);
+    const valid = canPlaceMuseumCase(getGameState(this).museum, tile, this.movingId);
+    (this.caseGhost.getByName('dropOutline') as Phaser.GameObjects.Rectangle).setStrokeStyle(2, valid ? 0x6eac52 : 0xd35444);
+    this.hover.setVisible(!!this.tileAt(pointer.x, pointer.y)).setPosition(p.x + 12, p.y + 12).setFillStyle(valid ? 0x6eac52 : 0xd35444, 0.45);
+    for (const image of this.caseGhost.list) if (image instanceof Phaser.GameObjects.Image) image.setTint(valid ? 0xffffff : 0xffaaaa);
+  }
+
+  private clearCasePreview(): void {
+    // Esc/blur can cancel before the mouse is released: that release must not walk or drop.
+    if (this.caseDrag && this.input.activePointer.isDown) this.ignoredCaseRelease = this.caseDrag.pointerId;
+    this.caseGhost?.destroy(); this.caseGhost = null; this.caseDrag = null;
+    for (const item of getGameState(this).museum.cases) {
+      const group = this.room.getByName(`museumCase.${item.id}`) as Phaser.GameObjects.Container | null;
+      group?.setAlpha(1);
+    }
+    this.hover?.setVisible(false);
+  }
+
+  private cancelCasePreview(): void {
+    this.clearCasePreview(); this.movingId = null; this.placing = false;
+    this.updateSelection(); this.refreshControls(getGameState(this));
+  }
+
+  private dropCasePreview(pointer: Phaser.Input.Pointer, dragged: boolean, onControl = false): void {
+    const state = getGameState(this), tile = this.caseDropPoint(pointer);
+    const valid = !onControl && canPlaceMuseumCase(state.museum, tile, this.movingId);
+    if (!valid) {
+      if (dragged || onControl) this.cancelCasePreview();
+      else this.moveCasePreview(pointer);
+      if (!onControl) this.help.setText(words.invalid);
+      return;
+    }
+    const next = placeMuseumCase(state, tile, this.movingId);
+    this.clearCasePreview(); this.movingId = null; this.placing = false;
+    if (next !== state) this.commit(next);
+    else { this.updateSelection(); this.refreshControls(state); }
   }
 
   private local(p: Point): Point {
@@ -155,6 +245,7 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   private refresh(state: GameState): void {
+    if (this.caseGhost || this.caseDrag) { this.clearCasePreview(); this.movingId = null; this.placing = false; }
     if (state.museum.level !== this.level) {
       const shift = (state.museum.level - this.level) * 2;
       this.cell = { ...this.cell, x: this.cell.x + shift };
@@ -199,12 +290,24 @@ export class MuseumScene extends Phaser.Scene {
       group.add(this.add.rectangle(0, -16, 34, 34, 0, 0).setName('selection').setStrokeStyle(2, 0xffd56d)
         .setVisible(this.editing && item.id === this.movingId));
       group.setInteractive(new Phaser.Geom.Rectangle(-16, -32, 32, 32), Phaser.Geom.Rectangle.Contains).setData('museumCase', item.id);
-      group.on('pointerup', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event?: { stopPropagation(): void }) => {
+      group.on('pointerdown', (pointer: Phaser.Input.Pointer, _x: number, _y: number, event?: { stopPropagation(): void }) => {
+        this.ignoredCaseRelease = null;
+        if (this.modal || !this.editing || this.caseGhost) return;
+        event?.stopPropagation();
+        this.caseDrag = { id: item.id, pointerId: pointer.id, start: { x: pointer.downX, y: pointer.downY },
+          offset: { x: this.room.x + group.x - pointer.downX, y: this.room.y + group.y - pointer.downY }, active: false };
+      });
+      group.on('pointerup', (pointer: Phaser.Input.Pointer, _x: number, _y: number, event?: { stopPropagation(): void }) => {
         // Selection must not become a floor drop on the same click.
         event?.stopPropagation();
+        if (this.ignoredCaseRelease === pointer.id) { this.ignoredCaseRelease = null; return; }
         if (this.modal) return;
         if (this.editing) {
-          this.movingId = item.id; this.placing = false; this.updateSelection(); this.refreshControls(getGameState(this));
+          const drag = this.caseDrag; this.caseDrag = null;
+          if (drag?.active || this.caseGhost) { this.dropCasePreview(pointer, !!drag?.active); return; }
+          if (!drag || drag.id !== item.id) return;
+          this.movingId = item.id; this.placing = false;
+          this.createCasePreview(drag.offset); this.updateSelection(); this.refreshControls(getGameState(this));
         }
         else this.walk(item, item.id);
       });
