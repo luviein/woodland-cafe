@@ -25,7 +25,7 @@ it('persists journal claims and title choice without committing cafe work or dup
   claimJournalMilestone(owner, 'firstDiscovery');
   claimJournalMilestone(owner, 'goldenFind');
   claimJournalMilestone(owner, 'foundingCollection');
-  equipJournalTitle(owner, 'masterCollector');
+  equipJournalTitle(owner, 'goldenCollector');
   const loaded = loadGame(slot.read()!);
   expect(loaded.ok).toBe(true);
   if (!loaded.ok) return;
@@ -33,7 +33,7 @@ it('persists journal claims and title choice without committing cafe work or dup
   expect(getGameState(owner).leaves).toBe(375);
   expect(loaded.state.stock).toEqual(checkpoint.stock);
   expect(loaded.state.museum.storedCases).toBe(checkpoint.museum.storedCases + 1);
-  expect(loaded.state.journal.equippedTitle).toBe('masterCollector');
+  expect(loaded.state.journal.equippedTitle).toBe('goldenCollector');
   continueGame(owner, loaded.state);
   const saved = slot.read();
   claimJournalMilestone(owner, 'firstDiscovery');

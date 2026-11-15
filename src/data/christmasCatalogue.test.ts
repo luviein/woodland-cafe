@@ -7,10 +7,10 @@ import { CHRISTMAS_VENDOR } from './stallVendors';
 import { fileContents, moveTo, replaceScreen } from '../layout/positions';
 
 describe('Christmas catalogue and vendor', () => {
-  it('lists every clothing item exactly once in its own section', () => {
+  it('lists every available clothing item exactly once and excludes retired antlers', () => {
     const clothes = CHRISTMAS_CATALOGUE.tabs.find(tab => tab.name === 'Clothes');
-    expect(clothes?.designs).toEqual(CLOTHING_IDS);
-    expect(new Set(clothes?.designs).size).toBe(CLOTHING_IDS.length);
+    expect(clothes?.designs).toEqual(CLOTHING_IDS.filter(id => id !== 'antlers'));
+    expect(new Set(clothes?.designs).size).toBe(CLOTHING_IDS.length - 1);
     for (const id of CLOTHING_IDS) {
       const product = catalogueProduct(id, 'rabbit');
       expect(product.art.startsWith('rabbitCatalogue')).toBe(true);

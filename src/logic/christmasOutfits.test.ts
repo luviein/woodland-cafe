@@ -28,7 +28,7 @@ describe('seasonal customer outfits', () => {
       outfits.add(JSON.stringify(outfit));
     }
     expect(outfits.size).toBeGreaterThan(50);
-    expect(seen.size).toBe(16);
+    expect(seen).toEqual(new Set(CLOTHING_SLOTS.flatMap(slot => clothingIn(slot))));
     expect(christmasCustomerOutfit(1, 5, today)).not.toEqual(christmasCustomerOutfit(1, 4, today));
   });
 });

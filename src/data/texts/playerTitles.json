@@ -1,0 +1,19 @@
+{
+  "tab": "Titles",
+  "goldenCollector": "All That Glitters Grows",
+  "christmasDevotee2026": "Santa's Devotee 2026",
+  "masterCollector": "Master Collector",
+  "goldenHint": "Record all 3 Golden crops.",
+  "christmasHint": "Record 3 Christmas crops and collect all 18 festive furniture/decor items.",
+  "legacyHint": "Previously earned collection title.",
+  "unlocked": "Unlocked",
+  "locked": "Locked",
+  "equipped": "Equipped",
+  "remove": "Remove title",
+  "journalHeading": "Collection titles",
+  "choose": "Choose in wardrobe",
+  "progress": "{current} / {target} collected",
+  "caseReward": "1 case + badge",
+  "goldenCrops": "Golden crops",
+  "cropsFurniture": "crops + furniture"
+}

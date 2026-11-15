@@ -91,7 +91,7 @@ export const CHRISTMAS_CATALOGUE = {
     { name: 'Furniture', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'table' || kindOf(d) === 'chair') },
     { name: 'Decor', designs: designsSoldBy('christmas').filter((d) => (kindOf(d) === 'floorDecor' || kindOf(d) === 'rug')) },
     { name: 'Wall', designs: designsSoldBy('christmas').filter((d) => kindOf(d) === 'wallDecor') },
-    { name: 'Clothes', designs: CLOTHING_IDS },
+    { name: 'Clothes', designs: CLOTHING_IDS.filter(id => id !== 'antlers') },
     { name: 'Room', designs: FINISH_IDS },
   ],
   cover: ['christmasTree', 'giftBoxes', 'snowman'],

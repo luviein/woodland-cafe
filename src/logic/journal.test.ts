@@ -20,7 +20,8 @@ it('counts existing discoveries and awards each milestone once without spending 
   expect(claimMilestone(state, 'foundingCollection')).toBe(state);
   expect(state.garden).toBe(fresh.garden);
   expect(discovered.journal.claimed).toEqual([]);
-  state = equipPlayerTitle(state, 'masterCollector');
+  state = equipPlayerTitle(state, 'goldenCollector');
+  expect(state.journal.equippedTitle).toBe('goldenCollector');
   expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
   expect(equipPlayerTitle(state, null).journal.equippedTitle).toBeNull();
 });

@@ -29,5 +29,5 @@ export type ClothingFor<S extends ClothingSlot> = {
   [K in ClothingId]: (typeof CLOTHING)[K]['slot'] extends S ? K : never
 }[ClothingId];
 export function clothingIn(slot: ClothingSlot): ClothingId[] {
-  return CLOTHING_IDS.filter(id => CLOTHING[id].slot === slot);
+  return CLOTHING_IDS.filter(id => id !== 'antlers' && CLOTHING[id].slot === slot);
 }

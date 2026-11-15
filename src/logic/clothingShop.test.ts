@@ -12,7 +12,7 @@ describe('Christmas clothing purchases', () => {
   });
 
   it('charges the exact price once and unlocks the item for every animal', () => {
-    for (const id of CLOTHING_IDS.filter(item => !STARTER_CLOTHING.includes(item))) {
+    for (const id of CLOTHING_IDS.filter(item => item !== 'antlers' && !STARTER_CLOTHING.includes(item))) {
       const original = { ...createNewGame(), leaves: clothingPrice(id) };
       const bought = buyClothing(original, id);
       expect(original.ownedClothing).not.toContain(id);

@@ -11,7 +11,11 @@ $jobs = @(
   @{ Source='journal-bookmarks-source.png'; Name='journalCropsBookmark'; Width=112; Segment=-1; Crop=@(17,197,288,100); Outline=@(@(20,202),@(28,197),@(263,197),@(272,203),@(304,245),@(272,288),@(263,296),@(28,296),@(20,290)) },
   @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,317,288,98); Outline=@(@(20,320),@(28,317),@(263,317),@(272,319),@(304,361),@(272,405),@(263,414),@(28,414),@(20,408)) },
   @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorRibbon'; Width=160; Segment=-1 },
-  @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 }
+  @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 },
+  @{ Source='collection-titles-source.png'; Name='goldenCollectorRibbon'; Width=160; Segment=-1; RangeY=@(0,336) },
+  @{ Source='collection-titles-source.png'; Name='goldenCollectorWorldRibbon'; Width=176; Segment=-1; RangeY=@(0,336) },
+  @{ Source='collection-titles-source.png'; Name='christmasDevoteeRibbon'; Width=160; Segment=-1; RangeY=@(336,724) },
+  @{ Source='collection-titles-source.png'; Name='christmasDevoteeWorldRibbon'; Width=176; Segment=-1; RangeY=@(336,724) }
 )
 if ($Only.Count) { $jobs = @($jobs | Where-Object { $Only -contains $_.Name }) }
 foreach ($job in $jobs) {
@@ -19,7 +23,9 @@ foreach ($job in $jobs) {
   $start=0; $end=$source.Width
   if ($job.Segment -ge 0) { $start=[int]($job.Segment*$source.Width/3); $end=[int](($job.Segment+1)*$source.Width/3) }
   $left=$end; $right=0; $top=$source.Height; $bottom=0
-  if (-not $job.Crop) { for ($y=0; $y -lt $source.Height; $y++) { for ($x=$start; $x -lt $end; $x++) {
+  $startY=0; $endY=$source.Height
+  if ($job.RangeY) { $startY=$job.RangeY[0]; $endY=$job.RangeY[1] }
+  if (-not $job.Crop) { for ($y=$startY; $y -lt $endY; $y++) { for ($x=$start; $x -lt $end; $x++) {
     if ($source.GetPixel($x,$y).A -ge 128) { $left=[Math]::Min($left,$x); $right=[Math]::Max($right,$x); $top=[Math]::Min($top,$y); $bottom=[Math]::Max($bottom,$y) }
   } } }
   $mask=$null

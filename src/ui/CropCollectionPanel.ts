@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 import words from '../data/texts/fieldJournal.json';
 import collectionWords from '../data/texts/cropCollection.json';
+import titleWords from '../data/texts/playerTitles.json';
 import { COLLECTION_ITEMS } from '../logic/cropCollection';
 import { MILESTONE_IDS, MILESTONE_LEAVES, canClaimMilestone, milestoneProgress } from '../logic/journal';
 import { cropRecord, formatCropWeight } from '../logic/cropWeights';
 import { cropArtName, cropName } from '../logic/garden';
 import type { GameState } from '../logic/gameState';
 import type { ArtName } from '../art/spriteArt';
-import { claimJournalMilestone, equipJournalTitle, getGameState } from '../scenes/gameStore';
+import { claimJournalMilestone, getGameState } from '../scenes/gameStore';
+import { titleProgress, titleUnlocked } from '../logic/playerTitles';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { addArt } from './art';
@@ -15,6 +17,7 @@ import { addJournalImage } from './journalImage';
 import { Button } from './Button';
 import { LeafText } from './LeafText';
 import { PlayerTitlePlate } from './PlayerTitlePlate';
+import { WardrobePanel } from './WardrobePanel';
 import { cropQuantity } from './cropQuantity';
 import { COLORS, TEXT } from './theme';
 
@@ -112,7 +115,7 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
       this.place(this.content, `${name}.badge`, 116, y + 13, addJournalImage(this.scene, 0, 0, badges[i])).setAlpha(progress.current >= progress.target ? 1 : 0.4);
       this.text(`${name}.name`, 137, y - 4, names[i], 10, 164);
       this.text(`${name}.hint`, 137, y + 10, `${hints[i]} (${progress.current}/${progress.target})`, 9, 164);
-      const reward = id === 'foundingCollection' ? words.rewardCase : `🍃 ${MILESTONE_LEAVES[id]}`;
+      const reward = id === 'foundingCollection' ? titleWords.caseReward : `🍃 ${MILESTONE_LEAVES[id]}`;
       this.place(this.content, `${name}.reward`, 104, y + 36,
         new LeafText(this.scene, 0, 0, reward, { ...TEXT.body, fontFamily: 'Consolas, monospace', color: '#3c261d', resolution: 2, fontSize: '10px' }));
       this.place(this.content, `${name}.claim`, 275, y + 40,
@@ -121,15 +124,16 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
         }).setFontSize(9)).setEnabled(canClaimMilestone(state, id));
     });
     const titleCentre = 448;
-    this.text('titleHeading', titleCentre, 107, words.masterCollector, 12).setFontStyle('bold').setOrigin(0.5, 0);
-    this.place(this.content, 'titleBadge', titleCentre, 151, addJournalImage(this.scene, 0, 0, 'collectorBadge'));
-    const unlocked = state.journal.claimed.includes('foundingCollection');
-    this.text('titleStatus', titleCentre, 180, unlocked ? words.founding : words.titleLocked, 10, 192).setAlign('center').setOrigin(0.5, 0);
-    this.place(this.content, 'titlePlate', titleCentre, 231, new PlayerTitlePlate(this.scene)).setAlpha(unlocked ? 1 : 0.4);
-    const equipped = state.journal.equippedTitle !== null;
+    this.text('titleHeading', titleCentre, 107, titleWords.journalHeading, 12).setFontStyle('bold').setOrigin(0.5, 0);
+    (['goldenCollector', 'christmasDevotee2026'] as const).forEach((title, i) => {
+      const y = 150 + i * 76, progress = titleProgress(state, title), unlocked = titleUnlocked(state, title);
+      this.place(this.content, `title.${title}.plate`, titleCentre, y, new PlayerTitlePlate(this.scene, title)).setAlpha(unlocked ? 1 : 0.5);
+      this.text(`title.${title}.progress`, titleCentre, y + 24,
+        unlocked ? titleWords.unlocked : titleWords.progress.replace('{current}', String(progress.current)).replace('{target}', String(progress.target)), 10, 190).setOrigin(0.5, 0);
+    });
     this.place(this.content, 'equipTitle', titleCentre, 276,
-      new Button(this.scene, 0, 0, 128, 22, equipped ? words.unequip : words.equip, COLORS.book, () => {
-        equipJournalTitle(this.scene, equipped ? null : 'masterCollector'); this.refresh();
-      }).setFontSize(11)).setEnabled(unlocked);
+      new Button(this.scene, 0, 0, 156, 22, titleWords.choose, COLORS.book, () => {
+        if (!this.scene.children.getByName('wardrobe')) new WardrobePanel(this.scene, 'titles');
+      }).setFontSize(11));
   }
 }

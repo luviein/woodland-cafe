@@ -1,5 +1,7 @@
 import { COLLECTION_IDS } from './cropCollection';
 import type { GameState } from './gameState';
+import { TITLE_IDS, recordPlayerTitles, titleUnlocked, type PlayerTitle } from './playerTitles';
+export type { PlayerTitle } from './playerTitles';
 
 export const MILESTONE_IDS = ['firstDiscovery', 'goldenFind', 'foundingCollection'] as const;
 // This founding set stays achievable when future events add more collections.
@@ -9,12 +11,12 @@ export type MilestoneId = typeof MILESTONE_IDS[number];
 export const MILESTONE_LEAVES: Readonly<Record<MilestoneId, number>> = {
   firstDiscovery: 25, goldenFind: 50, foundingCollection: 0,
 };
-export type PlayerTitle = 'masterCollector';
 export interface JournalProgress {
   readonly claimed: readonly MilestoneId[];
   readonly equippedTitle: PlayerTitle | null;
+  readonly unlockedTitles: readonly PlayerTitle[];
 }
-export const emptyJournal = (): JournalProgress => ({ claimed: [], equippedTitle: null });
+export const emptyJournal = (): JournalProgress => ({ claimed: [], equippedTitle: null, unlockedTitles: [] });
 
 export function milestoneProgress(state: GameState, id: MilestoneId): { current: number; target: number } {
   const found = COLLECTION_IDS.filter(entry => state.cropCollection.includes(entry));
@@ -43,8 +45,9 @@ export function claimMilestone(state: GameState, id: MilestoneId): GameState {
 }
 
 export function equipPlayerTitle(state: GameState, title: PlayerTitle | null): GameState {
-  if (title !== null && !state.journal.claimed.includes('foundingCollection') || state.journal.equippedTitle === title) return state;
-  return { ...state, journal: { ...state.journal, equippedTitle: title } };
+  if (title !== null && !titleUnlocked(state, title) || state.journal.equippedTitle === title) return state;
+  const recorded = recordPlayerTitles(state);
+  return { ...recorded, journal: { ...recorded.journal, equippedTitle: title } };
 }
 
 export function validJournal(value: unknown): value is JournalProgress {
@@ -52,7 +55,15 @@ export function validJournal(value: unknown): value is JournalProgress {
   const raw = value as Record<string, unknown>;
   return Array.isArray(raw.claimed) && raw.claimed.every(id => MILESTONE_IDS.includes(id))
     && new Set(raw.claimed).size === raw.claimed.length
-    && (raw.equippedTitle === null || raw.equippedTitle === 'masterCollector' && raw.claimed.includes('foundingCollection'));
+    && Array.isArray(raw.unlockedTitles) && raw.unlockedTitles.every(id => TITLE_IDS.includes(id))
+    && new Set(raw.unlockedTitles).size === raw.unlockedTitles.length
+    && (raw.equippedTitle === null || raw.unlockedTitles.includes(raw.equippedTitle));
+}
+
+export function migrateJournal(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const raw = value as Record<string, unknown>;
+  return { ...raw, unlockedTitles: Array.isArray(raw.claimed) && raw.claimed.includes('foundingCollection') ? ['masterCollector'] : [] };
 }
 
 /** Preserve cafe rollback while committing only journal receipts and rewards. */

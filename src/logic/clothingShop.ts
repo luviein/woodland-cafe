@@ -3,7 +3,7 @@ import { spendLeaves, type GameState } from './gameState';
 import { equip } from './wardrobe';
 
 export function canBuyClothing(state: GameState, id: ClothingId): boolean {
-  return !state.ownedClothing.includes(id) && state.leaves >= clothingPrice(id);
+  return id !== 'antlers' && !state.ownedClothing.includes(id) && state.leaves >= clothingPrice(id);
 }
 
 /** One purchase unlocks an item for every animal, rather than buying four copies. */
@@ -15,7 +15,7 @@ export function buyClothing(state: GameState, id: ClothingId): GameState {
 
 /** Locked cards cannot bypass ownership by reaching their click handler. */
 export function toggleClothing(state: GameState, id: ClothingId): GameState {
-  if (!state.ownedClothing.includes(id)) return state;
+  if (id === 'antlers' || !state.ownedClothing.includes(id)) return state;
   const slot = CLOTHING[id].slot;
   return { ...state, outfit: equip(state.outfit, slot, state.outfit[slot] === id ? null : id) };
 }

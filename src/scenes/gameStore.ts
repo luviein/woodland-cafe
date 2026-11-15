@@ -1,5 +1,6 @@
 import { gardenCheckpoint } from '../logic/garden';
 import { claimMilestone, equipPlayerTitle, journalCheckpoint, type MilestoneId, type PlayerTitle } from '../logic/journal';
+import { recordPlayerTitles } from '../logic/playerTitles';
 import { museumCheckpoint } from '../logic/museum';
 import { buyChristmasItem } from '../logic/christmasShop';
 import type { CatalogueItem } from '../data/catalogueProducts';
@@ -132,6 +133,10 @@ export function claimJournalMilestone(owner: HasRegistry, id: MilestoneId): void
 
 export function equipJournalTitle(owner: HasRegistry, title: PlayerTitle | null): void {
   updateJournal(owner, state => equipPlayerTitle(state, title));
+}
+
+export function unlockJournalTitles(owner: HasRegistry): void {
+  updateJournal(owner, recordPlayerTitles);
 }
 
 export function setGameState(owner: HasRegistry, state: GameState): void {

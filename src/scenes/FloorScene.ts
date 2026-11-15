@@ -53,6 +53,7 @@ import { destination, isMoving, walkerPosition, type Walker } from '../logic/wal
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
 import { ClockDisplay } from '../ui/ClockDisplay';
 import { createCleanerSprite, createDressedCritter, createPlayerSprite, critterHeadroom, setBobbing, setFacing } from '../ui/sprites';
+import { attachPlayerWorldTitle } from '../ui/playerWorldTitle';
 import { christmasCustomerOutfit } from '../logic/christmasOutfits';
 import type { Outfit } from '../logic/wardrobe';
 import type { View } from '../art/sprites/sheetCritters';
@@ -238,6 +239,7 @@ export class FloorScene extends Phaser.Scene {
 
     this.player = createPlayer(this.layout);
     this.playerSprite = createPlayerSprite(this, () => !this.prepOpen && !this.summaryOpen);
+    attachPlayerWorldTitle(this, this.playerSprite, () => !this.prepOpen && !this.summaryOpen);
 
     // Listen on the whole scene, not on each tile: one handler converts the
     // tap position to a tile. 'pointerup' works the same for mouse and touch.
