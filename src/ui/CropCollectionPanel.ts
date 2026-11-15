@@ -32,16 +32,17 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
     this.setName('fieldJournal');
     this.journalState = getGameState(scene);
     this.add(scene.add.rectangle(320, 180, 640, 360, COLORS.overlay, 0.65).setInteractive());
-    this.place(this, 'background', 320, 180, addArt(scene, 0, 0, 'fieldJournal'));
-    this.place(this, 'back', 107, 332, new Button(scene, 0, 0, 60, 20, collectionWords.back, COLORS.book, back).setFontSize(10));
-    this.place(this, 'close', 533, 332, new Button(scene, 0, 0, 60, 20, collectionWords.close, COLORS.reset, close).setFontSize(10));
+    this.place(this, 'background', 350, 180, addArt(scene, 0, 0, 'fieldJournal'));
+    this.place(this, 'back', 137, 332, new Button(scene, 0, 0, 60, 20, collectionWords.back, COLORS.book, back).setFontSize(10));
+    this.place(this, 'close', 563, 332, new Button(scene, 0, 0, 60, 20, collectionWords.close, COLORS.reset, close).setFontSize(10));
     (['crops', 'milestones'] as const).forEach((spread, i) => {
-      this.place(this, `tab.${spread}`, 203 + i * 234, 83,
-        new Button(scene, 0, 0, 150, 20, words[spread], COLORS.book, () => {
+      const art = i === 0 ? 'journalCropsBookmark' : 'journalMilestonesBookmark';
+      this.place(this, `bookmark.${spread}`, 65, 91 + i * 54,
+        new Button(scene, 0, 0, 112, 50, '', COLORS.book, () => {
           this.spread = spread; this.refresh();
-        }).setFontSize(11));
+        }).setIcon(addArt(scene, 0, 0, art)).setBackgroundVisible(false));
     });
-    this.content = scene.add.container(0, 0).setName('content'); this.add(this.content);
+    this.content = scene.add.container(30, 0).setName('content'); this.add(this.content);
     this.renderSpread();
     this.once(Phaser.GameObjects.Events.DESTROY, () => this.pendingRefresh?.remove(false));
     arrangeablePanel(scene, 'fieldJournal', 'panel', this);
