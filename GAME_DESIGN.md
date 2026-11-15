@@ -828,3 +828,9 @@ Donate 1 chooses the heaviest specimen. Upgrade consumes one only when it beats 
 Save version 18 adds compact nonstandard weight batches and donation records. Counts remain authoritative; unspecified units implicitly weigh 1.00 kg, avoiding enormous arrays for old stock or dev gifts. Validate batches against stock and validate record weights. Garden checkpoints save weight additions and donation upgrades without committing cafe consumption.
 
 The crop testing command accepts optional [kg] after quantity: crop mushroom christmas 3 3.24. Explicit weights must be 0.01-5.00 kg in whole grams. Omitted weight means 1.00 kg. The stock setter resets that ingredient's weights to standard.
+
+### Automatic special-crop collection and readable plaques
+
+Special harvests automatically unlock their Golden/Christmas collection entry and update its heaviest recorded weight without consuming stock. Remove Donate and Upgrade controls. Dev crop gifts use the same recording rule. Loading existing saves records any currently owned special crops while preserving previous records and exhibits; crops already sold without a record cannot be reconstructed. Ordinary crops never unlock special entries. Record updates save with the harvest checkpoint. Collection progress reads recorded, and descriptions explain harvesting rather than donations. Museum details show the heaviest recorded crop.
+
+Case plaques use high-contrast, native-pixel digit glyphs with clear outlines and padding, rather than tiny antialiased text. Keep the full kg value readable on placed cases and their moving previews.
