@@ -836,6 +836,33 @@ Special harvests automatically unlock their Golden/Christmas collection entry an
 
 Case plaques use high-contrast, native-pixel digit glyphs with clear outlines and padding, rather than tiny antialiased text. Keep the full kg value readable on placed cases and their moving previews.
 
+### Field Journal and founding milestones
+
+Replace the collection book presentation with the supplied open Field Journal,
+using the matching closed-book icon and three supplied milestone badges.
+The Crops spread keeps Golden records on the left and Christmas records on
+the right, showing stock and heaviest recorded weight. Undiscovered entries
+use existing crop silhouettes and useful mutation/seasonal-seed clues. Keep
+content inside generous page margins, clear of the binding and decorations.
+A separate Milestones spread shows progress, rewards and explicit Claim
+buttons. Existing recorded discoveries count immediately; opening the journal
+never consumes stock or awards rewards automatically.
+
+One-time milestones: First Discovery (any special record) grants 25 Leaves;
+Golden Find (any Golden record) grants 50 Leaves; Founding Collection (all six
+current special records) grants one stored museum case and the Master
+Collector title with the supplied wreath badge. Record claimed milestones
+permanently, granting rewards and claim status atomically. Prevent repeat
+claims and unsafe balances. Rewards save immediately even during cafe service
+without committing that day's earnings or ingredient consumption.
+
+Players may equip/unequip the unlocked title in the journal. Display its
+decorated badge/title plate in the journal and museum. Persist the unlock and
+equipped choice; do not auto-equip on claim. Future multiplayer can display a
+separate nameplate above an equipped title plate, but multiplayer, player names
+and nameplate customisation are outside this step. Older saves retain all
+progress and start with no claimed milestones or equipped title.
+
 ### Independent museum case selection
 
 Each case contains at most one crop entry, and each entry is displayed in at most one case. Disable choices already displayed in another case and reject duplicate assignments in pure logic; never silently transfer an exhibit. Clearing an empty or occupied case leaves all other cases unchanged. The chooser explains this restriction. Collection headers and recorded cards use subtle, consistent borders; full-colour art and best weights identify recorded entries. Plaque units use a recognisable lowercase g with a descender and enough bottom padding.
