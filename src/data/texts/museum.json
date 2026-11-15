@@ -12,7 +12,7 @@
   "cancel": "Cancel",
   "wallet": "Available: {amount}",
   "stored": "Stored cases: {amount}",
-  "walkHelp": "Tap the floor to walk. Tap a case to view or choose its exhibit.",
+  "walkHelp": "Walk with WASD/arrows or tap the floor. Tap a case to view or change its exhibit.",
   "arrangeHelp": "Select a case to move it, or choose Place case. Keep the red aisle clear.",
   "placingHelp": "Tap a valid floor tile. Cancel keeps the original case in place.",
   "invalid": "That spot would block the aisle, overlap a case, or close a walkway.",
@@ -24,5 +24,5 @@
   "display": "Display",
   "clear": "Clear case",
   "close": "Close",
-  "starterHelp": "Your first display case is ready. Choose Arrange, then Place case."
+  "starterHelp": "Walk with WASD/arrows. Choose Arrange, then Place case to use your free case."
 }

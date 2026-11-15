@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 import words from '../data/texts/museum.json';
-import { MUSEUM_CASE_PRICE, MUSEUM_EXPANSION_PRICES, MUSEUM_ROWS, museumColumns, museumDoor, museumLayout,
+import { MUSEUM_CASE_PRICE, MUSEUM_EXPANSION_PRICES, MUSEUM_ROWS, museumColumns, museumDoor,
   canPlaceMuseumCase, placeMuseumCase, storeMuseumCase, buyMuseumCase, expandMuseum, displayMuseumCrop } from '../logic/museum';
 import type { Point } from '../logic/layout';
 import type { GameState } from '../logic/gameState';
-import { findPath, findPathNextTo } from '../logic/pathfinding';
+import { moveInMuseum, museumWalkingRoute, MUSEUM_WALK_SPEED } from '../logic/museumWalking';
 import { COLLECTION_ITEMS } from '../logic/cropCollection';
 import { cropArtName } from '../logic/garden';
 import type { ArtName } from '../art/spriteArt';
@@ -28,7 +28,7 @@ export class MuseumScene extends Phaser.Scene {
   private cell!: Point;
   private route: Point[] = [];
   private pendingCase: number | null = null;
-  private exiting = false;
+  private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
   private editing = false;
   private placing = false;
   private movingId: number | null = null;
@@ -49,7 +49,8 @@ export class MuseumScene extends Phaser.Scene {
 
   create(): void {
     this.editing = false; this.placing = false; this.movingId = null; this.modal = null;
-    this.route = []; this.pendingCase = null; this.exiting = false;
+    this.route = []; this.pendingCase = null;
+    this.keys = (this.input.keyboard?.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT', false) ?? {}) as Record<string, Phaser.Input.Keyboard.Key>;
     const state = getGameState(this);
     this.level = state.museum.level; this.cell = museumDoor(state.museum);
     this.cameras.main.setBackgroundColor('#34231f');
@@ -68,7 +69,7 @@ export class MuseumScene extends Phaser.Scene {
     control('map', 40, 19, 60, words.map, () => { if (!this.modal) this.scene.start('WorldMapScene', { current: 'museum' }); });
     this.arrangeButton = control('arrange', 121, 19, 88, words.arrange, () => {
       this.editing = !this.editing; this.placing = false; this.movingId = null;
-      this.route = []; this.pendingCase = null; this.exiting = false;
+      this.route = []; this.pendingCase = null;
       if (!this.editing) this.cell = museumDoor(getGameState(this).museum);
       this.refresh(getGameState(this));
     });
@@ -100,7 +101,11 @@ export class MuseumScene extends Phaser.Scene {
         const before = getGameState(this), after = placeMuseumCase(before, tile, this.movingId);
         if (after === before) { this.help.setText(words.invalid); return; }
         this.placing = false; this.movingId = null; this.commit(after);
-      } else this.walk(tile);
+      } else {
+        const width = museumColumns(getGameState(this).museum);
+        this.walk({ x: (pointer.x - this.room.x + width * TILE / 2 - 12) / TILE,
+          y: (pointer.y - this.room.y - FLOOR_TOP - 24) / TILE });
+      }
     });
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.showGuide(pointer));
     this.input.keyboard?.on('keydown-ESC', () => {
@@ -178,7 +183,7 @@ export class MuseumScene extends Phaser.Scene {
     }
     this.hover = this.add.rectangle(0, 0, 24, 24, 0x6eac52, 0.45).setStrokeStyle(1, 0xffffff).setDepth(900).setVisible(false);
     this.room.add(this.hover);
-    const p = this.local(this.cell); this.player.setPosition(p.x, p.y).setVisible(!this.editing).setDepth(p.y + 24);
+    const p = this.local(this.cell); this.player.setPosition(Math.round(p.x), Math.round(p.y)).setVisible(!this.editing).setDepth(p.y + 24);
     this.room.sort('depth'); this.refreshControls(state); this.modal?.refresh(state);
   }
 
@@ -207,26 +212,35 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   private walk(to: Point, caseId: number | null = null): void {
-    const museum = getGameState(this).museum, layout = museumLayout(museum);
-    const route = caseId === null ? findPath(layout, this.cell, to) : findPathNextTo(layout, this.cell, to);
+    const route = museumWalkingRoute(getGameState(this).museum, this.cell, to, caseId);
     if (route === null) return;
-    this.route = [this.cell, ...route]; this.pendingCase = caseId;
-    const door = museumDoor(museum); this.exiting = caseId === null && to.x === door.x && to.y === door.y;
+    this.route = route; this.pendingCase = caseId;
   }
 
   update(_time: number, delta: number): void {
-    if (this.modal || this.editing || !this.route.length) return;
-    const next = this.route[0], target = this.local(next), dx = target.x - this.player.x, dy = target.y - this.player.y;
-    const distance = Math.hypot(dx, dy), step = Math.min(delta, 50) * 0.085;
-    if (distance <= step) { this.player.setPosition(target.x, target.y); this.cell = next; this.route.shift(); }
-    else this.player.setPosition(Math.round(this.player.x + dx / distance * step), Math.round(this.player.y + dy / distance * step));
+    if (this.modal || this.editing) return;
+    const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+    const down = (a: string, b: string) => !typing && !!(this.keys[a]?.isDown || this.keys[b]?.isDown);
+    const direction = { x: Number(down('D', 'RIGHT')) - Number(down('A', 'LEFT')), y: Number(down('S', 'DOWN')) - Number(down('W', 'UP')) };
+    const length = Math.hypot(direction.x, direction.y), step = Math.min(delta, 50) * MUSEUM_WALK_SPEED / 1000 / TILE;
+    if (length) {
+      this.route = []; this.pendingCase = null;
+      this.cell = moveInMuseum(getGameState(this).museum, this.cell, { x: direction.x / length * step, y: direction.y / length * step });
+    } else {
+      if (!this.route.length) return;
+      const next = this.route[0], dx = next.x - this.cell.x, dy = next.y - this.cell.y, distance = Math.hypot(dx, dy);
+      if (distance <= step) { this.cell = { ...next }; this.route.shift(); }
+      else this.cell = { x: this.cell.x + dx / distance * step, y: this.cell.y + dy / distance * step };
+    }
+    const position = this.local(this.cell);
+    this.player.setPosition(Math.round(position.x), Math.round(position.y));
     this.player.setDepth(this.player.y + 24); this.room.sort('depth');
     if (!this.route.length) {
       if (this.pendingCase !== null) {
         const id = this.pendingCase; this.pendingCase = null;
         const panel = new MuseumExhibitPanel(this, id, exhibit => this.commit(displayMuseumCrop(getGameState(this), id, exhibit)), () => this.closeModal());
         this.modal = panel; panel.refresh(getGameState(this));
-      } else if (this.exiting) this.scene.start('WorldMapScene', { current: 'museum' });
+      }
     }
   }
 
