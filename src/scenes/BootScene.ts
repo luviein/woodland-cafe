@@ -31,6 +31,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // These full-resolution ribbons include approved lettering. Smooth only
+    // their downscaling; critters, tiles and the rest of the pixel art stay crisp.
+    for (const name of ['goldenCollectorRibbon', 'christmasDevoteeRibbon', 'masterCollectorRibbon', 'masterCollectorWorldRibbon'] as const) {
+      this.textures.get(journalImageKey(name)).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
     // Code-drawn art for everything that has no PNG (or whose PNG failed to load).
     for (const name of ART_NAMES) {
       if (!this.textures.exists(artKey(name))) buildArtTexture(this.textures, name);

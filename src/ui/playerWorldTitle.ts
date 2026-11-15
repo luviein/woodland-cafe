@@ -19,7 +19,7 @@ export function attachPlayerWorldTitle(scene: Phaser.Scene, player: Phaser.GameO
     const title = state.journal.equippedTitle;
     ribbon.setVisible(player.visible && canShow() && title !== null);
     if (!ribbon.visible) return;
-    if (title) setJournalImage(ribbon, WORLD_TITLE_RIBBONS[title]);
+    if (title) setJournalImage(ribbon, WORLD_TITLE_RIBBONS[title], 112);
     let height = spriteSize(SPRITE_ART[state.animal]).height;
     if (state.outfit.hat) height = Math.max(height, spriteSize(SPRITE_ART[clothingArt(state.animal, state.outfit.hat)]).height);
     const world = player.getWorldTransformMatrix();

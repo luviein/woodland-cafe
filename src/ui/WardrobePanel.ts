@@ -180,13 +180,13 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const state = getGameState(this.scene);
     const { animal, outfit, ownedClothing } = state;
     const frame = this.view * 3;
-    // Reserve headroom for the ribbon instead of letting tall species hit the frame.
+    // Always reserve title space, so equipping a ribbon never resizes the animal.
     const title = state.journal.equippedTitle;
     const height = spriteSize(SPRITE_ART[animal]).height;
-    const scale = Math.min(title ? 3 : 4, Math.floor((title ? 92 : 120) / height));
+    const scale = Math.min(3, Math.floor(84 / height));
     this.critterImage.setTexture(artKey(animal), frame).setScale(scale);
     this.previewTitle.setVisible(title !== null);
-    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], 176)
+    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], 128)
       .setPosition(this.critterImage.x, Math.round(this.critterImage.y - height * scale - 6 - this.previewTitle.displayHeight / 2));
     const layers = { hat: this.hat, top: this.coat, cape: this.cape, shoes: this.shoes };
     for (const slot of CLOTHING_SLOTS) {
