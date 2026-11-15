@@ -7,6 +7,7 @@ import words from '../data/texts/inventory.json';
 import exchangeWords from '../data/texts/cropExchange.json';
 import journalWords from '../data/texts/fieldJournal.json';
 import { CropCollectionPanel } from './CropCollectionPanel';
+import { addJournalImage } from './journalImage';
 import { christmasSaleValue, exchangeCrop, sellChristmasCrop } from '../logic/cropExchange';
 import type { ArtName } from '../art/spriteArt';
 import type { GameState } from '../logic/gameState';
@@ -55,7 +56,7 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
       }, close);
       this.collection = book;
       this.add(book);
-    }).setFontSize(11).setLeadingIcon(addArt(scene, 0, 0, 'fieldJournalIcon')));
+    }).setFontSize(11).setLeadingIcon(addJournalImage(scene, 0, 0, 'fieldJournalIcon')));
     (['ingredients', 'seasonal'] as const).forEach((key, i) => {
       const button = place(`tab.${key}`, i === 0 ? 232 : 408, 68,
         new Button(scene, 0, 0, 160, 26, words.tabs[key], COLORS.book, () => {

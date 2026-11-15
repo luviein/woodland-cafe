@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { JOURNAL_IMAGES, journalImageKey, type JournalImageName } from '../assets/journal';
 import { DRAWN_ART } from '../art/drawnArt';
 import { spriteSize } from '../art/pixelSprite';
 import { ART_NAMES, isArtName, SPRITE_ART } from '../art/spriteArt';
@@ -15,6 +16,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
+    for (const name of Object.keys(JOURNAL_IMAGES) as JournalImageName[]) {
+      this.load.image(journalImageKey(name), JOURNAL_IMAGES[name]);
+    }
     for (const [name, url] of DRAWN_ART) {
       if (!isArtName(name)) {
         console.warn(`src/art/drawn/${name}.png has no sprite of that name, so it isn't used`);

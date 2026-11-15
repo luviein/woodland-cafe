@@ -1,5 +1,5 @@
 import { WARDROBE_PANEL_ART } from '../art/sprites/wardrobePanel';
-import { JOURNAL_ART } from '../art/sprites/journal';
+import { JOURNAL_IMAGES } from '../assets/journal';
 import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
 import { CHRISTMAS_SEED_PACKET_ART } from '../art/sprites/christmasSeedPackets';
 import { SEED_SHOP_ART } from '../art/sprites/seedShop';
@@ -67,7 +67,6 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
   ['Christmas', (n) => (CHRISTMAS_ART as readonly ArtName[]).includes(n)],
   ['Outdoors and map', (n) => ['leaf', 'grass', 'forestFloor', 'tree', 'mapTree', 'mushroomPatch', 'berryBush', 'stall', 'cafeHouse', ...MARKET_STALLS].includes(n)],
-  ['Field Journal', (n) => n in JOURNAL_ART],
   ['Icons and effects', () => true], // everything else
 ];
 
@@ -76,7 +75,6 @@ function groupOf(name: ArtName): string {
 }
 
 function source(name: ArtName): string {
-  if (name in JOURNAL_ART) return 'your approved Field Journal and badges (tools/journalArt.ps1)';
   if (name in WARDROBE_PANEL_ART) return 'your supplied wardrobe reference with live item fields (tools/wardrobePanelArt.cjs)';
   if (name in MUSEUM_ART) return 'modular museum furnishings from your supplied reference (tools/museumArt.cjs)';
   if (name in CHRISTMAS_SELL_ART) return 'your supplied selling board and Christmas ticket (tools/christmasSellArt.cjs)';
@@ -247,6 +245,14 @@ function build(): void {
   main.append(group('Side by side (real proportions)', 0, scaleView()));
   gardening = createGardenPreviews(paint);
   main.append(group('Gardening animations', 0, gardening.node));
+  const journalCards = el('div', { className: 'cards' });
+  for (const [name, url] of Object.entries(JOURNAL_IMAGES)) {
+    const image = el('img', { src: url, alt: name });
+    image.style.maxWidth = '100%'; image.style.imageRendering = 'pixelated';
+    journalCards.append(el('article', { className: 'card' }, el('h3', {}, name), image,
+      el('p', {}, 'Approved PNG from src/assets/journal/; original preserved in source/.')));
+  }
+  main.append(group('Field Journal PNG assets', 0, journalCards));
   for (const [title] of GROUPS) {
     const names = ART_NAMES.filter((n) => groupOf(n) === title);
     const cards = el('div', { className: 'cards' });

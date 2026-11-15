@@ -5,12 +5,12 @@ import { spriteSize } from '../art/pixelSprite';
 import { clothingArt } from '../data/clothingFits';
 import { getGameState } from '../scenes/gameStore';
 import { layoutPoint } from '../layout/positions';
-import { addArt } from './art';
+import { addJournalImage } from './journalImage';
 import { Button } from './Button';
 
 /** Separate from clothing: the title never turns, bobs or intercepts clicks. */
 export function attachPlayerWorldTitle(scene: Phaser.Scene, player: Phaser.GameObjects.Container, canShow: () => boolean = () => true): void {
-  const ribbon = addArt(scene, 0, 0, 'masterCollectorWorldRibbon').setDepth(900).setVisible(false).setName('playerWorldTitle');
+  const ribbon = addJournalImage(scene, 0, 0, 'masterCollectorWorldRibbon').setDepth(900).setVisible(false).setName('playerWorldTitle');
   const offset = layoutPoint('outdoor', 'playerTitleOffset', { x: 0, y: -6 });
   const update = () => {
     if (!player.scene) return;

@@ -54,6 +54,9 @@ script edits files by string matching, normalise `\r\n` to `\n` first.
   `checks.ts` has the quality checks (holes, stray pixels, symmetrical faces)
   run by the tests and the sprite gallery.
 - `src/layout/` — positions by name and Arrange mode hooks (below).
+- `src/assets/journal/` — approved journal PNGs loaded directly in BootScene;
+  `source/` preserves the original supplied images. Use `addJournalImage` for
+  these assets. Do not convert them into generated letter-grid sprites.
 - `src/debug/` — dev console (`` ` `` key: `help` lists commands such as
   `leaves 500`, `furniture christmasTree 2`, `goto marketplace`,
   `season all|date`, `arrange`), Arrange mode. Dev builds only.
