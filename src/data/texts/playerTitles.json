@@ -15,5 +15,7 @@
   "progress": "{current} / {target} collected",
   "caseReward": "1 case + badge",
   "goldenCrops": "Golden crops",
-  "cropsFurniture": "crops + furniture"
+  "cropsFurniture": "crops + furniture",
+  "previous": "<",
+  "next": ">"
 }

@@ -12,10 +12,8 @@ $jobs = @(
   @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,317,288,98); Outline=@(@(20,320),@(28,317),@(263,317),@(272,319),@(304,361),@(272,405),@(263,414),@(28,414),@(20,408)) },
   @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorRibbon'; Width=160; Segment=-1 },
   @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 },
-  @{ Source='collection-titles-source.png'; Name='goldenCollectorRibbon'; Width=160; Segment=-1; RangeY=@(0,336) },
-  @{ Source='collection-titles-source.png'; Name='goldenCollectorWorldRibbon'; Width=176; Segment=-1; RangeY=@(0,336) },
-  @{ Source='collection-titles-source.png'; Name='christmasDevoteeRibbon'; Width=160; Segment=-1; RangeY=@(336,724) },
-  @{ Source='collection-titles-source.png'; Name='christmasDevoteeWorldRibbon'; Width=176; Segment=-1; RangeY=@(336,724) }
+  @{ Source='golden-title-source.png'; Name='goldenCollectorRibbon'; Segment=-1; Native=$true },
+  @{ Source='christmas-title-source.png'; Name='christmasDevoteeRibbon'; Segment=-1; Native=$true }
 )
 if ($Only.Count) { $jobs = @($jobs | Where-Object { $Only -contains $_.Name }) }
 foreach ($job in $jobs) {
@@ -36,7 +34,8 @@ foreach ($job in $jobs) {
     $points=[Drawing.PointF[]]@($job.Outline | ForEach-Object { [Drawing.PointF]::new($_[0],$_[1]) })
     $mask.AddPolygon($points)
   }
-  $width=$job.Width; $height=[int][Math]::Round(($bottom-$top+1)*$width/($right-$left+1))
+  $width=if($job.Native){$right-$left+1}else{$job.Width}
+  $height=if($job.Native){$bottom-$top+1}else{[int][Math]::Round(($bottom-$top+1)*$width/($right-$left+1))}
   $target=[System.Drawing.Bitmap]::new($width,$height)
   for ($y=0; $y -lt $height; $y++) { for ($x=0; $x -lt $width; $x++) {
     $sx=$left+[int][Math]::Floor(($x+0.5)*($right-$left+1)/$width)

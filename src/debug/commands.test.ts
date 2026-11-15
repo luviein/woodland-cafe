@@ -58,6 +58,31 @@ describe('garden commands', () => {
     return { commands, get: () => state, set: (next: GameState) => { state = next; } };
   };
 
+  it('unlocks only requested testing titles without changing collections, rewards or outfits', () => {
+    const { commands, get } = gardenSetup();
+    const before = get();
+    expect(runCommand(commands, 'TITLE UNLOCK GOLDEN')).toContain('unlocked');
+    expect(get().journal.unlockedTitles).toEqual(['goldenCollector']);
+    expect(get().journal.equippedTitle).toBeNull();
+    runCommand(commands, 'title unlock christmas2026');
+    expect(get().journal.unlockedTitles).toEqual(['goldenCollector', 'christmasDevotee2026']);
+    expect({ ...get(), journal: before.journal }).toEqual(before);
+    const unlocked = get();
+    runCommand(commands, 'title unlock all');
+    expect(get()).toBe(unlocked);
+  });
+
+  it('rejects invalid title commands without changing saved progress', () => {
+    const { commands, get } = gardenSetup();
+    const before = get();
+    for (const line of ['title', 'title golden', 'title unlock master', 'title unlock all extra']) {
+      expect(runCommand(commands, line)).toMatch(/Usage:/);
+      expect(get()).toBe(before);
+    }
+    runCommand(commands, 'title unlock all');
+    expect(get().journal.unlockedTitles).toEqual(['goldenCollector', 'christmasDevotee2026']);
+  });
+
   it('adds every crop and mutation to the right bag counts without changing unlocks or progress', () => {
     const { commands, get } = gardenSetup();
     for (const crop of ['mushroom', 'tomato', 'chilli'] as const) {

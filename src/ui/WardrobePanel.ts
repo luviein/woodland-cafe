@@ -13,9 +13,8 @@ import { spriteSize } from '../art/pixelSprite';
 import { SPRITE_ART } from '../art/spriteArt';
 import { getGameState, setGameState, equipJournalTitle, unlockJournalTitles } from '../scenes/gameStore';
 import { TITLE_IDS, titleProgress, titleUnlocked, type PlayerTitle } from '../logic/playerTitles';
-import { addJournalImage } from './journalImage';
+import { addJournalImage, setJournalImage } from './journalImage';
 import { TITLE_RIBBONS } from './titleArt';
-import { journalImageKey } from '../assets/journal';
 import { addArt, artKey } from './art';
 import { Button } from './Button';
 import { COLORS, TEXT } from './theme';
@@ -24,6 +23,9 @@ import { COLORS, TEXT } from './theme';
 export class WardrobePanel extends Phaser.GameObjects.Container {
   private slot: keyof Outfit | 'animal' | 'titles' = 'hat';
   private readonly previewTitle: Phaser.GameObjects.Image;
+  private titlePage = 0;
+  private readonly previousTitlePage: Button;
+  private readonly nextTitlePage: Button;
   private readonly titleRows: { title: PlayerTitle; button: Button; image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text }[] = [];
   private view = 0;
   private readonly cape: Phaser.GameObjects.Image;
@@ -115,18 +117,22 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       this.animalObjects.push(icon, skin, button); this.animalButtons.push(button); this.animalSkins.push(skin);
     });
     TITLE_IDS.forEach((title, i) => {
-      const y = 182 + i * 46;
-      const button = place(`title.${title}.choose`, 426, y, new Button(scene, 0, 0, 216, 44, '', COLORS.book, () => {
+      const y = 192 + i % 2 * 60;
+      const button = place(`title.${title}.choose`, 426, y, new Button(scene, 0, 0, 216, 60, '', COLORS.book, () => {
         const state = getGameState(scene);
         equipJournalTitle(scene, state.journal.equippedTitle === title ? null : title);
         this.refresh();
       }).setBackgroundVisible(false));
       const image = place(`title.${title}.ribbon`, 426, y - 8, addJournalImage(scene, 0, 0, TITLE_RIBBONS[title]));
-      const label = place(`title.${title}.status`, 426, y + 18, scene.add.text(0, 0, '', {
+      const label = place(`title.${title}.status`, 426, y + 24, scene.add.text(0, 0, '', {
         ...TEXT.body, fontFamily: 'Consolas, monospace', resolution: 2, fontSize: '10px', color: '#493026',
       }).setOrigin(0.5));
       this.titleRows.push({ title, button, image, label });
     });
+    this.previousTitlePage = place('title.previousPage', 330, 90,
+      new Button(scene, 0, 0, 20, 16, titleWords.previous, COLORS.book, () => { this.titlePage--; this.refresh(); }).setFontSize(10));
+    this.nextTitlePage = place('title.nextPage', 522, 90,
+      new Button(scene, 0, 0, 20, 16, titleWords.next, COLORS.book, () => { this.titlePage++; this.refresh(); }).setFontSize(10));
     this.status = place('status', 121, 317, scene.add.text(0, 0, '', { ...TEXT.label, fontSize: '10px', color: '#ffe6b5' }).setOrigin(0, 0.5));
     const close = () => {
       // Finish pointer dispatch before removing the dim layer, avoiding a walk-through tap.
@@ -180,8 +186,8 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const scale = Math.min(title ? 3 : 4, Math.floor((title ? 92 : 120) / height));
     this.critterImage.setTexture(artKey(animal), frame).setScale(scale);
     this.previewTitle.setVisible(title !== null);
-    if (title) this.previewTitle.setTexture(journalImageKey(TITLE_RIBBONS[title]))
-      .setPosition(this.critterImage.x, Math.round(this.critterImage.y - height * scale - 6 - this.previewTitle.height / 2));
+    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], 176)
+      .setPosition(this.critterImage.x, Math.round(this.critterImage.y - height * scale - 6 - this.previewTitle.displayHeight / 2));
     const layers = { hat: this.hat, top: this.coat, cape: this.cape, shoes: this.shoes };
     for (const slot of CLOTHING_SLOTS) {
       const item = outfit[slot];
@@ -210,9 +216,15 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       button.setEnabled(PLAYER_ANIMALS[i] !== animal);
       this.animalSkins[i].setFrame(PLAYER_ANIMALS[i] === animal ? 1 : 0);
     });
+    const visibleTitles = TITLE_IDS.filter(id => id !== 'masterCollector' || titleUnlocked(state, id));
+    const pages = Math.ceil(visibleTitles.length / 2);
+    this.titlePage = Math.max(0, Math.min(pages - 1, this.titlePage));
+    this.previousTitlePage.setVisible(this.slot === 'titles' && pages > 1).setEnabled(this.titlePage > 0);
+    this.nextTitlePage.setVisible(this.slot === 'titles' && pages > 1).setEnabled(this.titlePage < pages - 1);
     this.titleRows.forEach(row => {
       const unlocked = titleUnlocked(state, row.title), equipped = title === row.title;
-      const visible = this.slot === 'titles' && (row.title !== 'masterCollector' || unlocked);
+      const index = visibleTitles.indexOf(row.title);
+      const visible = this.slot === 'titles' && index >= 0 && Math.floor(index / 2) === this.titlePage;
       row.button.setVisible(visible).setEnabled(unlocked);
       row.image.setVisible(visible).setAlpha(unlocked ? 1 : 0.45);
       const progress = titleProgress(state, row.title);

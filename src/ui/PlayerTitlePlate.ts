@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { addJournalImage } from './journalImage';
+import { addJournalImage, setJournalImage } from './journalImage';
 import { TITLE_RIBBONS } from './titleArt';
 import type { PlayerTitle } from '../logic/playerTitles';
 
@@ -8,6 +8,7 @@ export class PlayerTitlePlate extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, title: PlayerTitle = 'masterCollector') {
     super(scene, 0, 0);
     scene.add.existing(this);
-    this.add(addJournalImage(scene, 0, 0, TITLE_RIBBONS[title]));
+    const image = addJournalImage(scene, 0, 0, TITLE_RIBBONS[title]);
+    this.add(title === 'masterCollector' ? image : setJournalImage(image, TITLE_RIBBONS[title], 176));
   }
 }

@@ -1,4 +1,5 @@
 import { recordSpecialCrops } from '../logic/cropCollection';
+import { TITLE_IDS, type PlayerTitle } from '../logic/playerTitles';
 import { addCropWeights, setWeightBatches, weightKey, validCropWeight, STANDARD_WEIGHT } from '../logic/cropWeights';
 import { CUSTOMER_ART } from '../art/spriteArt';
 import { CROPS, CROP_IDS, SPECIAL_VARIANTS } from '../data/crops';
@@ -230,6 +231,23 @@ export function createDevCommands(
         const n = count(value, 'leaves <n>');
         game().set({ ...game().get(), leaves: n });
         return `Wallet = ${n}`;
+      },
+    },
+
+    title: {
+      usage: 'title unlock <golden|christmas2026|all>',
+      description: 'Unlock collection titles for testing without changing crops, furniture or rewards',
+      run: args => {
+        const usage = 'Usage: title unlock <golden|christmas2026|all>';
+        if (args.length !== 2 || args[0].toLowerCase() !== 'unlock') throw new Error(usage);
+        const name = args[1].toLowerCase();
+        const titles: readonly PlayerTitle[] = name === 'all' ? ['goldenCollector', 'christmasDevotee2026']
+          : name === 'golden' ? ['goldenCollector'] : name === 'christmas2026' ? ['christmasDevotee2026'] : [];
+        if (!titles.length) throw new Error(usage);
+        const state = game().get();
+        const unlockedTitles = TITLE_IDS.filter(id => state.journal.unlockedTitles.includes(id) || titles.includes(id));
+        if (unlockedTitles.length !== state.journal.unlockedTitles.length) game().set({ ...state, journal: { ...state.journal, unlockedTitles } });
+        return 'Title unlocked. Choose it in Wardrobe > Titles.';
       },
     },
 
