@@ -1,3 +1,4 @@
+import { WARDROBE_PANEL_ART } from '../art/sprites/wardrobePanel';
 import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
 import { CHRISTMAS_SEED_PACKET_ART } from '../art/sprites/christmasSeedPackets';
 import { SEED_SHOP_ART } from '../art/sprites/seedShop';
@@ -46,6 +47,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
+  ['Woodland Wardrobe (supplied cabinet board)', n => n in WARDROBE_PANEL_ART],
   ['Museum (modular room and display cases)', n => n in MUSEUM_ART],
   ['Christmas crop exchange (supplied board and ticket)', n => n in CHRISTMAS_SELL_ART],
   ['Christmas seed packets (supplied reference)', n => n in CHRISTMAS_SEED_PACKET_ART],
@@ -72,6 +74,7 @@ function groupOf(name: ArtName): string {
 }
 
 function source(name: ArtName): string {
+  if (name in WARDROBE_PANEL_ART) return 'your supplied wardrobe reference with live item fields (tools/wardrobePanelArt.cjs)';
   if (name in MUSEUM_ART) return 'modular museum furnishings from your supplied reference (tools/museumArt.cjs)';
   if (name in CHRISTMAS_SELL_ART) return 'your supplied selling board and Christmas ticket (tools/christmasSellArt.cjs)';
   if (name in CHRISTMAS_SEED_PACKET_ART) return 'your supplied Christmas wrapping with existing native crop pictures (tools/christmasSeedPackets.cjs)';

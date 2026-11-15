@@ -408,6 +408,7 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 5.11 Wardrobe (in progress)
 
+- Presentation follows the supplied Woodland Wardrobe cabinet: carved wooden title, floral trim, pink curtains, standing mirror, oval rug and lantern on the left; cream collection panel, two-row category tabs and four padded item cards on the right; lock guidance and Close on the bottom rail. The existing animal and outfit layers stand on the rug and rotate together. Equipped cards use an olive paper tint and Worn flag, locked cards show a smaller Locked flag. Keep all seven Animal choices legible in a two-column grid. Every live element keeps a named Arrange position.
 - First step: review a Santa hat and coat fitted to the existing hedgehog, inspired by the supplied Christmas clothing sheet. Clean pixel outlines and matching front, back, left and right views; retain the existing face, spines and walking feet.
 - Clothing is separate transparent art on the hedgehog's frame grid, with equipped examples in the sprite gallery for review before use in play.
 - Tapping the player on the cafe floor or outdoors opens a cafe-styled wardrobe with a four-direction character preview, Hats and Tops tabs, item cards and equip/remove controls. The Santa hat and coat are free starter cosmetics. Changes apply immediately; Close or Escape returns to play. The world continues running, as with the shops and recipe book.

@@ -1,3 +1,4 @@
+import words from '../data/texts/wardrobe.json';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
@@ -10,7 +11,7 @@ import { CLOTHING, CLOTHING_SLOTS, clothingIn, type ClothingId } from '../data/c
 import { spriteSize } from '../art/pixelSprite';
 import { SPRITE_ART } from '../art/spriteArt';
 import { getGameState, setGameState } from '../scenes/gameStore';
-import { artKey } from './art';
+import { addArt, artKey } from './art';
 import { Button } from './Button';
 import { COLORS, TEXT } from './theme';
 
@@ -25,11 +26,14 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
   private readonly coat: Phaser.GameObjects.Image;
   private readonly status: Phaser.GameObjects.Text;
   private readonly tabs: Button[];
+  private readonly tabSkins: Phaser.GameObjects.Image[] = [];
+  private readonly animalSkins: Phaser.GameObjects.Image[] = [];
   private readonly cards: {
     button: Button;
     image: Phaser.GameObjects.Image;
     label: Phaser.GameObjects.Text;
-    outline: Phaser.GameObjects.Rectangle;
+    outline: Phaser.GameObjects.Image;
+    badge: Phaser.GameObjects.Image;
     worn: Phaser.GameObjects.Text;
   }[] = [];
   private readonly animalObjects: (Phaser.GameObjects.Image | Button)[] = [];
@@ -44,72 +48,65 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const at = (name: string, x: number, y: number) => layoutPoint('wardrobe', name, { x, y });
     const place = <T extends Phaser.GameObjects.Container | Phaser.GameObjects.Image | Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle>(name: string, x: number, y: number, object: T): T => {
       const p = at(name, x, y);
-      object.setPosition(p.x, p.y);
+      object.setName(name).setPosition(p.x, p.y);
       this.add(object);
       arrangeable(scene, 'wardrobe', name, p, object);
       return object;
     };
-    place('cabinetShadow', 323, 183, scene.add.rectangle(0, 0, 596, 336, COLORS.overlay, 0.35));
-    place('frame', 320, 180, scene.add.rectangle(0, 0, 596, 336, COLORS.counter).setStrokeStyle(4, COLORS.ink));
-    place('cabinetInset', 320, 180, scene.add.rectangle(0, 0, 582, 322, COLORS.counter).setStrokeStyle(2, COLORS.paperEdge));
-    place('cornice', 320, 53, scene.add.rectangle(0, 0, 564, 4, COLORS.counterEdge));
-    place('centrePost', 300, 179, scene.add.rectangle(0, 0, 8, 246, COLORS.counterEdge));
-    place('bottomRail', 320, 304, scene.add.rectangle(0, 0, 564, 4, COLORS.counterEdge));
-    place('mirrorFrame', 172, 179, scene.add.rectangle(0, 0, 244, 238, COLORS.counterEdge).setStrokeStyle(2, COLORS.ink));
-    place('portraitBackdrop', 172, 179, scene.add.rectangle(0, 0, 232, 226, 0xc5d6c7).setStrokeStyle(2, COLORS.paperEdge));
-    place('mirrorGlint', 64, 121, scene.add.rectangle(0, 0, 3, 98, 0xe5eee0));
-    place('mirrorSill', 172, 253, scene.add.rectangle(0, 0, 210, 3, COLORS.counterEdge));
-    place('inventoryBackdrop', 446, 179, scene.add.rectangle(0, 0, 284, 238, COLORS.paper).setStrokeStyle(3, COLORS.counterEdge));
-    place('inventoryLabel', 446, 74, scene.add.text(0, 0, 'Your collection', TEXT.body).setOrigin(0.5));
-    place('clothesRail', 446, 151, scene.add.rectangle(0, 0, 244, 3, COLORS.counterEdge));
-    place('leftRailBracket', 328, 151, scene.add.rectangle(0, 0, 5, 9, 0xe9b64d).setStrokeStyle(1, COLORS.ink));
-    place('rightRailBracket', 564, 151, scene.add.rectangle(0, 0, 5, 9, 0xe9b64d).setStrokeStyle(1, COLORS.ink));
-    place('cabinetHandle', 300, 184, scene.add.rectangle(0, 0, 4, 14, 0xe9b64d).setStrokeStyle(1, COLORS.ink));
-    place('title', 320, 33, scene.add.text(0, 0, 'Woodland wardrobe', { ...TEXT.heading, color: '#fff0cd', stroke: '#47312b', strokeThickness: 3 }).setOrigin(0.5));
-    this.critterImage = place('previewBody', 172, 244, scene.add.image(0, 0, artKey('hedgehog')).setOrigin(0.5, 1).setScale(4));
-    this.shoes = place('previewShoes', 172, 244, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
-    this.coat = place('previewCoat', 172, 244, scene.add.image(0, 0, artKey('santaCoat')).setOrigin(0.5, 1).setScale(4));
-    this.cape = place('previewCape', 172, 244, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
-    this.hat = place('previewHat', 172, 244, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1).setScale(4));
-    place('turnLeft', 110, 276, new Button(scene, 0, 0, 44, 26, '<', COLORS.book, () => this.turn(-1)));
-    place('turnRight', 234, 276, new Button(scene, 0, 0, 44, 26, '>', COLORS.book, () => this.turn(1)));
-    place('previewLabel', 172, 80, scene.add.text(0, 0, 'Fitting mirror', TEXT.body).setOrigin(0.5));
-    this.tabs = [
-      place('hatsTab', 358, 99, new Button(scene, 0, 0, 76, 24, 'Hats', COLORS.book, () => this.select('hat'))),
-      place('topsTab', 446, 99, new Button(scene, 0, 0, 76, 24, 'Tops', COLORS.book, () => this.select('top'))),
-      place('capesTab', 534, 99, new Button(scene, 0, 0, 76, 24, 'Capes', COLORS.book, () => this.select('cape'))),
-      place('shoesTab', 402, 130, new Button(scene, 0, 0, 76, 24, 'Shoes', COLORS.book, () => this.select('shoes'))),
-      place('animalTab', 490, 130, new Button(scene, 0, 0, 76, 24, 'Animal', COLORS.book, () => this.select('animal'))),
-    ];
+    place('board', 320, 180, addArt(scene, 0, 0, 'wardrobeBoard'));
+    // The reference's rug is the shared foot baseline for the body and all layers.
+    this.critterImage = place('previewBody', 205, 234, scene.add.image(0, 0, artKey('hedgehog')).setOrigin(0.5, 1));
+    this.shoes = place('previewShoes', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
+    this.coat = place('previewCoat', 205, 234, scene.add.image(0, 0, artKey('santaCoat')).setOrigin(0.5, 1));
+    this.cape = place('previewCape', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
+    this.hat = place('previewHat', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
+    place('turnLeft', 147, 267, new Button(scene, 0, 0, 33, 30, '', COLORS.book, () => this.turn(-1)).setBackgroundVisible(false));
+    place('turnRight', 251, 267, new Button(scene, 0, 0, 33, 30, '', COLORS.book, () => this.turn(1)).setBackgroundVisible(false));
+    const tabSpecs = [
+      ['hatsTab', 'hat', 'wardrobeTabHats', 353, 112],
+      ['topsTab', 'top', 'wardrobeTabTops', 426, 112],
+      ['capesTab', 'cape', 'wardrobeTabCapes', 499, 112],
+      ['shoesTab', 'shoes', 'wardrobeTabShoes', 390, 139],
+      ['animalTab', 'animal', 'wardrobeTabAnimal', 467, 139],
+    ] as const;
+    this.tabs = tabSpecs.map(([name, slot, art, x, y]) => {
+      this.tabSkins.push(place(name + '.art', x, y, addArt(scene, 0, 0, art)));
+      return place(name, x, y, new Button(scene, 0, 0, slot === 'animal' ? 73 : 69, 24, '', COLORS.book,
+        () => this.select(slot)).setBackgroundVisible(false));
+    });
     for (let i = 0; i < 4; i++) {
-      const x = 382 + (i % 2) * 128, y = 190 + Math.floor(i / 2) * 72;
-      const button = place(`item.${i}.card`, x, y, new Button(scene, 0, 0, 116, 62, '', COLORS.paperEdge, () => this.toggleItem(i)));
-      const outline = place(`item.${i}.outline`, x, y, scene.add.rectangle(0, 0, 116, 62).setFillStyle(0, 0).setStrokeStyle(3, COLORS.serve));
-      const image = place(`item.${i}.picture`, x, y - 16, scene.add.image(0, 0, artKey('santaHat')).setScale(2));
-      const label = place(`item.${i}.name`, x, y + 15, scene.add.text(0, 0, '', {
-        ...TEXT.body, fontSize: '11px', align: 'center', wordWrap: { width: 104, useAdvancedWrap: true },
+      const x = 370 + i % 2 * 113, y = 190 + Math.floor(i / 2) * 59;
+      const button = place(`item.${i}.card`, x, y, new Button(scene, 0, 0, 108, 52, '', COLORS.paperEdge, () => this.toggleItem(i)).setBackgroundVisible(false));
+      const outline = place(`item.${i}.outline`, x, y, addArt(scene, 0, 0, 'wardrobeCard'));
+      const image = place(`item.${i}.picture`, x, y - 10, scene.add.image(0, 0, artKey('santaHat')));
+      const label = place(`item.${i}.name`, x, y + 14, scene.add.text(0, 0, '', {
+        ...TEXT.body, fontSize: '10px', align: 'center', wordWrap: { width: 98, useAdvancedWrap: true },
       }).setOrigin(0.5));
-      const worn = place(`item.${i}.worn`, x + 50, y - 25, scene.add.text(0, 0, 'Worn', {
-        ...TEXT.body, fontSize: '10px', color: '#294b33', fontStyle: 'bold',
-      }).setOrigin(1, 0));
-      this.cards.push({ button, image, label, outline, worn });
+      const badge = place(`item.${i}.badge`, x + 43, y - 21, addArt(scene, 0, 0, 'wardrobeBadge'));
+      const worn = place(`item.${i}.worn`, x + 43, y - 21, scene.add.text(0, 0, '', {
+        ...TEXT.body, fontSize: '9px', color: '#493026', fontStyle: 'bold',
+      }).setOrigin(0.5));
+      this.cards.push({ button, image, label, outline, badge, worn });
     }
     PLAYER_ANIMALS.forEach((animal, i) => {
-      const x = 320 + i % 2 * 138, y = 169 + Math.floor(i / 2) * 36;
-      const icon = place(`animal.${animal}.portrait`, x, y, scene.add.image(0, 0, artKey(animal)));
-      const button = place(`animal.${animal}.choose`, x + 70, y, new Button(scene, 0, 0, 94, 25, ANIMAL_NAMES[animal], COLORS.serve, () => {
-        setGameState(scene, changeAnimal(getGameState(scene), animal));
-        this.refresh();
-      }));
-      this.animalObjects.push(icon, button);
-      this.animalButtons.push(button);
+      const x = 330 + i % 2 * 113, y = 177 + Math.floor(i / 2) * 27;
+      const sprite = SPRITE_ART[animal], size = spriteSize(sprite);
+      const top = sprite.frames[0].findIndex(row => row.replaceAll('.', '').length > 0);
+      // Native head crops keep seven choices legible without shrinking their pixels.
+      const icon = place(`animal.${animal}.portrait`, x, y - 12 - top, scene.add.image(0, 0, artKey(animal)).setOrigin(0.5, 0)
+        .setCrop(Math.max(0, Math.floor((size.width - 24) / 2)), top, Math.min(24, size.width), 24));
+      const skin = place(`animal.${animal}.art`, x + 52, y, addArt(scene, 0, 0, 'wardrobeChoiceButton'));
+      const button = place(`animal.${animal}.choose`, x + 52, y, new Button(scene, 0, 0, 69, 24, ANIMAL_NAMES[animal], COLORS.book, () => {
+        setGameState(scene, changeAnimal(getGameState(scene), animal)); this.refresh();
+      }).setFontSize(10).setBackgroundVisible(false));
+      this.animalObjects.push(icon, skin, button); this.animalButtons.push(button); this.animalSkins.push(skin);
     });
-    this.status = place('status', 247, 325, scene.add.text(0, 0, '', { ...TEXT.label, fontSize: '11px' }).setOrigin(0.5));
+    this.status = place('status', 121, 317, scene.add.text(0, 0, '', { ...TEXT.label, fontSize: '10px', color: '#ffe6b5' }).setOrigin(0, 0.5));
     const close = () => {
       // Finish pointer dispatch before removing the dim layer, avoiding a walk-through tap.
       scene.time.delayedCall(0, () => this.destroy());
     };
-    place('close', 550, 325, new Button(scene, 0, 0, 86, 26, 'Close', COLORS.reset, close));
+    place('close', 508, 316, new Button(scene, 0, 0, 78, 26, '', COLORS.reset, close).setBackgroundVisible(false));
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.repeat) close(); };
     scene.input.keyboard?.on('keydown', onKey);
     this.once('destroy', () => scene.input.keyboard?.off('keydown', onKey));
@@ -136,6 +133,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const size = spriteSize(sprite);
     const xs = points.map(p => p.x), ys = points.map(p => p.y);
     image.setOrigin((Math.min(...xs) + Math.max(...xs) + 1) / 2 / size.width, (Math.min(...ys) + Math.max(...ys) + 1) / 2 / size.height);
+    image.setScale(Math.max(1, Math.min(2, Math.floor(94 / (Math.max(...xs) - Math.min(...xs) + 1)), Math.floor(24 / (Math.max(...ys) - Math.min(...ys) + 1)))));
   }
 
   private turn(direction: number): void {
@@ -167,12 +165,18 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       card.image.setTexture(artKey(clothingArt(animal, item)), 0);
       this.centreItem(card.image, animal, item);
       card.label.setText(CLOTHING[item].name);
-      card.outline.setVisible(equipped);
-      card.worn.setText(owned ? 'Worn' : 'Locked').setFontSize(owned ? 10 : 9).setVisible(equipped || !owned);
+      card.outline.setFrame(equipped ? 1 : 0);
+      card.badge.setVisible(equipped || !owned);
+      card.worn.setText(owned ? words.worn : words.locked).setFontSize(owned ? 10 : 8).setVisible(equipped || !owned);
     });
     for (const object of this.animalObjects) object.setVisible(choosingAnimal);
-    this.animalButtons.forEach((button, i) => button.setEnabled(PLAYER_ANIMALS[i] !== animal));
-    (['hat', 'top', 'cape', 'shoes', 'animal'] as const).forEach((slot, i) => this.tabs[i].setEnabled(this.slot !== slot));
-    this.status.setText(`${ANIMAL_NAMES[animal]} · Locked items: Christmas catalogue`);
+    this.animalButtons.forEach((button, i) => {
+      button.setEnabled(PLAYER_ANIMALS[i] !== animal);
+      this.animalSkins[i].setFrame(PLAYER_ANIMALS[i] === animal ? 1 : 0);
+    });
+    (['hat', 'top', 'cape', 'shoes', 'animal'] as const).forEach((slot, i) => {
+      this.tabs[i].setEnabled(this.slot !== slot); this.tabSkins[i].setFrame(this.slot === slot ? 1 : 0);
+    });
+    this.status.setText(words.status.replace('{animal}', ANIMAL_NAMES[animal]));
   }
 }
