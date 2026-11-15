@@ -1,76 +1,130 @@
-import { cropQuantity } from './cropQuantity';
-import { cropRecord, formatCropWeight } from '../logic/cropWeights';
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import words from '../data/texts/cropCollection.json';
+import words from '../data/texts/fieldJournal.json';
+import collectionWords from '../data/texts/cropCollection.json';
 import { COLLECTION_ITEMS } from '../logic/cropCollection';
+import { MILESTONE_IDS, MILESTONE_LEAVES, canClaimMilestone, milestoneProgress } from '../logic/journal';
+import { cropRecord, formatCropWeight } from '../logic/cropWeights';
 import { cropArtName, cropName } from '../logic/garden';
 import type { GameState } from '../logic/gameState';
 import type { ArtName } from '../art/spriteArt';
-import { getGameState } from '../scenes/gameStore';
+import { claimJournalMilestone, equipJournalTitle, getGameState } from '../scenes/gameStore';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { addArt } from './art';
 import { Button } from './Button';
+import { LeafText } from './LeafText';
+import { PlayerTitlePlate } from './PlayerTitlePlate';
+import { cropQuantity } from './cropQuantity';
 import { COLORS, TEXT } from './theme';
 
-/** Two permanent collection pages; remaining crops stay in the player's inventory. */
+type Placed = Phaser.GameObjects.Container | Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+
+/** Existing book entry points now share one journal and the same pause lifecycle. */
 export class CropCollectionPanel extends Phaser.GameObjects.Container {
-  private readonly progress: Phaser.GameObjects.Text;
-  private readonly entries: { back: Phaser.GameObjects.Rectangle; art: Phaser.GameObjects.Image; description: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text; record: Phaser.GameObjects.Text }[] = [];
+  private spread: 'crops' | 'milestones' = 'crops';
+  private readonly content: Phaser.GameObjects.Container;
+  private pendingRefresh: Phaser.Time.TimerEvent | null = null;
+  private journalState: GameState;
 
   constructor(scene: Phaser.Scene, back: () => void, close: () => void) {
     super(scene, 0, 0);
     scene.add.existing(this);
-    this.setName('cropCollection');
-    this.add(scene.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.65).setOrigin(0).setInteractive());
-    const place = <T extends Phaser.GameObjects.Container | Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image | Phaser.GameObjects.Text>(name: string, x: number, y: number, object: T): T => {
-      const at = layoutPoint('cropCollection', name, { x, y });
-      object.setName(name).setPosition(at.x, at.y);
-      this.add(object);
-      arrangeable(scene, 'cropCollection', name, at, object);
-      return object;
-    };
-    place('cover', 320, 180, scene.add.rectangle(0, 0, 600, 328, COLORS.counter).setStrokeStyle(3, COLORS.ink));
-    for (const [i, x] of [174, 466].entries()) {
-      place(`page.${i}`, x, 180, scene.add.rectangle(0, 0, 280, 304, COLORS.paper).setStrokeStyle(2, COLORS.paperEdge));
-      place(`heading.${i}`, x, 87, scene.add.text(0, 0, i === 0 ? words.golden : words.christmas,
-        { ...TEXT.heading, fontSize: '12px' }).setOrigin(0.5));
-    }
-    place('spine', 320, 180, scene.add.rectangle(0, 0, 8, 304, COLORS.counterEdge));
-    // A paper title plate keeps the centre seam out of the heading and progress.
-    place('titlePlate', 320, 52, scene.add.rectangle(0, 0, 230, 48, COLORS.paper));
-    place('title', 320, 43, scene.add.text(0, 0, words.title, TEXT.heading).setOrigin(0.5));
-    this.progress = place('progress', 320, 64, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '11px' }).setOrigin(0.5));
-    place('back', 72, 43, new Button(scene, 0, 0, 60, 22, words.back, COLORS.book, back).setFontSize(12));
-    place('close', 568, 43, new Button(scene, 0, 0, 60, 22, words.close, COLORS.reset, close).setFontSize(12));
-    COLLECTION_ITEMS.forEach((item, i) => {
-      const x = i < 3 ? 174 : 466, y = 135 + i % 3 * 76;
-      const card = place(`entry.${item.id}`, x, y, scene.add.rectangle(0, 0, 258, 70, 0xffe7bf).setStrokeStyle(1, COLORS.paperEdge));
-      const art = place(`entry.${item.id}.art`, x - 99, y - 7, addArt(scene, 0, 0, cropArtName(item.crop, item.variant) as ArtName).setScale(2));
-      place(`entry.${item.id}.name`, x - 68, y - 28, scene.add.text(0, 0, cropName(item.crop, item.variant),
-        { ...TEXT.heading, fontSize: '11px' }));
-      const description = place(`entry.${item.id}.description`, x - 68, y - 12, scene.add.text(0, 0, '', {
-        ...TEXT.body, fontSize: '9px', wordWrap: { width: 184 }, lineSpacing: 0,
-      }));
-      const count = place(`entry.${item.id}.count`, x - 68, y + 22, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '9px' }).setOrigin(0, 0.5));
-      const record = place(`entry.${item.id}.bestWeight`, x + 119, y + 22, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(1, 0.5));
-      this.entries.push({ back: card, art, description, count, record });
+    this.setName('fieldJournal');
+    this.journalState = getGameState(scene);
+    this.add(scene.add.rectangle(320, 180, 640, 360, COLORS.overlay, 0.65).setInteractive());
+    this.place(this, 'background', 320, 180, addArt(scene, 0, 0, 'fieldJournal'));
+    this.place(this, 'back', 107, 332, new Button(scene, 0, 0, 60, 20, collectionWords.back, COLORS.book, back).setFontSize(10));
+    this.place(this, 'close', 533, 332, new Button(scene, 0, 0, 60, 20, collectionWords.close, COLORS.reset, close).setFontSize(10));
+    (['crops', 'milestones'] as const).forEach((spread, i) => {
+      this.place(this, `tab.${spread}`, 203 + i * 234, 83,
+        new Button(scene, 0, 0, 150, 20, words[spread], COLORS.book, () => {
+          this.spread = spread; this.refresh();
+        }).setFontSize(11));
     });
-    this.refresh();
-    arrangeablePanel(scene, 'cropCollection', 'panel', this);
+    this.content = scene.add.container(0, 0).setName('content'); this.add(this.content);
+    this.renderSpread();
+    this.once(Phaser.GameObjects.Events.DESTROY, () => this.pendingRefresh?.remove(false));
+    arrangeablePanel(scene, 'fieldJournal', 'panel', this);
+  }
+
+  private place<T extends Placed>(parent: Phaser.GameObjects.Container, name: string, x: number, y: number, object: T): T {
+    const at = layoutPoint('fieldJournal', name, { x, y });
+    object.setName(name).setPosition(at.x, at.y); parent.add(object);
+    arrangeable(this.scene, 'fieldJournal', name, at, object);
+    return object;
+  }
+
+  private text(name: string, x: number, y: number, value: string, size = 10, width = 185): Phaser.GameObjects.Text {
+    return this.place(this.content, name, x, y, this.scene.add.text(0, 0, value,
+      { ...TEXT.body, fontSize: `${size}px`, wordWrap: { width }, lineSpacing: 2 }));
   }
 
   refresh(state: GameState = getGameState(this.scene)): void {
-    this.progress.setText(words.progress.replace('{amount}', String(state.cropCollection.length)));
-    COLLECTION_ITEMS.forEach((item, i) => {
-      const entry = this.entries[i], recorded = state.cropCollection.includes(item.id);
-      const amount = state.garden.harvests[item.variant][item.crop];
-      entry.art.setAlpha(recorded ? 1 : 0.35);
-      entry.back.setStrokeStyle(1, COLORS.paperEdge);
-      entry.description.setText(recorded ? words.descriptions[item.id] : words.hint);
-      entry.count.setText(words.have.replace('{amount}', cropQuantity(amount)));
-      entry.record.setText(recorded ? words.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '');
+    this.journalState = state;
+    // A claim can notify the inventory synchronously during pointer-up. Rebuild
+    // after dispatch so its button is not destroyed underneath Phaser input.
+    if (this.pendingRefresh) return;
+    this.pendingRefresh = this.scene.time.delayedCall(0, () => {
+      this.pendingRefresh = null;
+      if (this.scene) this.renderSpread();
     });
+  }
+
+  private renderSpread(): void {
+    this.content.removeAll(true);
+    if (this.spread === 'crops') this.renderCrops(); else this.renderMilestones();
+  }
+
+  private renderCrops(): void {
+    const state = this.journalState;
+    [collectionWords.golden, collectionWords.christmas].forEach((label, i) =>
+      this.text(`heading.${i}`, 203 + i * 234, 101, label, 11).setOrigin(0.5, 0));
+    COLLECTION_ITEMS.forEach((item, i) => {
+      const left = i < 3 ? 104 : 352, y = 126 + i % 3 * 54;
+      const recorded = state.cropCollection.includes(item.id), name = `crop.${item.id}`;
+      const art = this.place(this.content, `${name}.art`, left + 12, y + 13,
+        addArt(this.scene, 0, 0, cropArtName(item.crop, item.variant) as ArtName));
+      if (!recorded) art.setTintFill(0x785c43).setAlpha(0.5);
+      this.text(`${name}.name`, left + 28, y - 3, cropName(item.crop, item.variant), 10, 152);
+      this.text(`${name}.description`, left + 28, y + 11,
+        recorded ? collectionWords.descriptions[item.id] : item.variant === 'golden' ? words.goldenClue : words.christmasClue, 9, 152);
+      this.text(`${name}.count`, left, y + 42,
+        collectionWords.have.replace('{amount}', cropQuantity(state.garden.harvests[item.variant][item.crop])), 9, 80);
+      this.text(`${name}.weight`, left + 194, y + 42,
+        recorded ? collectionWords.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '', 9, 112).setOrigin(1, 0);
+    });
+    this.text('progress', 203, 299, collectionWords.progress.replace('{amount}', String(state.cropCollection.length)), 10, 200).setOrigin(0.5);
+  }
+
+  private renderMilestones(): void {
+    const state = this.journalState;
+    const badges = ['discoveryBadge', 'goldenBadge', 'collectorBadge'] as const;
+    const names = [words.firstDiscovery, words.goldenFind, words.founding];
+    const hints = [words.discoveryHint, words.goldenHint, words.foundingHint];
+    this.text('milestoneHeading', 203, 103, words.milestones, 11).setOrigin(0.5, 0);
+    MILESTONE_IDS.forEach((id, i) => {
+      const y = 125 + i * 54, name = `milestone.${id}`;
+      const progress = milestoneProgress(state, id), claimed = state.journal.claimed.includes(id);
+      this.place(this.content, `${name}.badge`, 116, y + 13, addArt(this.scene, 0, 0, badges[i])).setAlpha(progress.current >= progress.target ? 1 : 0.4);
+      this.text(`${name}.name`, 137, y - 4, names[i], 10, 164);
+      this.text(`${name}.hint`, 137, y + 10, `${hints[i]} (${progress.current}/${progress.target})`, 9, 164);
+      const reward = id === 'foundingCollection' ? words.rewardCase : `🍃 ${MILESTONE_LEAVES[id]}`;
+      this.place(this.content, `${name}.reward`, 104, y + 36,
+        new LeafText(this.scene, 0, 0, reward, { ...TEXT.body, fontSize: '9px' }));
+      this.place(this.content, `${name}.claim`, 269, y + 40,
+        new Button(this.scene, 0, 0, 58, 18, claimed ? words.claimed : words.claim, COLORS.serve, () => {
+          claimJournalMilestone(this.scene, id); this.refresh();
+        }).setFontSize(9)).setEnabled(canClaimMilestone(state, id));
+    });
+    this.text('titleHeading', 437, 107, words.masterCollector, 12).setOrigin(0.5, 0);
+    this.place(this.content, 'titleBadge', 437, 151, addArt(this.scene, 0, 0, 'collectorBadge'));
+    const unlocked = state.journal.claimed.includes('foundingCollection');
+    this.text('titleStatus', 437, 180, unlocked ? words.founding : words.titleLocked, 10, 192).setOrigin(0.5, 0);
+    this.place(this.content, 'titlePlate', 437, 231, new PlayerTitlePlate(this.scene)).setAlpha(unlocked ? 1 : 0.4);
+    const equipped = state.journal.equippedTitle !== null;
+    this.place(this.content, 'equipTitle', 437, 276,
+      new Button(this.scene, 0, 0, 128, 22, equipped ? words.unequip : words.equip, COLORS.book, () => {
+        equipJournalTitle(this.scene, equipped ? null : 'masterCollector'); this.refresh();
+      }).setFontSize(11)).setEnabled(unlocked);
   }
 }

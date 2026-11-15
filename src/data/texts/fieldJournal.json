@@ -1,0 +1,21 @@
+{
+  "title": "Field Journal",
+  "crops": "Crops",
+  "milestones": "Milestones",
+  "founding": "Founding Collection",
+  "claim": "Claim",
+  "claimed": "Claimed",
+  "locked": "Keep exploring",
+  "equip": "Equip title",
+  "unequip": "Unequip title",
+  "masterCollector": "Master Collector",
+  "titleLocked": "Complete the Founding Collection\nto earn its badge and title.",
+  "rewardCase": "1 case + badge and title",
+  "firstDiscovery": "First Discovery",
+  "goldenFind": "Golden Find",
+  "discoveryHint": "Record any special crop.",
+  "goldenHint": "Record any Golden crop.",
+  "foundingHint": "Record all six special crops.",
+  "goldenClue": "Ordinary seeds sometimes grow Golden crops.",
+  "christmasClue": "Plant Christmas seeds, or try event mutations."
+}

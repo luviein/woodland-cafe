@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import words from '../data/texts/inventory.json';
 import exchangeWords from '../data/texts/cropExchange.json';
-import collectionWords from '../data/texts/cropCollection.json';
+import journalWords from '../data/texts/fieldJournal.json';
 import { CropCollectionPanel } from './CropCollectionPanel';
 import { christmasSaleValue, exchangeCrop, sellChristmasCrop } from '../logic/cropExchange';
 import type { ArtName } from '../art/spriteArt';
@@ -43,7 +43,7 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
     place('paper', 320, 180, scene.add.rectangle(0, 0, 550, 328, COLORS.paper).setStrokeStyle(2, COLORS.paperEdge));
     place('title', 320, 36, scene.add.text(0, 0, words.title, TEXT.heading).setOrigin(0.5));
     place('close', 548, 36, new Button(scene, 0, 0, 76, 24, words.close, COLORS.reset, close));
-    place('collectionBook', 130, 36, new Button(scene, 0, 0, 148, 24, collectionWords.button, COLORS.book, () => {
+    place('collectionBook', 130, 36, new Button(scene, 0, 0, 148, 24, journalWords.title, COLORS.book, () => {
       if (this.collection) return;
       // Keep the inventory's pause/resume lifecycle while the book is open.
       const book = new CropCollectionPanel(scene, () => {
@@ -55,7 +55,7 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
       }, close);
       this.collection = book;
       this.add(book);
-    }).setFontSize(11));
+    }).setFontSize(11).setLeadingIcon(addArt(scene, 0, 0, 'fieldJournalIcon')));
     (['ingredients', 'seasonal'] as const).forEach((key, i) => {
       const button = place(`tab.${key}`, i === 0 ? 232 : 408, 68,
         new Button(scene, 0, 0, 160, 26, words.tabs[key], COLORS.book, () => {

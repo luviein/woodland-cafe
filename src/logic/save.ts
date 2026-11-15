@@ -1,4 +1,5 @@
 import { validCropWeights, validCropWeight } from './cropWeights';
+import { validJournal } from './journal';
 import { migrateGarden, validGarden } from './garden';
 import { validMuseum } from './museum';
 import { COLLECTION_IDS, recordSpecialCrops } from './cropCollection';
@@ -48,7 +49,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 17: expandable museum and player-placed display cases.
 // 18: specimen weights and heaviest donated records.
 // 19: legacy special stock enters the automatic collection without being consumed.
-export const SAVE_VERSION = 19;
+// 20: one-time Field Journal rewards and equipped collectible title.
+export const SAVE_VERSION = 20;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -113,6 +115,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
   const cropWeights = field(raw, 'cropWeights', fresh.cropWeights, value => validCropWeights(value, { stock, garden }));
   const cropRecords = field(raw, 'cropRecords', fresh.cropRecords, value => isObject(value) && Object.entries(value).every(([key, grams]) => COLLECTION_IDS.includes(key as typeof COLLECTION_IDS[number]) && collection.includes(key as typeof COLLECTION_IDS[number]) && validCropWeight(grams)));
   const state: GameState = {
+    journal: field(raw, 'journal', fresh.journal, validJournal),
     cropWeights, cropRecords,
     museum: { ...museum, cases: museum.cases.map(item => ({ ...item, exhibit: item.exhibit && collection.includes(item.exhibit) ? item.exhibit : null })) },
     cropCollection: collection,

@@ -1,4 +1,5 @@
 import type { CropWeights, CropRecords } from './cropWeights';
+import { emptyJournal, type JournalProgress } from './journal';
 import { emptyGarden, type Garden } from './garden';
 import { emptyMuseum, type Museum } from './museum';
 import type { CollectionId } from './cropCollection';
@@ -31,6 +32,7 @@ import { STARTER_CLOTHING, type ClothingId } from '../data/clothing';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  journal: JournalProgress;
   cropWeights: CropWeights;
   cropRecords: CropRecords;
   museum: Museum;
@@ -70,6 +72,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    journal: emptyJournal(),
     cropWeights: {},
     cropRecords: {},
     museum: emptyMuseum(),

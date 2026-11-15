@@ -1,4 +1,6 @@
 import type Phaser from 'phaser';
+import { claimJournalMilestone, equipJournalTitle } from './gameStore';
+import { COLLECTION_IDS } from '../logic/cropCollection';
 import { expect, it } from 'vitest';
 import { createNewGame, skipTutorial, startNextDay } from '../logic/gameState';
 import { buySeed, plantCrop, tendCrop } from '../logic/garden';
@@ -11,6 +13,36 @@ import { catalogueProduct, type CatalogueItem } from '../data/catalogueProducts'
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { memorySaveSlot } from '../storage/saveSlot';
 import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState, purchaseChristmasItem } from './gameStore';
+
+it('persists journal claims and title choice without committing cafe work or duplicating rewards on reload', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  const checkpoint = { ...createNewGame(), cropCollection: [...COLLECTION_IDS], leaves: 100 };
+  continueGame(owner, checkpoint); beginCafeDay(owner);
+  setGameState(owner, { ...checkpoint, leaves: 300, stock: { ...checkpoint.stock, mushroom: 1 } });
+  claimJournalMilestone(owner, 'firstDiscovery');
+  claimJournalMilestone(owner, 'goldenFind');
+  claimJournalMilestone(owner, 'foundingCollection');
+  equipJournalTitle(owner, 'masterCollector');
+  const loaded = loadGame(slot.read()!);
+  expect(loaded.ok).toBe(true);
+  if (!loaded.ok) return;
+  expect(loaded.state.leaves).toBe(175);
+  expect(getGameState(owner).leaves).toBe(375);
+  expect(loaded.state.stock).toEqual(checkpoint.stock);
+  expect(loaded.state.museum.storedCases).toBe(checkpoint.museum.storedCases + 1);
+  expect(loaded.state.journal.equippedTitle).toBe('masterCollector');
+  continueGame(owner, loaded.state);
+  const saved = slot.read();
+  claimJournalMilestone(owner, 'firstDiscovery');
+  claimJournalMilestone(owner, 'foundingCollection');
+  expect(slot.read()).toBe(saved);
+  equipJournalTitle(owner, null);
+  const unequipped = loadGame(slot.read()!);
+  expect(unequipped.ok && unequipped.state.journal.equippedTitle).toBeNull();
+});
 
 it('persists museum purchases, expansion and exhibits without saving cafe work or spending unsaved earnings', () => {
   const values = new Map<string, unknown>();

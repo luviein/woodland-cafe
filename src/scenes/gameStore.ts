@@ -1,4 +1,5 @@
 import { gardenCheckpoint } from '../logic/garden';
+import { claimMilestone, equipPlayerTitle, journalCheckpoint, type MilestoneId, type PlayerTitle } from '../logic/journal';
 import { museumCheckpoint } from '../logic/museum';
 import { buyChristmasItem } from '../logic/christmasShop';
 import type { CatalogueItem } from '../data/catalogueProducts';
@@ -110,6 +111,27 @@ export function tutorialEvent(owner: HasRegistry, event: TutorialEvent): Tutoria
 
 export function getGameState(owner: HasRegistry): GameState {
   return owner.registry.get(KEY) as GameState;
+}
+
+/** Only journal rewards and cosmetics enter the pre-day save. */
+function updateJournal(owner: HasRegistry, update: (state: GameState) => GameState): void {
+  const before = getGameState(owner), after = update(before);
+  if (after === before) return;
+  if (!owner.registry.get(DAY_KEY)) { setGameState(owner, after); return; }
+  const checkpoint = journalCheckpoint(owner.registry.get(CHECKPOINT_KEY) ?? before, before, after);
+  if (!Number.isSafeInteger(checkpoint.leaves) || checkpoint.leaves < 0
+    || !Number.isSafeInteger(checkpoint.museum.storedCases)) return;
+  slot.write(saveGame(checkpoint));
+  owner.registry.set(CHECKPOINT_KEY, checkpoint);
+  owner.registry.set(KEY, after);
+}
+
+export function claimJournalMilestone(owner: HasRegistry, id: MilestoneId): void {
+  updateJournal(owner, state => claimMilestone(state, id));
+}
+
+export function equipJournalTitle(owner: HasRegistry, title: PlayerTitle | null): void {
+  updateJournal(owner, state => equipPlayerTitle(state, title));
 }
 
 export function setGameState(owner: HasRegistry, state: GameState): void {

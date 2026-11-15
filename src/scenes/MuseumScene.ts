@@ -1,4 +1,6 @@
 import { museumWeightPlaque } from '../ui/museumWeightPlaque';
+import { PlayerTitlePlate } from '../ui/PlayerTitlePlate';
+import journalWords from '../data/texts/fieldJournal.json';
 import { cropRecord } from '../logic/cropWeights';
 import Phaser from 'phaser';
 import words from '../data/texts/museum.json';
@@ -41,6 +43,7 @@ export class MuseumScene extends Phaser.Scene {
   private ignoredCaseRelease: number | null = null;
   private grabOffset: Point = { x: 0, y: 16 };
   private modal: CropCollectionPanel | MuseumExhibitPanel | null = null;
+  private titlePlate!: PlayerTitlePlate;
   private level = 0;
   private arrangeButton!: Button;
   private buyButton!: Button;
@@ -88,10 +91,13 @@ export class MuseumScene extends Phaser.Scene {
     this.expandButton = control('expand', 409, 19, 154, '', () => this.commit(expandMuseum(getGameState(this))));
     this.expandLabel = new LeafText(this, 0, 0, '', { ...TEXT.button, fontSize: '11px' }, 0.5, 0.5);
     this.expandButton.add(this.expandLabel);
-    control('collection', 568, 19, 116, words.collection, () => {
+    control('collection', 568, 19, 116, journalWords.title, () => {
       this.route = []; this.pendingCase = null;
       this.modal = new CropCollectionPanel(this, () => this.closeModal(), () => this.closeModal()).setDepth(5000);
     });
+    const titleAt = layoutPoint('museum', 'playerTitle', { x: 320, y: 323 });
+    this.titlePlate = new PlayerTitlePlate(this).setPosition(titleAt.x, titleAt.y).setDepth(800);
+    arrangeable(this, 'museum', 'playerTitle', titleAt, this.titlePlate);
     this.placeButton = control('placeCase', 205, 321, 112, words.place, () => {
       this.clearCasePreview(); this.placing = true; this.movingId = null;
       this.createCasePreview({ x: 0, y: 16 }); this.moveCasePreview(this.input.activePointer);
@@ -329,6 +335,7 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   private refreshControls(state: GameState): void {
+    this.titlePlate.setVisible(!this.editing && state.journal.equippedTitle !== null);
     this.arrangeButton.setText(this.editing ? words.done : words.arrange);
     const budget = museumLeavesAvailable(this);
     this.buyButton.setEnabled(budget >= MUSEUM_CASE_PRICE);

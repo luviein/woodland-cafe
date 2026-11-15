@@ -1,4 +1,5 @@
 import { WARDROBE_PANEL_ART } from '../art/sprites/wardrobePanel';
+import { JOURNAL_ART } from '../art/sprites/journal';
 import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
 import { CHRISTMAS_SEED_PACKET_ART } from '../art/sprites/christmasSeedPackets';
 import { SEED_SHOP_ART } from '../art/sprites/seedShop';
@@ -66,6 +67,7 @@ const GROUPS: [string, (name: ArtName) => boolean][] = [
   ['Kitchen', (n) => (INGREDIENT_IDS as string[]).includes(n) || n.endsWith('Layer') || n === 'toaster'],
   ['Christmas', (n) => (CHRISTMAS_ART as readonly ArtName[]).includes(n)],
   ['Outdoors and map', (n) => ['leaf', 'grass', 'forestFloor', 'tree', 'mapTree', 'mushroomPatch', 'berryBush', 'stall', 'cafeHouse', ...MARKET_STALLS].includes(n)],
+  ['Field Journal', (n) => n in JOURNAL_ART],
   ['Icons and effects', () => true], // everything else
 ];
 
@@ -74,6 +76,7 @@ function groupOf(name: ArtName): string {
 }
 
 function source(name: ArtName): string {
+  if (name in JOURNAL_ART) return 'your approved Field Journal and badges (tools/journalArt.ps1)';
   if (name in WARDROBE_PANEL_ART) return 'your supplied wardrobe reference with live item fields (tools/wardrobePanelArt.cjs)';
   if (name in MUSEUM_ART) return 'modular museum furnishings from your supplied reference (tools/museumArt.cjs)';
   if (name in CHRISTMAS_SELL_ART) return 'your supplied selling board and Christmas ticket (tools/christmasSellArt.cjs)';

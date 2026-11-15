@@ -16,6 +16,7 @@ import { WALLPAPER_CORNERS } from './sprites/wallpaperCorners';
 import { SIDE_WALLPAPER_ART } from './sprites/sideWallpaper';
 import { ROOM_FINISH_ART } from './sprites/roomFinishes';
 import type { PixelSprite } from './pixelSprite';
+import { JOURNAL_ART } from './sprites/journal';
 import { CATALOGUE_SAMPLES } from './sprites/catalogueSamples';
 import { CRITTER_SKELETON } from './sprites/critterSkeleton';
 import { DEER_VENDOR_IDLE } from './sprites/stallVendorIdle';
@@ -71,6 +72,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...JOURNAL_ART,
   ...WARDROBE_PANEL_ART,
   ...MUSEUM_ART,
   ...CHRISTMAS_SELL_ART,
