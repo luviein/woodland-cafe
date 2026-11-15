@@ -15,7 +15,7 @@ const GLYPHS: Record<string, readonly string[]> = {
   '9': ['111', '101', '111', '001', '111'],
   '.': ['0', '0', '0', '0', '1'],
   k: ['100', '101', '110', '101', '101'],
-  g: ['000', '111', '101', '011', '111'],
+  g: ['000', '000', '111', '101', '111', '001', '110'],
 };
 
 export function museumWeightPlaque(scene: Phaser.Scene, grams: number): Phaser.GameObjects.Graphics {
@@ -23,8 +23,9 @@ export function museumWeightPlaque(scene: Phaser.Scene, grams: number): Phaser.G
   const width = [...text].reduce((sum, char) => sum + GLYPHS[char][0].length + 1, -1);
   const plaque = scene.add.graphics().setName('weightPlaque');
   const left = -Math.floor((width + 4) / 2);
-  plaque.fillStyle(0x493026).fillRect(left, -9, width + 4, 9);
-  plaque.fillStyle(0xffe9ae).fillRect(left + 1, -8, width + 2, 7);
+  // The lowercase g descends below the digits; retain a clear row beneath its tail.
+  plaque.fillStyle(0x493026).fillRect(left, -9, width + 4, 11);
+  plaque.fillStyle(0xffe9ae).fillRect(left + 1, -8, width + 2, 9);
   plaque.fillStyle(0x281a14);
   let x = left + 2;
   for (const char of text) {

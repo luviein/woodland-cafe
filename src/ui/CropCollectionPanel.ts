@@ -39,7 +39,7 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
     }
     place('spine', 320, 180, scene.add.rectangle(0, 0, 8, 304, COLORS.counterEdge));
     // A paper title plate keeps the centre seam out of the heading and progress.
-    place('titlePlate', 320, 52, scene.add.rectangle(0, 0, 230, 54, COLORS.paper).setStrokeStyle(1, COLORS.paperEdge));
+    place('titlePlate', 320, 52, scene.add.rectangle(0, 0, 230, 48, COLORS.paper));
     place('title', 320, 43, scene.add.text(0, 0, words.title, TEXT.heading).setOrigin(0.5));
     this.progress = place('progress', 320, 64, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '11px' }).setOrigin(0.5));
     place('back', 72, 43, new Button(scene, 0, 0, 60, 22, words.back, COLORS.book, back).setFontSize(12));
@@ -67,7 +67,7 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
       const entry = this.entries[i], recorded = state.cropCollection.includes(item.id);
       const amount = state.garden.harvests[item.variant][item.crop];
       entry.art.setAlpha(recorded ? 1 : 0.35);
-      entry.back.setStrokeStyle(recorded ? 2 : 1, recorded ? 0xc29b45 : COLORS.paperEdge);
+      entry.back.setStrokeStyle(1, COLORS.paperEdge);
       entry.description.setText(recorded ? words.descriptions[item.id] : words.hint);
       entry.count.setText(words.have.replace('{amount}', cropQuantity(amount)));
       entry.record.setText(recorded ? words.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '');

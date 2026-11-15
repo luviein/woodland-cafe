@@ -46,6 +46,8 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
           .setLeadingIcon(addArt(scene, 0, 0, cropArtName(item.crop, item.variant) as ArtName)));
       this.choices.push(button);
     });
+    place('availabilityHint', 320, 281, scene.add.text(0, 0, words.availabilityHint,
+      { ...TEXT.body, fontSize: '9px' }).setOrigin(0.5));
     place('move', 250, 302, new Button(scene, 0, 0, 116, 22, words.move, COLORS.book, move).setFontSize(11));
     place('clear', 390, 302, new Button(scene, 0, 0, 116, 22, words.clear, COLORS.reset, () => choose(null)).setFontSize(11));
     arrangeablePanel(scene, 'museumExhibit', 'panel', this);
@@ -56,9 +58,10 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
     this.image.setVisible(!!item);
     if (item) this.image.setTexture(`art:${cropArtName(item.crop, item.variant)}`, 0);
     this.title.setText(item ? cropName(item.crop, item.variant) : words.empty);
-    this.plaque.setText(item ? formatCropWeight(cropRecord(state, item.id)).replace(' ', '') : '');
+    this.plaque.setVisible(!!item).setText(item ? formatCropWeight(cropRecord(state, item.id)).replace(' ', '') : '');
     this.record.setText(item ? words.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '');
     this.description.setText(item ? collectionWords.descriptions[item.id] : words.emptyDescription);
-    COLLECTION_ITEMS.forEach((entry, i) => this.choices[i].setEnabled(state.cropCollection.includes(entry.id) && entry.id !== exhibit));
+    COLLECTION_ITEMS.forEach((entry, i) => this.choices[i].setEnabled(state.cropCollection.includes(entry.id)
+      && !state.museum.cases.some(item => item.exhibit === entry.id)));
   }
 }

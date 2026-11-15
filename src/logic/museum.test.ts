@@ -50,13 +50,19 @@ it('charges Leaves for cases and two expansions while retaining physical case po
   expect(expandMuseum(poor)).toBe(poor);
 });
 
-it('displays only donated crops, moves an exhibit between cases and keeps donations when storing', () => {
+it('keeps case choices independent, requires clearing before reassignment and retains records when storing', () => {
   let state: GameState = { ...createNewGame(), cropCollection: ['golden.mushroom'], museum: { ...emptyMuseum(), storedCases: 2 } };
   state = placeMuseumCase(placeMuseumCase(state, { x: 2, y: 2 }), { x: 8, y: 2 });
   expect(displayMuseumCrop(state, 1, 'christmas.tomato')).toBe(state);
   state = displayMuseumCrop(state, 1, 'golden.mushroom');
+  expect(displayMuseumCrop(state, 2, 'golden.mushroom')).toBe(state);
+  expect(displayMuseumCrop(state, 2, null)).toBe(state);
+  expect(state.museum.cases.map(item => item.exhibit)).toEqual(['golden.mushroom', null]);
+  state = displayMuseumCrop(state, 1, null);
   state = displayMuseumCrop(state, 2, 'golden.mushroom');
   expect(state.museum.cases.map(item => item.exhibit)).toEqual([null, 'golden.mushroom']);
+  expect(displayMuseumCrop(state, 1, null)).toBe(state);
+  expect(displayMuseumCrop(state, 2, null).museum.cases.map(item => item.exhibit)).toEqual([null, null]);
   const stored = storeMuseumCase(state, 2);
   expect(stored.museum.storedCases).toBe(1);
   expect(stored.cropCollection).toEqual(['golden.mushroom']);

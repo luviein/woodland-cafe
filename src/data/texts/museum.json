@@ -26,5 +26,6 @@
   "move": "Move case",
   "close": "Close",
   "starterHelp": "Walk with WASD/arrows. Choose Arrange, then Place case to use your free case.",
-  "record": "Heaviest recorded: {weight}"
+  "record": "Heaviest recorded: {weight}",
+  "availabilityHint": "Each crop can be displayed in one case. Clear its case to move it."
 }

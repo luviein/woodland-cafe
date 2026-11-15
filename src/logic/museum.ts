@@ -67,8 +67,9 @@ export function storeMuseumCase(state: GameState, id: number): GameState {
 export function displayMuseumCrop(state: GameState, id: number, exhibit: CollectionId | null): GameState {
   if (!state.museum.cases.some(item => item.id === id) || exhibit !== null && !state.cropCollection.includes(exhibit)) return state;
   if (state.museum.cases.find(item => item.id === id)?.exhibit === exhibit) return state;
-  return { ...state, museum: { ...state.museum, cases: state.museum.cases.map(item => item.id === id ? { ...item, exhibit }
-    : exhibit !== null && item.exhibit === exhibit ? { ...item, exhibit: null } : item) } };
+  // A choice belongs to this case; never silently empty another display.
+  if (exhibit !== null && state.museum.cases.some(item => item.id !== id && item.exhibit === exhibit)) return state;
+  return { ...state, museum: { ...state.museum, cases: state.museum.cases.map(item => item.id === id ? { ...item, exhibit } : item) } };
 }
 
 export function buyMuseumCase(state: GameState): GameState {
