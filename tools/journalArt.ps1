@@ -8,8 +8,8 @@ $jobs = @(
   @{ Source='journal-badges-source.png'; Name='discoveryBadge'; Width=28; Segment=0 },
   @{ Source='journal-badges-source.png'; Name='goldenBadge'; Width=28; Segment=1 },
   @{ Source='journal-badges-source.png'; Name='collectorBadge'; Width=28; Segment=2 },
-  @{ Source='journal-bookmarks-source.png'; Name='journalCropsBookmark'; Width=112; Segment=-1; Crop=@(17,186,290,129); Outline=@(@(17,186),@(266,190),@(306,245),@(273,304),@(17,315)) },
-  @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,308,290,125); Outline=@(@(17,308),@(270,309),@(306,361),@(273,421),@(28,433),@(17,421)) },
+  @{ Source='journal-bookmarks-source.png'; Name='journalCropsBookmark'; Width=112; Segment=-1; Crop=@(17,197,290,106); Outline=@(@(20,201),@(29,197),@(263,197),@(273,201),@(306,245),@(273,293),@(263,301),@(29,301),@(20,295)) },
+  @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,307,290,114); Outline=@(@(20,318),@(29,307),@(263,307),@(274,320),@(306,361),@(274,410),@(263,419),@(29,419),@(20,411)) },
   @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorRibbon'; Width=160; Segment=-1 },
   @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 }
 )

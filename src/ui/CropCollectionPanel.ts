@@ -14,6 +14,7 @@ import { addArt } from './art';
 import { Button } from './Button';
 import { LeafText } from './LeafText';
 import { PlayerTitlePlate } from './PlayerTitlePlate';
+import { PixelText } from './PixelText';
 import { cropQuantity } from './cropQuantity';
 import { COLORS, TEXT } from './theme';
 
@@ -56,8 +57,10 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
   }
 
   private text(name: string, x: number, y: number, value: string, size = 10, width = 185): Phaser.GameObjects.Text {
-    return this.place(this.content, name, x, y, this.scene.add.text(0, 0, value,
-      { ...TEXT.body, fontSize: `${size}px`, wordWrap: { width }, lineSpacing: 2 }));
+    const text = new PixelText(this.scene, 0, 0, value,
+      { ...TEXT.body, color: '#3c261d', resolution: 1, fontSize: `${size}px`, wordWrap: { width }, lineSpacing: 2 });
+    this.scene.add.existing(text);
+    return this.place(this.content, name, x, y, text);
   }
 
   refresh(state: GameState = getGameState(this.scene)): void {
@@ -79,7 +82,7 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
   private renderCrops(): void {
     const state = this.journalState;
     [collectionWords.golden, collectionWords.christmas].forEach((label, i) =>
-      this.text(`heading.${i}`, 203 + i * 234, 101, label, 11).setOrigin(0.5, 0));
+      this.text(`heading.${i}`, i === 0 ? 203 : 448, 101, label, 11).setOrigin(0.5, 0));
     COLLECTION_ITEMS.forEach((item, i) => {
       const left = i < 3 ? 104 : 352, y = 126 + i % 3 * 54;
       const recorded = state.cropCollection.includes(item.id), name = `crop.${item.id}`;
@@ -112,18 +115,19 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
       const reward = id === 'foundingCollection' ? words.rewardCase : `🍃 ${MILESTONE_LEAVES[id]}`;
       this.place(this.content, `${name}.reward`, 104, y + 36,
         new LeafText(this.scene, 0, 0, reward, { ...TEXT.body, fontSize: '9px' }));
-      this.place(this.content, `${name}.claim`, 269, y + 40,
-        new Button(this.scene, 0, 0, 58, 18, claimed ? words.claimed : words.claim, COLORS.serve, () => {
+      this.place(this.content, `${name}.claim`, 275, y + 40,
+        new Button(this.scene, 0, 0, 46, 16, claimed ? words.claimed : words.claim, COLORS.serve, () => {
           claimJournalMilestone(this.scene, id); this.refresh();
         }).setFontSize(9)).setEnabled(canClaimMilestone(state, id));
     });
-    this.text('titleHeading', 437, 107, words.masterCollector, 12).setOrigin(0.5, 0);
-    this.place(this.content, 'titleBadge', 437, 151, addArt(this.scene, 0, 0, 'collectorBadge'));
+    const titleCentre = 448;
+    this.text('titleHeading', titleCentre, 107, words.masterCollector, 12).setFontStyle('bold').setOrigin(0.5, 0);
+    this.place(this.content, 'titleBadge', titleCentre, 151, addArt(this.scene, 0, 0, 'collectorBadge'));
     const unlocked = state.journal.claimed.includes('foundingCollection');
-    this.text('titleStatus', 437, 180, unlocked ? words.founding : words.titleLocked, 10, 192).setOrigin(0.5, 0);
-    this.place(this.content, 'titlePlate', 437, 231, new PlayerTitlePlate(this.scene)).setAlpha(unlocked ? 1 : 0.4);
+    this.text('titleStatus', titleCentre, 180, unlocked ? words.founding : words.titleLocked, 10, 192).setAlign('center').setOrigin(0.5, 0);
+    this.place(this.content, 'titlePlate', titleCentre, 231, new PlayerTitlePlate(this.scene)).setAlpha(unlocked ? 1 : 0.4);
     const equipped = state.journal.equippedTitle !== null;
-    this.place(this.content, 'equipTitle', 437, 276,
+    this.place(this.content, 'equipTitle', titleCentre, 276,
       new Button(this.scene, 0, 0, 128, 22, equipped ? words.unequip : words.equip, COLORS.book, () => {
         equipJournalTitle(this.scene, equipped ? null : 'masterCollector'); this.refresh();
       }).setFontSize(11)).setEnabled(unlocked);
