@@ -70,7 +70,8 @@ describe('garden commands', () => {
         expect(get().garden.plots).toBe(before.garden.plots);
         expect(get().garden.seeds).toBe(before.garden.seeds);
         expect(get().christmasTickets).toBe(before.christmasTickets);
-        expect(get().cropCollection).toEqual(before.cropCollection);
+        if (variant === 'normal') expect(get().cropCollection).toEqual(before.cropCollection);
+        else expect(get().cropCollection).toContain(`${variant}.${crop}`);
         expect(get().museum).toBe(before.museum);
       }
     }

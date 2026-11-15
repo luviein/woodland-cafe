@@ -1,12 +1,13 @@
-import { cropRecord, heaviestCrop, formatCropWeight } from '../logic/cropWeights';
+import { cropQuantity } from './cropQuantity';
+import { cropRecord, formatCropWeight } from '../logic/cropWeights';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import words from '../data/texts/cropCollection.json';
-import { COLLECTION_ITEMS, donateCrop } from '../logic/cropCollection';
+import { COLLECTION_ITEMS } from '../logic/cropCollection';
 import { cropArtName, cropName } from '../logic/garden';
 import type { GameState } from '../logic/gameState';
 import type { ArtName } from '../art/spriteArt';
-import { getGameState, setGardenGameState } from '../scenes/gameStore';
+import { getGameState } from '../scenes/gameStore';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
 import { addArt } from './art';
@@ -16,7 +17,7 @@ import { COLORS, TEXT } from './theme';
 /** Two permanent collection pages; remaining crops stay in the player's inventory. */
 export class CropCollectionPanel extends Phaser.GameObjects.Container {
   private readonly progress: Phaser.GameObjects.Text;
-  private readonly entries: { back: Phaser.GameObjects.Rectangle; art: Phaser.GameObjects.Image; description: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text; record: Phaser.GameObjects.Text; donate: Button }[] = [];
+  private readonly entries: { back: Phaser.GameObjects.Rectangle; art: Phaser.GameObjects.Image; description: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text; record: Phaser.GameObjects.Text }[] = [];
 
   constructor(scene: Phaser.Scene, back: () => void, close: () => void) {
     super(scene, 0, 0);
@@ -53,12 +54,8 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
         ...TEXT.body, fontSize: '9px', wordWrap: { width: 184 }, lineSpacing: 0,
       }));
       const count = place(`entry.${item.id}.count`, x - 68, y + 22, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '9px' }).setOrigin(0, 0.5));
-      const donate = place(`entry.${item.id}.donate`, x + 89, y + 22, new Button(scene, 0, 0, 64, 18, words.donate, COLORS.serve, () => {
-        setGardenGameState(scene, donateCrop(getGameState(scene), item.id));
-        this.refresh();
-      }).setFontSize(10));
-      const record = place(`entry.${item.id}.record`, x - 99, y + 12, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '8px', align: 'center', lineSpacing: 0 }).setOrigin(0.5, 0));
-      this.entries.push({ back: card, art, description, count, record, donate });
+      const record = place(`entry.${item.id}.bestWeight`, x + 119, y + 22, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px' }).setOrigin(1, 0.5));
+      this.entries.push({ back: card, art, description, count, record });
     });
     this.refresh();
     arrangeablePanel(scene, 'cropCollection', 'panel', this);
@@ -67,15 +64,13 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
   refresh(state: GameState = getGameState(this.scene)): void {
     this.progress.setText(words.progress.replace('{amount}', String(state.cropCollection.length)));
     COLLECTION_ITEMS.forEach((item, i) => {
-      const entry = this.entries[i], donated = state.cropCollection.includes(item.id);
+      const entry = this.entries[i], recorded = state.cropCollection.includes(item.id);
       const amount = state.garden.harvests[item.variant][item.crop];
-      entry.art.setAlpha(donated ? 1 : 0.35);
-      entry.back.setStrokeStyle(donated ? 2 : 1, donated ? 0xc29b45 : COLORS.paperEdge);
-      entry.description.setText(donated ? words.descriptions[item.id] : words.hint);
-      entry.count.setText(words.have.replace('{amount}', String(amount)));
-      entry.record.setText(donated ? words.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '');
-      const improves = heaviestCrop(state, item.crop, item.variant) > cropRecord(state, item.id);
-      entry.donate.setText(donated ? improves ? words.upgrade : words.donated : words.donate).setEnabled(improves);
+      entry.art.setAlpha(recorded ? 1 : 0.35);
+      entry.back.setStrokeStyle(recorded ? 2 : 1, recorded ? 0xc29b45 : COLORS.paperEdge);
+      entry.description.setText(recorded ? words.descriptions[item.id] : words.hint);
+      entry.count.setText(words.have.replace('{amount}', cropQuantity(amount)));
+      entry.record.setText(recorded ? words.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '');
     });
   }
 }

@@ -1,3 +1,4 @@
+import { recordSpecialCrops } from './cropCollection';
 import { expect, it } from 'vitest';
 import { CROP_IDS } from '../data/crops';
 import { createNewGame } from './gameState';
@@ -40,7 +41,7 @@ it('saves tickets with the remaining crops, migrates old saves and rejects malfo
   const sold = sellChristmasCrop(state, 'tomato', 1);
   expect(loadGame(saveGame(sold))).toEqual({ ok: true, state: sold });
   const { christmasTickets: _tickets, ...old } = state;
-  expect(loadGame(JSON.stringify({ version: 14, state: old }))).toEqual({ ok: true, state });
+  expect(loadGame(JSON.stringify({ version: 14, state: old }))).toEqual({ ok: true, state: recordSpecialCrops(state) });
   for (const tickets of [-1, 0.5, '5', null, Number.MAX_SAFE_INTEGER + 1]) {
     expect(loadGame(JSON.stringify({ version: 15, state: { ...state, christmasTickets: tickets } })).ok).toBe(false);
   }

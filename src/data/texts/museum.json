@@ -17,14 +17,14 @@
   "placingHelp": "Move the preview, then release or click to place. Cancel leaves the original in place.",
   "invalid": "That spot would block the aisle, overlap a case, or close a walkway.",
   "empty": "Empty display case",
-  "emptyDescription": "Choose a donated crop to put on display. Donate crops from the Collection book first.",
+  "emptyDescription": "Choose a recorded special crop to put on display. Harvest special crops to discover them.",
   "choose": "Choose an exhibit",
-  "noDonations": "No donated crops yet. Open Collection to make your first donation.",
+  "noDonations": "No special crops recorded yet. Harvest Golden or seasonal crops to start your collection.",
   "onDisplay": "On display",
   "display": "Display",
   "clear": "Clear case",
   "move": "Move case",
   "close": "Close",
   "starterHelp": "Walk with WASD/arrows. Choose Arrange, then Place case to use your free case.",
-  "record": "Heaviest donation: {weight}"
+  "record": "Heaviest recorded: {weight}"
 }

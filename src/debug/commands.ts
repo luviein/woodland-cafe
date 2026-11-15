@@ -1,3 +1,4 @@
+import { recordSpecialCrops } from '../logic/cropCollection';
 import { addCropWeights, setWeightBatches, weightKey, validCropWeight, STANDARD_WEIGHT } from '../logic/cropWeights';
 import { CUSTOMER_ART } from '../art/spriteArt';
 import { CROPS, CROP_IDS, SPECIAL_VARIANTS } from '../data/crops';
@@ -249,10 +250,10 @@ export function createDevCommands(
         const total = (variant === 'ordinary' ? state.stock[crop] : state.garden.harvests[variant][crop]) + n;
         if (!Number.isSafeInteger(total)) throw new Error('Too many crops');
         const weighted = { ...state, cropWeights: addCropWeights(state.cropWeights, crop, variant, [{ grams, count: n }]) };
-        game().set(variant === 'ordinary' ? { ...weighted, stock: { ...state.stock, [crop]: total } }
+        game().set(recordSpecialCrops(variant === 'ordinary' ? { ...weighted, stock: { ...state.stock, [crop]: total } }
           : { ...weighted, garden: { ...state.garden, harvests: { ...state.garden.harvests,
             [variant]: { ...state.garden.harvests[variant], [crop]: total },
-          } } });
+          } } }));
         return `${cropName(crop, variant)} = ${total}`;
       },
     },

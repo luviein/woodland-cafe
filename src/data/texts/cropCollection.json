@@ -5,11 +5,9 @@
   "close": "Close",
   "golden": "Golden crops",
   "christmas": "Christmas crops",
-  "progress": "{amount} / 6 donated",
-  "donate": "Donate 1",
-  "donated": "Donated",
+  "progress": "{amount} / 6 recorded",
   "have": "Have: {amount}",
-  "hint": "Donate one to add this crop to the collection.",
+  "hint": "Harvest this special crop to record it automatically.",
   "descriptions": {
     "golden.mushroom": "A rare woodland cap, gleaming like autumn sunlight.",
     "golden.tomato": "A tiny golden sun, ripened among the garden leaves.",
@@ -18,6 +16,5 @@
     "christmas.tomato": "A cheerful red tomato dusted with Christmas snow.",
     "christmas.chilli": "A bright winter chilli, bringing warmth to the holidays."
   },
-  "upgrade": "Upgrade",
-  "record": "Best\n{weight}"
+  "record": "Best: {weight}"
 }

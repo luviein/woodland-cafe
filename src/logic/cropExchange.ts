@@ -26,7 +26,7 @@ export function sellChristmasCrop(state: GameState, crop: CropId, amount: number
   if (!Number.isSafeInteger(quantity) || quantity <= 0 || quantity > owned) return state;
   const tickets = state.christmasTickets + christmasSaleValue(state, crop, quantity);
   if (!Number.isSafeInteger(tickets)) return state;
-  const cropWeights = takeCropWeights(state.cropWeights, weightKey(crop, 'christmas'), owned, quantity).weights;
+  const cropWeights = takeCropWeights(state.cropWeights, weightKey(crop, 'christmas'), owned, quantity);
   return { ...state, cropWeights, christmasTickets: tickets, garden: { ...state.garden,
     harvests: { ...state.garden.harvests, christmas: { ...state.garden.harvests.christmas, [crop]: owned - quantity } },
   } };

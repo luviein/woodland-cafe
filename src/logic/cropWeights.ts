@@ -37,17 +37,14 @@ export function addCropWeights(weights: CropWeights, crop: CropId, variant: Crop
   const key = weightKey(crop, variant);
   return setWeightBatches(weights, key, [...(weights[key] ?? []), ...batches]);
 }
-export function takeCropWeights(weights: CropWeights, key: keyof CropWeights, owned: number, quantity: number, heaviest = false): { weights: CropWeights; taken: WeightBatch[] } {
+export function takeCropWeights(weights: CropWeights, key: keyof CropWeights, owned: number, quantity: number): CropWeights {
   const batches = weightBatches(weights, key, owned);
-  if (heaviest) batches.reverse();
-  const taken: WeightBatch[] = [];
   let left = quantity;
   for (const batch of batches) {
     const count = Math.min(batch.count, left);
-    if (count) taken.push({ grams: batch.grams, count });
     batch.count -= count; left -= count;
   }
-  return { weights: setWeightBatches(weights, key, batches), taken };
+  return setWeightBatches(weights, key, batches);
 }
 export function cropWeightRange(state: GameState, crop: CropId, variant: CropVariant): string {
   const owned = variant === 'ordinary' ? state.stock[crop] : state.garden.harvests[variant][crop];

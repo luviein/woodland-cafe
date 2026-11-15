@@ -1,4 +1,5 @@
-import { cropRecord, formatCropWeight } from '../logic/cropWeights';
+import { museumWeightPlaque } from '../ui/museumWeightPlaque';
+import { cropRecord } from '../logic/cropWeights';
 import Phaser from 'phaser';
 import words from '../data/texts/museum.json';
 import { MUSEUM_CASE_PRICE, MUSEUM_EXPANSION_PRICES, MUSEUM_ROWS, museumColumns, museumDoor,
@@ -177,9 +178,7 @@ export class MuseumScene extends Phaser.Scene {
 
   private addWeightPlaque(group: Phaser.GameObjects.Container, grams: number): void {
     // The plaque travels with the case, including its Arrange preview.
-    group.add(this.add.text(0, -4, formatCropWeight(grams).replace(' ', ''), {
-      ...TEXT.body, fontSize: '6px', color: '#493026', backgroundColor: '#f2cea0', padding: { x: 1, y: 0 },
-    }).setOrigin(0.5).setName('weightPlaque'));
+    group.add(museumWeightPlaque(this, grams));
   }
 
   private createCasePreview(offset: Point): void {

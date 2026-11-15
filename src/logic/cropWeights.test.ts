@@ -4,7 +4,7 @@ import { addCropWeights, cropRecord, randomCropWeight, weightBatches, validCropW
 import { createNewGame } from './gameState';
 import { gardenCheckpoint, tendCrop } from './garden';
 import { sellChristmasCrop, christmasSaleValue } from './cropExchange';
-import { donateCrop } from './cropCollection';
+import { recordSpecialCrops } from './cropCollection';
 import { useIngredients } from './stock';
 import { loadGame, saveGame, SAVE_VERSION } from './save';
 
@@ -17,6 +17,8 @@ it('assigns an independent weight to every harvested unit, once, including doubl
     expect(draw).not.toHaveBeenCalled();
     const after = tendCrop(state, 0, 300000, 0, draw);
     expect(draw).toHaveBeenCalledTimes(8);
+    expect(after.cropCollection).toEqual(variant === 'ordinary' ? [] : [`${variant}.mushroom`]);
+    if (variant !== 'ordinary') expect(after.cropRecords[`${variant}.mushroom`]).toBe(4400);
     const key = `${variant}.mushroom` as const;
     const count = variant === 'ordinary' ? after.stock.mushroom : after.garden.harvests[variant].mushroom;
     expect(weightBatches(after.cropWeights, key, count)).toContainEqual({ grams: 4400, count: 1 });
@@ -27,7 +29,7 @@ it('assigns an independent weight to every harvested unit, once, including doubl
   expect([0, 0.949, 0.95, 0.99999].map(randomCropWeight)).toEqual([500, 2000, 2000, 5000]);
 });
 
-it('sells lightest first and sums individually rounded payouts, preserving heavy specimens for donation', () => {
+it('sells lightest first and sums individually rounded payouts, preserving heavy specimens for records', () => {
   const state = createNewGame();
   state.garden.harvests.christmas.tomato = 4;
   state.cropWeights = addCropWeights({}, 'tomato', 'christmas', [{ grams: 500, count: 1 }, { grams: 3240, count: 2 }]);
@@ -43,24 +45,24 @@ it('sells lightest first and sums individually rounded payouts, preserving heavy
   expect(sellChristmasCrop(full, 'tomato', 1)).toBe(full);
 });
 
-it('upgrades a permanent donation only with a heavier specimen and never spends a tied or lighter crop', () => {
+it('upgrades a permanent record automatically with heavier specimens without spending crops', () => {
   const state = createNewGame();
   state.garden.harvests.golden.mushroom = 3;
   state.cropWeights = addCropWeights({}, 'mushroom', 'golden', [{ grams: 3240, count: 2 }]);
-  const donated = donateCrop(state, 'golden.mushroom');
-  expect(cropRecord(donated, 'golden.mushroom')).toBe(3240);
-  expect(donated.garden.harvests.golden.mushroom).toBe(2);
-  expect(donateCrop(donated, 'golden.mushroom')).toBe(donated);
-  const heavier = { ...donated, cropWeights: addCropWeights(donated.cropWeights, 'mushroom', 'golden', [{ grams: 4500, count: 1 }]),
-    garden: { ...donated.garden, harvests: { ...donated.garden.harvests, golden: { ...donated.garden.harvests.golden, mushroom: 3 } } } };
+  const recorded = recordSpecialCrops(state);
+  expect(cropRecord(recorded, 'golden.mushroom')).toBe(3240);
+  expect(recorded.garden.harvests.golden.mushroom).toBe(3);
+  expect(recordSpecialCrops(recorded)).toBe(recorded);
+  const heavier = { ...recorded, cropWeights: addCropWeights(recorded.cropWeights, 'mushroom', 'golden', [{ grams: 4500, count: 1 }]),
+    garden: { ...recorded.garden, harvests: { ...recorded.garden.harvests, golden: { ...recorded.garden.harvests.golden, mushroom: 4 } } } };
   const live = useIngredients(heavier, ['mushroom']).state;
-  const upgraded = donateCrop(live, 'golden.mushroom');
+  const upgraded = recordSpecialCrops(live);
   const saved = gardenCheckpoint(heavier, live, upgraded);
   expect(saved.stock).toEqual(heavier.stock);
   expect(saved.cropRecords).toEqual(upgraded.cropRecords);
   expect(cropRecord(upgraded, 'golden.mushroom')).toBe(4500);
   expect(upgraded.cropCollection).toEqual(['golden.mushroom']);
-  expect(upgraded.garden.harvests.golden.mushroom).toBe(2);
+  expect(upgraded.garden.harvests.golden.mushroom).toBe(4);
   expect(upgraded.christmasTickets).toBe(0);
   expect(loadGame(saveGame(upgraded))).toEqual({ ok: true, state: upgraded });
 });
@@ -90,7 +92,7 @@ it('migrates legacy counts and donations at standard weight without allocating o
   expect(weightBatches(state.cropWeights, 'christmas.chilli', Number.MAX_SAFE_INTEGER)).toHaveLength(1);
 });
 
-it('rejects damaged weight batches and invalid donation records rather than changing saved quantities', () => {
+it('rejects damaged weight batches and invalid collection records rather than changing saved quantities', () => {
   const state = createNewGame();
   const badBatches = [null, [{ grams: -1, count: 1 }], [{ grams: 6000, count: 1 }], [{ grams: 500, count: 31 }], [{ grams: 500, count: 0 }], [{ grams: 500, count: 0.5 }], [{ grams: 500, count: 1 }, { grams: 500, count: 1 }]];
   for (const batches of badBatches) expect(loadGame(JSON.stringify({ version: SAVE_VERSION, state: { ...state, cropWeights: { 'ordinary.mushroom': batches } } })).ok).toBe(false);

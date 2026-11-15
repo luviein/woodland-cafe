@@ -132,7 +132,7 @@ export function useIngredients<T extends Pantry>(
   const stock = { ...state.stock };
   let cropWeights = state.cropWeights;
   for (const u of plan.uses) {
-    if (cropWeights && CROP_IDS.includes(u.id as CropId)) cropWeights = takeCropWeights(cropWeights, weightKey(u.id as CropId, 'ordinary'), stock[u.id], u.fromStock).weights;
+    if (cropWeights && CROP_IDS.includes(u.id as CropId)) cropWeights = takeCropWeights(cropWeights, weightKey(u.id as CropId, 'ordinary'), stock[u.id], u.fromStock);
     stock[u.id] -= u.fromStock;
   }
   return { state: { ...state, ...(cropWeights ? { cropWeights } : {}), stock, leaves: state.leaves - plan.rushCost }, plan };

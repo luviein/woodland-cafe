@@ -1,46 +1,34 @@
 import { expect, it } from 'vitest';
-import { COLLECTION_ITEMS, COLLECTION_IDS, donateCrop } from './cropCollection';
+import { COLLECTION_IDS, recordSpecialCrops } from './cropCollection';
 import { createNewGame } from './gameState';
-import { loadGame, saveGame } from './save';
+import { loadGame } from './save';
 
-it('donates exactly one of each special crop once, keeping the remaining crops and wallets', () => {
-  const original = { ...createNewGame(), leaves: 123, christmasTickets: 45 };
-  for (const item of COLLECTION_ITEMS) original.garden.harvests[item.variant][item.crop] = 4;
-  let state = original;
-  for (const item of COLLECTION_ITEMS) {
-    const before = state;
-    state = donateCrop(state, item.id);
-    expect(state.cropCollection).toContain(item.id);
-    expect(state.cropCollection.length).toBe(before.cropCollection.length + 1);
-    expect(state.garden.harvests).toEqual({ ...before.garden.harvests,
-      [item.variant]: { ...before.garden.harvests[item.variant], [item.crop]: 3 },
-    });
-    expect(donateCrop(state, item.id)).toBe(state);
-    expect(original.garden.harvests[item.variant][item.crop]).toBe(4);
-  }
-  expect(state.cropCollection).toEqual(COLLECTION_IDS);
-  expect(state.stock).toEqual(original.stock);
-  expect(state.leaves).toBe(123);
-  expect(state.christmasTickets).toBe(45);
-  expect(original.cropCollection).toEqual([]);
-  expect(loadGame(saveGame(state))).toEqual({ ok: true, state });
-});
-
-it('cannot donate missing special crops or ordinary cooking stock', () => {
-  const state = createNewGame();
-  for (const item of COLLECTION_ITEMS) expect(donateCrop(state, item.id)).toBe(state);
-  expect(donateCrop(state, 'ordinary.mushroom' as never)).toBe(state);
-  expect(donateCrop(state, 'unknown' as never)).toBe(state);
+it('records special stock without spending it, retains records after sales and ignores ordinary stock', () => {
+  const fresh = createNewGame();
+  expect(recordSpecialCrops(fresh)).toBe(fresh);
+  fresh.garden.harvests.golden.mushroom = 4;
+  const recorded = recordSpecialCrops(fresh);
+  expect(recorded.cropCollection).toEqual(['golden.mushroom']);
+  expect(recorded.cropRecords).toEqual({ 'golden.mushroom': 1000 });
+  expect(recorded.garden).toBe(fresh.garden);
+  expect(recordSpecialCrops(recorded)).toBe(recorded);
+  const sold = { ...recorded, garden: createNewGame().garden };
+  expect(recordSpecialCrops(sold)).toBe(sold);
 });
 
 it('migrates older saves without losing crops or tickets and sanitises saved collection ids', () => {
   const state = { ...createNewGame(), christmasTickets: 22 };
   state.garden.harvests.christmas.tomato = 8;
   const { cropCollection: _collection, ...old } = state;
-  expect(loadGame(JSON.stringify({ version: 15, state: old }))).toEqual({ ok: true, state });
+  expect(loadGame(JSON.stringify({ version: 15, state: old }))).toEqual({ ok: true, state: recordSpecialCrops(state) });
   expect(loadGame(JSON.stringify({ version: 16, state: { ...state,
     cropCollection: ['removed.crop', 'christmas.tomato', 'christmas.tomato', 'golden.mushroom'],
-  } }))).toEqual({ ok: true, state: { ...state, cropCollection: ['golden.mushroom', 'christmas.tomato'] } });
+  } }))).toEqual({ ok: true, state: recordSpecialCrops({ ...state, cropCollection: COLLECTION_IDS.filter(id => ['golden.mushroom', 'christmas.tomato'].includes(id)) }) });
+  const weighted = { ...state, cropCollection: ['christmas.tomato'] as const, cropRecords: { 'christmas.tomato': 3240 },
+    cropWeights: { 'christmas.tomato': [{ grams: 4500, count: 1 }] } };
+  expect(loadGame(JSON.stringify({ version: 18, state: weighted }))).toEqual({ ok: true, state: recordSpecialCrops(weighted) });
+  const bestKept = { ...weighted, cropRecords: { 'christmas.tomato': 5000 } };
+  expect(loadGame(JSON.stringify({ version: 18, state: bestKept }))).toEqual({ ok: true, state: bestKept });
   for (const invalid of [null, 1, 'golden.mushroom', {}]) {
     expect(loadGame(JSON.stringify({ version: 16, state: { ...state, cropCollection: invalid } })).ok).toBe(false);
   }

@@ -1,3 +1,4 @@
+import { recordSpecialCrops } from './cropCollection';
 import { addCropWeights, checkpointCropWeights, randomCropWeight } from './cropWeights';
 import { CROPS, CROP_IDS, GARDEN_PLOTS, SPECIAL_VARIANTS, CROP_CHANCES, type CropId, type SeedType, type CropVariant, type CropEvent } from '../data/crops';
 import { SHOPS } from '../data/shops';
@@ -105,8 +106,8 @@ export function tendCrop(state: GameState, index: number, now: number, roll = 1,
   plots[index] = null;
   if (plant.variant === 'ordinary') return { ...state, cropWeights, stock: { ...state.stock, [plant.crop]: current + amount },
     garden: { ...state.garden, plots } };
-  return { ...state, cropWeights, garden: { ...state.garden, plots, harvests: { ...state.garden.harvests,
-    [plant.variant]: { ...state.garden.harvests[plant.variant], [plant.crop]: current + amount } } } };
+  return recordSpecialCrops({ ...state, cropWeights, garden: { ...state.garden, plots, harvests: { ...state.garden.harvests,
+    [plant.variant]: { ...state.garden.harvests[plant.variant], [plant.crop]: current + amount } } } });
 }
 /** Persist the garden's delta without accidentally committing an unfinished cafe day. */
 export function gardenCheckpoint(checkpoint: GameState, before: GameState, after: GameState): GameState {

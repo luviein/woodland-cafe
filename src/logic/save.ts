@@ -1,7 +1,7 @@
 import { validCropWeights, validCropWeight } from './cropWeights';
 import { migrateGarden, validGarden } from './garden';
 import { validMuseum } from './museum';
-import { COLLECTION_IDS } from './cropCollection';
+import { COLLECTION_IDS, recordSpecialCrops } from './cropCollection';
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { appliedFinishIds, ownedFinishGrid } from './roomFinishShop';
 import { defaultFinishes, validFinishes } from '../data/roomFinishes';
@@ -47,7 +47,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 16: permanent special-crop collection entries.
 // 17: expandable museum and player-placed display cases.
 // 18: specimen weights and heaviest donated records.
-export const SAVE_VERSION = 18;
+// 19: legacy special stock enters the automatic collection without being consumed.
+export const SAVE_VERSION = 19;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -111,7 +112,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
   const garden = field(version < 14 && 'garden' in raw ? { ...raw, garden: migrateGarden(raw.garden) } : raw, 'garden', fresh.garden, validGarden);
   const cropWeights = field(raw, 'cropWeights', fresh.cropWeights, value => validCropWeights(value, { stock, garden }));
   const cropRecords = field(raw, 'cropRecords', fresh.cropRecords, value => isObject(value) && Object.entries(value).every(([key, grams]) => COLLECTION_IDS.includes(key as typeof COLLECTION_IDS[number]) && collection.includes(key as typeof COLLECTION_IDS[number]) && validCropWeight(grams)));
-  return {
+  const state: GameState = {
     cropWeights, cropRecords,
     museum: { ...museum, cases: museum.cases.map(item => ({ ...item, exhibit: item.exhibit && collection.includes(item.exhibit) ? item.exhibit : null })) },
     cropCollection: collection,
@@ -141,6 +142,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     tutorial: isTutorialState(raw.tutorial) ? raw.tutorial : 'done',
     tipsSeen: idList<TipId>(raw, 'tipsSeen', fresh.tipsSeen, TIP_IDS),
   };
+  return version < 19 ? recordSpecialCrops(state) : state;
 }
 
 /** raw[key] if present and `valid`, the default if missing; throws if present but invalid. */
