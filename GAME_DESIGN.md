@@ -872,6 +872,30 @@ and inside the viewport without covering HUD controls. Unequipping removes
 the world ribbon immediately. These are local cosmetic displays; networking
 and multiplayer remain outside this step.
 
+### Wardrobe titles and retired antlers
+
+Add a Titles tab beside the wardrobe's clothing/animal tabs. Show locked and
+unlocked titles, their supplied PNG ribbons and collection requirements.
+Selecting an unlocked title equips it; selecting it again removes it. Preview
+the equipped ribbon above the character's head, keeping all turn views clear.
+The equipped ribbon also follows the player on the cafe floor, in the museum,
+Forest, Marketplace and Garden. Names/networking remain a later feature.
+
+All That Glitters Grows requires the three Golden crop records. Santa's
+Devotee 2026 requires the three Christmas crop records and all eighteen
+Christmas 2026 furniture/decor designs, including the four rugs. Count both
+stored and placed pieces; clothing and room finishes are not requirements.
+Remember earned titles permanently. Existing qualifying collections count
+when opening the wardrobe. New titles require no currency or crop consumption.
+Keep the existing six-crop case reward, but retire its Master Collector title
+for new claims. Preserve Master Collector for players who already claimed it
+in older saves. Only one title may be equipped, with immediate checkpoint-safe
+persistence and no duplicate milestone payouts during migration.
+
+Remove antlers from wardrobe choices and catalogue purchases. Unequip legacy
+antlers when loading; preserve their owned ID in saves for compatibility.
+Keep all other clothing and previously earned progress intact.
+
 ### Independent museum case selection
 
 Each case contains at most one crop entry, and each entry is displayed in at most one case. Disable choices already displayed in another case and reject duplicate assignments in pure logic; never silently transfer an exhibit. Clearing an empty or occupied case leaves all other cases unchanged. The chooser explains this restriction. Collection headers and recorded cards use subtle, consistent borders; full-colour art and best weights identify recorded entries. Plaque units use a recognisable lowercase g with a descender and enough bottom padding.
