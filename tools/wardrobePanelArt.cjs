@@ -65,6 +65,41 @@ for (const edge of [
   hem(edge, 1, [100, 57, 46]);
   hem(edge, 0, [230, 157, 104]);
 }
+// Remove isolated texture specks inside the cloth, keeping the hem and hardware untouched.
+const clothRegions = [
+  [[20, 40], [87, 40], [84, 46], [76, 56], [64, 67], [45, 77], [25, 74]],
+  [[202, 68], [214, 68], [222, 77], [229, 84], [229, 121], [223, 124], [211, 108], [202, 96]],
+];
+const inside = (x, y, polygon) => {
+  let on = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [a, b] = polygon[i], [c, d] = polygon[j];
+    if ((b > y) !== (d > y) && x < (c - a) * (y - b) / (d - b) + a) on = !on;
+  }
+  return on;
+};
+const cloth = (x, y) => clothRegions.some(region => inside(x, y, region))
+  && !((x - 40) ** 2 + (y - 48) ** 2 < 64);
+for (let pass = 0; pass < 2; pass++) {
+  const before = board.map(row => [...row]);
+  for (let y = 40; y < 125; y++) for (let x = 20; x < 230; x++) {
+    if (!cloth(x, y)) continue;
+    const neighbours = [];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (cloth(x + dx, y + dy)) neighbours.push(before[y + dy][x + dx]);
+    }
+    if (neighbours.length !== 9) continue;
+    board[y][x] = [0, 1, 2].map(channel => neighbours.map(c => c[channel]).sort((a, b) => a - b)[4]);
+  }
+}
+// These two leftover dark fragments sit outside the actual folds and hanging button.
+for (let y = 68; y <= 77; y++) for (let x = 215; x <= 219; x++) board[y][x] = [...board[y][212]];
+for (let y = 40; y <= 56; y++) for (let x = 22; x <= 33; x++) {
+  const c = board[y][x];
+  if (c[0] < 140 && c[1] < 82) board[y][x] = [151, 81, 76];
+}
+for (let x = 22; x <= 87; x++) board[39][x] = [...board[40][x]];
+for (let y = 39; y <= 43; y++) board[y][40] = [77, 46, 41];
 
 // Restore the post, mirror and floor revealed by the old oversized plant.
 const original = board.map(row => row.map(c => c && [...c]));
@@ -84,9 +119,26 @@ for (let y = 205; y <= 215; y++) for (let x = 52; x <= 97; x++) {
 }
 // Reuse the reviewed compact potted plant; its leaves stay within the floor inset.
 const plant = JSON.parse(fs.readFileSync('src/art/sprites/museum.ts', 'utf8').split('export const MUSEUM_ART = ')[1].split(' satisfies')[0]).museumPlant;
+const plantPixels = Array.from({ length: 44 }, () => Array(36).fill(null));
 plant.frames[0].forEach((row, y) => [...row].forEach((letter, x) => {
-  if (letter === '.') return;
-  for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) board[207 + y * 2 + dy][36 + x * 2 + dx] = P.rgbOf(plant.legend[letter]);
+  if (letter === '.' || y >= 14) return;
+  for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) plantPixels[y * 2 + dy][x * 2 + dx] = P.rgbOf(plant.legend[letter]);
+}));
+// A balanced rim and bowl keep the pot's two sides and bottom joined.
+for (let y = 28; y < 44; y++) {
+  const left = y === 28 ? 6 : y <= 30 ? 5 : y === 31 ? 6 : y <= 35 ? 7 : y <= 39 ? 8 : y <= 41 ? 10 : 12;
+  const right = 35 - left;
+  for (let x = left; x <= right; x++) {
+    plantPixels[y][x] = y === 29 ? [92, 59, 40] : y < 32 ? [250, 216, 169]
+      : x < left + 3 || x > right - 3 || y > 39 ? [204, 139, 91] : [244, 193, 144];
+  }
+}
+const ink = [58, 37, 35];
+plantPixels.forEach((row, y) => row.forEach((c, x) => {
+  if (c === null) return;
+  const edge = [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dy]) => !plantPixels[y + dy]?.[x + dx]);
+  const oldInk = c[0] > c[1] * 1.15 && Math.max(...c) < 100;
+  board[207 + y][36 + x] = edge ? ink : oldInk && y < 28 ? [92, 99, 49] : c;
 }));
 // Remove disconnected forest flecks without trimming the cabinet's own leaves.
 const connected = new Uint8Array(W * H), stack = [[262, 168]];
