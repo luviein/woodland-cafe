@@ -4,10 +4,43 @@ import { createNewGame, skipTutorial, startNextDay } from '../logic/gameState';
 import { buySeed, plantCrop, tendCrop } from '../logic/garden';
 import { loadGame } from '../logic/save';
 import { sellChristmasCrop } from '../logic/cropExchange';
+import { donateCrop } from '../logic/cropCollection';
 import { catalogueProduct, type CatalogueItem } from '../data/catalogueProducts';
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { memorySaveSlot } from '../storage/saveSlot';
 import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState, purchaseChristmasItem } from './gameStore';
+
+it('saves donations and sales atomically while preserving the pre-day cafe checkpoint', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  const beforeDay = { ...createNewGame(), christmasTickets: 7, leaves: 12 };
+  beforeDay.garden.harvests.golden.mushroom = 4;
+  beforeDay.garden.harvests.christmas.chilli = 8;
+  continueGame(owner, beforeDay);
+  beginCafeDay(owner);
+  setGameState(owner, { ...beforeDay, day: 2, leaves: 99, stock: { ...beforeDay.stock, mushroom: 1 } });
+  setGardenGameState(owner, donateCrop(getGameState(owner), 'golden.mushroom'));
+  setGardenGameState(owner, sellChristmasCrop(getGameState(owner), 'chilli', 1));
+  setGardenGameState(owner, donateCrop(getGameState(owner), 'christmas.chilli'));
+  const loaded = loadGame(slot.read()!);
+  expect(loaded.ok).toBe(true);
+  if (!loaded.ok) return;
+  expect(loaded.state.cropCollection).toEqual(['golden.mushroom', 'christmas.chilli']);
+  expect(loaded.state.garden.harvests.golden.mushroom).toBe(3);
+  expect(loaded.state.garden.harvests.christmas.chilli).toBe(6);
+  expect(loaded.state.christmasTickets).toBe(10);
+  expect(loaded.state.leaves).toBe(12);
+  expect(loaded.state.day).toBe(1);
+  expect(loaded.state.stock).toEqual(beforeDay.stock);
+  const saved = slot.read();
+  setGardenGameState(owner, donateCrop(getGameState(owner), 'christmas.chilli'));
+  expect(slot.read()).toBe(saved);
+  continueGame(owner, loaded.state);
+  setGardenGameState(owner, donateCrop(getGameState(owner), 'christmas.chilli'));
+  expect(slot.read()).toBe(saved);
+});
 
 it('persists ticket purchases without committing cafe-day earnings or consumption', () => {
   const values = new Map<string, unknown>();

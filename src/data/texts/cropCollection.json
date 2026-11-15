@@ -1,0 +1,21 @@
+{
+  "button": "Collection book",
+  "title": "Crop collection",
+  "back": "Back",
+  "close": "Close",
+  "golden": "Golden crops",
+  "christmas": "Christmas crops",
+  "progress": "{amount} / 6 donated",
+  "donate": "Donate 1",
+  "donated": "Donated",
+  "have": "Have: {amount}",
+  "hint": "Donate one to add this crop to the collection.",
+  "descriptions": {
+    "golden.mushroom": "A rare woodland cap, gleaming like autumn sunlight.",
+    "golden.tomato": "A tiny golden sun, ripened among the garden leaves.",
+    "golden.chilli": "A golden chilli with a warm glow and a fiery spirit.",
+    "christmas.mushroom": "A snowy cap with a touch of festive woodland magic.",
+    "christmas.tomato": "A cheerful red tomato dusted with Christmas snow.",
+    "christmas.chilli": "A bright winter chilli, bringing warmth to the holidays."
+  }
+}

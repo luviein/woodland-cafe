@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import words from '../data/texts/inventory.json';
 import exchangeWords from '../data/texts/cropExchange.json';
+import collectionWords from '../data/texts/cropCollection.json';
+import { CropCollectionPanel } from './CropCollectionPanel';
 import { CHRISTMAS_TICKET_RATES, exchangeCrop, sellChristmasCrop } from '../logic/cropExchange';
 import type { ArtName } from '../art/spriteArt';
 import type { GameState } from '../logic/gameState';
@@ -15,6 +17,7 @@ import { COLORS, TEXT } from './theme';
 
 /** Collection sales use the garden checkpoint so the cafe day stays uncommitted. */
 export class InventoryPanel extends Phaser.GameObjects.Container {
+  private collection: CropCollectionPanel | null = null;
   private tab: InventoryTab = 'seasonal';
   private readonly tabs: { key: InventoryTab; button: Button }[] = [];
   private readonly cards: { back: Phaser.GameObjects.Rectangle; image: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text; rate: Phaser.GameObjects.Text; sellOne: Button; sellAll: Button }[] = [];
@@ -37,6 +40,19 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
     place('paper', 320, 180, scene.add.rectangle(0, 0, 550, 328, COLORS.paper).setStrokeStyle(2, COLORS.paperEdge));
     place('title', 320, 36, scene.add.text(0, 0, words.title, TEXT.heading).setOrigin(0.5));
     place('close', 548, 36, new Button(scene, 0, 0, 76, 24, words.close, COLORS.reset, close));
+    place('collectionBook', 130, 36, new Button(scene, 0, 0, 148, 24, collectionWords.button, COLORS.book, () => {
+      if (this.collection) return;
+      // Keep the inventory's pause/resume lifecycle while the book is open.
+      const book = new CropCollectionPanel(scene, () => {
+        scene.time.delayedCall(0, () => {
+          if (this.collection !== book) return;
+          book.destroy();
+          this.collection = null;
+        });
+      }, close);
+      this.collection = book;
+      this.add(book);
+    }).setFontSize(11));
     (['ingredients', 'seasonal'] as const).forEach((key, i) => {
       const button = place(`tab.${key}`, i === 0 ? 232 : 408, 68,
         new Button(scene, 0, 0, 160, 26, words.tabs[key], COLORS.book, () => {
@@ -75,6 +91,7 @@ export class InventoryPanel extends Phaser.GameObjects.Container {
   }
 
   refresh(state: GameState): void {
+    this.collection?.refresh(state);
     this.tickets.setText(exchangeWords.balance.replace('{amount}', String(state.christmasTickets)));
     const entries = inventoryEntries(state, this.tab);
     entries.forEach((entry, i) => {
