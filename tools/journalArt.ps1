@@ -11,10 +11,10 @@ $jobs = @(
   @{ Source='journal-bookmarks-source.png'; Name='journalCropsBookmark'; Width=112; Segment=-1; Crop=@(17,197,288,100); Outline=@(@(20,202),@(28,197),@(263,197),@(272,203),@(304,245),@(272,288),@(263,296),@(28,296),@(20,290)) },
   @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,317,288,98); Outline=@(@(20,320),@(28,317),@(263,317),@(272,319),@(304,361),@(272,405),@(263,414),@(28,414),@(20,408)) },
   @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorRibbon'; Width=160; Segment=-1 },
-  @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 },
-  @{ Source='golden-title-source.png'; Name='goldenCollectorRibbon'; Segment=-1; Native=$true },
-  @{ Source='christmas-title-source.png'; Name='christmasDevoteeRibbon'; Segment=-1; Native=$true }
+  @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 }
 )
+# Current Golden/Christmas titles load their original PNGs directly. Do not
+# regenerate them: their display size and padding frames live in assets/journal/index.ts.
 if ($Only.Count) { $jobs = @($jobs | Where-Object { $Only -contains $_.Name }) }
 foreach ($job in $jobs) {
   $source = [System.Drawing.Bitmap]::new((Join-Path (Get-Location) "src/assets/journal/source/$($job.Source)"))

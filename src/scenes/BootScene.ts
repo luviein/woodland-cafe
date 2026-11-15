@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { JOURNAL_IMAGES, journalImageKey, type JournalImageName } from '../assets/journal';
+import { JOURNAL_IMAGES, JOURNAL_IMAGE_FRAMES, journalImageKey, type JournalImageName } from '../assets/journal';
 import { DRAWN_ART } from '../art/drawnArt';
 import { spriteSize } from '../art/pixelSprite';
 import { ART_NAMES, isArtName, SPRITE_ART } from '../art/spriteArt';
@@ -31,6 +31,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    for (const name of Object.keys(JOURNAL_IMAGE_FRAMES) as JournalImageName[]) {
+      const frame = JOURNAL_IMAGE_FRAMES[name]!;
+      this.textures.get(journalImageKey(name)).add('ribbon', 0, frame.x, frame.y, frame.width, frame.height);
+    }
     // These full-resolution ribbons include approved lettering. Smooth only
     // their downscaling; critters, tiles and the rest of the pixel art stay crisp.
     for (const name of ['goldenCollectorRibbon', 'christmasDevoteeRibbon', 'masterCollectorRibbon', 'masterCollectorWorldRibbon'] as const) {
