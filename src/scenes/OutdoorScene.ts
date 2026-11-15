@@ -1,6 +1,7 @@
 import { activeCropEvent, buySeed } from '../logic/garden';
 import { christmasCatalogueShop } from '../ui/christmasCatalogueShop';
 import { ChristmasMerchantPanel, type MerchantChoice } from '../ui/ChristmasMerchantPanel';
+import { attachPlayerWorldTitle } from '../ui/playerWorldTitle';
 import { ChristmasSellPanel } from '../ui/ChristmasSellPanel';
 import { addChristmasVendor } from '../ui/StallVendor';
 import Phaser from 'phaser';
@@ -158,6 +159,7 @@ export class OutdoorScene extends Phaser.Scene {
     // Arrange mode: where the player arrives, shown as a small marker (nothing is drawn there in play).
     if (import.meta.env.DEV) arrangeable(this, this.location, 'entry', entry, this.add.zone(entry.x, entry.y - 8, 16, 16));
     this.playerSprite = createPlayerSprite(this, () => !this.shop);
+    attachPlayerWorldTitle(this, this.playerSprite);
     // Small ring where the player is heading; hidden when standing still.
     // Depth 1: on the ground, under everything standing on it.
     this.marker = this.add.circle(0, 0, 5).setStrokeStyle(2, COLORS.paper).setVisible(false).setDepth(1);

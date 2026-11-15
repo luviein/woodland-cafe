@@ -16,6 +16,7 @@ import { arrangeable, sizeBox } from '../layout/arrangeable';
 import { addArt, artKey } from '../ui/art';
 import { Button } from '../ui/Button';
 import { createPlayerSprite, addTree } from '../ui/sprites';
+import { attachPlayerWorldTitle } from '../ui/playerWorldTitle';
 import { COLORS, TEXT, css } from '../ui/theme';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { getGameState, setGardenGameState, watchGameState } from './gameStore';
@@ -95,6 +96,7 @@ export class GardenScene extends Phaser.Scene {
     const entry = point('entry', 70, 180);
     this.player = createMover(entry);
     this.sprite = createPlayerSprite(this, () => false).setPosition(entry.x, entry.y).setDepth(500);
+    attachPlayerWorldTitle(this, this.sprite, () => !this.harvestDisplay);
     // Standing in front of a bed must not block the next tap to water or harvest it.
     this.sprite.disableInteractive();
     arrangeable(this, 'garden', 'entry', entry, this.sprite);

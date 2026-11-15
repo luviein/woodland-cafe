@@ -9,7 +9,9 @@ $jobs = @(
   @{ Source='journal-badges-source.png'; Name='goldenBadge'; Width=28; Segment=1 },
   @{ Source='journal-badges-source.png'; Name='collectorBadge'; Width=28; Segment=2 },
   @{ Source='journal-bookmarks-source.png'; Name='journalCropsBookmark'; Width=112; Segment=-1; Crop=@(17,186,290,129); Outline=@(@(17,186),@(266,190),@(306,245),@(273,304),@(17,315)) },
-  @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,308,290,125); Outline=@(@(17,308),@(270,309),@(306,361),@(273,421),@(28,433),@(17,421)) }
+  @{ Source='journal-bookmarks-source.png'; Name='journalMilestonesBookmark'; Width=112; Segment=-1; Crop=@(17,308,290,125); Outline=@(@(17,308),@(270,309),@(306,361),@(273,421),@(28,433),@(17,421)) },
+  @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorRibbon'; Width=160; Segment=-1 },
+  @{ Source='master-collector-ribbon-source.png'; Name='masterCollectorWorldRibbon'; Width=128; Segment=-1 }
 )
 $manifest = @()
 foreach ($job in $jobs) {
