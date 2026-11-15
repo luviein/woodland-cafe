@@ -43,6 +43,51 @@ const board = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, 
     || sx >= 1110 && sx <= 1265 && sy >= 27 && sy <= 175;
   return !silhouette || outside[sy * img.W + sx] ? null : clean(sx, sy);
 }));
+// Continuous hems meet the wooden rail cleanly at both inner curtain corners.
+function hem(points, offset, colour) {
+  for (let i = 1; i < points.length; i++) {
+    let [x, y] = points[i - 1]; const [tx, ty] = points[i];
+    const dx = Math.abs(tx - x), sx = x < tx ? 1 : -1, dy = -Math.abs(ty - y), sy = y < ty ? 1 : -1;
+    let error = dx + dy;
+    while (true) {
+      board[y + offset][x] = colour;
+      if (x === tx && y === ty) break;
+      const twice = error * 2;
+      if (twice >= dy) { error += dy; x += sx; }
+      if (twice <= dx) { error += dx; y += sy; }
+    }
+  }
+}
+for (const edge of [
+  [[88, 39], [86, 44], [82, 49], [78, 54], [73, 59], [66, 65], [60, 69], [55, 72], [50, 75], [45, 77]],
+  [[434, 39], [436, 44], [439, 49], [443, 54], [448, 59], [454, 64], [460, 69], [466, 73], [473, 76], [480, 77]],
+]) {
+  hem(edge, 1, [100, 57, 46]);
+  hem(edge, 0, [230, 157, 104]);
+}
+
+// Restore the post, mirror and floor revealed by the old oversized plant.
+const original = board.map(row => row.map(c => c && [...c]));
+for (let y = 184; y <= 252; y++) for (let x = 14; x <= 76; x++) {
+  board[y][x] = x < 31 || y < 217 ? original[178][x] : original[y][70];
+}
+// Continue the glass and its reflections as a single surface, without cloned leaf fragments.
+for (let y = 126; y <= 204; y++) for (let x = 55; x <= 91; x++) {
+  const c = original[y][x];
+  const glass = c && Math.max(...c) - Math.min(...c) < 30 && Math.min(...c) > 95;
+  const right = Math.round(90 - Math.max(0, y - 185) * 2 / 19);
+  if (glass || y >= 180 && x >= 56 && x <= right) board[y][x] = (x + y) % 35 < 12 ? [224, 223, 216] : [184, 183, 178];
+  else if (y >= 180 && x === 55) board[y][x] = [218, 145, 78];
+}
+for (let y = 205; y <= 215; y++) for (let x = 52; x <= 97; x++) {
+  board[y][x] = y === 205 || y === 215 ? [98, 56, 40] : y === 206 ? [242, 174, 94] : y < 212 ? [213, 132, 67] : [165, 92, 51];
+}
+// Reuse the reviewed compact potted plant; its leaves stay within the floor inset.
+const plant = JSON.parse(fs.readFileSync('src/art/sprites/museum.ts', 'utf8').split('export const MUSEUM_ART = ')[1].split(' satisfies')[0]).museumPlant;
+plant.frames[0].forEach((row, y) => [...row].forEach((letter, x) => {
+  if (letter === '.') return;
+  for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) board[207 + y * 2 + dy][36 + x * 2 + dx] = P.rgbOf(plant.legend[letter]);
+}));
 // Remove disconnected forest flecks without trimming the cabinet's own leaves.
 const connected = new Uint8Array(W * H), stack = [[262, 168]];
 while (stack.length) {
@@ -79,7 +124,16 @@ const blankTab = cut(1001, 265, 69, 24, (x, y) => x >= 1020 && x <= 1189 && y >=
 const sprites = { wardrobeBoard: [board], wardrobeCard: [card, selected], wardrobeBadge: [badge],
   wardrobeChoiceButton: [blankTab, recolourTab(blankTab, true, false)] };
 for (const [name, grid] of tabs) sprites['wardrobeTab' + name] = [recolourTab(grid, false, ['Hats', 'Capes'].includes(name)), recolourTab(grid, true, ['Hats', 'Capes'].includes(name))];
-const colours = P.palette(Object.values(sprites).flat(3).filter(Boolean).filter((_, i) => i % 4 === 0), 56);
+// Keep the reference palette stable so a local repair never recolours other controls.
+const colours = [
+  '#faddaa', '#fde9b7', '#f9f6ea', '#231316', '#2f1c1c', '#3a2523', '#26313f', '#4d2e29',
+  '#61362d', '#54463c', '#6e3f35', '#7f4836', '#8d5038', '#90514c', '#686942', '#bf4334',
+  '#9a5739', '#9f5b3c', '#a45a52', '#ae6542', '#807c74', '#c16b45', '#b87353', '#cc7746',
+  '#9e9933', '#d77462', '#c78257', '#ae9172', '#9d9890', '#e18c4b', '#d59162', '#e39d68',
+  '#f1a357', '#f0a37b', '#beb8b5', '#f8b247', '#cec281', '#f9ba6e', '#f5ba87', '#f7bf8c',
+  '#efcb9c', '#fbc98c', '#face99', '#fbd09c', '#fbd19e', '#fbd1a0', '#fad2a0', '#fbd29f',
+  '#fbd2a0', '#fcd29f', '#fcd2a1', '#fbd3a0', '#fcd4a0', '#fcd5a3', '#dfdbd6', '#28445d',
+].map(P.rgbOf);
 const nearest = c => { let best = 0, distance = Infinity; colours.forEach((p, i) => { const d = p.reduce((sum, v, k) => sum + (v - c[k]) ** 2, 0); if (d < distance) { distance = d; best = i; } }); return best; };
 const art = {};
 for (const [name, frames] of Object.entries(sprites)) {
