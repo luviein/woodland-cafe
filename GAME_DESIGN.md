@@ -863,6 +863,15 @@ separate nameplate above an equipped title plate, but multiplayer, player names
 and nameplate customisation are outside this step. Older saves retain all
 progress and start with no claimed milestones or equipped title.
 
+The supplied red-and-gold Master Collector ribbon is the equipped title badge;
+keep the wreath as the collection milestone icon. Use the ribbon in the journal
+and museum title display. In the Forest, Marketplace and Garden, equipped
+titles follow the player, underneath their nameplate when a player name is
+available. Keep the ribbon upright through all movement views, clear of hats,
+and inside the viewport without covering HUD controls. Unequipping removes
+the world ribbon immediately. These are local cosmetic displays; networking
+and multiplayer remain outside this step.
+
 ### Independent museum case selection
 
 Each case contains at most one crop entry, and each entry is displayed in at most one case. Disable choices already displayed in another case and reject duplicate assignments in pure logic; never silently transfer an exhibit. Clearing an empty or occupied case leaves all other cases unchanged. The chooser explains this restriction. Collection headers and recorded cards use subtle, consistent borders; full-colour art and best weights identify recorded entries. Plaque units use a recognisable lowercase g with a descender and enough bottom padding.
