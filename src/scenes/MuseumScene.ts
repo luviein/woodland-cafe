@@ -4,7 +4,7 @@ import { MUSEUM_CASE_PRICE, MUSEUM_EXPANSION_PRICES, MUSEUM_ROWS, museumColumns,
   canPlaceMuseumCase, placeMuseumCase, storeMuseumCase, buyMuseumCase, expandMuseum, displayMuseumCrop } from '../logic/museum';
 import type { Point } from '../logic/layout';
 import type { GameState } from '../logic/gameState';
-import { moveInMuseum, museumWalkingRoute, stepMuseumRoute, MUSEUM_WALK_SPEED } from '../logic/museumWalking';
+import { moveInMuseum, museumCanStand, museumWalkingRoute, stepMuseumRoute, MUSEUM_WALK_SPEED } from '../logic/museumWalking';
 import { COLLECTION_ITEMS } from '../logic/cropCollection';
 import { cropArtName } from '../logic/garden';
 import type { ArtName } from '../art/spriteArt';
@@ -69,9 +69,9 @@ export class MuseumScene extends Phaser.Scene {
       place(name, x, y, new Button(this, 0, 0, width, 24, text, COLORS.book, click).setFontSize(11)).setData('museumControl', true);
     control('map', 40, 19, 60, words.map, () => { if (!this.modal) this.scene.start('WorldMapScene', { current: 'museum' }); });
     this.arrangeButton = control('arrange', 121, 19, 88, words.arrange, () => {
-      this.editing = !this.editing; this.placing = false; this.movingId = null;
+      if (this.editing) { this.finishArranging(); return; }
+      this.editing = true; this.placing = false; this.movingId = null;
       this.route = []; this.pendingCase = null;
-      if (!this.editing) this.cell = museumDoor(getGameState(this).museum);
       this.refresh(getGameState(this));
     });
     this.buyButton = control('buyCase', 254, 19, 136, '', () => this.commit(buyMuseumCase(getGameState(this))));
@@ -83,13 +83,15 @@ export class MuseumScene extends Phaser.Scene {
       this.route = []; this.pendingCase = null;
       this.modal = new CropCollectionPanel(this, () => this.closeModal(), () => this.closeModal()).setDepth(5000);
     });
-    this.placeButton = control('placeCase', 205, 321, 112, words.place, () => { this.placing = true; this.movingId = null; this.refresh(getGameState(this)); });
+    this.placeButton = control('placeCase', 205, 321, 112, words.place, () => {
+      this.placing = true; this.movingId = null; this.updateSelection(); this.refreshControls(getGameState(this));
+    });
     this.storeButton = control('storeCase', 334, 321, 126, words.store, () => {
       if (this.movingId === null) return;
       const next = storeMuseumCase(getGameState(this), this.movingId);
       this.movingId = null; this.placing = false; this.commit(next);
     });
-    this.cancelButton = control('cancel', 449, 321, 82, words.cancel, () => { this.movingId = null; this.placing = false; this.refresh(getGameState(this)); });
+    this.cancelButton = control('cancel', 449, 321, 82, words.cancel, () => this.finishArranging());
     this.wallet = place('wallet', 10, 321, new LeafText(this, 0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#ffe4b6' }, 0, 0.5));
     this.stored = place('stored', 630, 321, this.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#ffe4b6' }).setOrigin(1, 0.5));
     this.help = place('help', 320, 346, this.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#ffe4b6', align: 'center', wordWrap: { width: 610 } }).setOrigin(0.5));
@@ -111,16 +113,37 @@ export class MuseumScene extends Phaser.Scene {
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.showGuide(pointer));
     this.input.keyboard?.on('keydown-ESC', () => {
       if (this.modal) this.closeModal();
-      else {
-        if (this.editing) this.cell = museumDoor(getGameState(this).museum);
-        this.placing = false; this.movingId = null; this.editing = false; this.route = [];
-        this.refresh(getGameState(this));
-      }
+      else this.finishArranging();
     });
     watchGameState(this, next => this.refresh(next));
   }
 
   private commit(state: GameState): void { setMuseumGameState(this, state); }
+
+  private finishArranging(): void {
+    this.placing = false; this.movingId = null; this.editing = false;
+    this.route = []; this.pendingCase = null;
+    const state = getGameState(this);
+    if (!museumCanStand(state.museum, this.cell)) this.cell = museumDoor(state.museum);
+    this.refresh(state);
+  }
+
+  private updateSelection(): void {
+    for (const item of getGameState(this).museum.cases) {
+      const group = this.room.getByName(`museumCase.${item.id}`) as Phaser.GameObjects.Container | null;
+      const outline = group?.getByName('selection') as Phaser.GameObjects.Rectangle | null;
+      outline?.setVisible(this.editing && item.id === this.movingId);
+    }
+    this.hover.setVisible(false);
+  }
+
+  private moveCase(id: number): void {
+    if (!getGameState(this).museum.cases.some(item => item.id === id)) return;
+    this.editing = true; this.placing = false; this.movingId = id;
+    this.route = []; this.pendingCase = null;
+    this.refresh(getGameState(this));
+    this.closeModal();
+  }
 
   private local(p: Point): Point {
     return { x: p.x * TILE - museumColumns(getGameState(this).museum) * TILE / 2, y: FLOOR_TOP + p.y * TILE };
@@ -173,11 +196,16 @@ export class MuseumScene extends Phaser.Scene {
       const exhibit = COLLECTION_ITEMS.find(entry => entry.id === item.exhibit);
       if (exhibit) group.add(addArt(this, 0, -10, cropArtName(exhibit.crop, exhibit.variant) as ArtName).setOrigin(0.5, 1));
       group.add(addArt(this, 0, 0, 'museumGlass').setOrigin(0.5, 1));
-      if (this.editing && item.id === this.movingId) group.add(this.add.rectangle(0, -16, 26, 34, 0, 0).setStrokeStyle(2, 0xffd56d));
-      group.setInteractive(new Phaser.Geom.Rectangle(-12, -32, 24, 32), Phaser.Geom.Rectangle.Contains).setData('museumCase', item.id);
-      group.on('pointerup', () => {
+      group.add(this.add.rectangle(0, -16, 34, 34, 0, 0).setName('selection').setStrokeStyle(2, 0xffd56d)
+        .setVisible(this.editing && item.id === this.movingId));
+      group.setInteractive(new Phaser.Geom.Rectangle(-16, -32, 32, 32), Phaser.Geom.Rectangle.Contains).setData('museumCase', item.id);
+      group.on('pointerup', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event?: { stopPropagation(): void }) => {
+        // Selection must not become a floor drop on the same click.
+        event?.stopPropagation();
         if (this.modal) return;
-        if (this.editing) { this.movingId = item.id; this.placing = false; this.refresh(getGameState(this)); }
+        if (this.editing) {
+          this.movingId = item.id; this.placing = false; this.updateSelection(); this.refreshControls(getGameState(this));
+        }
         else this.walk(item, item.id);
       });
       this.room.add(group);
@@ -241,7 +269,8 @@ export class MuseumScene extends Phaser.Scene {
     if (!this.route.length) {
       if (this.pendingCase !== null) {
         const id = this.pendingCase; this.pendingCase = null;
-        const panel = new MuseumExhibitPanel(this, id, exhibit => this.commit(displayMuseumCrop(getGameState(this), id, exhibit)), () => this.closeModal());
+        const panel = new MuseumExhibitPanel(this, id, exhibit => this.commit(displayMuseumCrop(getGameState(this), id, exhibit)),
+          () => this.moveCase(id), () => this.closeModal());
         this.modal = panel; panel.refresh(getGameState(this));
       }
     }

@@ -23,6 +23,7 @@
   "onDisplay": "On display",
   "display": "Display",
   "clear": "Clear case",
+  "move": "Move case",
   "close": "Close",
   "starterHelp": "Walk with WASD/arrows. Choose Arrange, then Place case to use your free case."
 }

@@ -16,7 +16,7 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
   private readonly description: Phaser.GameObjects.Text;
   private readonly image: Phaser.GameObjects.Image;
   private readonly choices: Button[] = [];
-  constructor(scene: Phaser.Scene, private readonly caseId: number, choose: (id: CollectionId | null) => void, close: () => void) {
+  constructor(scene: Phaser.Scene, private readonly caseId: number, choose: (id: CollectionId | null) => void, move: () => void, close: () => void) {
     super(scene, 0, 0);
     scene.add.existing(this);
     this.setDepth(5000);
@@ -41,7 +41,8 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
           .setLeadingIcon(addArt(scene, 0, 0, cropArtName(item.crop, item.variant) as ArtName)));
       this.choices.push(button);
     });
-    place('clear', 320, 302, new Button(scene, 0, 0, 116, 22, words.clear, COLORS.reset, () => choose(null)).setFontSize(11));
+    place('move', 250, 302, new Button(scene, 0, 0, 116, 22, words.move, COLORS.book, move).setFontSize(11));
+    place('clear', 390, 302, new Button(scene, 0, 0, 116, 22, words.clear, COLORS.reset, () => choose(null)).setFontSize(11));
     arrangeablePanel(scene, 'museumExhibit', 'panel', this);
   }
   refresh(state: GameState): void {
