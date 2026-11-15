@@ -4,14 +4,14 @@ import { MUSEUM_CASE_PRICE, MUSEUM_EXPANSION_PRICES, MUSEUM_ROWS, museumColumns,
   canPlaceMuseumCase, placeMuseumCase, storeMuseumCase, buyMuseumCase, expandMuseum, displayMuseumCrop } from '../logic/museum';
 import type { Point } from '../logic/layout';
 import type { GameState } from '../logic/gameState';
-import { moveInMuseum, museumWalkingRoute, MUSEUM_WALK_SPEED } from '../logic/museumWalking';
+import { moveInMuseum, museumWalkingRoute, stepMuseumRoute, MUSEUM_WALK_SPEED } from '../logic/museumWalking';
 import { COLLECTION_ITEMS } from '../logic/cropCollection';
 import { cropArtName } from '../logic/garden';
 import type { ArtName } from '../art/spriteArt';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, sizeBox } from '../layout/arrangeable';
 import { addArt } from '../ui/art';
-import { createPlayerSprite } from '../ui/sprites';
+import { createPlayerSprite, setWalkingMotion } from '../ui/sprites';
 import { Button } from '../ui/Button';
 import { LeafText, LEAF } from '../ui/LeafText';
 import { CropCollectionPanel } from '../ui/CropCollectionPanel';
@@ -59,6 +59,7 @@ export class MuseumScene extends Phaser.Scene {
     arrangeable(this, 'museum', 'room', at, this.room,
       ...sizeBox(this, at.x - museumColumns(state.museum) * TILE / 2 - 6, at.y - 132, museumColumns(state.museum) * TILE + 12, 260));
     this.player = createPlayerSprite(this, () => false);
+    setWalkingMotion(this.player, { x: 0, y: 0 });
     this.player.disableInteractive(); this.room.add(this.player);
     const place = <T extends Phaser.GameObjects.Container | Phaser.GameObjects.Text>(name: string, x: number, y: number, object: T): T => {
       const p = layoutPoint('museum', name, { x, y }); object.setName(name).setPosition(p.x, p.y).setDepth(2000);
@@ -218,7 +219,9 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    setWalkingMotion(this.player, { x: 0, y: 0 });
     if (this.modal || this.editing) return;
+    const before = { ...this.cell };
     const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
     const down = (a: string, b: string) => !typing && !!(this.keys[a]?.isDown || this.keys[b]?.isDown);
     const direction = { x: Number(down('D', 'RIGHT')) - Number(down('A', 'LEFT')), y: Number(down('S', 'DOWN')) - Number(down('W', 'UP')) };
@@ -228,10 +231,10 @@ export class MuseumScene extends Phaser.Scene {
       this.cell = moveInMuseum(getGameState(this).museum, this.cell, { x: direction.x / length * step, y: direction.y / length * step });
     } else {
       if (!this.route.length) return;
-      const next = this.route[0], dx = next.x - this.cell.x, dy = next.y - this.cell.y, distance = Math.hypot(dx, dy);
-      if (distance <= step) { this.cell = { ...next }; this.route.shift(); }
-      else this.cell = { x: this.cell.x + dx / distance * step, y: this.cell.y + dy / distance * step };
+      const moved = stepMuseumRoute(this.cell, this.route, step);
+      this.cell = moved.position; this.route = moved.route;
     }
+    setWalkingMotion(this.player, { x: (this.cell.x - before.x) * TILE, y: (this.cell.y - before.y) * TILE });
     const position = this.local(this.cell);
     this.player.setPosition(Math.round(position.x), Math.round(position.y));
     this.player.setDepth(this.player.y + 24); this.room.sort('depth');

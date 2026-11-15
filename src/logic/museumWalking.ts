@@ -6,6 +6,22 @@ import { museumColumns, museumLayout, MUSEUM_ROWS, type Museum } from './museum'
 const CLEARANCE = 0.23;
 export const MUSEUM_WALK_SPEED = 100;
 
+/** Spend the whole frame's distance, even when it passes one or more route corners. */
+export function stepMuseumRoute(from: Point, route: readonly Point[], distance: number): { position: Point; route: Point[] } {
+  let position = { ...from }, remaining = Math.max(0, distance);
+  const points = [...route];
+  while (points.length) {
+    const next = points[0], dx = next.x - position.x, dy = next.y - position.y, length = Math.hypot(dx, dy);
+    if (length <= remaining) {
+      position = { ...next }; remaining -= length; points.shift();
+    } else {
+      if (remaining > 0) position = { x: position.x + dx / length * remaining, y: position.y + dy / length * remaining };
+      break;
+    }
+  }
+  return { position, route: points };
+}
+
 export function museumCanStand(museum: Museum, p: Point): boolean {
   return p.x >= 0 && p.x <= museumColumns(museum) - 1 && p.y >= 0 && p.y <= MUSEUM_ROWS - 1
     && !museum.cases.some(item => Math.abs(item.x - p.x) < 0.5 + CLEARANCE && Math.abs(item.y - p.y) < 0.5 + CLEARANCE);

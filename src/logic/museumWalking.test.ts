@@ -1,7 +1,21 @@
 import { expect, it } from 'vitest';
 import { emptyMuseum, type Museum } from './museum';
-import { moveInMuseum, museumCanStand, museumLineClear, museumWalkingRoute, MUSEUM_WALK_SPEED } from './museumWalking';
+import { moveInMuseum, museumCanStand, museumLineClear, museumWalkingRoute, stepMuseumRoute, MUSEUM_WALK_SPEED } from './museumWalking';
 import type { Point } from './layout';
+
+it('keeps the same speed through corners at different frame rates without pausing on zero-length points', () => {
+  const simulate = (frames: number) => {
+    let position = { x: 1, y: 1 }, route = [{ x: 1, y: 1 }, { x: 1.13, y: 1 }, { x: 1.13, y: 1.19 }, { x: 5, y: 1.19 }];
+    for (let i = 0; i < frames; i++) {
+      const moved = stepMuseumRoute(position, route, 2 / frames);
+      position = moved.position; route = moved.route;
+    }
+    return position;
+  };
+  expect(simulate(30).x).toBeCloseTo(2.81);
+  expect(simulate(240).x).toBeCloseTo(simulate(30).x);
+  expect(simulate(144).y).toBeCloseTo(1.19);
+});
 
 it('walks to the exact point directly and replans from a fractional position without backtracking', () => {
   const museum = emptyMuseum(), target = { x: 8.6, y: 4.3 };

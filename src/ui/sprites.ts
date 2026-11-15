@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { walkingFacing, type WalkingFacing } from '../logic/walkingFacing';
+import type { Point } from '../logic/layout';
 import { SPRITE_ART, VIEW_ART, type ArtName } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
 import { VIEW, viewFrame, type View } from '../art/sprites/sheetCritters';
@@ -68,9 +70,11 @@ function animateWalking(
   let stillFor = STOP_MS;
   let walkedFor = 0;
   let facing: number = VIEW.front;
+  let motionFacing: WalkingFacing = 'front';
   const onUpdate = (_time: number, delta: number) => {
-    const dx = container.x - last.x;
-    const dy = container.y - last.y;
+    const motion = container.getData('walkingMotion') as Point | undefined;
+    const dx = motion?.x ?? container.x - last.x;
+    const dy = motion?.y ?? container.y - last.y;
     last = { x: container.x, y: container.y };
     // A jump of over a tile is being placed somewhere (e.g. its first
     // position), not walking.
@@ -80,7 +84,10 @@ function animateWalking(
       walkedFor += delta;
       if (views) {
         // Whichever way it moved most: sideways, else up (back) or down (front).
-        if (Math.abs(dx) >= Math.abs(dy)) facing = dx > 0 ? VIEW.right : VIEW.left;
+        if (motion) {
+          motionFacing = walkingFacing(motion, motionFacing);
+          facing = VIEW[motionFacing];
+        } else if (Math.abs(dx) >= Math.abs(dy)) facing = dx > 0 ? VIEW.right : VIEW.left;
         else facing = dy > 0 ? VIEW.front : VIEW.back;
       } else if (dx !== 0) {
         image.setFlipX(dx < 0); // the art faces right
@@ -102,6 +109,11 @@ function animateWalking(
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   container.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));
+}
+
+/** Supply real movement when drawing rounds to pixels; other critters keep their existing animation. */
+export function setWalkingMotion(critter: Phaser.GameObjects.Container, motion: Point): void {
+  critter.setData('walkingMotion', motion);
 }
 
 /** Data key on a critter's container: which way it faces while standing still (setFacing). */
