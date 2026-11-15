@@ -1,3 +1,4 @@
+import { FROG } from './sprites/frogFitting';
 import { SEED_PACKET_ART } from './sprites/seedPackets';
 import { MUSEUM_ART } from './sprites/museum';
 import { CHRISTMAS_SELL_ART } from './sprites/christmasSell';
@@ -42,7 +43,7 @@ import {
   TABLE,
   WALL,
 } from './sprites/cafe';
-import { BADGER, FOX, FROG, RACCOON } from './sprites/sheetCritters2';
+import { BADGER, FOX, RACCOON } from './sprites/sheetCritters2';
 import {
   BAUBLES,
   CHAIR_WITH_BOW,

@@ -5,8 +5,9 @@ import { SANTA_COAT, SANTA_HAT } from './wardrobe';
 import { DEER_SANTA_COAT, DEER_SANTA_HAT, MOUSE_SANTA_COAT, MOUSE_SANTA_HAT, RABBIT_SANTA_COAT, RABBIT_SANTA_HAT } from './wardrobeCritters';
 import { CLOTHING, CLOTHING_IDS, type ClothingId } from '../../data/clothing';
 import { CLOTHING_ANIMALS, type ClothingAnimal } from '../../data/clothingAnimals';
-import { FOX, FROG, BADGER, RACCOON } from './sheetCritters2';
+import { FOX, BADGER, RACCOON } from './sheetCritters2';
 import { FOX_SANTA_COAT, FOX_SANTA_HAT } from './foxClothing';
+import { FROG, FROG_HEADROOM } from './frogFitting';
 
 // These pieces inherit the reviewed fittings, rather than inventing another
 // set of offsets. All decoration stays inside the existing garment silhouette.
@@ -50,6 +51,11 @@ function garment(animal: ClothingAnimal, id: NewItem): PixelSprite {
             put(stem + side * 3, Math.max(0, band - dy - 1), 'O');
             put(stem + side, Math.max(0, band - dy), 'D');
           }
+        }
+        if (animal === 'frog') {
+          // Join the band to the raised-eye silhouette, without enclosing tiny background gaps.
+          const joins = [[[8, 0], [14, 0]], [[10, 3], [11, 3], [12, 3], [13, 3]], [], [[9, 0]]];
+          for (const [x, y] of joins[view]) put(x, FROG_HEADROOM + y, 'O');
         }
       } else {
         grid.forEach((row, y) => row.forEach((c, x) => {

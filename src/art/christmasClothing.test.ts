@@ -1,3 +1,4 @@
+import { FROG_HEADROOM } from './sprites/frogFitting';
 import { describe, expect, it } from 'vitest';
 import { CLOTHING_IDS } from '../data/clothing';
 import { clothingArt } from '../data/clothingFits';
@@ -7,14 +8,17 @@ import { spriteSize } from './pixelSprite';
 import { SPRITE_ART } from './spriteArt';
 
 describe('Christmas clothing collection', () => {
-  it('keeps frog eyes clear in hats, including their walking poses', () => {
+  it('keeps frog eyes and mouth clear in every outfit and walking pose', () => {
     const eyes = [[3, 6, 16, 19], [], [8, 11], [11, 14]];
-    for (const id of ['santaHat', 'antlers', 'winterBeanie', 'bobbleHat'] as const) {
+    for (const id of CLOTHING_IDS) {
       const sprite = SPRITE_ART[clothingArt('frog', id)];
       sprite.frames.forEach((frame, f) => {
-        const spans = eyes[Math.floor(f / 3)];
+        const view = Math.floor(f / 3), spans = eyes[view];
+        if (view === 0) for (let y = FROG_HEADROOM + 8; y <= FROG_HEADROOM + 14; y++) {
+          expect(frame[y].slice(6, 17), `${id} frame ${f}, mouth row ${y}`).toBe('.'.repeat(11));
+        }
         for (let pair = 0; pair < spans.length; pair += 2) {
-          for (let y = 3; y <= 6; y++) for (let x = spans[pair]; x <= spans[pair + 1]; x++) {
+          for (let y = 3 + FROG_HEADROOM; y <= 6 + FROG_HEADROOM; y++) for (let x = spans[pair]; x <= spans[pair + 1]; x++) {
             expect(frame[y][x], `${id} frame ${f}, eye ${x},${y}`).toBe('.');
           }
         }

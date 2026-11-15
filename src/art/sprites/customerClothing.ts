@@ -1,6 +1,7 @@
 import type { PixelSprite } from '../pixelSprite';
-import { BADGER, FROG, RACCOON } from './sheetCritters2';
+import { BADGER, RACCOON } from './sheetCritters2';
 import { SANTA_HAT } from './wardrobe';
+import { FROG, FROG_HEADROOM } from './frogFitting';
 
 // Head spans and torso masks follow each animal's actual four-view frames.
 // The frog's narrow cap sits between/behind its raised eyes; tails stay bare.
@@ -29,7 +30,9 @@ function fitted(animal: keyof typeof RIGS, slot: 'hat' | 'coat'): PixelSprite {
         grid[brim + 2][x] = x === left || x === right ? '.' : 'O';
       }
     } else {
-      const [top, bottom, left, right] = rig.torsos[view], centre = Math.round((left + right) / 2);
+      const [bodyTop, bodyBottom, left, right] = rig.torsos[view], centre = Math.round((left + right) / 2);
+      const offset = animal === 'frog' ? FROG_HEADROOM : 0;
+      const top = bodyTop + offset, bottom = bodyBottom + offset;
       for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
         if ('.aob'.includes(frame[y][x])) continue;
         let colour = x < centre ? 'R' : 'S';

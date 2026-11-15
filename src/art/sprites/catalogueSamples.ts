@@ -1,4 +1,5 @@
-import { FROG, BADGER, RACCOON } from './sheetCritters2';
+import { FROG } from './frogFitting';
+import { BADGER, RACCOON } from './sheetCritters2';
 import { CUSTOMER_SANTA_ART } from './customerClothing';
 import type { PixelSprite } from '../pixelSprite';
 import { DEER, HEDGEHOG, MOUSE, RABBIT } from './sheetCritters';
