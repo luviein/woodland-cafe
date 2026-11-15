@@ -802,3 +802,9 @@ Museum purchases made during a cafe day use only the Leaves already present in t
 ### Museum free movement repair
 
 Museum visitors can walk freely using WASD or arrow keys, including diagonals, or click an exact point on the floor. Direct clear routes do not force tile-by-tile turns. Routes around display cases are smoothed without cutting through them; a new click replans from the player's actual position and never first returns to the last tile. Keep fractional movement internally and round only rendered positions, so walking works consistently at high frame rates. Keyboard movement interrupts click walking and pending case inspection; holding a direction slides along obstacles and cannot pass through cases or room edges. Modal panels and Arrange mode suspend walking. The Map button leaves the museum; stepping onto the entrance tile does not unexpectedly leave it. Case placement remains on the tile grid.
+
+### Museum case selection and cancellation repair
+
+Clicking a placed case in Arrange mode selects it without moving it on the same pointer event. A later valid floor click moves the selected case, preserving its stable id and exhibit. The case detail panel also offers Move case to enter Arrange with that case selected. Cancel or Esc ends the current placement/move and returns to walking without changing the original case or using a stored case. Already completed placements remain saved. Done also returns to walking. Resume from the player's prior position when it remains clear, otherwise use the entrance. Case hit events do not propagate into floor placement.
+
+Display-case artwork is 32 pixels wide and 32 pixels tall, centred on its existing 24-pixel placement tile. Keep existing placements and exhibits intact; widen the glass, wooden base, selection outline and click area together. The detail preview uses the same sprite.
