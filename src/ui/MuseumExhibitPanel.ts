@@ -18,6 +18,7 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
   private readonly title: Phaser.GameObjects.Text;
   private readonly description: Phaser.GameObjects.Text;
   private readonly image: Phaser.GameObjects.Image;
+  private readonly clearButton: Button;
   private readonly choices: Button[] = [];
   constructor(scene: Phaser.Scene, private readonly caseId: number, choose: (id: CollectionId | null) => void, move: () => void, close: () => void) {
     super(scene, 0, 0);
@@ -49,12 +50,13 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
     place('availabilityHint', 320, 281, scene.add.text(0, 0, words.availabilityHint,
       { ...TEXT.body, fontSize: '9px' }).setOrigin(0.5));
     place('move', 250, 302, new Button(scene, 0, 0, 116, 22, words.move, COLORS.book, move).setFontSize(11));
-    place('clear', 390, 302, new Button(scene, 0, 0, 116, 22, words.clear, COLORS.reset, () => choose(null)).setFontSize(11));
+    this.clearButton = place('clear', 390, 302, new Button(scene, 0, 0, 116, 22, words.clear, COLORS.reset, () => choose(null)).setFontSize(11));
     arrangeablePanel(scene, 'museumExhibit', 'panel', this);
   }
   refresh(state: GameState): void {
     const exhibit = state.museum.cases.find(item => item.id === this.caseId)?.exhibit;
     const item = COLLECTION_ITEMS.find(item => item.id === exhibit);
+    this.clearButton.setEnabled(!!item);
     this.image.setVisible(!!item);
     if (item) this.image.setTexture(`art:${cropArtName(item.crop, item.variant)}`, 0);
     this.title.setText(item ? cropName(item.crop, item.variant) : words.empty);
