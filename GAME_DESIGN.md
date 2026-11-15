@@ -874,20 +874,23 @@ and multiplayer remain outside this step.
 
 ### Wardrobe titles and retired antlers
 
-Title ribbons use the separately supplied, full-resolution Golden and Christmas
-PNG assets. Preserve their baked-in lettering; crop transparent padding only,
-without recreating the font or reducing the stored image resolution. Scale
-them for the wardrobe/journal/world display and paginate the wardrobe list
-when needed to preserve padding. The dev-only command
+Golden and Christmas titles use the supplied standalone crown/leaf and
+Santa-hat/snowflake badges instead of text ribbons. Preserve the original PNG
+pixels and scale only for display. Keep the names All That Glitters Grows and
+Santa's Devotee 2026 as readable wardrobe labels beside their badges. Show a
+compact badge above the character in the wardrobe and world; retain character
+size, unlock conditions and saved title IDs. Legacy Master Collector keeps its
+existing ribbon. Paginate the wardrobe list when needed to preserve padding.
+The dev-only command
 `title unlock <golden|christmas2026|all>` permanently grants the selected title
 flags for testing, without changing crops, furniture, currency or milestones.
 Choose the unlocked title in Wardrobe > Titles to equip it.
 
 Add a Titles tab beside the wardrobe's clothing/animal tabs. Show locked and
-unlocked titles, their supplied PNG ribbons and collection requirements.
+unlocked titles, their supplied PNG badges and collection requirements.
 Selecting an unlocked title equips it; selecting it again removes it. Preview
-the equipped ribbon above the character's head, keeping all turn views clear.
-The equipped ribbon also follows the player on the cafe floor, in the museum,
+the equipped badge above the character's head, keeping all turn views clear.
+The equipped badge also follows the player on the cafe floor, in the museum,
 Forest, Marketplace and Garden. Names/networking remain a later feature.
 
 All That Glitters Grows requires the three Golden crop records. Santa's
