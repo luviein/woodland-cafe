@@ -14,6 +14,12 @@ describe('Christmas clothing collection', () => {
       const sprite = SPRITE_ART[clothingArt('frog', id)];
       sprite.frames.forEach((frame, f) => {
         const view = Math.floor(f / 3), spans = eyes[view];
+        if (view >= 2 && ['santaHat', 'antlers', 'winterBeanie', 'bobbleHat'].includes(id)) {
+          const hat = frame.flatMap(row => [...row].flatMap((pixel, x) => pixel === '.' ? [] : [x]));
+          const brow = [...SPRITE_ART.frog.frames[f][FROG_HEADROOM]].flatMap((pixel, x) => pixel === '.' ? [] : [x]);
+          const centre = (xs: number[]) => (Math.min(...xs) + Math.max(...xs)) / 2;
+          expect(Math.abs(centre(hat) - centre(brow)), `${id} frame ${f}, hat above brow`).toBeLessThanOrEqual(1);
+        }
         if (view === 0) for (let y = FROG_HEADROOM + 8; y <= FROG_HEADROOM + 14; y++) {
           expect(frame[y].slice(6, 17), `${id} frame ${f}, mouth row ${y}`).toBe('.'.repeat(11));
         }

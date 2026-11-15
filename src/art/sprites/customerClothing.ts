@@ -6,7 +6,7 @@ import { FROG, FROG_HEADROOM } from './frogFitting';
 // Head spans and torso masks follow each animal's actual four-view frames.
 // The frog's narrow cap sits between/behind its raised eyes; tails stay bare.
 const RIGS = {
-  frog: { body: FROG, heads: [[7, 15, 7], [6, 16, 7], [12, 20, 7], [2, 10, 7]], torsos: [[16, 23, 2, 20], [17, 23, 2, 21], [17, 23, 8, 20], [17, 23, 3, 15]] },
+  frog: { body: FROG, heads: [[7, 15, 7], [6, 16, 7], [9, 17, 5], [7, 15, 5]], torsos: [[16, 23, 2, 20], [17, 23, 2, 21], [17, 23, 8, 20], [17, 23, 3, 15]] },
   badger: { body: BADGER, heads: [[3, 23, 10], [2, 22, 10], [3, 21, 9], [6, 24, 9]], torsos: [[21, 30, 4, 21], [21, 30, 6, 21], [22, 30, 7, 20], [22, 30, 7, 20]] },
   raccoon: { body: RACCOON, heads: [[3, 25, 8], [6, 30, 9], [3, 22, 7], [15, 34, 7]], torsos: [[22, 31, 4, 25], [22, 28, 7, 28], [23, 31, 6, 21], [23, 31, 16, 31]] },
 } as const;
@@ -20,9 +20,12 @@ function fitted(animal: keyof typeof RIGS, slot: 'hat' | 'coat'): PixelSprite {
       const xs = source.flatMap(row => [...row].flatMap((c, x) => c === '.' ? [] : [x]));
       const start = Math.min(...xs), end = Math.max(...xs);
       const [left, right, brim] = rig.heads[view];
-      for (let y = 0; y < 10; y++) for (let x = left; x <= right; x++) {
+      // Side caps sit on the frog's brow, rather than behind its head. Fit the
+      // crown into the available headroom while retaining the full brim below.
+      const capTop = Math.max(0, brim - 7), capHeight = brim - capTop;
+      for (let y = 0; y < capHeight; y++) for (let x = left; x <= right; x++) {
         const sx = start + Math.min(end - start, Math.floor((x - left) * (end - start + 1) / (right - left + 1)));
-        grid[brim - 7 + y][x] = source[y][sx];
+        grid[capTop + y][x] = source[Math.floor(y * 7 / capHeight)][sx];
       }
       for (let x = left; x <= right; x++) {
         grid[brim][x] = x === left || x === right ? 'O' : 'C';
