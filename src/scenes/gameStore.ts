@@ -1,4 +1,5 @@
 import { gardenCheckpoint } from '../logic/garden';
+import { museumCheckpoint } from '../logic/museum';
 import { buyChristmasItem } from '../logic/christmasShop';
 import type { CatalogueItem } from '../data/catalogueProducts';
 import type Phaser from 'phaser';
@@ -143,6 +144,26 @@ export function setGardenGameState(owner: HasRegistry, state: GameState): void {
     owner.registry.set(CHECKPOINT_KEY, checkpoint);
     owner.registry.set(KEY, state);
   } else setGameState(owner, state);
+}
+
+export function museumLeavesAvailable(owner: HasRegistry): number {
+  const state = getGameState(owner);
+  const checkpoint = owner.registry.get(CHECKPOINT_KEY) as GameState | undefined;
+  return owner.registry.get(DAY_KEY) && checkpoint ? Math.min(state.leaves, checkpoint.leaves) : state.leaves;
+}
+
+export function setMuseumGameState(owner: HasRegistry, state: GameState): boolean {
+  const before = getGameState(owner);
+  if (state === before) return false;
+  if (owner.registry.get(DAY_KEY)) {
+    const checkpoint = museumCheckpoint(owner.registry.get(CHECKPOINT_KEY) ?? before, before, state);
+    // A permanent purchase cannot be funded by earnings that would roll back.
+    if (checkpoint.leaves < 0) return false;
+    slot.write(saveGame(checkpoint));
+    owner.registry.set(CHECKPOINT_KEY, checkpoint);
+    owner.registry.set(KEY, state);
+  } else setGameState(owner, state);
+  return true;
 }
 
 /** Persist the same purchase against the pre-day save, without saving cafe work. */

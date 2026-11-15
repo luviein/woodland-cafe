@@ -288,6 +288,8 @@ export class WorldMapScene extends Phaser.Scene {
   private drawLandmark(id: LocationId): Placeable[] {
     const { x, y } = LOCATIONS[id].position;
     switch (id) {
+      case 'museum':
+        return [addStanding(this, x, y + 18, 'museumMap')];
       case 'cafe':
         // The cottage's doorstep is 20px below the centre (where the Mascot dances).
         return [addStanding(this, x, y + 20, 'cafeHouse')];

@@ -1,4 +1,5 @@
 import { emptyGarden } from './garden';
+import { emptyMuseum } from './museum';
 import { defaultFinishes } from '../data/roomFinishes';
 import { CAFE_ROOM } from '../data/cafeRoom';
 import { describe, expect, it } from 'vitest';
@@ -11,6 +12,7 @@ import { availableRecipes } from './orders';
 describe('createNewGame', () => {
   it('starts on day 1 with no Leaves, the starter ingredients and their stock, no upgrades, and the tutorial ahead', () => {
     expect(createNewGame()).toEqual({
+      museum: emptyMuseum(),
       cropCollection: [],
       christmasTickets: 0,
       garden: emptyGarden(),

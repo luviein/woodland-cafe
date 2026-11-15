@@ -5,10 +5,45 @@ import { buySeed, plantCrop, tendCrop } from '../logic/garden';
 import { loadGame } from '../logic/save';
 import { sellChristmasCrop } from '../logic/cropExchange';
 import { donateCrop } from '../logic/cropCollection';
+import { buyMuseumCase, placeMuseumCase, expandMuseum, displayMuseumCrop } from '../logic/museum';
+import { setMuseumGameState, museumLeavesAvailable } from './gameStore';
 import { catalogueProduct, type CatalogueItem } from '../data/catalogueProducts';
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { memorySaveSlot } from '../storage/saveSlot';
 import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState, purchaseChristmasItem } from './gameStore';
+
+it('persists museum purchases, expansion and exhibits without saving cafe work or spending unsaved earnings', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  const poor = { ...createNewGame(), leaves: 10 };
+  continueGame(owner, poor); beginCafeDay(owner);
+  setGameState(owner, { ...poor, leaves: 100 });
+  expect(museumLeavesAvailable(owner)).toBe(10);
+  expect(setMuseumGameState(owner, buyMuseumCase(getGameState(owner)))).toBe(false);
+  expect(getGameState(owner).leaves).toBe(100);
+  expect(slot.read()).toBeNull();
+  const checkpoint = { ...createNewGame(), leaves: 1000, cropCollection: ['golden.mushroom'] as const };
+  continueGame(owner, checkpoint); beginCafeDay(owner);
+  setGameState(owner, { ...checkpoint, day: 2, leaves: 1010, stock: { ...checkpoint.stock, mushroom: 1 } });
+  setMuseumGameState(owner, buyMuseumCase(getGameState(owner)));
+  setMuseumGameState(owner, placeMuseumCase(getGameState(owner), { x: 2, y: 2 }));
+  setMuseumGameState(owner, displayMuseumCrop(getGameState(owner), 1, 'golden.mushroom'));
+  setMuseumGameState(owner, expandMuseum(getGameState(owner)));
+  const loaded = loadGame(slot.read()!);
+  expect(loaded.ok).toBe(true);
+  if (!loaded.ok) return;
+  expect(loaded.state.museum.level).toBe(1);
+  expect(loaded.state.museum.cases).toEqual([{ id: 1, x: 4, y: 2, exhibit: 'golden.mushroom' }]);
+  expect(loaded.state.museum.storedCases).toBe(1);
+  expect(loaded.state.leaves).toBe(775);
+  expect(loaded.state.day).toBe(1);
+  expect(loaded.state.stock).toEqual(checkpoint.stock);
+  expect(getGameState(owner).leaves).toBe(785);
+  endCafeDay(owner);
+  expect(loadGame(slot.read()!)).toEqual({ ok: true, state: getGameState(owner) });
+});
 
 it('saves donations and sales atomically while preserving the pre-day cafe checkpoint', () => {
   const values = new Map<string, unknown>();

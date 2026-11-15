@@ -1,4 +1,5 @@
 import { migrateGarden, validGarden } from './garden';
+import { validMuseum } from './museum';
 import { COLLECTION_IDS } from './cropCollection';
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { appliedFinishIds, ownedFinishGrid } from './roomFinishShop';
@@ -43,7 +44,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 14: saved mutations, seasonal seeds and separately stored special harvests.
 // 15: permanent Christmas ticket balance.
 // 16: permanent special-crop collection entries.
-export const SAVE_VERSION = 16;
+// 17: expandable museum and player-placed display cases.
+export const SAVE_VERSION = 17;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -90,6 +92,8 @@ export function loadGame(text: string): LoadResult {
 
 function readState(raw: Record<string, unknown>, version: number): GameState {
   const fresh = createNewGame();
+  const collection = idList(raw, 'cropCollection', fresh.cropCollection, COLLECTION_IDS);
+  const museum = field(raw, 'museum', fresh.museum, validMuseum);
   const room = field<readonly string[]>(raw, 'room', fresh.room, value => Array.isArray(value) && value.every(row => typeof row === 'string') && roomProblems(value, [], false).length === 0);
   const finishes = field<readonly string[]>(raw, 'roomFinishes', defaultFinishes(room), value => validFinishes(value, room));
   const ownedFinishes = idList(raw, 'ownedFinishes', version < 9 ? appliedFinishIds(room, finishes) : [], FINISH_IDS);
@@ -102,7 +106,8 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     if (item && !ownedClothing.includes(item)) outfit[slot] = null;
   }
   return {
-    cropCollection: idList(raw, 'cropCollection', fresh.cropCollection, COLLECTION_IDS),
+    museum: { ...museum, cases: museum.cases.map(item => ({ ...item, exhibit: item.exhibit && collection.includes(item.exhibit) ? item.exhibit : null })) },
+    cropCollection: collection,
     christmasTickets: field(raw, 'christmasTickets', fresh.christmasTickets, (v) => Number.isSafeInteger(v) && (v as number) >= 0),
     garden: field(version < 14 && 'garden' in raw ? { ...raw, garden: migrateGarden(raw.garden) } : raw, 'garden', fresh.garden, validGarden),
     room,

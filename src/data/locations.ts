@@ -16,6 +16,7 @@ export interface LocationDef {
 }
 
 export const LOCATIONS = {
+  museum: { name: 'Museum', get position() { return layoutPoint('worldMap', 'place.museum', { x: 320, y: 118 }); }, scene: 'MuseumScene', locked: false },
   cafe: { name: 'Cafe', get position() { return layoutPoint('worldMap', 'place.cafe', { x: 320, y: 220 }); }, scene: 'FloorScene', locked: false },
   garden: { name: 'Garden', get position() { return layoutPoint('worldMap', 'place.garden', { x: 440, y: 250 }); }, scene: 'GardenScene', locked: false },
   // Both outdoor places share one scene, set up from data/outdoorAreas.ts.
@@ -29,6 +30,7 @@ export const LOCATION_IDS = Object.keys(LOCATIONS) as LocationId[];
 
 /** Dotted paths between places, drawn on the map. Decoration only: you can go anywhere. */
 export const MAP_PATHS: readonly (readonly [LocationId, LocationId])[] = [
+  ['cafe', 'museum'],
   ['cafe', 'forest'],
   ['cafe', 'marketplace'],
   ['cafe', 'garden'],

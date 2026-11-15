@@ -1,4 +1,5 @@
 import { emptyGarden, type Garden } from './garden';
+import { emptyMuseum, type Museum } from './museum';
 import type { CollectionId } from './cropCollection';
 import type { FinishId } from '../data/roomFinishProducts';
 import { defaultFinishes } from '../data/roomFinishes';
@@ -29,6 +30,7 @@ import { STARTER_CLOTHING, type ClothingId } from '../data/clothing';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  museum: Museum;
   /** Permanent museum entries; separate from the remaining harvested crops. */
   cropCollection: readonly CollectionId[];
   /** Christmas tickets carry over between events. */
@@ -65,6 +67,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    museum: emptyMuseum(),
     cropCollection: [],
     christmasTickets: 0,
     garden: emptyGarden(),

@@ -1,6 +1,7 @@
 import { SEED_PACKET_ART } from '../art/sprites/seedPackets';
 import { CHRISTMAS_SEED_PACKET_ART } from '../art/sprites/christmasSeedPackets';
 import { SEED_SHOP_ART } from '../art/sprites/seedShop';
+import { MUSEUM_ART } from '../art/sprites/museum';
 import { CHRISTMAS_SELL_ART } from '../art/sprites/christmasSell';
 import { createGardenPreviews } from './gardenPreview';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
@@ -45,6 +46,7 @@ const STEP_MS = 140; // as ui/sprites.ts: how long each walking step shows
 // ---- Groups -----------------------------------------------------------------
 
 const GROUPS: [string, (name: ArtName) => boolean][] = [
+  ['Museum (modular room and display cases)', n => n in MUSEUM_ART],
   ['Christmas crop exchange (supplied board and ticket)', n => n in CHRISTMAS_SELL_ART],
   ['Christmas seed packets (supplied reference)', n => n in CHRISTMAS_SEED_PACKET_ART],
   ['Seed Shop (supplied board)', n => n in SEED_SHOP_ART],
@@ -70,6 +72,7 @@ function groupOf(name: ArtName): string {
 }
 
 function source(name: ArtName): string {
+  if (name in MUSEUM_ART) return 'modular museum furnishings from your supplied reference (tools/museumArt.cjs)';
   if (name in CHRISTMAS_SELL_ART) return 'your supplied selling board and Christmas ticket (tools/christmasSellArt.cjs)';
   if (name in CHRISTMAS_SEED_PACKET_ART) return 'your supplied Christmas wrapping with existing native crop pictures (tools/christmasSeedPackets.cjs)';
   if (name in SEED_SHOP_ART) return 'your supplied Seed Shop board, with live row fields cleared (tools/seedShopArt.cjs)';

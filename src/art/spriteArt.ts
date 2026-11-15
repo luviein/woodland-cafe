@@ -1,4 +1,5 @@
 import { SEED_PACKET_ART } from './sprites/seedPackets';
+import { MUSEUM_ART } from './sprites/museum';
 import { CHRISTMAS_SELL_ART } from './sprites/christmasSell';
 import { CHRISTMAS_SEED_PACKET_ART } from './sprites/christmasSeedPackets';
 import { SEED_SHOP_ART } from './sprites/seedShop';
@@ -68,6 +69,7 @@ import { BERRY_BUSH, CAFE_HOUSE, FOREST_FLOOR, GRASS, LEAF, MAP_TREE, MUSHROOM_P
 // hand-drawn replacement uses: src/art/drawn/<name>.png (GAME_DESIGN.md §8.2).
 
 export const SPRITE_ART = {
+  ...MUSEUM_ART,
   ...CHRISTMAS_SELL_ART,
   ...CHRISTMAS_SEED_PACKET_ART,
   ...SEED_SHOP_ART,

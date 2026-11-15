@@ -1,4 +1,5 @@
 import { GardenScene } from './scenes/GardenScene';
+import { MuseumScene } from './scenes/MuseumScene';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from './config/display';
 import { enableIntegerScaling } from './integerScale';
@@ -36,7 +37,7 @@ const game = new Phaser.Game({
   // are launched by the floor as overlays (when an order is taken, when the
   // day ends); later scenes in the list draw on top. The world map and the
   // outdoor places replace the floor between days.
-  scene: [BootScene, TitleScene, FloorScene, PrepScene, DaySummaryScene, WorldMapScene, OutdoorScene, DecorateScene, GardenScene, HudScene],
+  scene: [BootScene, TitleScene, FloorScene, PrepScene, DaySummaryScene, WorldMapScene, OutdoorScene, DecorateScene, GardenScene, MuseumScene, HudScene],
 });
 
 // The registry exists as soon as the game is constructed, before any
