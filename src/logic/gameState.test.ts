@@ -12,6 +12,8 @@ import { availableRecipes } from './orders';
 describe('createNewGame', () => {
   it('starts on day 1 with no Leaves, the starter ingredients and their stock, no upgrades, and the tutorial ahead', () => {
     expect(createNewGame()).toEqual({
+      cropWeights: {},
+      cropRecords: {},
       museum: emptyMuseum(),
       cropCollection: [],
       christmasTickets: 0,

@@ -1,3 +1,5 @@
+import { CROP_IDS, type CropId } from '../data/crops';
+import { takeCropWeights, weightKey, type CropWeights } from './cropWeights';
 import { INGREDIENT_IDS, INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { expectedPlate } from './orders';
 import { STOCK_CONFIG, type StockConfig } from '../data/stockConfig';
@@ -8,6 +10,7 @@ export type Stock = Record<IngredientId, number>;
 
 /** The bits of the game state that stock rules need. */
 export interface Pantry {
+  cropWeights?: CropWeights;
   stock: Stock;
   leaves: number;
 }
@@ -127,6 +130,10 @@ export function useIngredients<T extends Pantry>(
   const plan = planIngredients(state, ingredients, config);
   if (!plan) throw new Error(`useIngredients: can't pay for ${ingredients.join(', ')}`);
   const stock = { ...state.stock };
-  for (const u of plan.uses) stock[u.id] -= u.fromStock;
-  return { state: { ...state, stock, leaves: state.leaves - plan.rushCost }, plan };
+  let cropWeights = state.cropWeights;
+  for (const u of plan.uses) {
+    if (cropWeights && CROP_IDS.includes(u.id as CropId)) cropWeights = takeCropWeights(cropWeights, weightKey(u.id as CropId, 'ordinary'), stock[u.id], u.fromStock).weights;
+    stock[u.id] -= u.fromStock;
+  }
+  return { state: { ...state, ...(cropWeights ? { cropWeights } : {}), stock, leaves: state.leaves - plan.rushCost }, plan };
 }

@@ -17,5 +17,7 @@
     "christmas.mushroom": "A snowy cap with a touch of festive woodland magic.",
     "christmas.tomato": "A cheerful red tomato dusted with Christmas snow.",
     "christmas.chilli": "A bright winter chilli, bringing warmth to the holidays."
-  }
+  },
+  "upgrade": "Upgrade",
+  "record": "Best\n{weight}"
 }

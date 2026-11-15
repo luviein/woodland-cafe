@@ -1,3 +1,4 @@
+import { addCropWeights, setWeightBatches, weightKey, validCropWeight, STANDARD_WEIGHT } from '../logic/cropWeights';
 import { CUSTOMER_ART } from '../art/spriteArt';
 import { CROPS, CROP_IDS, SPECIAL_VARIANTS } from '../data/crops';
 import { cropName } from '../logic/garden';
@@ -215,7 +216,8 @@ export function createDevCommands(
         const id = INGREDIENT_IDS.find((i) => i === name.toLowerCase());
         if (!id) throw new Error(`No ingredient called '${name}'. Type 'stock' to see them.`);
         const n = count(value, 'stock <ingredient> <n>');
-        game().set({ ...state, stock: { ...state.stock, [id]: n } });
+        game().set({ ...state, stock: { ...state.stock, [id]: n },
+          cropWeights: CROP_IDS.includes(id as typeof CROP_IDS[number]) ? setWeightBatches(state.cropWeights, weightKey(id as typeof CROP_IDS[number], 'ordinary'), []) : state.cropWeights });
         return `${INGREDIENTS[id].name} stock = ${n}`;
       },
     },
@@ -231,21 +233,24 @@ export function createDevCommands(
     },
 
     crop: {
-      usage: 'crop <mushroom|tomato|chilli> <normal|golden|christmas> [n]',
+      usage: 'crop <mushroom|tomato|chilli> <normal|golden|christmas> [n] [kg]',
       description: 'Add harvested crops directly to the bag for testing (default one; ignores unlocks and season)',
       run: args => {
         const crop = CROP_IDS.find(id => id === args[0]?.toLowerCase());
         const word = args[1]?.toLowerCase();
         const variant = word === 'normal' || word === 'ordinary' ? 'ordinary' : SPECIAL_VARIANTS.find(id => id === word);
         const n = args[2] === undefined ? 1 : Number(args[2]);
-        if (!crop || !variant || args.length > 3 || !Number.isSafeInteger(n) || n <= 0) {
-          throw new Error('Usage: crop <mushroom|tomato|chilli> <normal|golden|christmas> [n] (a positive safe whole number)');
+        const grams = args[3] === undefined ? STANDARD_WEIGHT : Math.round(Number(args[3]) * 1000);
+        const precise = args[3] === undefined || Math.abs(Number(args[3]) * 1000 - grams) < 1e-7;
+        if (!crop || !variant || args.length > 4 || !Number.isSafeInteger(n) || n <= 0 || !validCropWeight(grams) || !precise) {
+          throw new Error('Usage: crop <mushroom|tomato|chilli> <normal|golden|christmas> [n] [kg] (positive whole count; weight 0.01-5.00 kg)');
         }
         const state = game().get();
         const total = (variant === 'ordinary' ? state.stock[crop] : state.garden.harvests[variant][crop]) + n;
         if (!Number.isSafeInteger(total)) throw new Error('Too many crops');
-        game().set(variant === 'ordinary' ? { ...state, stock: { ...state.stock, [crop]: total } }
-          : { ...state, garden: { ...state.garden, harvests: { ...state.garden.harvests,
+        const weighted = { ...state, cropWeights: addCropWeights(state.cropWeights, crop, variant, [{ grams, count: n }]) };
+        game().set(variant === 'ordinary' ? { ...weighted, stock: { ...state.stock, [crop]: total } }
+          : { ...weighted, garden: { ...state.garden, harvests: { ...state.garden.harvests,
             [variant]: { ...state.garden.harvests[variant], [crop]: total },
           } } });
         return `${cropName(crop, variant)} = ${total}`;

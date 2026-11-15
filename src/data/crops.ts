@@ -11,3 +11,6 @@ export type CropEvent = 'christmas';
 export type CropVariant = 'ordinary' | 'golden' | CropEvent;
 export const SPECIAL_VARIANTS = ['golden', 'christmas'] as const;
 export const CROP_CHANCES = { seasonal: 0.03, golden: 0.05, doubleHarvest: 0.05 } as const;
+
+/** Provisional harvest weight ranges in grams; existing stock uses the standard. */
+export const CROP_WEIGHT_CONFIG = { standard: 1000, minimum: 500, typicalMaximum: 2000, maximum: 5000, rareChance: 0.05, step: 10 } as const;

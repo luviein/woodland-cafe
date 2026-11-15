@@ -38,11 +38,11 @@ export function gardenWorkProgress(work: GardenWork): number {
 }
 
 /** Recheck the queued action: a watered crop must never be treated as a harvest by accident. */
-export function finishGardenWork(state: GameState, work: GardenWork, now: number, event: CropEvent | null = null, roll = 1): GameState {
+export function finishGardenWork(state: GameState, work: GardenWork, now: number, event: CropEvent | null = null, roll = 1, weightRoll: () => number = () => 1): GameState {
   const plant = state.garden.plots[work.index];
   if (work.action === 'plant') return plant ? state : plantCrop(state, work.index, work.crop, work.seed, event, roll);
   if (!plant || plant.crop !== work.crop || plant.variant !== work.variant) return state;
   if (work.action === 'water' && plant.wateredAt !== null) return state;
   if (work.action === 'harvest' && (plant.wateredAt === null || cropRemaining(plant, now) > 0)) return state;
-  return tendCrop(state, work.index, now, roll);
+  return tendCrop(state, work.index, now, roll, weightRoll);
 }

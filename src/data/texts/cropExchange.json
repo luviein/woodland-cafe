@@ -4,5 +4,7 @@
   "rateOne": "1 ticket each",
   "sellOne": "Sell 1",
   "sellAll": "Sell All",
-  "help": "Sell Christmas crops for tickets, or keep them. Tickets never expire."
+  "help": "Heavier crops earn more tickets. Sell 1 uses the lightest crop.",
+  "preview": "1 / all: {one} / {all}",
+  "inventoryPreview": "1 / all: {one} / {all} tickets"
 }

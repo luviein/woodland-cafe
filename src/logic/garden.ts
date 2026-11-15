@@ -1,3 +1,4 @@
+import { addCropWeights, checkpointCropWeights, randomCropWeight } from './cropWeights';
 import { CROPS, CROP_IDS, GARDEN_PLOTS, SPECIAL_VARIANTS, CROP_CHANCES, type CropId, type SeedType, type CropVariant, type CropEvent } from '../data/crops';
 import { SHOPS } from '../data/shops';
 import { inSeason } from './shop';
@@ -87,7 +88,7 @@ export function plantCrop(state: GameState, index: number, crop: CropId, seed: S
   return { ...state, garden: { ...state.garden, [key]: { ...state.garden[key], [crop]: state.garden[key][crop] - 1 }, plots } };
 }
 /** One click waters once, or harvests only when the real-time timer is complete. */
-export function tendCrop(state: GameState, index: number, now: number, roll = 1): GameState {
+export function tendCrop(state: GameState, index: number, now: number, roll = 1, weightRoll: () => number = () => 1): GameState {
   if (!Number.isSafeInteger(now) || now < 0 || now > 8640000000000000 || !Number.isInteger(index)) return state;
   const plant = state.garden.plots[index];
   if (!plant) return state;
@@ -100,16 +101,17 @@ export function tendCrop(state: GameState, index: number, now: number, roll = 1)
   const amount = harvestYield(plant.crop, roll);
   const current = plant.variant === 'ordinary' ? state.stock[plant.crop] : state.garden.harvests[plant.variant][plant.crop];
   if (!Number.isSafeInteger(current + amount)) return state;
+  const cropWeights = addCropWeights(state.cropWeights, plant.crop, plant.variant, Array.from({ length: amount }, () => ({ grams: randomCropWeight(weightRoll()), count: 1 })));
   plots[index] = null;
-  if (plant.variant === 'ordinary') return { ...state, stock: { ...state.stock, [plant.crop]: current + amount },
+  if (plant.variant === 'ordinary') return { ...state, cropWeights, stock: { ...state.stock, [plant.crop]: current + amount },
     garden: { ...state.garden, plots } };
-  return { ...state, garden: { ...state.garden, plots, harvests: { ...state.garden.harvests,
+  return { ...state, cropWeights, garden: { ...state.garden, plots, harvests: { ...state.garden.harvests,
     [plant.variant]: { ...state.garden.harvests[plant.variant], [plant.crop]: current + amount } } } };
 }
 /** Persist the garden's delta without accidentally committing an unfinished cafe day. */
 export function gardenCheckpoint(checkpoint: GameState, before: GameState, after: GameState): GameState {
   const stock = { ...checkpoint.stock };
   for (const crop of CROP_IDS) stock[crop] += after.stock[crop] - before.stock[crop];
-  return { ...checkpoint, garden: after.garden, cropCollection: after.cropCollection, stock, leaves: checkpoint.leaves + after.leaves - before.leaves,
+  return { ...checkpoint, cropWeights: checkpointCropWeights(checkpoint, before, after), cropRecords: after.cropRecords, garden: after.garden, cropCollection: after.cropCollection, stock, leaves: checkpoint.leaves + after.leaves - before.leaves,
     christmasTickets: checkpoint.christmasTickets + after.christmasTickets - before.christmasTickets };
 }

@@ -337,6 +337,25 @@ describe('serve / mess / clean / time / endday', () => {
     expect(runCommand(commands, 'furniture chair -1')).toMatch(/Usage/);
   });
 
+  it('gifts exact crop weights for testing, rejects invalid weights and resets weights with stock', () => {
+    let state = createNewGame();
+    const commands = createDevCommands({ floorTimeScale: 1 }, [], {
+      ...noDevActions(), game: { get: () => state, set: s => { state = s; } },
+    });
+    expect(runCommand(commands, 'crop mushroom christmas 3 3.24')).toMatch(/= 3/);
+    expect(state.cropWeights['christmas.mushroom']).toEqual([{ grams: 3240, count: 3 }]);
+    const before = state;
+    for (const weight of ['0', '-1', '5.01', '0.0001', 'NaN', 'Infinity', '3.24 extra']) {
+      expect(runCommand(commands, 'crop mushroom christmas 1 ' + weight)).toMatch(/Usage/);
+      expect(state).toBe(before);
+    }
+    runCommand(commands, 'crop mushroom normal 2 4.50');
+    expect(state.cropWeights['ordinary.mushroom']).toEqual([{ grams: 4500, count: 2 }]);
+    runCommand(commands, 'stock mushroom 1');
+    expect(state.cropWeights['ordinary.mushroom']).toBeUndefined();
+    expect(state.cropWeights['christmas.mushroom']).toEqual(before.cropWeights['christmas.mushroom']);
+  });
+
   it('hire and fire change who is employed, for free', () => {
     let state: GameState = { ...createNewGame(), leaves: 3 };
     const commands = createDevCommands({ floorTimeScale: 1 }, [], {

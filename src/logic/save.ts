@@ -1,3 +1,4 @@
+import { validCropWeights, validCropWeight } from './cropWeights';
 import { migrateGarden, validGarden } from './garden';
 import { validMuseum } from './museum';
 import { COLLECTION_IDS } from './cropCollection';
@@ -45,7 +46,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 15: permanent Christmas ticket balance.
 // 16: permanent special-crop collection entries.
 // 17: expandable museum and player-placed display cases.
-export const SAVE_VERSION = 17;
+// 18: specimen weights and heaviest donated records.
+export const SAVE_VERSION = 18;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -105,11 +107,16 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     const item = outfit[slot];
     if (item && !ownedClothing.includes(item)) outfit[slot] = null;
   }
+  const stock = countsById<IngredientId>(raw.stock, 'stock', fresh.stock, INGREDIENT_IDS);
+  const garden = field(version < 14 && 'garden' in raw ? { ...raw, garden: migrateGarden(raw.garden) } : raw, 'garden', fresh.garden, validGarden);
+  const cropWeights = field(raw, 'cropWeights', fresh.cropWeights, value => validCropWeights(value, { stock, garden }));
+  const cropRecords = field(raw, 'cropRecords', fresh.cropRecords, value => isObject(value) && Object.entries(value).every(([key, grams]) => COLLECTION_IDS.includes(key as typeof COLLECTION_IDS[number]) && collection.includes(key as typeof COLLECTION_IDS[number]) && validCropWeight(grams)));
   return {
+    cropWeights, cropRecords,
     museum: { ...museum, cases: museum.cases.map(item => ({ ...item, exhibit: item.exhibit && collection.includes(item.exhibit) ? item.exhibit : null })) },
     cropCollection: collection,
     christmasTickets: field(raw, 'christmasTickets', fresh.christmasTickets, (v) => Number.isSafeInteger(v) && (v as number) >= 0),
-    garden: field(version < 14 && 'garden' in raw ? { ...raw, garden: migrateGarden(raw.garden) } : raw, 'garden', fresh.garden, validGarden),
+    garden,
     room,
     roomFinishes: ownedFinishGrid(room, finishes, ownedFinishes),
     ownedFinishes,
@@ -120,7 +127,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     leaves: field(raw, 'leaves', fresh.leaves, (v) => isWhole(v) && v >= 0),
     ingredients: idList(raw, 'ingredients', fresh.ingredients, INGREDIENT_IDS),
     upgrades: idList<UpgradeId>(raw, 'upgrades', fresh.upgrades, UPGRADE_IDS),
-    stock: countsById<IngredientId>(raw.stock, 'stock', fresh.stock, INGREDIENT_IDS),
+    stock,
     leavesPickedToday: field(raw, 'leavesPickedToday', fresh.leavesPickedToday, (v) => isWhole(v) && v >= 0),
     foragedToday: field(raw, 'foragedToday', fresh.foragedToday, (v) =>
       Array.isArray(v) && v.every((s) => typeof s === 'string'),

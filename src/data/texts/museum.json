@@ -25,5 +25,6 @@
   "clear": "Clear case",
   "move": "Move case",
   "close": "Close",
-  "starterHelp": "Walk with WASD/arrows. Choose Arrange, then Place case to use your free case."
+  "starterHelp": "Walk with WASD/arrows. Choose Arrange, then Place case to use your free case.",
+  "record": "Heaviest donation: {weight}"
 }

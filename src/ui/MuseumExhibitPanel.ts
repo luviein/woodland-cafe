@@ -1,3 +1,4 @@
+import { cropRecord, formatCropWeight } from '../logic/cropWeights';
 import Phaser from 'phaser';
 import words from '../data/texts/museum.json';
 import collectionWords from '../data/texts/cropCollection.json';
@@ -12,6 +13,8 @@ import { Button } from './Button';
 import { COLORS, TEXT } from './theme';
 
 export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
+  private readonly plaque: Phaser.GameObjects.Text;
+  private readonly record: Phaser.GameObjects.Text;
   private readonly title: Phaser.GameObjects.Text;
   private readonly description: Phaser.GameObjects.Text;
   private readonly image: Phaser.GameObjects.Image;
@@ -33,8 +36,10 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
     place('case', 127, 144, addArt(scene, 0, 0, 'museumCase').setScale(2).setOrigin(0.5, 1));
     this.image = place('crop', 127, 124, addArt(scene, 0, 0, 'mushroom').setScale(2).setOrigin(0.5, 1));
     place('glass', 127, 144, addArt(scene, 0, 0, 'museumGlass').setScale(2).setOrigin(0.5, 1));
+    this.plaque = place('weightPlaque', 127, 136, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', color: '#493026', backgroundColor: '#f2cea0', padding: { x: 2, y: 0 } }).setOrigin(0.5));
     this.title = place('name', 183, 85, scene.add.text(0, 0, '', { ...TEXT.heading, fontSize: '13px' }));
-    this.description = place('description', 183, 107, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', wordWrap: { width: 359 } }));
+    this.record = place('record', 183, 107, scene.add.text(0, 0, '', { ...TEXT.heading, fontSize: '11px' }));
+    this.description = place('description', 183, 125, scene.add.text(0, 0, '', { ...TEXT.body, fontSize: '10px', wordWrap: { width: 359 } }));
     COLLECTION_ITEMS.forEach((item, i) => {
       const button = place(`exhibit.${item.id}`, i < 3 ? 190 : 450, 181 + i % 3 * 38,
         new Button(scene, 0, 0, 226, 30, cropName(item.crop, item.variant), COLORS.serve, () => choose(item.id)).setFontSize(11)
@@ -51,6 +56,8 @@ export class MuseumExhibitPanel extends Phaser.GameObjects.Container {
     this.image.setVisible(!!item);
     if (item) this.image.setTexture(`art:${cropArtName(item.crop, item.variant)}`, 0);
     this.title.setText(item ? cropName(item.crop, item.variant) : words.empty);
+    this.plaque.setText(item ? formatCropWeight(cropRecord(state, item.id)).replace(' ', '') : '');
+    this.record.setText(item ? words.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '');
     this.description.setText(item ? collectionWords.descriptions[item.id] : words.emptyDescription);
     COLLECTION_ITEMS.forEach((entry, i) => this.choices[i].setEnabled(state.cropCollection.includes(entry.id) && entry.id !== exhibit));
   }

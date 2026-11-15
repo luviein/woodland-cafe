@@ -1,3 +1,4 @@
+import { cropRecord, formatCropWeight } from '../logic/cropWeights';
 import Phaser from 'phaser';
 import words from '../data/texts/museum.json';
 import { MUSEUM_CASE_PRICE, MUSEUM_EXPANSION_PRICES, MUSEUM_ROWS, museumColumns, museumDoor,
@@ -174,6 +175,13 @@ export class MuseumScene extends Phaser.Scene {
     this.closeModal();
   }
 
+  private addWeightPlaque(group: Phaser.GameObjects.Container, grams: number): void {
+    // The plaque travels with the case, including its Arrange preview.
+    group.add(this.add.text(0, -4, formatCropWeight(grams).replace(' ', ''), {
+      ...TEXT.body, fontSize: '6px', color: '#493026', backgroundColor: '#f2cea0', padding: { x: 1, y: 0 },
+    }).setOrigin(0.5).setName('weightPlaque'));
+  }
+
   private createCasePreview(offset: Point): void {
     this.caseGhost?.destroy(); this.grabOffset = offset;
     const item = getGameState(this).museum.cases.find(item => item.id === this.movingId);
@@ -183,6 +191,7 @@ export class MuseumScene extends Phaser.Scene {
     const exhibit = COLLECTION_ITEMS.find(entry => entry.id === item?.exhibit);
     if (exhibit) ghost.add(addArt(this, 0, -10, cropArtName(exhibit.crop, exhibit.variant) as ArtName).setOrigin(0.5, 1));
     ghost.add(addArt(this, 0, 0, 'museumGlass').setOrigin(0.5, 1));
+    if (exhibit) this.addWeightPlaque(ghost, cropRecord(getGameState(this), exhibit.id));
     ghost.add(this.add.rectangle(0, -16, 36, 36, 0, 0).setName('dropOutline').setStrokeStyle(2, 0x6eac52));
     this.caseGhost = ghost; this.room.add(ghost); this.room.sort('depth');
     if (item) (this.room.getByName(`museumCase.${item.id}`) as Phaser.GameObjects.Container | null)?.setAlpha(0.25);
@@ -287,6 +296,7 @@ export class MuseumScene extends Phaser.Scene {
       const exhibit = COLLECTION_ITEMS.find(entry => entry.id === item.exhibit);
       if (exhibit) group.add(addArt(this, 0, -10, cropArtName(exhibit.crop, exhibit.variant) as ArtName).setOrigin(0.5, 1));
       group.add(addArt(this, 0, 0, 'museumGlass').setOrigin(0.5, 1));
+      if (exhibit) this.addWeightPlaque(group, cropRecord(state, exhibit.id));
       group.add(this.add.rectangle(0, -16, 34, 34, 0, 0).setName('selection').setStrokeStyle(2, 0xffd56d)
         .setVisible(this.editing && item.id === this.movingId));
       group.setInteractive(new Phaser.Geom.Rectangle(-16, -32, 32, 32), Phaser.Geom.Rectangle.Contains).setData('museumCase', item.id);

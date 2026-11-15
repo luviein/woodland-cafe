@@ -170,7 +170,7 @@ export class GardenScene extends Phaser.Scene {
     if (stepped.finished) {
       this.cancelWork();
       const state = getGameState(this), roll = Math.random();
-      const next = finishGardenWork(state, work, Date.now(), activeCropEvent(new Date(), !!devSettings.allSeasons), roll);
+      const next = finishGardenWork(state, work, Date.now(), activeCropEvent(new Date(), !!devSettings.allSeasons), roll, Math.random);
       if (next === state) { this.hint.setText('That bed changed. Choose it again.'); return; }
       setGardenGameState(this, next);
       if (work.action === 'harvest') {

@@ -819,7 +819,7 @@ The dev console command `crop <mushroom|tomato|chilli> <normal|golden|christmas>
 
 ### Crop weights and museum records
 
-Every harvested unit (Ordinary, Golden or Seasonal, including doubled harvests) receives a permanent weight at completion. Use whole grams rounded to 10 g: 95% of draws span 0.50?2.00 kg and 5% span 2.00?5.00 kg. These ranges are provisional. Standard weight is 1.00 kg for every crop; existing crops, purchased ingredients, forage and unspecified dev gifts receive standard weight. Cancelled or completed actions never reroll stored crops.
+Every harvested unit (Ordinary, Golden or Seasonal, including doubled harvests) receives a permanent weight at completion. Use whole grams rounded to 10 g: 95% of draws span 0.50-2.00 kg and 5% span 2.00-5.00 kg. These ranges are provisional. Standard weight is 1.00 kg for every crop; existing crops, purchased ingredients, forage and unspecified dev gifts receive standard weight. Cancelled or completed actions never reroll stored crops.
 
 Christmas sales pay max(1, ceil(base tickets * grams / 1000)) per crop, retaining the 1/2/3 Mushroom/Tomato/Chilli rates at standard weight. Sell 1 consumes the lightest specimen; Sell All sums individual rounded payouts. Show weight ranges and sale previews. Cooking uses the lightest ordinary crops and keeps weights consistent with stock. Golden crops remain unsellable.
 
@@ -827,4 +827,4 @@ Donate 1 chooses the heaviest specimen. Upgrade consumes one only when it beats 
 
 Save version 18 adds compact nonstandard weight batches and donation records. Counts remain authoritative; unspecified units implicitly weigh 1.00 kg, avoiding enormous arrays for old stock or dev gifts. Validate batches against stock and validate record weights. Garden checkpoints save weight additions and donation upgrades without committing cafe consumption.
 
-The crop testing command accepts optional [kg] after quantity: crop mushroom christmas 3 3.24. Explicit weights must be 0.01?5.00 kg in whole grams. Omitted weight means 1.00 kg. The stock setter resets that ingredient's weights to standard.
+The crop testing command accepts optional [kg] after quantity: crop mushroom christmas 3 3.24. Explicit weights must be 0.01-5.00 kg in whole grams. Omitted weight means 1.00 kg. The stock setter resets that ingredient's weights to standard.
