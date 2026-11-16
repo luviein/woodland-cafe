@@ -35,9 +35,9 @@ export class BootScene extends Phaser.Scene {
       const frame = JOURNAL_IMAGE_FRAMES[name]!;
       this.textures.get(journalImageKey(name)).add('ribbon', 0, frame.x, frame.y, frame.width, frame.height);
     }
-    // These full-resolution ribbons include approved lettering. Smooth only
+    // These full-resolution images preserve approved artwork. Smooth only
     // their downscaling; critters, tiles and the rest of the pixel art stay crisp.
-    for (const name of ['goldenCollectorRibbon', 'christmasDevoteeRibbon', 'masterCollectorRibbon', 'masterCollectorWorldRibbon'] as const) {
+    for (const name of ['goldenCollectionBadge', 'christmasCollectionBadge', 'masterCollectorRibbon', 'masterCollectorWorldRibbon'] as const) {
       this.textures.get(journalImageKey(name)).setFilter(Phaser.Textures.FilterMode.LINEAR);
     }
     // Code-drawn art for everything that has no PNG (or whose PNG failed to load).

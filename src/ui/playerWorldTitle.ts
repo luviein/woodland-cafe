@@ -7,7 +7,7 @@ import { getGameState } from '../scenes/gameStore';
 import { layoutPoint } from '../layout/positions';
 import { addJournalImage, setJournalImage } from './journalImage';
 import { Button } from './Button';
-import { WORLD_TITLE_RIBBONS } from './titleArt';
+import { WORLD_TITLE_RIBBONS, titleDisplayWidth } from './titleArt';
 
 /** Separate from clothing: the title never turns, bobs or intercepts clicks. */
 export function attachPlayerWorldTitle(scene: Phaser.Scene, player: Phaser.GameObjects.Container, canShow: () => boolean = () => true): void {
@@ -19,7 +19,7 @@ export function attachPlayerWorldTitle(scene: Phaser.Scene, player: Phaser.GameO
     const title = state.journal.equippedTitle;
     ribbon.setVisible(player.visible && canShow() && title !== null);
     if (!ribbon.visible) return;
-    if (title) setJournalImage(ribbon, WORLD_TITLE_RIBBONS[title], 112);
+    if (title) setJournalImage(ribbon, WORLD_TITLE_RIBBONS[title], titleDisplayWidth(title, 'world'));
     let height = spriteSize(SPRITE_ART[state.animal]).height;
     if (state.outfit.hat) height = Math.max(height, spriteSize(SPRITE_ART[clothingArt(state.animal, state.outfit.hat)]).height);
     const world = player.getWorldTransformMatrix();

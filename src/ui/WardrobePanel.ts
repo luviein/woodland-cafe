@@ -14,7 +14,7 @@ import { SPRITE_ART } from '../art/spriteArt';
 import { getGameState, setGameState, equipJournalTitle, unlockJournalTitles } from '../scenes/gameStore';
 import { TITLE_IDS, titleProgress, titleUnlocked, type PlayerTitle } from '../logic/playerTitles';
 import { addJournalImage, setJournalImage } from './journalImage';
-import { TITLE_RIBBONS } from './titleArt';
+import { TITLE_RIBBONS, titleDisplayWidth } from './titleArt';
 import { addArt, artKey } from './art';
 import { Button } from './Button';
 import { COLORS, TEXT } from './theme';
@@ -26,7 +26,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
   private titlePage = 0;
   private readonly previousTitlePage: Button;
   private readonly nextTitlePage: Button;
-  private readonly titleRows: { title: PlayerTitle; button: Button; image: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text }[] = [];
+  private readonly titleRows: { title: PlayerTitle; button: Button; image: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; label: Phaser.GameObjects.Text }[] = [];
   private view = 0;
   private readonly cape: Phaser.GameObjects.Image;
   private readonly shoes: Phaser.GameObjects.Image;
@@ -73,7 +73,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     this.coat = place('previewCoat', 205, 234, scene.add.image(0, 0, artKey('santaCoat')).setOrigin(0.5, 1));
     this.cape = place('previewCape', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
     this.hat = place('previewHat', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
-    this.previewTitle = place('previewTitle', 205, 120, addJournalImage(scene, 0, 0, 'goldenCollectorRibbon').setVisible(false));
+    this.previewTitle = place('previewTitle', 205, 120, addJournalImage(scene, 0, 0, 'goldenCollectionBadge').setVisible(false));
     place('turnLeft', 147, 267, new Button(scene, 0, 0, 33, 30, '', COLORS.book, () => this.turn(-1)).setBackgroundVisible(false));
     place('turnRight', 251, 267, new Button(scene, 0, 0, 33, 30, '', COLORS.book, () => this.turn(1)).setBackgroundVisible(false));
     const tabSpecs = [
@@ -123,11 +123,12 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
         equipJournalTitle(scene, state.journal.equippedTitle === title ? null : title);
         this.refresh();
       }).setBackgroundVisible(false));
-      const image = place(`title.${title}.ribbon`, 426, y - 8, addJournalImage(scene, 0, 0, TITLE_RIBBONS[title]));
-      const label = place(`title.${title}.status`, 426, y + 24, scene.add.text(0, 0, '', {
+      const image = place(`title.${title}.ribbon`, title === 'masterCollector' ? 426 : 348, y - 2, addJournalImage(scene, 0, 0, TITLE_RIBBONS[title]));
+      const name = place(`title.${title}.name`, 380, y - 9, scene.add.text(0, 0, titleWords[title], { ...TEXT.body, fontFamily: 'Consolas, monospace', resolution: 2, fontSize: '11px', color: '#493026' }).setOrigin(0, 0.5));
+      const label = place(`title.${title}.status`, 426, y + 22, scene.add.text(0, 0, '', {
         ...TEXT.body, fontFamily: 'Consolas, monospace', resolution: 2, fontSize: '10px', color: '#493026',
       }).setOrigin(0.5));
-      this.titleRows.push({ title, button, image, label });
+      this.titleRows.push({ title, button, image, name, label });
     });
     this.previousTitlePage = place('title.previousPage', 330, 90,
       new Button(scene, 0, 0, 20, 16, titleWords.previous, COLORS.book, () => { this.titlePage--; this.refresh(); }).setFontSize(10));
@@ -186,7 +187,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const scale = Math.min(3, Math.floor(84 / height));
     this.critterImage.setTexture(artKey(animal), frame).setScale(scale);
     this.previewTitle.setVisible(title !== null);
-    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], 128)
+    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], titleDisplayWidth(title, 'preview'))
       .setPosition(this.critterImage.x, Math.round(this.critterImage.y - height * scale - 6 - this.previewTitle.displayHeight / 2));
     const layers = { hat: this.hat, top: this.coat, cape: this.cape, shoes: this.shoes };
     for (const slot of CLOTHING_SLOTS) {
@@ -227,6 +228,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
       const visible = this.slot === 'titles' && index >= 0 && Math.floor(index / 2) === this.titlePage;
       row.button.setVisible(visible).setEnabled(unlocked);
       row.image.setVisible(visible).setAlpha(unlocked ? 1 : 0.45);
+      row.name.setVisible(visible && row.title !== 'masterCollector');
       const progress = titleProgress(state, row.title);
       row.label.setVisible(visible).setText(equipped ? titleWords.equipped + ' · ' + titleWords.remove
         : unlocked ? titleWords.unlocked : `${titleWords.locked}: ${progress.current} / ${progress.target} · ${row.title === 'goldenCollector' ? titleWords.goldenCrops : titleWords.cropsFurniture}`);
