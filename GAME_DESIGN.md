@@ -921,8 +921,9 @@ screen without replacing an existing save. Save the name permanently.
 Existing saves without a name ask once when Continue is selected, preserving
 all progress; damaged saves retain the existing rejection policy.
 
-Display the readable name above the character even with no badge equipped.
-Place the equipped collection badge to its left, centred as one group, clear
-of hats, screen edges and controls. Show the same pairing in the wardrobe
+Display the readable name below the character even with no badge equipped.
+Keep the name itself horizontally centred under the character, with the
+equipped collection badge to its left and a 10px gap below the feet. Never
+switch the world nameplate above the character. Show the same pairing in the wardrobe
 without resizing the animal. This is a local display name, not an online
 identity or unique multiplayer username.
