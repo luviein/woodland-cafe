@@ -911,3 +911,18 @@ Keep all other clothing and previously earned progress intact.
 ### Independent museum case selection
 
 Each case contains at most one crop entry, and each entry is displayed in at most one case. Disable choices already displayed in another case and reject duplicate assignments in pure logic; never silently transfer an exhibit. Clearing an empty or occupied case leaves all other cases unchanged. The chooser explains this restriction. Collection headers and recorded cards use subtle, consistent borders; full-colour art and best weights identify recorded entries. Plaque units use a recognisable lowercase g with a descender and enough bottom padding.
+
+### Player names and collection badges
+
+Before a new game begins, ask for a player name of 1–16 Unicode characters.
+Trim surrounding whitespace, collapse repeated spaces and reject control
+characters or empty input. Enter confirms; Cancel/Esc returns to the title
+screen without replacing an existing save. Save the name permanently.
+Existing saves without a name ask once when Continue is selected, preserving
+all progress; damaged saves retain the existing rejection policy.
+
+Display the readable name above the character even with no badge equipped.
+Place the equipped collection badge to its left, centred as one group, clear
+of hats, screen edges and controls. Show the same pairing in the wardrobe
+without resizing the animal. This is a local display name, not an online
+identity or unique multiplayer username.
