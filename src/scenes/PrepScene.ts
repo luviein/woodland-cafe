@@ -101,7 +101,9 @@ export class PrepScene extends Phaser.Scene {
   /** Layers, bottom first. */
   private drafts: { layers: IngredientId[]; toast: DishToast; ready: boolean }[] = [];
   private active = 0;
-  private requestButtons: Button[] = [];
+  private previousRequest: Button | null = null;
+  private nextRequest: Button | null = null;
+  private requestCounter: Phaser.GameObjects.Text | null = null;
   private customerViews: Phaser.GameObjects.Container[] = [];
   private speech: string[][] = [];
   private serveAllButton: Button | null = null;
@@ -154,7 +156,9 @@ export class PrepScene extends Phaser.Scene {
     // same scene object every time prep opens, and initialisers run only once.
     this.active = 0;
     this.drafts = this.request.items.map(() => ({ layers: [], toast: untoasted(), ready: false }));
-    this.requestButtons = [];
+    this.previousRequest = null;
+    this.nextRequest = null;
+    this.requestCounter = null;
     this.customerViews = [];
     this.serveAllButton = null;
     this.speech = this.request.items.map(item => buildSpeech(item.order, hintRatioForDay(getGameState(this).day)));
@@ -444,12 +448,15 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private createMealControls(): void {
-    this.request.items.forEach((_, i) => {
-      const point = at('request.' + i, 155 + i * 92, 126);
-      const button = new Button(this, point.x, point.y, 86, 22, '', COLORS.book, () => this.selectRequest(i)).setFontSize(11);
-      this.requestButtons.push(button);
-      arrangeable(this, 'prep', 'request.' + i, point, button);
-    });
+    const previous = at('previousRequest', 176, 126);
+    this.previousRequest = new Button(this, previous.x, previous.y, 32, 24, mealWords.previous, COLORS.book, () => this.selectRequest(this.active - 1));
+    arrangeable(this, 'prep', 'previousRequest', previous, this.previousRequest);
+    const counter = at('requestCounter', 300, 126);
+    this.requestCounter = this.add.text(counter.x, counter.y, '', TEXT.body).setColor(css(COLORS.paper)).setOrigin(0.5);
+    arrangeable(this, 'prep', 'requestCounter', counter, this.requestCounter);
+    const next = at('nextRequest', 424, 126);
+    this.nextRequest = new Button(this, next.x, next.y, 32, 24, mealWords.next, COLORS.book, () => this.selectRequest(this.active + 1));
+    arrangeable(this, 'prep', 'nextRequest', next, this.nextRequest);
     const point = at('serveTogether', 560, 164);
     this.serveAllButton = new Button(this, point.x, point.y, 112, 30, mealWords.serveTogether, COLORS.serve, () => this.deliver()).setFontSize(12);
     arrangeable(this, 'prep', 'serveTogether', point, this.serveAllButton);
@@ -458,7 +465,7 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private selectRequest(index: number): void {
-    if (this.busy || this.dragged || this.toast.place !== 'plate') return;
+    if (this.busy || this.dragged || this.toast.place !== 'plate' || index < 0 || index >= this.request.items.length) return;
     this.active = index;
     this.customerViews.forEach((view, i) => view.setVisible(i === index));
     this.bubble.setLines(this.speech[index]);
@@ -546,13 +553,11 @@ export class PrepScene extends Phaser.Scene {
     );
     this.resetButton.setEnabled(hasItems);
     if (this.request.items.length > 1) this.serveButton.setText(this.drafts[this.active].ready ? mealWords.held : mealWords.ready);
-    this.requestButtons.forEach((button, i) => {
-      const item = this.request.items[i];
-      const animal = [...new Set(this.request.items.map(item => item.customerId))].indexOf(item.customerId) + 1;
-      const dish = this.request.items.slice(0, i + 1).filter(other => other.customerId === item.customerId).length;
-      button.setText((i === this.active ? mealWords.selected : '') + mealWords.request.replace('{animal}', String(animal)).replace('{dish}', String(dish)) + (this.drafts[i].ready ? mealWords.readyMark : ''));
-      button.setEnabled(!this.busy && !this.dragged && onPlate);
-    });
+    const canBrowse = !this.busy && !this.dragged && onPlate;
+    this.previousRequest?.setEnabled(canBrowse && this.active > 0);
+    this.nextRequest?.setEnabled(canBrowse && this.active < this.request.items.length - 1);
+    this.requestCounter?.setText(mealWords.counter.replace('{current}', String(this.active + 1)).replace('{total}', String(this.request.items.length))
+      + (this.drafts[this.active].ready ? mealWords.readyMark : ''));
     this.serveAllButton?.setEnabled(!this.busy && !this.dragged && mealReady(this.request.items, this.plates()));
     this.refreshBins();
   }
