@@ -927,3 +927,42 @@ equipped collection badge to its left and a 2px gap below the feet. Never
 switch the world nameplate above the character. Show the same pairing in the wardrobe
 without resizing the animal. This is a local display name, not an online
 identity or unique multiplayer username.
+
+### Customer pairs and independently chosen dishes
+
+Normal arrivals have a 25% chance to be a pair, otherwise a solo animal.
+Groups contain at most two animals and occupy consecutive queue spots; only
+spawn a pair when both spots fit and the room has a table with two reachable
+seats. The guided tutorial customer remains solo with one fixed dish.
+Take a pair's orders together only once both have reached their queue spots.
+Reserve two clean, reachable seats at the same table atomically; two free
+seats at different tables are insufficient. If unavailable, keep waiting.
+
+Each animal independently has a 25% chance to request a second random dish,
+without requiring the Serving Tray. Choose each dish's recipe, extras and
+unlocked modifiers independently; repeats are allowed. This replaces the
+legacy identical-double-order behaviour in live cafe visits. Thus solo visits
+need one or two plates and pairs need two to four. Queueing uses no patience.
+The party shares a patience budget of 25 seconds per requested plate, starting
+when orders are taken, and waits at the counter until every plate is ready.
+If time runs out, the whole party leaves unpaid and seats are freed.
+
+Prep keeps customer speech as the recipe clue. Numbered request controls
+identify animal and dish, without revealing hinted recipes; switch freely
+between requests while preserving each unfinished plate and its toast state.
+Use Ready to hold a finished plate, and Serve together only when every plate
+is ready. Prepared plates reserve ingredients and rush costs without paying
+or consuming stock yet. Reset/edit returns those reservations. Check stock
+and affordable rush costs for the entire party before accepting orders; if
+unmakeable, the whole party leaves and each counts as out of stock.
+
+On serving, consume all prepared ingredients once before crediting payments.
+Score plates separately; an animal's worst plate decides their reaction and
+served-summary category. If either of their plates is wrong, that animal pays
+nothing and leaves without eating. Otherwise pay for both dishes with tips
+based on the shared remaining patience. Their companion is scored independently.
+After reactions, release both animals together towards their reserved seats;
+each leaves their own mess after eating. Day-summary served counts remain
+per animal, with prices, tips and ingredient use counted once per plate.
+All party, request and prep state is transient cafe-day state; save files and
+between-day checkpoints keep their existing format and behaviour.
