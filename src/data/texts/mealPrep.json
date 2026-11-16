@@ -1,0 +1,12 @@
+{
+  "ready": "Ready",
+  "held": "Ready!",
+  "serveTogether": "Serve together",
+  "request": "{animal}.{dish}",
+  "selected": "> ",
+  "readyMark": " Ready",
+  "hint": "Animal.dish: Ready each plate, then serve together",
+  "keys": "Enter: ready / serve",
+  "noPairSeats": "Need two clean seats at one table!",
+  "reaction": "Animal {animal}: {line}"
+}

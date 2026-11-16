@@ -7,6 +7,9 @@ import {
   countGaveUp,
   createFloorState,
   customerAtCounter,
+  customerParty,
+  customerOrders,
+  findPartySeats,
   hasFreeSeat,
   messySeatsAt,
   queueCapacity,
@@ -48,6 +51,7 @@ const CONFIG: FloorConfig = {
   playerSpeed: 6,
   customerSpeed: 10,
   firstCustomerDelay: 0.5,
+  pairChance: 0,
   spawnIntervalMin: 1000,
   spawnIntervalMax: 1000,
   eatSecondsMin: 2,
@@ -610,5 +614,115 @@ describe('the tutorial guided start (GAME_DESIGN.md §5.9)', () => {
     const waiting = { ...start(), customers: [customer(1, TINY.orderSpot, { phase: 'queued' })], queue: [1] };
     const taken = takeOrder(waiting, TINY, OWNED, seededRng(1), () => ({ recipeId: 'jamBread', modifiers: [], quantity: 1 }));
     expect(find(taken.floor, 1)?.order).toEqual({ recipeId: 'jamBread', modifiers: [], quantity: 1 });
+  });
+});
+
+
+describe('two-animal visits', () => {
+  const pairConfig: FloorConfig = { ...CONFIG, pairChance: 1 };
+  const pair = (): FloorState => ({ ...start(), spawnTimer: 1000, nextCustomerId: 3, queue: [1, 2], customers: [
+    customer(1, TINY.orderSpot, { partyId: 1, patience: 25 }),
+    customer(2, SPOT_1, { partyId: 1, patience: 25 }),
+  ] });
+  const plain = () => ({ recipeId: 'plainBread' as const, modifiers: [], quantity: 1 });
+
+  it('keeps group and seat invariants throughout a busy cafe day', () => {
+    const cafe = parseLayout(CAFE_LAYOUT);
+    const busy = { ...pairConfig, spawnIntervalMin: 0.5, spawnIntervalMax: 1 };
+    let seenPair = false;
+    run(createFloorState(busy), 120, { layout: cafe, config: busy, check: state => {
+      expect(state.queue.length).toBeLessThanOrEqual(queueCapacity(cafe));
+      expect(new Set(state.queue).size).toBe(state.queue.length);
+      const reserved = state.customers.flatMap(c => c.seat ? [pointKey(c.seat.seat)] : []);
+      expect(new Set(reserved).size).toBe(reserved.length);
+      for (const c of state.customers) {
+        const party = customerParty(state, c.id);
+        expect(party.length).toBeLessThanOrEqual(2);
+        if (party.length === 2) seenPair = true;
+        if (c.phase === 'ordered' || c.phase === 'served') {
+          expect(customerParty(state, state.queue[0]).map(c => c.id)).toContain(c.id);
+          expect(c.seat).not.toBeNull();
+          expect(state.messySeats).not.toContain(pointKey(c.seat!.seat));
+        }
+        const seated = party.filter(c => c.seat !== null);
+        if (seated.length === 2) expect(seated[0].seat!.tableId).toBe(seated[1].seat!.tableId);
+      }
+    } });
+    expect(seenPair).toBe(true);
+  });
+
+  it('spawns pairs atomically, but keeps the tutorial solo and never overfills the queue', () => {
+    const spawned = stepFloor(createFloorState(pairConfig), TINY, 0.5, () => 0, pairConfig);
+    expect(spawned.queue).toEqual([1, 2]);
+    expect(spawned.customers.map(c => c.partyId)).toEqual([1, 1]);
+    expect(spawned.nextCustomerId).toBe(3);
+    const guided = stepFloor({ ...createFloorState(pairConfig), guide: 'one' }, TINY, 0.5, () => 0, pairConfig);
+    expect(guided.queue).toHaveLength(1);
+    const crowded = { ...pair(), spawnTimer: 0 };
+    expect(stepFloor(crowded, TINY, 0, () => 0, pairConfig).queue).toHaveLength(3);
+    const oneSeatTables = { ...TINY, tables: TINY.tables.flatMap(t => t.seats.map((seat, i) => ({ ...t, id: t.id + i, seats: [seat] }))) };
+    expect(stepFloor(createFloorState(pairConfig), oneSeatTables, 0.5, () => 0, pairConfig).queue).toHaveLength(1);
+  });
+
+  it('waits for both queue members and reserves two seats together without changing its input', () => {
+    const before = pair();
+    const snapshot = structuredClone(before);
+    const moving = { ...before, customers: before.customers.map((c, i) => i === 1 ? { ...c, walker: { ...c.walker, path: [SPOT_1] } } : c) };
+    expect(takeOrder(moving, TINY, OWNED, () => 0, plain).result).toBe('notReady');
+    const taken = takeOrder(before, TINY, OWNED, () => 0, plain);
+    expect(taken.result).toBe('ordered');
+    expect(taken.floor.customers.map(c => c.phase)).toEqual(['ordered', 'ordered']);
+    expect(new Set(taken.floor.customers.map(c => c.seat!.tableId)).size).toBe(1);
+    expect(new Set(taken.floor.customers.map(c => pointKey(c.seat!.seat))).size).toBe(2);
+    expect(taken.floor.customers.map(c => c.patience)).toEqual([50, 50]);
+    expect(before).toEqual(snapshot);
+  });
+
+  it('refuses a pair if only one seat is clean, or the two free seats belong to different tables', () => {
+    const dirty = { ...pair(), messySeats: [LEFT] };
+    expect(takeOrder(dirty, TINY, OWNED, () => 0, plain)).toEqual({ floor: dirty, result: 'noSeat' });
+    const split = { ...TINY, tables: TINY.tables.flatMap(t => t.seats.map((seat, i) => ({ ...t, id: t.id + i, seats: [seat] }))) };
+    expect(findPartySeats(pair(), split, 2)).toBeNull();
+    expect(hasFreeSeat(pair(), split)).toBe(false);
+  });
+
+  it('checks combined stock without using one animal payment to fund the next', () => {
+    const game = { ...OWNED, stock: { ...OWNED.stock, bread: 1 }, leaves: 0 };
+    const before = pair();
+    const taken = takeOrder(before, TINY, game, () => 0, plain);
+    expect(taken.result).toBe('outOfStock');
+    expect(taken.floor.queue).toEqual([]);
+    expect(taken.floor.customers.every(c => c.upset && c.phase === 'leaving' && c.seat === null)).toBe(true);
+    expect(countGaveUp(before, taken.floor)).toBe(2);
+    expect(game.stock.bread).toBe(1);
+  });
+
+  it('can request four independently cooked dishes with shared patience', () => {
+    const taken = takeOrder(pair(), TINY, OWNED, () => 0);
+    expect(taken.result).toBe('ordered');
+    expect(taken.floor.customers.map(c => customerOrders(c).length)).toEqual([2, 2]);
+    expect(taken.floor.customers.map(c => c.patience)).toEqual([100, 100]);
+  });
+
+  it('expires both together, frees both seats and advances the queue', () => {
+    const ordered = takeOrder(pair(), TINY, OWNED, () => 0, plain).floor;
+    const expiring = { ...ordered, customers: [...ordered.customers.map(c => ({ ...c, patience: 0.01 })), customer(3, TINY.queueSpots[1], {})], queue: [1, 2, 3] };
+    const after = step(expiring);
+    expect(after.queue).toEqual([3]);
+    expect(customerParty(after, 1).every(c => c.phase === 'leaving' && c.seat === null && c.upset)).toBe(true);
+    expect(countGaveUp(expiring, after)).toBe(2);
+    expect(takeOrder(after, TINY, OWNED, () => 0, plain).result).toBe('notReady');
+    expect(serveCustomer(after, 1, 'perfect')).toBe(after);
+  });
+
+  it('releases companions to their shared table and leaves one mess per animal', () => {
+    let state = takeOrder(pair(), TINY, OWNED, () => 0, plain).floor;
+    for (const id of [1, 2]) state = serveCustomer(state, id, 'perfect');
+    for (const id of [1, 2]) state = releaseCustomer(state, TINY, id);
+    expect(state.queue).toEqual([]);
+    state = run(state, 8, { autoOrder: false, autoServe: false });
+    expect(new Set(state.messySeats)).toEqual(new Set([LEFT, RIGHT]));
+    const snapshot = state;
+    expect(releaseCustomer(state, TINY, 1)).toBe(snapshot);
   });
 });

@@ -1,9 +1,9 @@
 import { FLOOR_CONFIG, type FloorConfig } from '../data/floorConfig';
 import { pointKey, samePoint, type Layout, type Point, type Table } from './layout';
-import { generateOrder, type Owned } from './orders';
+import { generateCustomerOrders, generateOrder, type Owned } from './orders';
 import { findPathNextTo } from './pathfinding';
 import { between, type Rng } from './random';
-import { canMakeOrder, type Pantry } from './stock';
+import { orderIngredients, planIngredients, type Pantry } from './stock';
 import type { Order, Score } from './types';
 import {
   createWalker,
@@ -37,6 +37,11 @@ export interface SeatRef {
 
 export interface Customer {
   id: number;
+  /** Shared arrival id for pairs; absent for solo and legacy test fixtures. */
+  partyId?: number;
+  /** Independently chosen plates; order remains the first plate for old readers. */
+  orders?: Order[];
+  patienceTotal?: number;
   walker: Walker;
   phase: CustomerPhase;
   /** Seconds left in a timed phase (only eating, for now). */
@@ -46,8 +51,8 @@ export interface Customer {
   /** How their dish scored; set when served. Decides where they go on release. */
   score: Score | null;
   /**
-   * Seconds of patience left. Counts down at a fixed rate while queued and
-   * ordered (even while the order is being made); stops once served.
+   * Seconds of patience left. Counts down while ordered, including cooking;
+   * queueing is free and serving stops it.
    */
   patience: number;
   /** The seat this customer has reserved, from ordering until leaving it. */
@@ -158,19 +163,26 @@ export function stepFloor(
   if (state.guide !== 'hold') spawnTimer -= seconds;
   const mayCome = state.guide === null || (state.guide === 'one' && nextCustomerId === 1);
   if (state.doorsOpen && mayCome && spawnTimer <= 0 && queue.length < queueCapacity(layout)) {
-    const id = nextCustomerId++;
-    customers.push({
-      id,
-      walker: createWalker(layout.door), // pass 5 sends them to their queue spot
-      phase: 'queued',
-      timer: 0,
-      order: null,
-      score: null,
-      patience: config.patienceSeconds,
-      seat: null,
-      upset: false,
-    });
-    queue.push(id);
+    const pair = state.guide === null && queueCapacity(layout) - queue.length >= 2
+      && layout.tables.some(t => t.seats.filter(s => routeToSeat(layout, layout.orderSpot, s) !== null).length >= 2)
+      && rng() < config.pairChance;
+    const partyId = nextCustomerId;
+    for (let member = 0; member < (pair ? 2 : 1); member++) {
+      const id = nextCustomerId++;
+      customers.push({
+        id,
+        ...(pair ? { partyId } : {}),
+        walker: createWalker(layout.door), // pass 5 sends them to their queue spot
+        phase: 'queued',
+        timer: 0,
+        order: null,
+        score: null,
+        patience: config.patienceSeconds,
+        seat: null,
+        upset: false,
+      });
+      queue.push(id);
+    }
     // Read from the config every time, so `set mascotIntervalMultiplier` applies live.
     const scale = state.mascot ? config.mascotIntervalMultiplier : 1;
     spawnTimer = between(config.spawnIntervalMin, config.spawnIntervalMax, rng) * scale;
@@ -184,6 +196,10 @@ export function stepFloor(
     const inQueue = queue.indexOf(c.id);
     if (inQueue >= 0) queue.splice(inQueue, 1);
   };
+
+  // A pair waits for the same delivery, so neither can be stranded alone.
+  const expired = new Set(customers.filter(c => c.phase === 'ordered' && c.patience <= 0).map(c => c.partyId ?? c.id));
+  for (const c of customers) if (c.phase === 'ordered' && expired.has(c.partyId ?? c.id)) leave(c, true);
 
   // 3. Each customer reacts to their own situation.
   const walkedOut = new Set<number>();
@@ -262,7 +278,42 @@ export function customerAtCounter(state: FloorState, layout: Layout): Customer |
   const front = state.customers.find((c) => c.id === state.queue[0]);
   const ready =
     front?.phase === 'queued' && !isMoving(front.walker) && samePoint(front.walker.tile, layout.orderSpot);
-  return ready ? front : null;
+  if (!ready) return null;
+  return customerParty(state, front.id).every(c => !isMoving(c.walker)
+    && samePoint(c.walker.tile, queuePosition(layout, state.queue.indexOf(c.id)))) ? front : null;
+}
+
+/** A solo visit or the two animals that arrived together, in queue order. */
+export function customerParty(state: FloorState, customerId: number): Customer[] {
+  const customer = state.customers.find(c => c.id === customerId);
+  if (!customer) return [];
+  return customer.partyId === undefined ? [customer] : state.customers.filter(c => c.partyId === customer.partyId);
+}
+
+export function customerOrders(customer: Customer): Order[] {
+  return customer.orders ?? (customer.order ? [customer.order] : []);
+}
+
+/** All seats must be reachable, clean, unreserved and at the same table. */
+export function findPartySeats(state: FloorState, layout: Layout, size: number): SeatRef[] | null {
+  if (size === 1) {
+    const seat = findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot);
+    return seat ? [seat] : null;
+  }
+  let best: SeatRef[] | null = null;
+  let bestSteps = Infinity;
+  for (const table of layout.tables) {
+    const seats = table.seats.filter(seat => !state.messySeats.includes(pointKey(seat))
+      && !state.customers.some(c => c.seat && samePoint(c.seat.seat, seat)))
+      .map(seat => ({ seat, route: routeToSeat(layout, layout.orderSpot, seat) }))
+      .filter(s => s.route !== null).sort((a, b) => a.route!.length - b.route!.length).slice(0, size);
+    const steps = seats.reduce((sum, s) => sum + s.route!.length, 0);
+    if (seats.length === size && steps < bestSteps) {
+      best = seats.map(s => ({ tableId: table.id, seat: s.seat }));
+      bestSteps = steps;
+    }
+  }
+  return best;
 }
 
 /**
@@ -292,26 +343,25 @@ export function takeOrder(
 ): { floor: FloorState; result: TakeOrderResult } {
   const front = customerAtCounter(state, layout);
   if (!front) return { floor: state, result: 'notReady' };
-  const seat = findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot);
-  if (!seat) return { floor: state, result: 'noSeat' };
-
-  const order = pickOrder(game, rng);
-  if (!canMakeOrder(game, order)) {
-    // They keep the order, so the scene can say what ran out.
-    const left: Customer = {
-      ...front,
-      order,
-      phase: 'leaving',
-      upset: true,
-      walker: walkTo(front.walker, layout, layout.door),
-    };
-    return {
-      floor: { ...replaceCustomer(state, left), queue: state.queue.filter((id) => id !== front.id) },
-      result: 'outOfStock',
-    };
-  }
-  const ordered: Customer = { ...front, seat, phase: 'ordered', order };
-  return { floor: replaceCustomer(state, ordered), result: 'ordered' };
+  const party = customerParty(state, front.id);
+  const seats = findPartySeats(state, layout, party.length);
+  if (!seats) return { floor: state, result: 'noSeat' };
+  const orders = party.map(() => pickOrder === generateOrder ? generateCustomerOrders(game, rng) : [pickOrder(game, rng)]);
+  const canMake = planIngredients(game, orders.flat().flatMap(orderIngredients)) !== null;
+  const patience = front.patience * orders.flat().length;
+  const changed = party.map((c, i): Customer => ({
+    ...c, orders: orders[i], order: orders[i][0],
+    phase: canMake ? 'ordered' : 'leaving',
+    seat: canMake ? seats[i] : null, upset: !canMake,
+    patience, patienceTotal: patience,
+    walker: canMake ? c.walker : walkTo(c.walker, layout, layout.door),
+  }));
+  const ids = new Set(party.map(c => c.id));
+  return {
+    floor: { ...state, customers: state.customers.map(c => changed.find(o => o.id === c.id) ?? c),
+      queue: canMake ? state.queue : state.queue.filter(id => !ids.has(id)) },
+    result: canMake ? 'ordered' : 'outOfStock',
+  };
 }
 
 /**
@@ -420,7 +470,7 @@ export function findFreeSeat(
 
 /** True if at least one clean seat is free, i.e. the front customer could order. */
 export function hasFreeSeat(state: FloorState, layout: Layout): boolean {
-  return findFreeSeat(layout, new Set(state.messySeats), state.customers, layout.orderSpot) !== null;
+  return findPartySeats(state, layout, customerParty(state, state.queue[0]).length || 1) !== null;
 }
 
 /**

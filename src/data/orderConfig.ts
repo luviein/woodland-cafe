@@ -1,15 +1,15 @@
 // Tuning knobs for order generation. Kept as plain data so later milestones
 // (day cycle) can swap in harder values as days go on.
-export interface OrderConfig {
+export type OrderConfig = {
   /** Chance (0-1) that each eligible, unlocked modifier gets added to an order. */
   modifierChance: number;
   /** Chance of requesting one additional owned filling. */
   extraIngredientChance: number;
   /** Upper limit on modifiers per order, so orders stay readable. */
   maxModifiers: number;
-  /** Chance (0-1) of a double order once the Serving Tray is owned. */
+  /** Chance (0-1) of a second independent dish in live cafe visits. */
   doubleOrderChance: number;
-}
+};
 
 export const ORDER_CONFIG: OrderConfig = {
   modifierChance: 0.4,

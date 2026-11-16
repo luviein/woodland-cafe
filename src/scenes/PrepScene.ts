@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import mealWords from '../data/texts/mealPrep.json';
 import type { Outfit } from '../logic/wardrobe';
 import { outfitImages } from '../ui/sprites';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
@@ -6,8 +7,8 @@ import { INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { devActions } from '../debug/devActions';
 import { buildGaveUp, buildReaction, buildSpeech, hintRatioForDay } from '../logic/dialogue';
 import { availableRecipes, expectedPlate } from '../logic/orders';
-import { computePayment, type Payment } from '../logic/payment';
-import { scoreDish } from '../logic/scoreDish';
+import type { Payment } from '../logic/payment';
+import { mealPantry, mealReady, worstScore, type MealItem, type MealPlate, type MealServing } from '../logic/meal';
 import { binStatus, type BinStatus } from '../logic/stock';
 import {
   canToast,
@@ -19,7 +20,6 @@ import {
   untoasted,
   type DishToast,
 } from '../logic/toasting';
-import type { Order, ScoreResult } from '../logic/types';
 import { SPRITE_ART, type CustomerArt } from '../art/spriteArt';
 import { spriteSize } from '../art/pixelSprite';
 import { playSound } from '../audio/audio';
@@ -70,11 +70,7 @@ const PATIENCE_BAR = { width: 80, height: 8 };
  * customers, prep just cooks and reports back.
  */
 export interface PrepRequest {
-  order: Order;
-  /** So the customer behind the counter is the same animal as on the floor. */
-  art: CustomerArt;
-  /** The same festive outfit as their floor sprite, fixed for this visit. */
-  outfit?: Outfit;
+  items: (MealItem & { art: CustomerArt; outfit?: Outfit })[];
   /** Patience left, 0..1, read every frame for the bar. The floor keeps it ticking. */
   patience: () => number;
   /** The day clock, read every frame: the day keeps going while the player cooks. */
@@ -83,7 +79,7 @@ export interface PrepRequest {
    * Called once, when the player serves, with what the customer pays and
    * the plate's layers (the floor uses them up from stock).
    */
-  onServe: (result: ScoreResult, payment: Payment, plate: readonly IngredientId[]) => void;
+  onServe: (plates: readonly MealPlate[], forcedScore?: import('../logic/types').Score) => readonly MealServing[] | null;
   /** Called when the prep station has closed and the floor is back. */
   onClose: () => void;
 }
@@ -103,11 +99,22 @@ export interface PrepRequest {
 export class PrepScene extends Phaser.Scene {
   private request!: PrepRequest;
   /** Layers, bottom first. */
-  private dish: IngredientId[] = [];
+  private drafts: { layers: IngredientId[]; toast: DishToast; ready: boolean }[] = [];
+  private active = 0;
+  private requestButtons: Button[] = [];
+  private customerViews: Phaser.GameObjects.Container[] = [];
+  private speech: string[][] = [];
+  private serveAllButton: Button | null = null;
+  private get current() { return this.request.items[this.active]; }
+  private get dish(): IngredientId[] { return this.drafts[this.active].layers; }
+  private set dish(layers: IngredientId[]) { this.drafts[this.active].layers = layers; }
+  private get toast(): DishToast { return this.drafts[this.active].toast; }
+  private set toast(toast: DishToast) { this.drafts[this.active].toast = toast; }
+  private plates(): MealPlate[] {
+    return this.drafts.map(d => ({ layers: d.layers, modifiers: toastModifiers(d.toast), ready: d.ready }));
+  }
   /** True once the customer is reacting (served, or gave up); input is ignored. */
   private busy = false;
-  /** The dish's trip through the toaster (logic/toasting.ts). */
-  private toast: DishToast = untoasted();
   /** Only there once the Toaster has been bought. */
   private toaster: ToasterView | null = null;
   /** The copy of the dish following the pointer while it's dragged; null when not dragging. */
@@ -145,7 +152,12 @@ export class PrepScene extends Phaser.Scene {
   create(): void {
     // Reset state here, not only in field initialisers: Phaser reuses the
     // same scene object every time prep opens, and initialisers run only once.
-    this.dish = [];
+    this.active = 0;
+    this.drafts = this.request.items.map(() => ({ layers: [], toast: untoasted(), ready: false }));
+    this.requestButtons = [];
+    this.customerViews = [];
+    this.serveAllButton = null;
+    this.speech = this.request.items.map(item => buildSpeech(item.order, hintRatioForDay(getGameState(this).day)));
     this.busy = false;
     this.toast = untoasted();
     this.toaster = null;
@@ -160,8 +172,13 @@ export class PrepScene extends Phaser.Scene {
     // cover the whole screen, hiding the floor underneath.
     this.drawWall();
     this.customerAt = at('customer', 64, COUNTER_TOP_Y - 30);
-    const customer = this.drawCustomer(this.customerAt.x, this.customerAt.y);
-    arrangeable(this, 'prep', 'customer', this.customerAt, customer);
+    const selected = this.active;
+    this.request.items.forEach((_, i) => {
+      this.active = i;
+      this.customerViews.push(this.drawCustomer(this.customerAt.x, this.customerAt.y).setVisible(i === 0));
+    });
+    this.active = selected;
+    arrangeable(this, 'prep', 'customer', this.customerAt, ...this.customerViews);
     this.drawCounter();
     // The bar is redrawn every frame at (0, 0) of its own; it's moved by moving the Graphics.
     const bar = at('patience', 24, COUNTER_TOP_Y + 12);
@@ -174,7 +191,7 @@ export class PrepScene extends Phaser.Scene {
     this.bubble = new SpeechBubble(this, this.bubbleAt.x, this.bubbleAt.y, BUBBLE.width, BUBBLE.height);
     arrangeable(this, 'prep', 'bubble', this.bubbleAt, this.bubble, ...sizeBox(this, this.bubbleAt.x, this.bubbleAt.y, BUBBLE.width, BUBBLE.height));
     // Hints get more common as the days go by (data/hintConfig.ts).
-    this.bubble.setLines(buildSpeech(this.request.order, hintRatioForDay(getGameState(this).day)));
+    this.bubble.setLines(this.speech[0]);
     this.plateAt = at('plate', 320, 214);
     this.dishView = new DishView(this, this.plateAt.x, this.plateAt.y);
     const area = plateArea(this.plateAt);
@@ -191,9 +208,10 @@ export class PrepScene extends Phaser.Scene {
       this.resetDish(),
     );
     arrangeable(this, 'prep', 'reset', resetAt, this.resetButton);
+    if (this.request.items.length > 1) this.createMealControls();
     // Shortcut hint, so PC players can discover the keys (bins show their own numbers).
     const keysAt = at('keys', 544, 332);
-    arrangeable(this, 'prep', 'keys', keysAt, this.add.text(keysAt.x, keysAt.y, 'Enter: serve  Bksp: reset', TEXT.label).setOrigin(0.5, 0));
+    arrangeable(this, 'prep', 'keys', keysAt, this.add.text(keysAt.x, keysAt.y, this.request.items.length > 1 ? mealWords.keys : 'Enter: serve  Bksp: reset', TEXT.label).setOrigin(0.5, 0));
 
     // Created after the prep UI so it draws on top of it.
     this.recipeBook = new RecipeBook(this);
@@ -225,7 +243,9 @@ export class PrepScene extends Phaser.Scene {
     // The plate counts as the recipe's layers, which the order was checked to
     // be makeable with when it was taken.
     devActions.serve = (score) => {
-      if (!this.busy) this.deliver({ score, missingModifiers: [], extraModifiers: [] }, expectedPlate(this.request.order).layers);
+      if (this.busy) return;
+      this.drafts = this.request.items.map(item => ({ layers: [...expectedPlate(item.order).layers], toast: { place: 'plate', secondsLeft: 0, toasted: item.order.modifiers.includes('toasted') }, ready: true }));
+      this.deliver(score);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.serve = null;
@@ -290,7 +310,7 @@ export class PrepScene extends Phaser.Scene {
    */
   private guidedNextLayer(): IngredientId | null | undefined {
     if (getGameState(this).tutorial !== 'prep') return undefined;
-    return expectedPlate(this.request.order).layers[this.dish.length] ?? null;
+    return expectedPlate(this.current.order).layers[this.dish.length] ?? null;
   }
 
   /** While Grandma is still explaining (before her instruction line), the counter is locked. */
@@ -330,6 +350,7 @@ export class PrepScene extends Phaser.Scene {
 
   private addIngredient(id: IngredientId): void {
     if (this.busy || this.dish.length >= MAX_DISH_LAYERS || this.binStatus(id).kind === 'out') return;
+    this.drafts[this.active].ready = false;
     this.dish.push(id);
     playSound('add');
     this.refreshDish();
@@ -337,6 +358,7 @@ export class PrepScene extends Phaser.Scene {
 
   private resetDish(): void {
     if (this.busy || this.toast.place !== 'plate') return;
+    this.drafts[this.active].ready = false;
     this.dish = [];
     this.toast = untoasted();
     this.refreshDish();
@@ -408,6 +430,7 @@ export class PrepScene extends Phaser.Scene {
 
   private putInToaster(): void {
     if (this.busy || !this.toaster || !canToast(this.toast, this.dish.length)) return;
+    this.drafts[this.active].ready = false;
     this.toast = startToasting(this.toast);
     this.toaster.startToasting();
     playSound('toastIn');
@@ -420,26 +443,50 @@ export class PrepScene extends Phaser.Scene {
     this.refreshDish();
   }
 
-  private serve(): void {
-    if (this.busy || this.dish.length === 0 || this.toast.place !== 'plate') return;
-
-    // Toasted is the only modifier so far (a missing one cuts the tip, §4).
-    const result = scoreDish(expectedPlate(this.request.order), {
-      layers: this.dish,
-      modifiers: toastModifiers(this.toast),
+  private createMealControls(): void {
+    this.request.items.forEach((_, i) => {
+      const point = at('request.' + i, 155 + i * 92, 126);
+      const button = new Button(this, point.x, point.y, 86, 22, '', COLORS.book, () => this.selectRequest(i)).setFontSize(11);
+      this.requestButtons.push(button);
+      arrangeable(this, 'prep', 'request.' + i, point, button);
     });
-    this.deliver(result, this.dish);
+    const point = at('serveTogether', 560, 164);
+    this.serveAllButton = new Button(this, point.x, point.y, 112, 30, mealWords.serveTogether, COLORS.serve, () => this.deliver()).setFontSize(12);
+    arrangeable(this, 'prep', 'serveTogether', point, this.serveAllButton);
+    const hint = at('mealHint', 300, 152);
+    arrangeable(this, 'prep', 'mealHint', hint, this.add.text(hint.x, hint.y, mealWords.hint, { ...TEXT.label, fontSize: '10px' }).setOrigin(0.5));
   }
 
-  /** Hands the scored dish over: payment, reaction, then prep closes. */
-  private deliver(result: ScoreResult, plate: readonly IngredientId[]): void {
-    // Pays when served, tipping by the patience left right now.
-    const payment = computePayment(this.request.order, result, this.request.patience());
-    this.request.onServe(result, payment, plate);
-    this.closeTutorial(); // served: the floor has moved the tutorial on
-    playSound(result.score === 'perfect' ? 'servePerfect' : result.score === 'close' ? 'serve' : 'wrong');
-    // No result pop-up: the customer's reaction (and their Leaves) is the feedback.
-    this.finish(buildReaction(result.score));
+  private selectRequest(index: number): void {
+    if (this.busy || this.dragged || this.toast.place !== 'plate') return;
+    this.active = index;
+    this.customerViews.forEach((view, i) => view.setVisible(i === index));
+    this.bubble.setLines(this.speech[index]);
+    this.refreshDish();
+  }
+
+  private serve(): void {
+    if (this.busy || this.dragged || this.dish.length === 0 || this.toast.place !== 'plate') return;
+    this.drafts[this.active].ready = true;
+    if (this.request.items.length === 1) this.deliver();
+    else {
+      const next = this.drafts.findIndex(d => !d.ready);
+      if (next >= 0) this.selectRequest(next);
+      this.refreshDish();
+    }
+  }
+
+  private deliver(forcedScore?: import('../logic/types').Score): void {
+    if (this.busy || this.dragged || this.request.patience() <= 0) return;
+    const plates = this.plates();
+    const servings = this.request.onServe(plates, forcedScore);
+    if (!servings) return;
+    this.closeTutorial();
+    const score = worstScore(servings.map(s => s.result.score));
+    const payment = servings.reduce((sum, s) => ({ price: sum.price + s.payment.price, tip: sum.tip + s.payment.tip, total: sum.total + s.payment.total }), { price: 0, tip: 0, total: 0 });
+    playSound(score === 'perfect' ? 'servePerfect' : score === 'close' ? 'serve' : 'wrong');
+    this.finish(servings.length === 1 ? buildReaction(score) : servings.map((serving, i) =>
+      mealWords.reaction.replace('{animal}', String(i + 1)).replace('{line}', buildReaction(serving.result.score))).join('\n'));
     if (payment.total > 0) this.showPayment(payment);
   }
 
@@ -498,6 +545,15 @@ export class PrepScene extends Phaser.Scene {
       hasItems && !this.lockedForGuide() && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === null),
     );
     this.resetButton.setEnabled(hasItems);
+    if (this.request.items.length > 1) this.serveButton.setText(this.drafts[this.active].ready ? mealWords.held : mealWords.ready);
+    this.requestButtons.forEach((button, i) => {
+      const item = this.request.items[i];
+      const animal = [...new Set(this.request.items.map(item => item.customerId))].indexOf(item.customerId) + 1;
+      const dish = this.request.items.slice(0, i + 1).filter(other => other.customerId === item.customerId).length;
+      button.setText((i === this.active ? mealWords.selected : '') + mealWords.request.replace('{animal}', String(animal)).replace('{dish}', String(dish)) + (this.drafts[i].ready ? mealWords.readyMark : ''));
+      button.setEnabled(!this.busy && !this.dragged && onPlate);
+    });
+    this.serveAllButton?.setEnabled(!this.busy && !this.dragged && mealReady(this.request.items, this.plates()));
     this.refreshBins();
   }
 
@@ -516,7 +572,8 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private binStatus(id: IngredientId): BinStatus {
-    return binStatus(getGameState(this), this.dish, id, this.request.order.quantity);
+    const pantry = mealPantry(getGameState(this), this.request.items, this.plates(), this.active);
+    return pantry ? binStatus(pantry, this.dish, id, this.current.order.quantity) : { kind: 'out' };
   }
 
   /**
@@ -599,7 +656,8 @@ export class PrepScene extends Phaser.Scene {
         if (this.toast.place === 'ready') this.takeBackFromToaster();
         else this.putInToaster();
       } else if (event.key === 'Enter') {
-        this.serveButton.press();
+        if (this.serveAllButton && mealReady(this.request.items, this.plates())) this.serveAllButton.press();
+        else this.serveButton.press();
       } else if (event.key === 'Backspace') {
         // Stop the browser treating Backspace as "go back" in older browsers.
         event.preventDefault();
@@ -635,9 +693,9 @@ export class PrepScene extends Phaser.Scene {
    * drawn after, hides the legs.
    */
   private drawCustomer(x: number, y: number): Phaser.GameObjects.Container {
-    const scale = Math.max(1, Math.round(96 / spriteSize(SPRITE_ART[this.request.art]).height));
-    const body = addArt(this, 0, 0, this.request.art, 0).setOrigin(0.5, 0);
-    const layers = this.request.outfit ? outfitImages(this, this.request.art, this.request.outfit).map(image => image.setOrigin(0.5, 0)) : [];
+    const scale = Math.max(1, Math.round(96 / spriteSize(SPRITE_ART[this.current.art]).height));
+    const body = addArt(this, 0, 0, this.current.art, 0).setOrigin(0.5, 0);
+    const layers = this.current.outfit ? outfitImages(this, this.current.art, this.current.outfit).map(image => image.setOrigin(0.5, 0)) : [];
     return this.add.container(x, y - 40, [body, ...layers]).setScale(scale);
   }
 }

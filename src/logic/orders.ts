@@ -93,3 +93,11 @@ export function expectedPlate(order: Order): Plate {
   }
   return { layers, modifiers: order.modifiers };
 }
+
+/** A live visit needs separately cooked plates, rather than multiplying one plate. */
+export function generateCustomerOrders(owned: Owned, rng: Rng = Math.random, config: OrderConfig = ORDER_CONFIG): Order[] {
+  const single = { ...config, doubleOrderChance: 0 };
+  const orders = [generateOrder(owned, rng, single)];
+  if (rng() < config.doubleOrderChance) orders.push(generateOrder(owned, rng, single));
+  return orders;
+}

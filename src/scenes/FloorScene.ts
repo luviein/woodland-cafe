@@ -1,4 +1,5 @@
 import { Button } from '../ui/Button';
+import mealWords from '../data/texts/mealPrep.json';
 import { addArt } from '../ui/art';
 import { spawnCustomer } from '../logic/customerSpawn';
 import Phaser from 'phaser';
@@ -17,10 +18,11 @@ import {
   countGaveUp,
   createFloorState,
   customerAtCounter,
+  customerParty,
+  customerOrders,
   hasFreeSeat,
   messySeatsAt,
   releaseCustomer,
-  serveCustomer,
   stepFloor,
   type Customer,
   type FloorState,
@@ -28,8 +30,8 @@ import {
 import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } from '../logic/day';
 import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe, recordWages } from '../logic/dayStats';
 import { payWages } from '../logic/employees';
-import { earnLeaves } from '../logic/gameState';
-import { missingIngredient, orderIngredients, plateIngredients, useIngredients } from '../logic/stock';
+import { servePartyMeal } from '../logic/serveMeal';
+import { missingIngredient, orderIngredients } from '../logic/stock';
 import { pointKey, samePoint, tableById, type Layout, type Point } from '../logic/layout';
 import { puffOfDust } from '../ui/effects';
 import { StoryBox, type BoxRect } from '../ui/StoryBox';
@@ -338,7 +340,7 @@ export class FloorScene extends Phaser.Scene {
     const taken = takeOrderAtCounter(this.player, this.floor, this.layout, getGameState(this), Math.random, pickOrder);
     this.player = taken.player;
     this.floor = taken.floor;
-    if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, 'No clean seats!');
+    if (taken.result === 'noSeat') this.showFloatingText(this.layout.orderSpot, customerParty(this.floor, frontId).length > 1 ? mealWords.noPairSeats : 'No clean seats!');
     if (taken.result === 'outOfStock') this.onOutOfStock(frontId);
     if (taken.result === 'ordered') {
       playSound('order');
@@ -469,9 +471,9 @@ export class FloorScene extends Phaser.Scene {
 
   /** Their dish couldn't be made, so they're leaving: say what ran out. */
   private onOutOfStock(customerId: number): void {
-    this.day = { ...this.day, stats: recordOutOfStock(this.day.stats) };
-    const order = this.customer(customerId)?.order;
-    const missing = order && missingIngredient(getGameState(this), orderIngredients(order));
+    const party = customerParty(this.floor, customerId);
+    this.day = { ...this.day, stats: party.reduce(stats => recordOutOfStock(stats), this.day.stats) };
+    const missing = missingIngredient(getGameState(this), party.flatMap(c => customerOrders(c).flatMap(orderIngredients)));
     const message = missing ? `Out of ${INGREDIENTS[missing].name.toLowerCase()}!` : 'Out of stock!';
     this.showFloatingText(this.layout.orderSpot, message);
   }
@@ -516,37 +518,35 @@ export class FloorScene extends Phaser.Scene {
    * going: patience drops and others keep eating while the player cooks.
    */
   private openPrep(customerId: number): void {
-    const order = this.customer(customerId)?.order;
-    if (!order) return;
+    const party = customerParty(this.floor, customerId);
+    const items = party.flatMap(c => customerOrders(c).map(order => ({ customerId: c.id, order, art: customerArt(c.id), outfit: this.outfitFor(c.id) })));
+    if (!items.length) return;
     this.children.getByName('wardrobe')?.destroy();
     this.prepOpen = true;
     this.prepCustomerId = customerId;
     this.destinationMarker.setVisible(false);
 
     const request: PrepRequest = {
-      order,
-      art: customerArt(customerId),
-      outfit: this.outfitFor(customerId),
+      items,
       clock: () => ({ text: clockText(this.day), open: this.floor.doorsOpen }),
-      patience: () => (this.customer(customerId)?.patience ?? 0) / FLOOR_CONFIG.patienceSeconds,
-      onServe: (result, payment, plate) => {
-        // Patience stops now, but they wait at the counter while reacting.
-        this.floor = serveCustomer(this.floor, customerId, result.score);
+      patience: () => {
+        const customer = this.customer(customerId);
+        return customer ? customer.patience / (customer.patienceTotal ?? FLOOR_CONFIG.patienceSeconds) : 0;
+      },
+      onServe: (plates, forcedScore) => {
+        const served = servePartyMeal(this.floor, customerId, getGameState(this), plates, forcedScore);
+        if (!served) return null;
+        this.floor = served.floor;
         this.prepCustomerId = null;
-        // Whatever is on the plate is used up, right or wrong: stock first,
-        // rush deliveries paid from the wallet. Then the customer pays in.
-        // (The wallet display updates itself from the state.)
-        const used = useIngredients(getGameState(this), plateIngredients(plate, order.quantity));
-        setGameState(this, earnLeaves(used.state, payment.total));
+        setGameState(this, served.game);
         tutorialEvent(this, 'served');
-        const stats = recordServe(this.day.stats, result.score, payment);
-        this.day = { ...this.day, stats: recordIngredients(stats, used.plan) };
+        const stats = served.servings.reduce((stats, s) => recordServe(stats, s.result.score, s.payment), this.day.stats);
+        this.day = { ...this.day, stats: recordIngredients(stats, served.plan) };
+        return served.servings;
       },
       onClose: () => {
         this.prepOpen = false;
-        // Only now do they walk off (to their seat, or out if it was wrong),
-        // so the player sees them go. No-op if they gave up instead.
-        this.floor = releaseCustomer(this.floor, this.layout, customerId);
+        for (const customer of party) this.floor = releaseCustomer(this.floor, this.layout, customer.id);
       },
     };
     this.scene.launch('PrepScene', request);
@@ -663,7 +663,7 @@ export class FloorScene extends Phaser.Scene {
     for (const c of this.floor.customers) {
       if (c.phase !== 'ordered') continue;
       // Clamp: if `set patienceSeconds` lowers the max mid-game, don't overflow.
-      const fraction = Phaser.Math.Clamp(c.patience / FLOOR_CONFIG.patienceSeconds, 0, 1);
+      const fraction = Phaser.Math.Clamp(c.patience / (c.patienceTotal ?? FLOOR_CONFIG.patienceSeconds), 0, 1);
       const { x, y } = this.walkerToPixel(c.walker);
       // Just over the head, however far it pokes above the tile.
       const top = y - critterHeadroom(customerArt(c.id)) - 4;

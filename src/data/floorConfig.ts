@@ -11,6 +11,8 @@ export type FloorConfig = {
   customerSpeed: number;
   /** Seconds before the first customer walks in. */
   firstCustomerDelay: number;
+  /** Chance of a pair when the queue and a shared table can accommodate two. */
+  pairChance: number;
   /** A new customer arrives a random time in this range after the last one. */
   spawnIntervalMin: number;
   spawnIntervalMax: number;
@@ -34,6 +36,7 @@ export const FLOOR_CONFIG: FloorConfig = {
   playerSpeed: 6,
   customerSpeed: 3,
   firstCustomerDelay: 1,
+  pairChance: 0.25,
   // A quiet start, about 15 customers a day (GAME_DESIGN.md §5.8). Hiring
   // the Mascot shortens these gaps, so busy days are earned.
   spawnIntervalMin: 9,
