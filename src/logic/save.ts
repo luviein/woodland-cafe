@@ -1,3 +1,4 @@
+import { validSavedPlayerName } from './playerName';
 import { validCropWeights, validCropWeight } from './cropWeights';
 import { validJournal, migrateJournal } from './journal';
 import { migrateGarden, validGarden } from './garden';
@@ -51,7 +52,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 19: legacy special stock enters the automatic collection without being consumed.
 // 20: one-time Field Journal rewards and equipped collectible title.
 // 21: permanent collection titles, wardrobe selection and retired antlers.
-export const SAVE_VERSION = 21;
+// 22: saved local player name; unnamed older saves prompt once on Continue.
+export const SAVE_VERSION = 22;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {
@@ -127,6 +129,7 @@ function readState(raw: Record<string, unknown>, version: number): GameState {
     roomFinishes: ownedFinishGrid(room, finishes, ownedFinishes),
     ownedFinishes,
     ownedClothing,
+    playerName: field(raw, 'playerName', fresh.playerName, validSavedPlayerName),
     animal: readPlayerAnimal(raw.animal),
     outfit,
     day: field(raw, 'day', fresh.day, (v) => isWhole(v) && v >= 1),

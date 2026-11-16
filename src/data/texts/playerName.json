@@ -1,0 +1,9 @@
+{
+  "heading": "What's your name?",
+  "hint": "Your name appears beside your equipped badge.",
+  "label": "Player name",
+  "rules": "Use 1–16 characters. Extra spaces are trimmed.",
+  "invalid": "Enter 1–16 characters, without control characters.",
+  "confirm": "Let's begin",
+  "cancel": "Cancel"
+}

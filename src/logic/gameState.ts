@@ -32,6 +32,8 @@ import { STARTER_CLOTHING, type ClothingId } from '../data/clothing';
  * Unlocked locations join it in the milestone that needs them.
  */
 export interface GameState {
+  /** Empty only until the first name prompt is confirmed. */
+  playerName: string;
   journal: JournalProgress;
   cropWeights: CropWeights;
   cropRecords: CropRecords;
@@ -72,6 +74,7 @@ export interface GameState {
 
 export function createNewGame(): GameState {
   return {
+    playerName: '',
     journal: emptyJournal(),
     cropWeights: {},
     cropRecords: {},

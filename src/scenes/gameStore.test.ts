@@ -1,3 +1,4 @@
+import { startNewGame } from './gameStore';
 import type Phaser from 'phaser';
 import { claimJournalMilestone, equipJournalTitle } from './gameStore';
 import { COLLECTION_IDS } from '../logic/cropCollection';
@@ -200,4 +201,20 @@ it('immediately saves seasonal packets, planted outcomes and double special harv
   const savedText = slot.read();
   setGardenGameState(owner, tendCrop(getGameState(owner), 0, 301000, 0));
   expect(slot.read()).toBe(savedText);
+});
+
+it('saves the chosen new-game name immediately and retains it through cafe rollback', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  startNewGame(owner, '  Maple  ');
+  const initial = loadGame(slot.read()!);
+  expect(initial.ok && initial.state.playerName).toBe('Maple');
+  const state = getGameState(owner);
+  setGameState(owner, { ...state, leaves: 999 });
+  equipJournalTitle(owner, null);
+  const reloaded = loadGame(slot.read()!);
+  expect(reloaded.ok && reloaded.state.playerName).toBe('Maple');
+  expect(reloaded.ok && reloaded.state.leaves).toBe(0);
 });

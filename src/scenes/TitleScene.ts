@@ -1,3 +1,4 @@
+import { promptPlayerName } from '../ui/PlayerNamePrompt';
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
 import type { GameState } from '../logic/gameState';
@@ -13,7 +14,7 @@ import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
 import { Button } from '../ui/Button';
 import { addGround, addStanding, addTree } from '../ui/sprites';
 import { COLORS, TEXT, css } from '../ui/theme';
-import { continueGame, readSave, startNewGame } from './gameStore';
+import { continueGame, readSave, startNewGame, setGameState } from './gameStore';
 import type { WorldMapRequest } from './WorldMapScene';
 
 /**
@@ -113,6 +114,15 @@ export class TitleScene extends Phaser.Scene {
   private confirmOpen = false;
 
   private continueFrom(state: GameState): void {
+    if (!state.playerName) {
+      this.askName(name => {
+        const named = { ...state, playerName: name };
+        continueGame(this, named);
+        setGameState(this, named);
+        this.continueFrom(named);
+      });
+      return;
+    }
     continueGame(this, state);
     // Between days, so the map: the cafe is where the next day starts.
     const request: WorldMapRequest = { current: 'cafe' };
@@ -120,8 +130,15 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private newGame(): void {
-    startNewGame(this);
-    this.scene.start('FloorScene');
+    this.askName(name => {
+      startNewGame(this, name);
+      this.scene.start('FloorScene');
+    });
+  }
+
+  private askName(accept: (name: string) => void): void {
+    this.confirmOpen = true;
+    promptPlayerName(this, name => { this.confirmOpen = false; accept(name); }, () => { this.confirmOpen = false; });
   }
 
   /** New game deletes the save, so ask first (Esc / No to back out). */
@@ -138,7 +155,7 @@ export class TitleScene extends Phaser.Scene {
     const note = this.add
       .text(cx, top + 42, `Your saved game (Day ${savedDay}) will be deleted.`, TEXT.body)
       .setOrigin(0.5, 0);
-    const yes = new Button(this, cx - 70, top + height - 28, 120, 30, 'New game', COLORS.reset, () => this.newGame());
+    const yes = new Button(this, cx - 70, top + height - 28, 120, 30, 'New game', COLORS.reset, () => { close(); this.newGame(); });
     const no = new Button(this, cx + 70, top + height - 28, 120, 30, 'Keep it', COLORS.serve, () => close());
 
     const onKey = (event: KeyboardEvent) => {
@@ -148,7 +165,7 @@ export class TitleScene extends Phaser.Scene {
       this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
       for (const o of [dim, panel, title, note, yes, no]) o.destroy();
       // After this key event is done, so the same Enter can't also press Continue.
-      this.time.delayedCall(0, () => (this.confirmOpen = false));
+      this.time.delayedCall(0, () => { if (!document.getElementById('player-name-form')) this.confirmOpen = false; });
     };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>

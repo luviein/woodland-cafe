@@ -1,3 +1,4 @@
+import { normalisePlayerName } from '../logic/playerName';
 import { gardenCheckpoint } from '../logic/garden';
 import { claimMilestone, equipPlayerTitle, journalCheckpoint, type MilestoneId, type PlayerTitle } from '../logic/journal';
 import { recordPlayerTitles } from '../logic/playerTitles';
@@ -53,11 +54,15 @@ export function continueGame(owner: HasRegistry, state: GameState): void {
 }
 
 /** Title screen's New game: the old save is deleted, and Day 1 starts at once. */
-export function startNewGame(owner: HasRegistry): void {
+export function startNewGame(owner: HasRegistry, playerName = ''): void {
+  const name = playerName === '' ? '' : normalisePlayerName(playerName);
+  if (name === null) return;
   slot.clear();
-  owner.registry.set(KEY, createNewGame());
+  owner.registry.set(KEY, { ...createNewGame(), playerName: name });
   owner.registry.set(CHECKPOINT_KEY, getGameState(owner));
   owner.registry.set(DAY_KEY, true);
+  // The initial checkpoint has no provisional cafe earnings to roll back.
+  if (name) slot.write(saveGame(getGameState(owner)));
 }
 
 /**

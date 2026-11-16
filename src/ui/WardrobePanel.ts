@@ -22,6 +22,7 @@ import { COLORS, TEXT } from './theme';
 /** A single panel owns its input and preview, leaving scenes to run the world. */
 export class WardrobePanel extends Phaser.GameObjects.Container {
   private slot: keyof Outfit | 'animal' | 'titles' = 'hat';
+  private readonly previewName: Phaser.GameObjects.Text;
   private readonly previewTitle: Phaser.GameObjects.Image;
   private titlePage = 0;
   private readonly previousTitlePage: Button;
@@ -74,6 +75,7 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     this.cape = place('previewCape', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
     this.hat = place('previewHat', 205, 234, scene.add.image(0, 0, artKey('santaHat')).setOrigin(0.5, 1));
     this.previewTitle = place('previewTitle', 205, 120, addJournalImage(scene, 0, 0, 'goldenCollectionBadge').setVisible(false));
+    this.previewName = place('previewName', 205, 120, scene.add.text(0, 0, '', { fontFamily: 'Consolas, monospace', fontSize: '10px', resolution: 2, color: '#493026', stroke: '#fff2d5', strokeThickness: 2 }).setOrigin(0, 0.5));
     place('turnLeft', 147, 267, new Button(scene, 0, 0, 33, 30, '', COLORS.book, () => this.turn(-1)).setBackgroundVisible(false));
     place('turnRight', 251, 267, new Button(scene, 0, 0, 33, 30, '', COLORS.book, () => this.turn(1)).setBackgroundVisible(false));
     const tabSpecs = [
@@ -187,8 +189,18 @@ export class WardrobePanel extends Phaser.GameObjects.Container {
     const scale = Math.min(3, Math.floor(84 / height));
     this.critterImage.setTexture(artKey(animal), frame).setScale(scale);
     this.previewTitle.setVisible(title !== null);
-    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], titleDisplayWidth(title, 'preview'))
-      .setPosition(this.critterImage.x, Math.round(this.critterImage.y - height * scale - 6 - this.previewTitle.displayHeight / 2));
+    if (title) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], titleDisplayWidth(title, 'preview'));
+    this.previewName.setText(state.playerName).setVisible(state.playerName !== '');
+    if (title === 'masterCollector' && state.playerName) setJournalImage(this.previewTitle, TITLE_RIBBONS[title], 80);
+    const badgeWidth = title ? this.previewTitle.displayWidth : 0;
+    const nameGap = title && state.playerName ? 5 : 0;
+    const nameWidth = state.playerName ? this.previewName.width : 0;
+    const left = this.critterImage.x - (badgeWidth + nameGap + nameWidth) / 2;
+    const plateHeight = Math.max(title ? this.previewTitle.displayHeight : 0, state.playerName ? this.previewName.height : 0);
+    const wornHeight = outfit.hat ? Math.max(height, spriteSize(SPRITE_ART[clothingArt(animal, outfit.hat)]).height) : height;
+    const plateY = Math.round(this.critterImage.y - wornHeight * scale - 6 - plateHeight / 2);
+    this.previewTitle.setPosition(Math.round(left + badgeWidth / 2), plateY);
+    this.previewName.setPosition(Math.round(left + badgeWidth + nameGap), plateY);
     const layers = { hat: this.hat, top: this.coat, cape: this.cape, shoes: this.shoes };
     for (const slot of CLOTHING_SLOTS) {
       const item = outfit[slot];
