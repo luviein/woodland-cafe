@@ -947,9 +947,11 @@ The party shares a patience budget of 25 seconds per requested plate, starting
 when orders are taken, and waits at the counter until every plate is ready.
 If time runs out, the whole party leaves unpaid and seats are freed.
 
-Prep keeps customer speech as the recipe clue. Numbered request controls
-identify animal and dish, without revealing hinted recipes; switch freely
-between requests while preserving each unfinished plate and its toast state.
+Prep keeps customer speech as the recipe clue. Show an "Order 1 of 4" counter
+with < and > buttons to browse the requested dishes, without revealing hinted
+recipes. Disable previous on the first order and next on the last. Preserve
+each unfinished plate and its toast state when browsing, and indicate when
+the selected plate is ready.
 Use Ready to hold a finished plate, and Serve together only when every plate
 is ready. Prepared plates reserve ingredients and rush costs without paying
 or consuming stock yet. Reset/edit returns those reservations. Check stock
