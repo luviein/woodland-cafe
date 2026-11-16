@@ -923,7 +923,7 @@ all progress; damaged saves retain the existing rejection policy.
 
 Display the readable name below the character even with no badge equipped.
 Keep the name itself horizontally centred under the character, with the
-equipped collection badge to its left and a 10px gap below the feet. Never
+equipped collection badge to its left and a 2px gap below the feet. Never
 switch the world nameplate above the character. Show the same pairing in the wardrobe
 without resizing the animal. This is a local display name, not an online
 identity or unique multiplayer username.
