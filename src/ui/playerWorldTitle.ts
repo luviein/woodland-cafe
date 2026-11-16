@@ -9,7 +9,7 @@ import { WORLD_TITLE_RIBBONS, titleDisplayWidth } from './titleArt';
 export function attachPlayerWorldTitle(scene: Phaser.Scene, player: Phaser.GameObjects.Container, canShow: () => boolean = () => true): void {
   const ribbon = addJournalImage(scene, 0, 0, 'masterCollectorWorldRibbon').setDepth(900).setVisible(false).setName('playerWorldTitle');
   const name = scene.add.text(0, 0, '', { fontFamily: 'Consolas, monospace', fontSize: '11px', resolution: 2, color: '#fff2d5', stroke: '#291d28', strokeThickness: 2 }).setOrigin(0.5).setDepth(900).setName('playerWorldName');
-  const offset = layoutPoint('outdoor', 'playerTitleOffset', { x: 0, y: 10 });
+  const offset = layoutPoint('outdoor', 'playerTitleOffset', { x: 0, y: 2 });
   const update = () => {
     if (!player.scene) return;
     const state = getGameState(scene);
