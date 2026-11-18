@@ -259,8 +259,9 @@ The player can leave the counter **before taking an order** to clean messes; the
   dimmed and disabled. Do not draw a second HUD over the artwork.
 - **Water movement:** reuse the approved illustration's existing cyan ripple
   pixels as a subtle overlay over open sea. Ripples drift a few pixels and
-  fade in and out at staggered intervals; the island, coast, river, waterfall,
-  buildings and UI stay still. Extract and cache the ripple texture once,
+  fade in and out at staggered intervals; the island, coast, river,
+  buildings and UI stay still. The waterfall has its separate animation below.
+  Extract and cache the ripple texture once,
   without changing the source PNG or creating new textures each frame.
   Ripple anchors have named Arrange positions, and pause with the map.
 - **Waterfall:** the supplied six-frame sheet animates only the waterfall
