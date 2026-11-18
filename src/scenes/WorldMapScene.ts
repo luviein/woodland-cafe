@@ -1,20 +1,23 @@
 import Phaser from 'phaser';
-import { BASE_HEIGHT, BASE_WIDTH, GROUND_TILE } from '../config/display';
-import { LOCATION_IDS, LOCATIONS, MAP_PATHS, type LocationId } from '../data/locations';
-import { arrangeable, sizeBox, type Placeable } from '../layout/arrangeable';
+import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
+import { MAP_IMAGE, MAP_IMAGE_KEY, MAP_WALLET_PAPER } from '../assets/worldMap';
+import { MAP_HUD, MAP_PLACES } from '../data/mapPresentation';
+import { getSoundSettings, onSoundSettings } from '../audio/audio';
+import type { HudScene } from './HudScene';
+import { LOCATION_IDS, LOCATIONS, type LocationId } from '../data/locations';
+import { arrangeable, arrangeablePanel, sizeBox, type Placeable } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
 import { startNextDay } from '../logic/gameState';
 import type { Point } from '../logic/layout';
-import { chooseLocation, dotsAlong } from '../logic/worldMap';
+import { chooseLocation } from '../logic/worldMap';
 import { Button } from '../ui/Button';
 import { COLORS, TEXT, css } from '../ui/theme';
-import { STALL_HEIGHT, addStanding, addTree, createMascotSprite, groundFrame, type TreeKind } from '../ui/sprites';
-import { artKey } from '../ui/art';
+import { createMascotSprite } from '../ui/sprites';
 import { isHired } from '../logic/employees';
-import { WalletDisplay } from '../ui/WalletDisplay';
+import { IllustratedMapWallet } from '../ui/IllustratedMapWallet';
 import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
-import { bottomBoxLeft, notesButton } from '../ui/hudLayout';
+import { bottomBoxLeft } from '../ui/hudLayout';
 import { exploredAll } from '../logic/gameState';
 import { tourLock } from '../logic/tutorial';
 import { TUTORIAL } from '../data/tutorial';
@@ -29,27 +32,6 @@ export interface WorldMapRequest {
   current: LocationId;
 }
 
-/** Where the hired Mascot dances: on the grass just right of the cafe house, feet on its baseline. */
-const mascotSpot = (): Point => ({ x: LOCATIONS.cafe.position.x + 36, y: LOCATIONS.cafe.position.y + 20 });
-
-/** Signposts sit this far above their landmark's centre. */
-const SIGN_OFFSET_Y = 44;
-const SIGN_HEIGHT = 22;
-
-/** The island's shape: a grass ellipse inside a sandy shore. */
-const ISLAND = { x: BASE_WIDTH / 2, y: BASE_HEIGHT / 2 + 4, grassWidth: 536, grassHeight: 276, shore: 12 };
-/** The darker patch of grass under the forest (it follows the Forest when that's moved). */
-const forestPatch = () => ({ x: LOCATIONS.forest.position.x, y: LOCATIONS.forest.position.y + 6, width: 150, height: 90 });
-
-/** Small map trees stand this far below their point (which is the top of the trunk). */
-const MAP_TRUNK = 8;
-
-/** Purely decorative trees around the island (the forest draws its own). Each point is the top of the trunk; each movable in Arrange mode. */
-const TREES: readonly Point[] = [
-  { x: 96, y: 228 }, { x: 120, y: 262 }, { x: 226, y: 288 }, { x: 410, y: 292 },
-  { x: 540, y: 236 }, { x: 566, y: 196 }, { x: 392, y: 84 }, { x: 266, y: 70 },
-];
-
 /**
  * The world map: a woodland island with the places the player can go
  * (GAME_DESIGN.md §5.2). Opened with "Exit cafe" at the end of a day.
@@ -59,6 +41,7 @@ const TREES: readonly Point[] = [
  */
 export class WorldMapScene extends Phaser.Scene {
   private request!: WorldMapRequest;
+  private confirmOpen = false;
 
   constructor() {
     super('WorldMapScene');
@@ -68,37 +51,61 @@ export class WorldMapScene extends Phaser.Scene {
     this.request = request;
   }
 
+  preload(): void {
+    this.load.image(MAP_IMAGE_KEY, MAP_IMAGE);
+  }
+
   create(): void {
-    this.drawIsland();
-    this.drawPaths();
-    TREES.forEach((fallback, i) => {
-      const point = layoutPoint('worldMap', `tree.${i}`, fallback);
-      arrangeable(this, 'worldMap', `tree.${i}`, point, this.addMapTree(point.x, point.y + MAP_TRUNK, i % 3 === 2 ? 'pine' : 'oak'));
-    });
+    this.confirmOpen = false;
+    const texture = this.textures.get(MAP_IMAGE_KEY);
+    texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    const frame = MAP_WALLET_PAPER;
+    if (!texture.has(frame.name)) texture.add(frame.name, 0, frame.x, frame.y, frame.width, frame.height);
+    const background = layoutPoint('worldMap', 'illustration', { x: 320, y: 180 });
+    // Adding the wallet frame changes Phaser's default frame; explicitly keep the full illustration.
+    const image = this.add.image(background.x, background.y, MAP_IMAGE_KEY, '__BASE').setDisplaySize(BASE_WIDTH, BASE_HEIGHT);
+    arrangeable(this, 'worldMap', 'illustration', background, image);
     for (const id of LOCATION_IDS) {
-      // A place moves as one: its landmark and its signpost (unless the signpost was moved on its own).
       const landmark = this.drawLandmark(id);
       const sign = this.createSignpost(id);
-      arrangeable(this, 'worldMap', `place.${id}`, LOCATIONS[id].position, ...landmark, ...(sign.followsPlace ? sign.parts : []));
-      arrangeable(this, 'worldMap', `sign.${id}`, sign.point, ...sign.parts);
+      arrangeable(this, 'worldMap', 'place.' + id, LOCATIONS[id].position, ...landmark, ...(sign.followsPlace ? sign.parts : []));
+      arrangeable(this, 'worldMap', 'sign.' + id, sign.point, ...sign.parts);
     }
     if (isHired(getGameState(this), 'mascot')) this.addDancingMascot();
-
-    const walletAt = layoutPoint('worldMap', 'wallet', { x: 8, y: 8 });
-    const wallet = new WalletDisplay(this, walletAt.x, walletAt.y);
-    arrangeable(this, 'worldMap', 'wallet', walletAt, wallet);
-    watchGameState(this, (state) => wallet.setLeaves(state.leaves));
-    const hintAt = layoutPoint('worldMap', 'hint', { x: BASE_WIDTH / 2, y: BASE_HEIGHT - 10 });
-    const hint = this.add
-      .text(hintAt.x, hintAt.y, 'Tap a signpost to go there', {
-        ...TEXT.label,
-        stroke: css(COLORS.ink),
-        strokeThickness: 3,
-      })
-      .setOrigin(0.5, 1);
-    arrangeable(this, 'worldMap', 'hint', hintAt, hint);
-
+    const walletAt = layoutPoint('worldMap', 'walletContents', { x: 41, y: 19 });
+    const wallet = new IllustratedMapWallet(this, walletAt.x, walletAt.y);
+    arrangeable(this, 'worldMap', 'walletContents', walletAt, wallet);
+    watchGameState(this, state => wallet.setLeaves(state.leaves));
+    this.createIllustratedHud();
     this.showTutorial();
+  }
+
+  /** The artwork supplies the icons; the persistent HUD still owns their panels and pause rules. */
+  private createIllustratedHud(): void {
+    const hud = this.scene.get('HudScene') as HudScene;
+    const actions = { speaker: () => hud.toggleSoundPanel(), notes: () => hud.toggleNotes(), inventory: () => hud.toggleInventory() };
+    const controls = (['speaker', 'notes', 'inventory'] as const).map(name => {
+      const point = layoutPoint('worldMap', 'hud.' + name, MAP_HUD[name]);
+      const size = MAP_HUD[name].size;
+      const button = new Button(this, point.x, point.y, size, size, '', COLORS.book, actions[name]).setBackgroundVisible(false);
+      const shade = this.add.rectangle(point.x, point.y, size, size, COLORS.overlay, 0.55).setVisible(false);
+      arrangeable(this, 'worldMap', 'hud.' + name, point, button, shade);
+      return { name, button, shade };
+    });
+    const speaker = layoutPoint('worldMap', 'hud.speaker', MAP_HUD.speaker);
+    const muted = this.add.text(speaker.x, speaker.y, '\u00d7', { ...TEXT.heading, fontSize: '24px', color: css(COLORS.statusUpset), stroke: css(COLORS.ink), strokeThickness: 2 }).setOrigin(0.5);
+    arrangeable(this, 'worldMap', 'hud.speakerMuted', speaker, muted);
+    const refreshSound = () => muted.setVisible(getSoundSettings().muted);
+    refreshSound();
+    const stopSound = onSoundSettings(refreshSound);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, stopSound);
+    watchGameState(this, state => {
+      for (const { name, button, shade } of controls) {
+        const enabled = name === 'speaker' || (name === 'notes' ? state.tutorial === 'farewell' || state.tutorial === 'done' : state.tutorial === 'done');
+        button.setEnabled(enabled);
+        shade.setVisible(!enabled);
+      }
+    });
   }
 
   /**
@@ -115,11 +122,11 @@ export class WorldMapScene extends Phaser.Scene {
     // Just above a sign; above its "You are here" label too, for the place the player is at.
     const signTop = (id: LocationId) => {
       const { x, y } = this.signPosition(id);
-      return { x, y: y - SIGN_HEIGHT / 2 - (id === this.request.current ? 16 : 2) };
+      return { x, y: y - MAP_PLACES[id].sign.height / 2 - 4 };
     };
     const target = (name: string | null | undefined): ArrowTarget | null => {
       if (name === 'notes') {
-        const notes = notesButton();
+        const notes = { ...layoutPoint('worldMap', 'hud.notes', MAP_HUD.notes), size: MAP_HUD.notes.size };
         return { x: notes.x, y: notes.y - notes.size / 2 - 2 };
       }
       return name && name in LOCATIONS ? signTop(name as LocationId) : null;
@@ -127,7 +134,7 @@ export class WorldMapScene extends Phaser.Scene {
     // The explore reminder points at whichever place is still to be seen.
     const seen = getGameState(this).tipsSeen;
     const unseen = (['marketplace', 'forest'] as const).find((place) => !seen.includes(place)) ?? null;
-    const guideAt = layoutPoint('worldMap', 'guide', { x: bottomBoxLeft(), y: 292 });
+    const guideAt = layoutPoint('worldMap', 'guide', { x: Math.max(bottomBoxLeft(), MAP_HUD.inventory.x + MAP_HUD.inventory.size / 2 + 8), y: 292 });
     const guideRect = { x: guideAt.x, y: guideAt.y, width: BASE_WIDTH - 36 - guideAt.x, height: 62 };
     const guide = new StoryBox(this, {
       rect: guideRect,
@@ -150,6 +157,7 @@ export class WorldMapScene extends Phaser.Scene {
   }
 
   private go(id: LocationId): void {
+    if (this.confirmOpen) return;
     const choice = chooseLocation(id);
     const sign = this.signPosition(id);
     if (choice === 'locked') return this.showFloatingText(sign, 'Locked');
@@ -180,6 +188,9 @@ export class WorldMapScene extends Phaser.Scene {
    * takes taps, so the signposts can't be pressed while it's open.
    */
   private confirmNextDay(): void {
+    if (this.confirmOpen) return;
+    this.confirmOpen = true;
+    let settled = false;
     const nextDay = getGameState(this).day + 1;
     const cx = BASE_WIDTH / 2;
     const cy = BASE_HEIGHT / 2;
@@ -193,17 +204,23 @@ export class WorldMapScene extends Phaser.Scene {
     const note = this.add
       .text(cx, top + 44, 'Forage spots grow back and new leaves fall.', TEXT.body)
       .setOrigin(0.5, 0);
-    const open = new Button(this, cx - 120, top + height - 30, 110, 30, 'Open cafe', COLORS.serve, () => {
+    const depart = (action: () => void) => {
+      if (settled) return;
+      settled = true;
+      removeKeys();
+      action();
+    };
+    const open = new Button(this, cx - 120, top + height - 30, 110, 30, 'Open cafe', COLORS.serve, () => depart(() => {
       // Going back to the cafe opens it for the next day (GAME_DESIGN.md §5.3).
       // The day counts as started first, so the new day number isn't saved
       // until the day is over (GAME_DESIGN.md §6.1).
       beginCafeDay(this);
       setGameState(this, startNextDay(getGameState(this)));
       this.enter('cafe');
-    });
+    }));
     // Arranging tables and chairs (GAME_DESIGN.md §5.7); only between days.
     const decorate = new Button(this, cx, top + height - 30, 110, 30, 'Decorate', COLORS.book, () =>
-      this.scene.start('DecorateScene'),
+      depart(() => this.scene.start('DecorateScene')),
     );
     const notYet = new Button(this, cx + 120, top + height - 30, 110, 30, 'Not yet', COLORS.reset, () => close());
 
@@ -214,103 +231,30 @@ export class WorldMapScene extends Phaser.Scene {
       // Not notYet.press(): its 80ms un-press flash would fire on a destroyed button.
       else if (event.key === 'Escape') close();
     };
-    const close = () => {
+    const removeKeys = () => {
       this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
-      for (const o of [dim, panel, title, note, open, decorate, notYet]) o.destroy();
+      this.events.off(Phaser.Scenes.Events.SHUTDOWN, removeKeys);
     };
-    for (const o of [dim, panel, title, note, open, decorate, notYet]) o.setDepth(100);
+    const prompt = this.add.container(0, 0, [dim, panel, title, note, open, decorate, notYet]).setDepth(100);
+    arrangeablePanel(this, 'worldMap', 'cafePrompt', prompt);
+    const close = () => {
+      if (settled) return;
+      settled = true;
+      removeKeys();
+      this.time.delayedCall(0, () => {
+        prompt.destroy();
+        this.confirmOpen = false;
+      });
+    };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, removeKeys);
   }
 
-  /**
-   * Water, a sandy shore, grass, and grass tufts and flowers on top. Drawn
-   * into a canvas at the game's own resolution, so even the curved shore is
-   * made of whole pixels like the sprites (shapes drawn straight to the
-   * screen would get smooth, finer edges once the game is scaled up).
-   */
-  private drawIsland(): void {
-    const { x: cx, y: cy, grassWidth, grassHeight, shore } = ISLAND;
-    const g = this.make.graphics({}, false); // drawn into the canvas, never shown itself
-    g.fillStyle(COLORS.water).fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
-    // A few lighter ripples, so the water doesn't read as a flat background.
-    g.fillStyle(COLORS.waterLight);
-    for (const [x, y] of [[40, 40], [590, 60], [60, 320], [600, 316], [300, 20], [20, 180], [612, 150]]) {
-      g.fillRect(x, y, 10, 1).fillRect(x + 4, y + 2, 8, 1);
-    }
-    // Foam just off the shore, then sand, then grass.
-    g.fillStyle(COLORS.foam).fillEllipse(cx, cy, grassWidth + shore * 2 + 4, grassHeight + shore * 2 + 4);
-    g.fillStyle(COLORS.sand).fillEllipse(cx, cy, grassWidth + shore * 2, grassHeight + shore * 2);
-    g.fillStyle(COLORS.grass).fillEllipse(cx, cy, grassWidth, grassHeight);
-    const patch = forestPatch();
-    g.fillStyle(COLORS.grassDark).fillEllipse(patch.x, patch.y, patch.width, patch.height);
-
-    const canvas = this.add.renderTexture(0, 0, BASE_WIDTH, BASE_HEIGHT).setOrigin(0);
-    canvas.draw(g);
-    g.destroy();
-
-    // Tufts and flowers: the grass tiles that have some, wherever a whole
-    // tile fits on the light grass (their plain parts match it exactly).
-    const inEllipse = (x: number, y: number, ex: number, ey: number, w: number, h: number) =>
-      ((x - ex) / (w / 2)) ** 2 + ((y - ey) / (h / 2)) ** 2 <= 1;
-    for (let y = 0; y < BASE_HEIGHT; y += GROUND_TILE) {
-      for (let x = 0; x < BASE_WIDTH; x += GROUND_TILE) {
-        const frame = groundFrame(x / GROUND_TILE, y / GROUND_TILE);
-        const corners = [[x, y], [x + GROUND_TILE, y], [x, y + GROUND_TILE], [x + GROUND_TILE, y + GROUND_TILE]];
-        const fits = corners.every(
-          ([px, py]) =>
-            inEllipse(px, py, cx, cy, grassWidth - 4, grassHeight - 4) &&
-            !inEllipse(px, py, patch.x, patch.y, patch.width + 4, patch.height + 4),
-        );
-        if (frame !== 0 && fits) canvas.drawFrame(artKey('grass'), frame, x, y);
-      }
-    }
-  }
-
-  /**
-   * A small map tree. No depth sorting here (unlike outdoors): nothing walks
-   * on the map, so creation order is enough, and the map's panels (depth
-   * 100) must stay on top of everything.
-   */
-  private addMapTree(x: number, baseY: number, kind: TreeKind): Phaser.GameObjects.Image {
-    return addTree(this, x, baseY, kind, true);
-  }
-
-  private drawPaths(): void {
-    const g = this.add.graphics().fillStyle(COLORS.sand);
-    for (const [a, b] of MAP_PATHS) {
-      for (const dot of dotsAlong(LOCATIONS[a].position, LOCATIONS[b].position, 10, 30)) {
-        g.fillRect(Math.round(dot.x) - 1, Math.round(dot.y) - 1, 3, 3);
-      }
-    }
-  }
-
-  /** Each place's landmark, standing on the map around its position: what it's drawn with. */
+  /** Invisible buttons preserve the supplied buildings and use the normal guarded travel action. */
   private drawLandmark(id: LocationId): Placeable[] {
-    const { x, y } = LOCATIONS[id].position;
-    switch (id) {
-      case 'museum':
-        return [addStanding(this, x, y + 18, 'museumMap')];
-      case 'cafe':
-        // The cottage's doorstep is 20px below the centre (where the Mascot dances).
-        return [addStanding(this, x, y + 20, 'cafeHouse')];
-      case 'garden': {
-        const bed = this.add.image(x, y, artKey('gardenSoil')).setInteractive({ useHandCursor: true });
-        bed.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => this.go('garden'));
-        return [bed,
-          this.add.image(x - 10, y - 8, artKey('gardenTomato'), 3),
-          this.add.image(x + 10, y - 4, artKey('gardenMushroom'), 3),
-          this.add.image(x - 16, y + 18, artKey('gardenFence')),
-          this.add.image(x + 16, y + 18, artKey('gardenFence')),
-        ];
-      }
-      case 'forest':
-        // A little wood: each [dx, dy] is the top of a trunk, back ones first so front ones overlap them.
-        return ([[0, -10, 'pine'], [-30, 4, 'oak'], [28, 6, 'pine'], [-12, 18, 'oak'], [14, 20, 'oak']] as const).map(([dx, dy, kind]) =>
-          this.addMapTree(x + dx, y + dy + MAP_TRUNK, kind),
-        );
-      case 'marketplace':
-        return [-22, 22].map((dx) => addStanding(this, x + dx, y + STALL_HEIGHT, 'stall'));
-    }
+    const point = LOCATIONS[id].position;
+    const bounds = MAP_PLACES[id];
+    return [new Button(this, point.x, point.y, bounds.width, bounds.height, '', COLORS.paper, () => this.go(id)).setBackgroundVisible(false)];
   }
 
   /**
@@ -320,40 +264,30 @@ export class WorldMapScene extends Phaser.Scene {
    * Purely for show: the faster arrivals are the floor's rule (FloorState.mascot).
    */
   private addDancingMascot(): void {
-    const { x, y } = mascotSpot();
+    const point = layoutPoint('worldMap', 'mascot', { x: LOCATIONS.cafe.position.x + 72, y: LOCATIONS.cafe.position.y + 42 });
+    const { x, y } = point;
     const mascot = createMascotSprite(this).setPosition(x, y).setAngle(-12);
+    arrangeable(this, 'worldMap', 'mascot', point, mascot);
     this.tweens.add({ targets: mascot, y: y - 5, duration: 260, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
     this.tweens.add({ targets: mascot, angle: 12, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
   /**
-   * The clickable signpost: a post and a board, green for where the player
-   * is. Returns what it's drawn with, its point, and whether it still sits
+   * The illustrated label's hit area and current/locked overlays.
+   * Returns its objects, point, and whether it still sits
    * where its place puts it (not moved on its own in Arrange mode).
    */
   private createSignpost(id: LocationId): { parts: Placeable[]; point: Point; followsPlace: boolean } {
     const location = LOCATIONS[id];
     const here = id === this.request.current;
     const { x, y } = this.signPosition(id);
+    const { width, height } = MAP_PLACES[id].sign;
     const locked = location.locked || tourLock(getGameState(this).tutorial, id) !== null;
-    const text = locked ? `🔒 ${location.name}` : location.name;
-    // About 8px per character in the 16px button font, plus some padding.
-    const width = text.length * 9 + 16;
-
-    const post = this.add.rectangle(x, y + SIGN_HEIGHT / 2 + 5, 4, 10, COLORS.treeTrunk);
-    const sign = new Button(this, x, y, width, SIGN_HEIGHT, text, here ? COLORS.signpostHere : COLORS.signpost, () =>
-      this.go(id),
-    );
-    sign.setDepth(10);
-    const parts: Placeable[] = [post, sign];
-    if (here) {
-      parts.push(
-        this.add
-          .text(x, y - SIGN_HEIGHT / 2 - 2, 'You are here', { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
-          .setOrigin(0.5, 1)
-          .setDepth(10),
-      );
-    }
+    const sign = new Button(this, x, y, width, height, '', COLORS.paper, () => this.go(id)).setBackgroundVisible(false).setDepth(10);
+    const shade = this.add.rectangle(x, y, width, height, COLORS.overlay, 0.3).setVisible(locked).setDepth(10);
+    const highlight = this.add.rectangle(x, y, width + 4, height + 4).setFillStyle(0, 0).setStrokeStyle(1, COLORS.paper).setVisible(here).setDepth(10);
+    const lock = this.add.text(x + width / 2, y - height / 2 - 2, '🔒', TEXT.body).setOrigin(1, 1).setVisible(locked).setDepth(11);
+    const parts: Placeable[] = [sign, shade, highlight, lock];
     const usual = this.usualSignPosition(id);
     return { parts, point: { x, y }, followsPlace: x === usual.x && y === usual.y };
   }
@@ -365,13 +299,13 @@ export class WorldMapScene extends Phaser.Scene {
 
   private usualSignPosition(id: LocationId): Point {
     const { x, y } = LOCATIONS[id].position;
-    return { x, y: y - SIGN_OFFSET_Y };
+    return { x, y: y + MAP_PLACES[id].sign.dy };
   }
 
   /** Same idea as on the floor: a short message that drifts up and fades. */
   private showFloatingText(at: Point, message: string): void {
     const text = this.add
-      .text(at.x, at.y - SIGN_HEIGHT / 2 - 16, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
+      .text(at.x, at.y - 30, message, { ...TEXT.label, stroke: css(COLORS.ink), strokeThickness: 3 })
       .setOrigin(0.5, 1)
       .setDepth(20);
     this.tweens.add({

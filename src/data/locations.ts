@@ -1,5 +1,6 @@
 import type { Point } from '../logic/layout';
 import { layoutPoint } from '../layout/positions';
+import { MAP_PLACES } from './mapPresentation';
 
 // Places on the world map (GAME_DESIGN.md §5.2-5.3). Adding a location is
 // adding an entry here (plus a landmark drawing in WorldMapScene, until real
@@ -16,12 +17,12 @@ export interface LocationDef {
 }
 
 export const LOCATIONS = {
-  museum: { name: 'Museum', get position() { return layoutPoint('worldMap', 'place.museum', { x: 320, y: 118 }); }, scene: 'MuseumScene', locked: false },
-  cafe: { name: 'Cafe', get position() { return layoutPoint('worldMap', 'place.cafe', { x: 320, y: 220 }); }, scene: 'FloorScene', locked: false },
-  garden: { name: 'Garden', get position() { return layoutPoint('worldMap', 'place.garden', { x: 440, y: 250 }); }, scene: 'GardenScene', locked: false },
+  museum: { name: 'Museum', get position() { return layoutPoint('worldMap', 'place.museum', { x: MAP_PLACES.museum.x, y: MAP_PLACES.museum.y }); }, scene: 'MuseumScene', locked: false },
+  cafe: { name: 'Cafe', get position() { return layoutPoint('worldMap', 'place.cafe', { x: MAP_PLACES.cafe.x, y: MAP_PLACES.cafe.y }); }, scene: 'FloorScene', locked: false },
+  garden: { name: 'Garden', get position() { return layoutPoint('worldMap', 'place.garden', { x: MAP_PLACES.garden.x, y: MAP_PLACES.garden.y }); }, scene: 'GardenScene', locked: false },
   // Both outdoor places share one scene, set up from data/outdoorAreas.ts.
-  forest: { name: 'Forest', get position() { return layoutPoint('worldMap', 'place.forest', { x: 168, y: 140 }); }, scene: 'OutdoorScene', locked: false },
-  marketplace: { name: 'Marketplace', get position() { return layoutPoint('worldMap', 'place.marketplace', { x: 476, y: 132 }); }, scene: 'OutdoorScene', locked: false },
+  forest: { name: 'Forest', get position() { return layoutPoint('worldMap', 'place.forest', { x: MAP_PLACES.forest.x, y: MAP_PLACES.forest.y }); }, scene: 'OutdoorScene', locked: false },
+  marketplace: { name: 'Marketplace', get position() { return layoutPoint('worldMap', 'place.marketplace', { x: MAP_PLACES.marketplace.x, y: MAP_PLACES.marketplace.y }); }, scene: 'OutdoorScene', locked: false },
 } satisfies Record<string, LocationDef>;
 
 export type LocationId = keyof typeof LOCATIONS;

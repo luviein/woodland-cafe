@@ -24,6 +24,8 @@ const TRACK = { left: 34, width: 100 };
  * underneath (Phaser gives a tap to the topmost thing hit).
  */
 export class HudScene extends Phaser.Scene {
+  private speakerButton!: Button;
+  private notesButton!: Button;
   private speakerIcon!: Phaser.GameObjects.Image;
   private panel!: Phaser.GameObjects.Container;
   private muteIcon!: Phaser.GameObjects.Image;
@@ -44,8 +46,9 @@ export class HudScene extends Phaser.Scene {
     const icon = speakerButton();
     this.speakerIcon = addArt(this, 0, 0, 'speaker');
     const speaker = new Button(this, icon.x, icon.y, icon.size, icon.size, '', COLORS.book, () =>
-      this.panel.setVisible(!this.panel.visible),
+      this.toggleSoundPanel(),
     ).setIcon(this.speakerIcon);
+    this.speakerButton = speaker;
 
     // Only once Grandma has shown it at her farewell (GAME_DESIGN.md §5.9):
     // during the tutorial she does the explaining, and it would sit on her box.
@@ -53,6 +56,7 @@ export class HudScene extends Phaser.Scene {
     const notesButton = new Button(this, notesAt.x, notesAt.y, notesAt.size, notesAt.size, '?', COLORS.book, () =>
       this.toggleNotes(),
     );
+    this.notesButton = notesButton;
     const inventoryAt = inventoryButtonAt();
     this.inventoryButton = new Button(this, inventoryAt.x, inventoryAt.y, inventoryAt.width, inventoryAt.height,
       '', COLORS.book, () => this.toggleInventory()).setIcon(addArt(this, 0, 0, 'gardenWorkTools', 2)).setVisible(false);
@@ -86,12 +90,21 @@ export class HudScene extends Phaser.Scene {
   }
 
   update(): void {
+    // The illustrated map supplies its own button artwork and forwards actions here.
+    const illustratedMap = this.scene.isActive('WorldMapScene') || this.scene.isPaused('WorldMapScene');
+    const tutorial = getGameState(this).tutorial;
+    this.speakerButton.setVisible(!illustratedMap);
+    this.notesButton.setVisible(!illustratedMap && (tutorial === 'farewell' || tutorial === 'done'));
     const playing = this.scene.manager.getScenes(true).some(scene =>
       !['HudScene', 'BootScene', 'TitleScene'].includes(scene.scene.key));
-    this.inventoryButton.setVisible(playing && getGameState(this).tutorial === 'done' && !this.notes && !this.inventory);
+    this.inventoryButton.setVisible(!illustratedMap && playing && tutorial === 'done' && !this.notes && !this.inventory);
   }
 
-  private toggleInventory(): void {
+  toggleSoundPanel(): void {
+    this.panel.setVisible(!this.panel.visible);
+  }
+
+  toggleInventory(): void {
     if (this.closingInventory || this.notes) return;
     if (this.inventory) {
       this.closingInventory = true;
@@ -115,7 +128,7 @@ export class HudScene extends Phaser.Scene {
    * Opens or closes Grandma's notes. While open, every other running scene
    * is paused (nothing moves, no patience runs out) and resumed on close.
    */
-  private toggleNotes(): void {
+  toggleNotes(): void {
     if (this.inventory) return;
     if (this.notes) {
       this.notes.panel.destroy();
