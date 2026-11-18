@@ -1,6 +1,7 @@
 # Island map artwork
 
-`source/island.png` is the user's original approved island illustration.
+`source/island.png` is the user's approved illustration with quality fixes,
+supplied on 19 November 2026, replacing the earlier island illustration.
 Load it directly and preserve its bytes. `src/data/mapPresentation.ts` maps
 its landmarks and labels to the 640×360 game canvas.
 
