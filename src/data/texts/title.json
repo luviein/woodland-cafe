@@ -1,0 +1,22 @@
+{
+  "start": "Start Game",
+  "settings": "Settings",
+  "credits": "Credits",
+  "quit": "Quit",
+  "back": "Back",
+  "continue": "Continue",
+  "newGame": "New game",
+  "saved": "Day {day} done · 🍃 {leaves}",
+  "empty": "A cosy cafe adventure awaits.",
+  "unreadable": "{reason}\nYour existing save will stay untouched unless you start a new game.",
+  "confirm": "Start a new game?",
+  "replace": "Your saved game (Day {day}) will be replaced.",
+  "replaceUnreadable": "Your existing unreadable save will be replaced.",
+  "keep": "Keep it",
+  "volume": "Volume: {volume}",
+  "mute": "Mute",
+  "unmute": "Unmute",
+  "soundHint": "Tap or drag the slider to change the volume.",
+  "creditsBody": "Woodland Café\n\nMade with Phaser 3, TypeScript and Vite.\n\nTitle artwork supplied for Woodland Café.",
+  "quitBody": "Thanks for visiting Woodland Café!\n\nYou can close this browser tab to exit."
+}

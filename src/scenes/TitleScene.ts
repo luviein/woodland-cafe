@@ -1,117 +1,167 @@
-import { promptPlayerName } from '../ui/PlayerNamePrompt';
 import Phaser from 'phaser';
+import landing from '../assets/title/source/landing.png';
+import words from '../data/texts/title.json';
+import { getSoundSettings, onSoundSettings, setSoundSettings } from '../audio/audio';
+import { volumeLabel } from '../audio/soundSettings';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import type { GameState } from '../logic/gameState';
-import { addArt } from '../ui/art';
-import { LeafText } from '../ui/LeafText';
-import { arrangeable, type Placeable } from '../layout/arrangeable';
+import { arrangeable } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
-import type { Point } from '../logic/layout';
-
-/** Where something goes on the title screen: by name, movable in Arrange mode (GAME_DESIGN.md §9.3). */
-const at = (name: string, x: number, y: number): Point => layoutPoint('title', name, { x, y });
-import { VIEW, viewFrame } from '../art/sprites/sheetCritters';
+import type { GameState } from '../logic/gameState';
 import { Button } from '../ui/Button';
-import { addGround, addStanding, addTree } from '../ui/sprites';
-import { COLORS, TEXT, css } from '../ui/theme';
+import { LeafText } from '../ui/LeafText';
+import { promptPlayerName } from '../ui/PlayerNamePrompt';
+import { TitleMenuPanel } from '../ui/TitleMenuPanel';
+import { COLORS, TEXT } from '../ui/theme';
 import { continueGame, readSave, startNewGame, setGameState } from './gameStore';
 import type { WorldMapRequest } from './WorldMapScene';
 
-/**
- * The first screen (GAME_DESIGN.md §6.1): Continue from the one save slot,
- * or start a New game. A save that can't be loaded is explained here, never
- * half-loaded.
- */
+const at = (name: string, x: number, y: number) => layoutPoint('title', name, { x, y });
+const LANDING_KEY = 'title:landing';
+
+/** Approved illustration with hit areas; save choices stay behind Start Game. */
 export class TitleScene extends Phaser.Scene {
+  private panel: TitleMenuPanel | null = null;
+  private confirmOpen = false;
+  private closingPanel = false;
+
   constructor() {
     super('TitleScene');
   }
 
+  preload(): void {
+    this.load.image(LANDING_KEY, landing);
+  }
+
   create(): void {
-    this.confirmOpen = false; // a scene object is reused when started again
-    const cx = BASE_WIDTH / 2;
-    this.drawScene();
-    // Light text with a dark outline, so it reads on the grass.
-    const outlined = { stroke: css(COLORS.ink), strokeThickness: 4 };
-    const titleAt = at('title', cx, 90);
-    const title = this.add
-      .text(titleAt.x, titleAt.y, 'Woodland Cafe', { ...TEXT.heading, fontSize: '32px', color: css(COLORS.paper), ...outlined })
-      .setOrigin(0.5);
-    arrangeable(this, 'title', 'title', titleAt, title);
-    const subtitleAt = at('subtitle', cx, 124);
-    const subtitle = this.add
-      .text(subtitleAt.x, subtitleAt.y, 'A cozy cafe for woodland critters', { ...TEXT.body, color: css(COLORS.paper), ...outlined })
-      .setOrigin(0.5);
-    arrangeable(this, 'title', 'subtitle', subtitleAt, subtitle);
-    // The menu moves as one, by its middle (where Continue or New game is).
-    const menu = at('menu', cx, 196);
-    const dx = menu.x - cx, dy = menu.y - 196;
-    const menuParts: Placeable[] = [];
+    this.panel = null;
+    this.confirmOpen = false;
+    this.closingPanel = false;
+    // The illustration is full-resolution artwork, like the journal images.
+    this.textures.get(LANDING_KEY).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    const background = at('landing', 320, 180);
+    const art = this.add.image(background.x, background.y, LANDING_KEY).setDisplaySize(BASE_WIDTH, BASE_HEIGHT);
+    arrangeable(this, 'title', 'landing', background, art);
 
-    const save = readSave();
-    let primary: Button;
-    if (save?.ok) {
-      const saved = save.state;
-      primary = new Button(this, cx + dx, 196 + dy, 180, 34, 'Continue', COLORS.serve, () => this.continueFrom(saved));
-      menuParts.push(
-        primary,
-        new LeafText(this, cx + dx, 222 + dy, `Day ${saved.day} done · 🍃 ${saved.leaves}`, { ...TEXT.label, fontSize: '14px', stroke: css(COLORS.ink), strokeThickness: 3 }, 0.5, 0),
-        new Button(this, cx + dx, 270 + dy, 180, 30, 'New game', COLORS.reset, () => this.confirmNewGame(saved.day)),
-      );
-    } else {
-      if (save && !save.ok) {
-        // Broken or from a newer version: say why, and that New game replaces it.
-        const reason = this.add
-          .text(cx + dx, 166 + dy, `${save.reason}\nNew game will replace it.`, {
-            ...TEXT.body,
-            color: css(COLORS.statusImpatient),
-            stroke: css(COLORS.ink),
-            strokeThickness: 3,
-            align: 'center',
-          })
-          .setOrigin(0.5);
-        menuParts.push(reason);
-      }
-      primary = new Button(this, cx + dx, 220 + dy, 180, 34, 'New game', COLORS.serve, () => this.newGame());
-      menuParts.push(primary);
-    }
-    arrangeable(this, 'title', 'menu', menu, ...menuParts);
+    const start = this.menuButton('startGame', 320, 198, 182, 34, () => this.showStartMenu());
+    this.menuButton('settings', 320, 237, 158, 30, () => this.showSettings());
+    this.menuButton('credits', 320, 273, 158, 30, () => this.showMessage('creditsPanel', words.credits, words.creditsBody));
+    this.menuButton('quit', 320, 310, 158, 30, () => this.showMessage('quitPanel', words.quit, words.quitBody));
 
-    // Enter presses the main button, through the button like other shortcuts.
+    // Gameplay controls would cover the supplied border and must not intercept menu clicks.
+    const hudWasActive = this.scene.isActive('HudScene');
+    const hudWasVisible = this.scene.isVisible('HudScene');
+    if (hudWasActive) this.scene.pause('HudScene');
+    this.scene.setVisible(false, 'HudScene');
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && !event.repeat && !this.confirmOpen) primary.press();
+      if (event.repeat) return;
+      if (event.key === 'Enter' && !this.confirmOpen) start.press();
+      if (event.key === 'Escape' && this.panel) this.closePanel();
     };
     this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
-      this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey),
-    );
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
+      if (hudWasActive && this.scene.isPaused('HudScene')) this.scene.resume('HudScene');
+      this.scene.setVisible(hudWasVisible, 'HudScene');
+    });
   }
 
-  /**
-   * The picture behind the menu: the cafe cottage on the left, its owner
-   * the hedgehog greeting a fox on the right, trees around. Everything at 2x
-   * (whole-number scaling keeps the pixels square).
-   */
-  private drawScene(): void {
-    addGround(this, 'grass');
-    const ground = BASE_HEIGHT - 24;
-    // Each piece of scenery stands at its base point, movable in Arrange mode.
-    const place = (name: string, x: number, y: number, add: (p: Point) => Placeable) => {
-      const p = at(name, x, y);
-      arrangeable(this, 'title', name, p, add(p));
+  private menuButton(name: string, x: number, y: number, width: number, height: number, action: () => void): Button {
+    const point = at(name, x, y);
+    // The supplied PNG already contains the button, icon and text.
+    const button = new Button(this, point.x, point.y, width, height, '', COLORS.paper, () => {
+      if (!this.confirmOpen) action();
+    }).setBackgroundVisible(false);
+    button.setName(name);
+    arrangeable(this, 'title', name, point, button);
+    return button;
+  }
+
+  private openPanel(name: string, heading: string): TitleMenuPanel {
+    this.confirmOpen = true;
+    const panel = new TitleMenuPanel(this, name, heading);
+    this.panel = panel;
+    return panel;
+  }
+
+  private backButton(panel: TitleMenuPanel): void {
+    panel.button('back', 320, 272, words.back, () => this.closePanel(), COLORS.reset);
+    panel.finishLayout();
+  }
+
+  private closePanel(after?: () => void): void {
+    if (!this.panel || this.closingPanel) return;
+    this.closingPanel = true;
+    // Defer destruction so the release/key that closes a panel cannot also press the menu below.
+    this.time.delayedCall(0, () => {
+      this.panel?.destroy();
+      this.panel = null;
+      this.closingPanel = false;
+      this.confirmOpen = false;
+      after?.();
+    });
+  }
+
+  private showStartMenu(): void {
+    const panel = this.openPanel('startPanel', words.start);
+    const save = readSave();
+    if (save?.ok) {
+      const saved = save.state;
+      const point = panel.point('saved', 320, 124);
+      panel.add(new LeafText(this, point.x, point.y,
+        words.saved.replace('{day}', String(saved.day)).replace('{leaves}', String(saved.leaves)),
+        { ...TEXT.body, fontSize: '14px' }, 0.5, 0));
+      panel.button('continue', 320, 166, words.continue, () => this.closePanel(() => this.continueFrom(saved)), COLORS.serve);
+      panel.button('newGame', 320, 216, words.newGame, () => this.closePanel(() => this.confirmNewGame(saved.day)), COLORS.reset);
+    } else {
+      panel.text('note', 320, 122, save ? words.unreadable.replace('{reason}', save.reason) : words.empty).setFontSize(12);
+      panel.button('newGame', 320, 216, words.newGame,
+        () => this.closePanel(() => save ? this.confirmNewGame(null) : this.newGame()), COLORS.serve);
+    }
+    this.backButton(panel);
+  }
+
+  private showSettings(): void {
+    const panel = this.openPanel('settingsPanel', words.settings);
+    const label = panel.text('volume', 320, 122, '');
+    const point = panel.point('slider', 320, 166);
+    const track = this.add.rectangle(point.x, point.y, 180, 6, COLORS.disabled);
+    const fill = this.add.rectangle(point.x - 90, point.y, 0, 6, COLORS.serve).setOrigin(0, 0.5);
+    const knob = this.add.rectangle(point.x, point.y, 10, 18, COLORS.paper).setStrokeStyle(2, COLORS.ink);
+    const hit = this.add.zone(point.x, point.y, 200, 28).setInteractive({ useHandCursor: true });
+    panel.add([track, fill, knob, hit]);
+    this.input.setDraggable(hit);
+    const slide = (pointer: Phaser.Input.Pointer) => {
+      const local = hit.getWorldTransformMatrix().applyInverse(pointer.worldX, pointer.worldY);
+      const volume = Math.round(Phaser.Math.Clamp((local.x + 90) / 180, 0, 1) * 100) / 100;
+      setSoundSettings({ volume, muted: false });
     };
-    place('pine.left', 24, ground - 30, (p) => addTree(this, p.x, p.y, 'pine'));
-    place('oak.left', 196, ground - 40, (p) => addTree(this, p.x, p.y, 'oak'));
-    place('pine.right', 616, ground - 36, (p) => addTree(this, p.x, p.y, 'pine'));
-    place('cottage', 110, ground, (p) => addStanding(this, p.x, p.y, 'cafeHouse').setScale(2));
-    place('oak.right', 586, ground + 8, (p) => addTree(this, p.x, p.y, 'oak'));
-    // The fox faces right (the art's way), toward the hedgehog, who faces it back with its left view.
-    place('fox', 460, ground, (p) => addArt(this, p.x, p.y, 'fox', viewFrame(VIEW.right)).setOrigin(0.5, 1).setScale(2));
-    place('hedgehog', 520, ground, (p) => addArt(this, p.x, p.y, 'hedgehog', viewFrame(VIEW.left)).setOrigin(0.5, 1).setScale(2));
+    hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, slide);
+    hit.on(Phaser.Input.Events.GAMEOBJECT_DRAG, slide);
+    const mute = panel.button('mute', 320, 216, '', () => {
+      const settings = getSoundSettings();
+      setSoundSettings({ ...settings, muted: !settings.muted });
+    });
+    panel.text('hint', 320, 190, words.soundHint).setFontSize(10);
+    this.backButton(panel);
+    const refresh = () => {
+      const settings = getSoundSettings();
+      const volume = settings.muted ? 0 : settings.volume;
+      label.setText(words.volume.replace('{volume}', volumeLabel(settings)));
+      mute.setText(settings.muted ? words.unmute : words.mute);
+      // Track coordinates include any Arrange offset applied to the panel's children.
+      fill.setPosition(track.x - 90, track.y).setSize(Math.round(180 * volume), 6);
+      knob.setPosition(track.x - 90 + Math.round(180 * volume), track.y);
+    };
+    const stop = onSoundSettings(refresh);
+    panel.once(Phaser.GameObjects.Events.DESTROY, stop);
+    refresh();
   }
 
-  /** True while "Start a new game?" is showing, so Enter doesn't press Continue behind it. */
-  private confirmOpen = false;
+  private showMessage(name: string, heading: string, body: string): void {
+    const panel = this.openPanel(name, heading);
+    panel.text('body', 320, 124, body).setFontSize(12);
+    this.backButton(panel);
+  }
 
   private continueFrom(state: GameState): void {
     if (!state.playerName) {
@@ -124,7 +174,6 @@ export class TitleScene extends Phaser.Scene {
       return;
     }
     continueGame(this, state);
-    // Between days, so the map: the cafe is where the next day starts.
     const request: WorldMapRequest = { current: 'cafe' };
     this.scene.start('WorldMapScene', request);
   }
@@ -141,35 +190,11 @@ export class TitleScene extends Phaser.Scene {
     promptPlayerName(this, name => { this.confirmOpen = false; accept(name); }, () => { this.confirmOpen = false; });
   }
 
-  /** New game deletes the save, so ask first (Esc / No to back out). */
-  private confirmNewGame(savedDay: number): void {
-    this.confirmOpen = true;
-    const cx = BASE_WIDTH / 2;
-    const cy = BASE_HEIGHT / 2;
-    const width = 360;
-    const height = 120;
-    const top = cy - height / 2;
-    const dim = this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.5).setOrigin(0).setInteractive();
-    const panel = this.add.rectangle(cx, cy, width, height, COLORS.paper).setStrokeStyle(3, COLORS.ink);
-    const title = this.add.text(cx, top + 18, 'Start a new game?', TEXT.heading).setOrigin(0.5, 0);
-    const note = this.add
-      .text(cx, top + 42, `Your saved game (Day ${savedDay}) will be deleted.`, TEXT.body)
-      .setOrigin(0.5, 0);
-    const yes = new Button(this, cx - 70, top + height - 28, 120, 30, 'New game', COLORS.reset, () => { close(); this.newGame(); });
-    const no = new Button(this, cx + 70, top + height - 28, 120, 30, 'Keep it', COLORS.serve, () => close());
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') no.press();
-    };
-    const close = () => {
-      this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
-      for (const o of [dim, panel, title, note, yes, no]) o.destroy();
-      // After this key event is done, so the same Enter can't also press Continue.
-      this.time.delayedCall(0, () => { if (!document.getElementById('player-name-form')) this.confirmOpen = false; });
-    };
-    this.input.keyboard?.on(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
-      this.input.keyboard?.off(Phaser.Input.Keyboard.Events.ANY_KEY_DOWN, onKey),
-    );
+  private confirmNewGame(savedDay: number | null): void {
+    const panel = this.openPanel('confirmPanel', words.confirm);
+    panel.text('note', 320, 130, savedDay === null ? words.replaceUnreadable : words.replace.replace('{day}', String(savedDay))).setFontSize(12);
+    panel.button('newGame', 320, 212, words.newGame, () => this.closePanel(() => this.newGame()), COLORS.reset);
+    panel.button('keep', 320, 272, words.keep, () => this.closePanel());
+    panel.finishLayout();
   }
 }
