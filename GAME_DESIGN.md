@@ -249,7 +249,14 @@ The player can leave the counter **before taking an order** to clean messes; the
 - **Style:** a single-screen, top-down pixel-art illustration of a **grassy woodland island surrounded by water**, with decorative trees.
 - Each location is a **small landmark** (building, tree grove, market stalls) with a **clickable signpost-style label** above it.
 - The **player's current location** is highlighted in a different colour.
-- **Dotted paths** connect the locations.
+- The supplied illustrated island PNG provides the scenery, buildings,
+  waterfall, bridge and paths. Preserve the original file and align named
+  hit areas with its five labels and landmarks. Keep the current-location
+  highlight, locked feedback, tutorial arrows, Mascot and existing travel rules.
+  Replace the artwork's sample wallet contents with the live Leaves balance
+  inside its original frame. The illustrated sound, notes and inventory
+  buttons open the existing HUD panels; unavailable tutorial controls are
+  dimmed and disabled. Do not draw a second HUD over the artwork.
 - **Locked locations** show a **lock icon** on their label.
 - Locations are a **data-driven list**, so more can be added later. Each entry has:
   - name
