@@ -257,6 +257,12 @@ The player can leave the counter **before taking an order** to clean messes; the
   inside its original frame. The illustrated sound, notes and inventory
   buttons open the existing HUD panels; unavailable tutorial controls are
   dimmed and disabled. Do not draw a second HUD over the artwork.
+- **Water movement:** reuse the approved illustration's existing cyan ripple
+  pixels as a subtle overlay over open sea. Ripples drift a few pixels and
+  fade in and out at staggered intervals; the island, coast, river, waterfall,
+  buildings and UI stay still. Extract and cache the ripple texture once,
+  without changing the source PNG or creating new textures each frame.
+  Ripple anchors have named Arrange positions, and pause with the map.
 - **Locked locations** show a **lock icon** on their label.
 - Locations are a **data-driven list**, so more can be added later. Each entry has:
   - name
