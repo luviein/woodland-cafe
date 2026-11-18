@@ -248,11 +248,11 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 - **Style:** a single-screen, top-down pixel-art illustration of a **grassy woodland island surrounded by water**, with decorative trees.
 - Each location is a **small landmark** (building, tree grove, market stalls) with a **clickable signpost-style label** above it.
-- The **player's current location** is highlighted in a different colour.
+- Keep location labels as illustrated, without a rectangular selection outline.
 - The supplied illustrated island PNG provides the scenery, buildings,
   waterfall, bridge and paths. Preserve the original file and align named
-  hit areas with its five labels and landmarks. Keep the current-location
-  highlight, locked feedback, tutorial arrows, Mascot and existing travel rules.
+  hit areas with its five labels and landmarks. Keep locked feedback,
+  tutorial arrows, Mascot and existing travel rules.
   Replace the artwork's sample wallet contents with the live Leaves balance
   inside its original frame. The illustrated sound, notes and inventory
   buttons open the existing HUD panels; unavailable tutorial controls are
@@ -767,7 +767,7 @@ Dev console testing shortcuts: `seed <mushroom|tomato|chilli> [n]` adds seeds fo
 
 A labelled garden door on the cafe back wall opens a separate Garden map. Visiting pauses the cafe scene (customers, player, orders and clock); returning through the garden door resumes that same day. It never starts another cafe day. The door is unavailable during the guided tutorial or another cafe overlay.
 
-The world map also has a small planted Garden landmark and signpost beside the cafe, connected by a dotted path. It opens the garden between cafe days without starting or advancing a day. A map visit returns to the world map with Garden highlighted; a cafe-door visit returns to the paused cafe. The return control says Map or Cafe to match the entrance. Map gardening saves normally between days and uses the same plots and seed stock as the cafe door.
+The world map also has a small planted Garden landmark and signpost beside the cafe, connected by a dotted path. It opens the garden between cafe days without starting or advancing a day. A map visit returns to the world map from Garden; a cafe-door visit returns to the paused cafe. The return control says Map or Cafe to match the entrance. Map gardening saves normally between days and uses the same plots and seed stock as the cafe door.
 
 Seed selection lives in a floral seed pouch resting on a wooden garden table. Tap the table or pouch to open a cream panel with an olive-green border, wooden Seed Pouch title, floral corners and close button, inspired by the supplied reference. Three packet cards show Mushroom, Tomato and Chilli with their seed counts; locked crops explain the Specialty unlock. Choosing an unlocked packet closes the panel and selects that crop for planting. Empty packets remain selectable, with buying guidance when planting is attempted. The current selection is shown above the beds instead of the old three blue seed buttons. The panel blocks garden clicks behind it; Esc closes it before leaving the garden. Planting, prices, growth times and saves stay unchanged. Table, pouch, panel and selected-crop label have named Arrange positions.
 

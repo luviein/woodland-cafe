@@ -29,7 +29,7 @@ export interface LocationRequest {
   location: LocationId;
 }
 
-/** What opens the map: which place the player is leaving from (highlighted). */
+/** What opens the map: which place the player is leaving from. */
 export interface WorldMapRequest {
   current: LocationId;
 }
@@ -281,21 +281,19 @@ export class WorldMapScene extends Phaser.Scene {
   }
 
   /**
-   * The illustrated label's hit area and current/locked overlays.
+   * The illustrated label's hit area and locked overlays.
    * Returns its objects, point, and whether it still sits
    * where its place puts it (not moved on its own in Arrange mode).
    */
   private createSignpost(id: LocationId): { parts: Placeable[]; point: Point; followsPlace: boolean } {
     const location = LOCATIONS[id];
-    const here = id === this.request.current;
     const { x, y } = this.signPosition(id);
     const { width, height } = MAP_PLACES[id].sign;
     const locked = location.locked || tourLock(getGameState(this).tutorial, id) !== null;
     const sign = new Button(this, x, y, width, height, '', COLORS.paper, () => this.go(id)).setBackgroundVisible(false).setDepth(10);
     const shade = this.add.rectangle(x, y, width, height, COLORS.overlay, 0.3).setVisible(locked).setDepth(10);
-    const highlight = this.add.rectangle(x, y, width + 4, height + 4).setFillStyle(0, 0).setStrokeStyle(1, COLORS.paper).setVisible(here).setDepth(10);
     const lock = this.add.text(x + width / 2, y - height / 2 - 2, '🔒', TEXT.body).setOrigin(1, 1).setVisible(locked).setDepth(11);
-    const parts: Placeable[] = [sign, shade, highlight, lock];
+    const parts: Placeable[] = [sign, shade, lock];
     const usual = this.usualSignPosition(id);
     return { parts, point: { x, y }, followsPlace: x === usual.x && y === usual.y };
   }
