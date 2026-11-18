@@ -263,6 +263,12 @@ The player can leave the counter **before taking an order** to clean messes; the
   buildings and UI stay still. Extract and cache the ripple texture once,
   without changing the source PNG or creating new textures each frame.
   Ripple anchors have named Arrange positions, and pause with the map.
+- **Waterfall:** the supplied six-frame sheet animates only the waterfall
+  and foam, continuously looping at 140 ms per frame (840 ms per loop).
+  Preserve the existing map waterfall's position and dimensions, leaving the
+  surrounding rocks and plants in the map image static. Use nearest-neighbour
+  filtering for the animated overlay; keep the original sheet and a repeatable
+  extraction script alongside the integration. It pauses with the map.
 - **Locked locations** show a **lock icon** on their label.
 - Locations are a **data-driven list**, so more can be added later. Each entry has:
   - name
