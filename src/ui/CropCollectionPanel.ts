@@ -4,24 +4,20 @@ import collectionWords from '../data/texts/cropCollection.json';
 import titleWords from '../data/texts/playerTitles.json';
 import { COLLECTION_ITEMS } from '../logic/cropCollection';
 import { MILESTONE_IDS, MILESTONE_LEAVES, canClaimMilestone, milestoneProgress } from '../logic/journal';
-import { cropRecord, formatCropWeight } from '../logic/cropWeights';
-import { cropArtName, cropName } from '../logic/garden';
 import type { GameState } from '../logic/gameState';
-import type { ArtName } from '../art/spriteArt';
 import { claimJournalMilestone, getGameState } from '../scenes/gameStore';
 import { titleProgress, titleUnlocked } from '../logic/playerTitles';
 import { layoutPoint } from '../layout/positions';
 import { arrangeable, arrangeablePanel } from '../layout/arrangeable';
-import { addArt } from './art';
 import { addJournalImage } from './journalImage';
 import { Button } from './Button';
 import { LeafText } from './LeafText';
 import { PlayerTitlePlate } from './PlayerTitlePlate';
 import { WardrobePanel } from './WardrobePanel';
-import { cropQuantity } from './cropQuantity';
+import { JournalCropOverlay, type JournalCropAnchor } from './journal/JournalCropOverlay';
 import { COLORS, TEXT } from './theme';
 
-type Placed = Phaser.GameObjects.Container | Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+type Placed = Phaser.GameObjects.Zone | Phaser.GameObjects.Container | Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image | Phaser.GameObjects.Text;
 
 /** Existing book entry points now share one journal and the same pause lifecycle. */
 export class CropCollectionPanel extends Phaser.GameObjects.Container {
@@ -29,6 +25,7 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
   private readonly content: Phaser.GameObjects.Container;
   private pendingRefresh: Phaser.Time.TimerEvent | null = null;
   private journalState: GameState;
+  private cropOverlay: JournalCropOverlay | null = null;
 
   constructor(scene: Phaser.Scene, back: () => void, close: () => void) {
     super(scene, 0, 0);
@@ -48,7 +45,10 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
     });
     this.content = scene.add.container(30, 0).setName('content'); this.add(this.content);
     this.renderSpread();
-    this.once(Phaser.GameObjects.Events.DESTROY, () => this.pendingRefresh?.remove(false));
+    this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      this.pendingRefresh?.remove(false);
+      this.cropOverlay?.destroy();
+    });
     arrangeablePanel(scene, 'fieldJournal', 'panel', this);
   }
 
@@ -78,6 +78,7 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
   }
 
   private renderSpread(): void {
+    this.cropOverlay?.destroy(); this.cropOverlay = null;
     this.content.removeAll(true);
     if (this.spread === 'crops') this.renderCrops(); else this.renderMilestones();
   }
@@ -86,20 +87,13 @@ export class CropCollectionPanel extends Phaser.GameObjects.Container {
     const state = this.journalState;
     [collectionWords.golden, collectionWords.christmas].forEach((label, i) =>
       this.text(`heading.${i}`, i === 0 ? 203 : 448, 92, label, 12).setOrigin(0.5, 0));
-    COLLECTION_ITEMS.forEach((item, i) => {
-      const left = i < 3 ? 104 : 352, y = 112 + i % 3 * 60;
-      const recorded = state.cropCollection.includes(item.id), name = `crop.${item.id}`;
-      const art = this.place(this.content, `${name}.art`, left + 12, y + 4,
-        addArt(this.scene, 0, 0, cropArtName(item.crop, item.variant) as ArtName));
-      if (!recorded) art.setTintFill(0x785c43).setAlpha(0.5);
-      this.text(`${name}.name`, left + 28, y - 3, cropName(item.crop, item.variant), 10, 152).setFontStyle('bold');
-      this.text(`${name}.description`, left, y + 16,
-        recorded ? collectionWords.descriptions[item.id] : item.variant === 'golden' ? words.goldenClue : words.christmasClue, 10, 194);
-      this.text(`${name}.count`, left, y + 44,
-        collectionWords.have.replace('{amount}', cropQuantity(state.garden.harvests[item.variant][item.crop])), 9, 80);
-      this.text(`${name}.weight`, left + 194, y + 44,
-        recorded ? collectionWords.record.replace('{weight}', formatCropWeight(cropRecord(state, item.id))) : '', 9, 112).setOrigin(1, 0);
+    const anchors: JournalCropAnchor[] = COLLECTION_ITEMS.map((item, i) => {
+      const x = i < 3 ? 96 : 344, y = 110 + i % 3 * 64;
+      const zone = this.place(this.content, 'crop.' + item.id + '.card', x, y,
+        this.scene.add.zone(0, 0, 196, 60).setOrigin(0));
+      return { id: item.id, zone };
     });
+    this.cropOverlay = new JournalCropOverlay(this.scene, this, anchors, state);
     this.text('progress', 203, 78, collectionWords.progress.replace('{amount}', String(state.cropCollection.length)), 10, 200).setOrigin(0.5);
   }
 

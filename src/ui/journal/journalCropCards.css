@@ -1,0 +1,99 @@
+.journal-crop-overlay {
+  position: fixed;
+  width: 640px;
+  height: 360px;
+  transform-origin: top left;
+  pointer-events: none;
+  z-index: 5;
+  color: #3c261d;
+  font-family: Arial, sans-serif;
+}
+
+.journal-pixel-frame {
+  --corner: 6px;
+  --shoulder: 3px;
+  --paper: #fff0d2;
+  box-sizing: border-box;
+  background: #703719;
+  padding: 1px;
+}
+
+.journal-pixel-frame,
+.journal-pixel-frame__inside {
+  /* Every segment is horizontal or vertical: no smooth border-radius or diagonal SVG edges. */
+  clip-path: polygon(
+    var(--corner) 0, calc(100% - var(--corner)) 0,
+    calc(100% - var(--corner)) 1px, calc(100% - var(--shoulder)) 1px,
+    calc(100% - var(--shoulder)) 2px, calc(100% - 2px) 2px,
+    calc(100% - 2px) var(--shoulder), calc(100% - 1px) var(--shoulder),
+    calc(100% - 1px) var(--corner), 100% var(--corner),
+    100% calc(100% - var(--corner)), calc(100% - 1px) calc(100% - var(--corner)),
+    calc(100% - 1px) calc(100% - var(--shoulder)), calc(100% - 2px) calc(100% - var(--shoulder)),
+    calc(100% - 2px) calc(100% - 2px), calc(100% - var(--shoulder)) calc(100% - 2px),
+    calc(100% - var(--shoulder)) calc(100% - 1px), calc(100% - var(--corner)) calc(100% - 1px),
+    calc(100% - var(--corner)) 100%, var(--corner) 100%,
+    var(--corner) calc(100% - 1px), var(--shoulder) calc(100% - 1px),
+    var(--shoulder) calc(100% - 2px), 2px calc(100% - 2px),
+    2px calc(100% - var(--shoulder)), 1px calc(100% - var(--shoulder)),
+    1px calc(100% - var(--corner)), 0 calc(100% - var(--corner)),
+    0 var(--corner), 1px var(--corner), 1px var(--shoulder),
+    2px var(--shoulder), 2px 2px, var(--shoulder) 2px,
+    var(--shoulder) 1px, var(--corner) 1px
+  );
+}
+
+.journal-pixel-frame__inside {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+}
+
+.journal-crop-card {
+  position: absolute;
+  width: 196px;
+  height: 60px;
+}
+
+.journal-crop-card > .journal-pixel-frame__inside {
+  --corner: 5px;
+  --shoulder: 2px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.journal-crop-card__icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  justify-self: center;
+}
+
+.journal-crop-card__copy { min-width: 0; }
+.journal-crop-card__name { font-size: 11px; line-height: 12px; font-weight: 700; margin-bottom: 2px; }
+.journal-crop-card__description { font-size: 10px; line-height: 11px; }
+.journal-crop-card__totals { display: grid; justify-items: stretch; align-content: center; gap: 3px; min-width: 0; }
+
+.journal-crop-quantity {
+  --corner: 4px;
+  --shoulder: 2px;
+  --paper: #ffe0aa;
+  font-size: 9px;
+  line-height: 11px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.journal-crop-quantity > .journal-pixel-frame__inside {
+  --corner: 3px;
+  --shoulder: 2px;
+  min-height: 16px;
+  padding: 2px;
+}
+
+.journal-crop-card__record { font-size: 9px; line-height: 10px; text-align: center; overflow-wrap: anywhere; }
+.journal-crop-card__record > span { display: block; }
