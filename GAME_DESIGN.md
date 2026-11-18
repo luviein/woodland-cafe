@@ -446,7 +446,15 @@ The player can leave the counter **before taking an order** to clean messes; the
   - decorating is finished
   - leaves are picked up or a forage spot is gathered
 - **Cafe days are not saved in progress:** customers, the queue and the clock aren't part of the save. Quitting mid-day loses that day: Continue goes back to the world map just before it, and opening the Cafe starts that same day again. Garden actions are an exception: only their garden and harvest deltas are saved against that pre-day checkpoint, as described below.
-- **Title screen** (the first thing shown):
+- **Title screen** (the first thing shown): use the supplied cream Woodland
+  Café landing illustration directly, preserving its logo, critters, border and
+  four illustrated buttons. Named hit areas align with Start Game, Settings,
+  Credits and Quit on the 640×360 canvas. Hide the gameplay HUD on this screen.
+  Start Game opens the save choices below; Settings offers mute and volume
+  controls using the existing separately saved audio settings; Credits shows
+  a short project/technology credit panel; Quit explains that the player can
+  close the browser tab. These panels close with Back or Esc and block the
+  menu beneath them. Enter opens Start Game when no panel is open.
   - **Continue** shows the last finished day and the wallet (e.g. "Day 4 done · 🍃120") and opens the world map.
   - **New game** starts Day 1 at the cafe. If a save exists, it asks first: the old save is deleted straight away.
   - With no save, only New game is offered.
