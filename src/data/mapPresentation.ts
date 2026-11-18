@@ -12,3 +12,11 @@ export const MAP_HUD = {
   notes: { x: 49, y: 339, size: 24 },
   inventory: { x: 80, y: 339, size: 24 },
 } as const;
+
+/** Open-sea anchors leave room for the ripple's full width and small drift. */
+export const MAP_RIPPLES = [
+  { x: 132, y: 33 }, { x: 579, y: 32 },
+  { x: 35, y: 65 }, { x: 613, y: 72 },
+  { x: 25, y: 264 }, { x: 608, y: 302 },
+  { x: 136, y: 333 }, { x: 411, y: 345 },
+] as const;

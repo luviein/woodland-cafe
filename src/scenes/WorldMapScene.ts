@@ -15,6 +15,7 @@ import { COLORS, TEXT, css } from '../ui/theme';
 import { createMascotSprite } from '../ui/sprites';
 import { isHired } from '../logic/employees';
 import { IllustratedMapWallet } from '../ui/IllustratedMapWallet';
+import { addMapWater } from '../ui/MapWater';
 import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
 import { bottomBoxLeft } from '../ui/hudLayout';
@@ -65,6 +66,7 @@ export class WorldMapScene extends Phaser.Scene {
     // Adding the wallet frame changes Phaser's default frame; explicitly keep the full illustration.
     const image = this.add.image(background.x, background.y, MAP_IMAGE_KEY, '__BASE').setDisplaySize(BASE_WIDTH, BASE_HEIGHT);
     arrangeable(this, 'worldMap', 'illustration', background, image);
+    addMapWater(this);
     for (const id of LOCATION_IDS) {
       const landmark = this.drawLandmark(id);
       const sign = this.createSignpost(id);
