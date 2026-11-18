@@ -6,6 +6,7 @@ import { SEED_SHOP_ART } from '../art/sprites/seedShop';
 import { MUSEUM_ART } from '../art/sprites/museum';
 import { CHRISTMAS_SELL_ART } from '../art/sprites/christmasSell';
 import { createGardenPreviews } from './gardenPreview';
+import { createWaterfallPreview } from './waterfallPreview';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from '../art/sprites/seedPouch';
 import { GARDEN_ART } from '../art/sprites/garden';
@@ -129,8 +130,10 @@ const scaleFor = (name: ArtName, target: number) => {
 /** Animations that run on the page: each redraws its canvas from the frame list, one step at a time. */
 const walkers: { canvas: HTMLCanvasElement; name: ArtName; frames: number[]; flip: boolean; scale: number }[] = [];
 let gardening: ReturnType<typeof createGardenPreviews> | null = null;
+let waterfall: ReturnType<typeof createWaterfallPreview> | null = null;
 function animate(time: number): void {
   gardening?.animate(time);
+  waterfall?.animate(time);
   for (const w of walkers) {
     const ctx = w.canvas.getContext('2d')!;
     ctx.clearRect(0, 0, w.canvas.width, w.canvas.height);
@@ -245,6 +248,8 @@ function build(): void {
   main.append(group('Side by side (real proportions)', 0, scaleView()));
   gardening = createGardenPreviews(paint);
   main.append(group('Gardening animations', 0, gardening.node));
+  waterfall = createWaterfallPreview();
+  main.append(group('Map waterfall PNG animation', 0, waterfall.node));
   const journalCards = el('div', { className: 'cards' });
   for (const [name, url] of Object.entries(JOURNAL_IMAGES)) {
     const image = el('img', { src: url, alt: name });

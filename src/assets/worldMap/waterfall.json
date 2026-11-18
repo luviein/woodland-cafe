@@ -1,0 +1,8 @@
+{
+  "count": 6,
+  "frameMs": 140,
+  "cellWidth": 362,
+  "sheetCrop": { "x": 110, "y": 230, "width": 145, "height": 225 },
+  "mapCrop": { "x": 438, "y": 151, "width": 138, "height": 140 },
+  "display": { "x": 194, "y": 85, "width": 53, "height": 54 }
+}

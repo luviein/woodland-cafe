@@ -14,3 +14,21 @@ areas connected to the existing HUD panels; the PNG itself is not repainted.
 load time, preserving its colours and removing only the surrounding blue sea.
 Eight anchored overlays drift and fade over open water. The source PNG stays
 unchanged, and no textures are created during animation.
+
+## Waterfall
+
+`source/waterfall-sheet.png` preserves the approved six-frame sheet. The
+derived `waterfall.png` contains only water and foam, masked to the original
+map's water footprint; the map's rocks and plants are never part of an
+animation frame. `waterfall.json` records the extraction, placement and
+140 ms frame duration. The generated 53×54 frames render at native size
+with nearest-neighbour filtering, looping every 840 ms.
+
+Regenerate from the preserved sources with:
+
+```powershell
+powershell -NoProfile -File tools/build-map-waterfall.ps1
+```
+
+Pass `-PreviewPath <path.png>` to inspect all six enlarged map composites.
+The sprite gallery also shows a continuously looping map preview.

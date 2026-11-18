@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BASE_HEIGHT, BASE_WIDTH } from '../config/display';
-import { MAP_IMAGE, MAP_IMAGE_KEY, MAP_WALLET_PAPER } from '../assets/worldMap';
+import { MAP_IMAGE, MAP_IMAGE_KEY, MAP_WALLET_PAPER, MAP_WATERFALL, MAP_WATERFALL_IMAGE, MAP_WATERFALL_KEY } from '../assets/worldMap';
 import { MAP_HUD, MAP_PLACES } from '../data/mapPresentation';
 import { getSoundSettings, onSoundSettings } from '../audio/audio';
 import type { HudScene } from './HudScene';
@@ -16,6 +16,7 @@ import { createMascotSprite } from '../ui/sprites';
 import { isHired } from '../logic/employees';
 import { IllustratedMapWallet } from '../ui/IllustratedMapWallet';
 import { addMapWater } from '../ui/MapWater';
+import { addMapWaterfall } from '../ui/MapWaterfall';
 import { beginCafeDay, getGameState, setGameState, tutorialEvent, watchGameState } from './gameStore';
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
 import { bottomBoxLeft } from '../ui/hudLayout';
@@ -54,6 +55,10 @@ export class WorldMapScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image(MAP_IMAGE_KEY, MAP_IMAGE);
+    this.load.spritesheet(MAP_WATERFALL_KEY, MAP_WATERFALL_IMAGE, {
+      frameWidth: MAP_WATERFALL.display.width, frameHeight: MAP_WATERFALL.display.height,
+      startFrame: 0, endFrame: MAP_WATERFALL.count - 1,
+    });
   }
 
   create(): void {
@@ -67,6 +72,7 @@ export class WorldMapScene extends Phaser.Scene {
     const image = this.add.image(background.x, background.y, MAP_IMAGE_KEY, '__BASE').setDisplaySize(BASE_WIDTH, BASE_HEIGHT);
     arrangeable(this, 'worldMap', 'illustration', background, image);
     addMapWater(this);
+    addMapWaterfall(this);
     for (const id of LOCATION_IDS) {
       const landmark = this.drawLandmark(id);
       const sign = this.createSignpost(id);
