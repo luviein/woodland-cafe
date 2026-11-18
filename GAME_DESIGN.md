@@ -866,6 +866,17 @@ Case plaques use high-contrast, native-pixel digit glyphs with clear outlines an
 
 ### Field Journal and founding milestones
 
+Crop entry cards use a reusable React/CSS overlay aligned with the existing
+Phaser book pages. Golden and Christmas entries share equal card heights,
+padding and gaps, with a warm cream fill and a thin continuous dark-brown
+pixel-stepped rounded border. Quantity badges use the same stepped styling
+at a smaller radius. Crop icons stay unchanged PNG representations of the
+existing loaded textures; names, clues/descriptions, quantities and best
+weights remain dynamic. Keep icons left, text middle and quantities right.
+Do not change the book artwork, bookmarks, milestones, inventory rules or
+collection progress. Align the overlay to the game canvas and Arrange anchors,
+remove it when the spread closes, and preserve modal input and pause behaviour.
+
 Replace the collection book presentation with the supplied open Field Journal,
 using the matching closed-book icon and three supplied milestone badges.
 The Crops spread keeps Golden records on the left and Christmas records on
