@@ -13,7 +13,30 @@ import { setMuseumGameState, museumLeavesAvailable } from './gameStore';
 import { catalogueProduct, type CatalogueItem } from '../data/catalogueProducts';
 import { FINISH_IDS } from '../data/roomFinishProducts';
 import { memorySaveSlot } from '../storage/saveSlot';
+import { rememberTip } from './gameStore';
 import { beginCafeDay, continueGame, endCafeDay, getGameState, initGameState, setGameState, setGardenGameState, purchaseChristmasItem } from './gameStore';
+
+it('remembers multi-dish help across reload without committing unfinished cafe earnings or stock', () => {
+  const values = new Map<string, unknown>();
+  const owner = { registry: { get: (key: string) => values.get(key), set: (key: string, value: unknown) => values.set(key, value) } } as unknown as Phaser.Game;
+  const slot = memorySaveSlot();
+  initGameState(owner, slot);
+  const checkpoint = { ...createNewGame(), tutorial: 'done' as const, leaves: 100 };
+  continueGame(owner, checkpoint); beginCafeDay(owner);
+  setGameState(owner, { ...checkpoint, leaves: 250, stock: { ...checkpoint.stock, bread: 1 } });
+  rememberTip(owner, 'multiDish');
+  const loaded = loadGame(slot.read()!);
+  expect(loaded.ok).toBe(true);
+  if (!loaded.ok) return;
+  expect(loaded.state.tipsSeen).toContain('multiDish');
+  expect(loaded.state.leaves).toBe(100);
+  expect(loaded.state.stock).toEqual(checkpoint.stock);
+  expect(getGameState(owner).leaves).toBe(250);
+  expect(getGameState(owner).stock.bread).toBe(1);
+  const receipt = slot.read();
+  rememberTip(owner, 'multiDish');
+  expect(slot.read()).toBe(receipt);
+});
 
 it('persists journal claims and title choice without committing cafe work or duplicating rewards on reload', () => {
   const values = new Map<string, unknown>();

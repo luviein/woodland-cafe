@@ -53,7 +53,8 @@ import { CLOTHING_IDS, CLOTHING_SLOTS } from '../data/clothing';
 // 20: one-time Field Journal rewards and equipped collectible title.
 // 21: permanent collection titles, wardrobe selection and retired antlers.
 // 22: saved local player name; unnamed older saves prompt once on Continue.
-export const SAVE_VERSION = 22;
+// 23: first multi-dish help receipt in tipsSeen; older lists remain valid and see the guide once.
+export const SAVE_VERSION = 23;
 
 /** What's written to the slot: the version, then the state as-is. */
 interface SaveFile {

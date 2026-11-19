@@ -30,6 +30,7 @@ const box = (where: string, boxWidth: number, maxLines: number): Fit => ({
 export const FITS = {
   floor: box("Grandma's box under the cafe", 543, 2),
   prep: box("Grandma's box at the prep station", 216, 4),
+  multiDish: box("Grandma's multi-dish guide", 464, 5),
   summary: box("Grandma's box on the day summary", 512, 2),
   map: box("Grandma's box on the map", 543, 2),
   decorate: box("Grandma's box in Decorate", 455, 2),
@@ -54,6 +55,7 @@ export const STEP_FIT: Record<TutorialStep | TipId, Fit> = {
   decorate: FITS.decorate,
   marketplace: FITS.outdoors,
   forest: FITS.outdoors,
+  multiDish: FITS.multiDish,
 };
 
 /**

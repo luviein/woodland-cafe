@@ -6,7 +6,8 @@ import { museumCheckpoint } from '../logic/museum';
 import { buyChristmasItem } from '../logic/christmasShop';
 import type { CatalogueItem } from '../data/catalogueProducts';
 import type Phaser from 'phaser';
-import { createNewGame, skipTutorial, type GameState } from '../logic/gameState';
+import { createNewGame, seeTip, skipTutorial, type GameState } from '../logic/gameState';
+import type { TipId } from '../data/tutorial';
 import { loadGame, saveGame, type LoadResult } from '../logic/save';
 import { advanceTutorial, type TutorialEvent, type TutorialState } from '../logic/tutorial';
 import { browserSaveSlot, type SaveSlot } from '../storage/saveSlot';
@@ -117,6 +118,17 @@ export function tutorialEvent(owner: HasRegistry, event: TutorialEvent): Tutoria
 
 export function getGameState(owner: HasRegistry): GameState {
   return owner.registry.get(KEY) as GameState;
+}
+
+/** Help receipts persist immediately, while unfinished cafe transactions still roll back. */
+export function rememberTip(owner: HasRegistry, tip: TipId): void {
+  const before = getGameState(owner), after = seeTip(before, tip);
+  if (before === after) return;
+  if (!owner.registry.get(DAY_KEY)) { setGameState(owner, after); return; }
+  const checkpoint = seeTip(owner.registry.get(CHECKPOINT_KEY) ?? before, tip);
+  slot.write(saveGame(checkpoint));
+  owner.registry.set(CHECKPOINT_KEY, checkpoint);
+  owner.registry.set(KEY, after);
 }
 
 /** Only journal rewards and cosmetics enter the pre-day save. */

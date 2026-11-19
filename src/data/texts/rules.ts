@@ -26,7 +26,7 @@ export type TutorialStep = (typeof TUTORIAL_STEPS)[number];
  * One-off tips: Grandma explains a part of the game the first time the
  * player opens it, then never again (GAME_DESIGN.md §5.9).
  */
-export const TIP_IDS = ['decorate', 'marketplace', 'forest'] as const;
+export const TIP_IDS = ['decorate', 'marketplace', 'forest', 'multiDish'] as const;
 export type TipId = (typeof TIP_IDS)[number];
 
 /**
@@ -49,6 +49,7 @@ export const WAITS_FOR: Record<TutorialStep | TipId, WaitsFor> = {
   decorate: 'next',
   marketplace: 'next',
   forest: 'next',
+  multiDish: 'next',
 };
 
 /**
@@ -68,6 +69,7 @@ export const ARROW_TARGETS: Record<TutorialStep | TipId, readonly string[]> = {
   decorate: ['tray', 'table'],
   marketplace: ['pantry', 'specialty', 'tools', 'carpenter', 'noticeBoard'],
   forest: ['forage'],
+  multiDish: [],
 };
 
 /** A line of Grandma's: the words, maybe what her arrow points at, and whether she waits on it. */

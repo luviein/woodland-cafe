@@ -108,6 +108,11 @@
     ]
   },
   "tips": {
+    "multiDish": [
+      {
+        "text": "More than one dish! Browse orders with < and >. Prepare each plate and press Ready. When every plate is ready, press Serve together. Take your time reading this: the cafe is paused."
+      }
+    ],
     "decorate": [
       {
         "text": "Arrange the furniture however you like, dear. Moving things around is free."

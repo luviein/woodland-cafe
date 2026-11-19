@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { RECIPES } from '../data/recipes';
 import { STARTER_INGREDIENTS } from '../data/ingredients';
-import { NOTES, TIPS, TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
+import { NOTES, TIP_IDS, TIPS, TUTORIAL, TUTORIAL_RECIPE, TUTORIAL_STEPS } from '../data/tutorial';
+import { loadGame, saveGame } from './save';
 import { createNewGame, exploredAll, seeTip, skipTutorial } from './gameState';
 import {
   advanceTutorial,
   floorGuide,
   isGuidedStart,
+  needsMultiDishGuide,
   tourLock,
   tutorialOrder,
   type TutorialEvent,
@@ -84,7 +86,21 @@ describe('one-off tips', () => {
   });
 
   it('are all skipped along with the tutorial', () => {
-    expect(skipTutorial(createNewGame())).toMatchObject({ tutorial: 'done', tipsSeen: ['decorate', 'marketplace', 'forest'] });
+    expect(skipTutorial(createNewGame())).toMatchObject({ tutorial: 'done', tipsSeen: [...TIP_IDS] });
+  });
+
+  it('guides the first multi-dish order only, including older saves and solo double orders', () => {
+    const fresh = createNewGame();
+    expect(needsMultiDishGuide(fresh, 1)).toBe(false);
+    expect(needsMultiDishGuide(fresh, 2)).toBe(true);
+    expect(needsMultiDishGuide(fresh, 4)).toBe(true);
+    expect(needsMultiDishGuide(seeTip(fresh, 'multiDish'), 4)).toBe(false);
+    expect(needsMultiDishGuide(skipTutorial(fresh), 4)).toBe(false);
+    const legacy = JSON.parse(saveGame({ ...fresh, tutorial: 'done', tipsSeen: ['forest', 'marketplace', 'decorate'] }));
+    legacy.version = 22;
+    const loaded = loadGame(JSON.stringify(legacy));
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) expect(needsMultiDishGuide(loaded.state, 2)).toBe(true);
   });
 });
 

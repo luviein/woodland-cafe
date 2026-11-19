@@ -25,7 +25,7 @@ import { spriteSize } from '../art/pixelSprite';
 import { playSound } from '../audio/audio';
 import { addArt } from '../ui/art';
 import { LeafText } from '../ui/LeafText';
-import { arrangeable, sizeBox, type Placeable } from '../layout/arrangeable';
+import { arrangeable, arrangeablePanel, sizeBox, type Placeable } from '../layout/arrangeable';
 import { layoutPoint } from '../layout/positions';
 import type { Point } from '../logic/layout';
 import { popLeaves } from '../ui/effects';
@@ -37,9 +37,10 @@ import { SpeechBubble } from '../ui/SpeechBubble';
 import { ClockDisplay } from '../ui/ClockDisplay';
 import { WalletDisplay } from '../ui/WalletDisplay';
 import { COLORS, TEXT, css, patienceColor } from '../ui/theme';
-import { getGameState, tutorialEvent, watchGameState } from './gameStore';
+import { getGameState, rememberTip, tutorialEvent, watchGameState } from './gameStore';
 import { StoryBox, type ArrowTarget } from '../ui/StoryBox';
-import { TUTORIAL } from '../data/tutorial';
+import { TIPS, TUTORIAL } from '../data/tutorial';
+import { needsMultiDishGuide } from '../logic/tutorial';
 
 /** Keeps the stack on screen; no recipe needs more than 4 layers. */
 const MAX_DISH_LAYERS = 6;
@@ -117,6 +118,7 @@ export class PrepScene extends Phaser.Scene {
   }
   /** True once the customer is reacting (served, or gave up); input is ignored. */
   private busy = false;
+  private mealGuideOpen = false;
   /** Only there once the Toaster has been bought. */
   private toaster: ToasterView | null = null;
   /** The copy of the dish following the pointer while it's dragged; null when not dragging. */
@@ -163,6 +165,7 @@ export class PrepScene extends Phaser.Scene {
     this.serveAllButton = null;
     this.speech = this.request.items.map(item => buildSpeech(item.order, hintRatioForDay(getGameState(this).day)));
     this.busy = false;
+    this.mealGuideOpen = false;
     this.toast = untoasted();
     this.toaster = null;
     this.dragged = null;
@@ -242,6 +245,7 @@ export class PrepScene extends Phaser.Scene {
     this.setupKeyboard();
     this.refreshDish();
     this.showTutorial();
+    this.showMealGuide();
 
     // Dev console `serve`: skip cooking and serve as if the dish scored that.
     // The plate counts as the recipe's layers, which the order was checked to
@@ -254,6 +258,44 @@ export class PrepScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       devActions.serve = null;
     });
+  }
+
+  /** Explain the first multi-plate meal without spending the party's patience. */
+  private showMealGuide(): void {
+    if (!needsMultiDishGuide(getGameState(this), this.request.items.length)) return;
+    this.mealGuideOpen = true;
+    this.busy = true;
+    this.refreshDish();
+    this.recipesButton.setEnabled(false);
+    const pausedFloor = this.scene.isActive('FloorScene');
+    if (pausedFloor) this.scene.pause('FloorScene');
+    const dim = this.add.rectangle(0, 0, BASE_WIDTH, BASE_HEIGHT, COLORS.overlay, 0.6).setOrigin(0).setInteractive();
+    let closing = false;
+    const close = () => {
+      if (closing) return;
+      closing = true;
+      // Keep the release that closes help from pressing a prep control underneath.
+      this.time.delayedCall(0, () => {
+        rememberTip(this, 'multiDish');
+        panel.destroy();
+        this.events.off(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+        cleanup();
+        this.busy = false;
+        this.recipesButton.setEnabled(true);
+        this.refreshDish();
+      });
+    };
+    const guide = new StoryBox(this, {
+      rect: { x: 88, y: 120, width: 464, height: 120 },
+      step: TIPS.multiDish, hideSkip: true, onFinished: close, onSkip: close,
+    });
+    const panel = this.add.container(0, 0, [dim, guide]).setDepth(120);
+    arrangeablePanel(this, 'prep', 'multiDishGuide', panel);
+    const cleanup = () => {
+      this.mealGuideOpen = false;
+      if (pausedFloor && this.scene.isPaused('FloorScene')) this.scene.resume('FloorScene');
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);
   }
 
   /**
@@ -328,6 +370,7 @@ export class PrepScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
+    if (this.mealGuideOpen) return;
     this.guide?.refreshArrow(); // follows the dish as it's built
     if (this.toast.place === 'toasting' && !this.busy) {
       this.toast = stepToasting(this.toast, deltaMs / 1000);
@@ -635,6 +678,7 @@ export class PrepScene extends Phaser.Scene {
   private setupKeyboard(): void {
     const onKey = (event: KeyboardEvent) => {
       if (event.repeat) return; // holding a key down shouldn't spam layers
+      if (this.mealGuideOpen) return;
 
       // Book controls work whether or not the book is open.
       if (event.key === 'r' || event.key === 'R') {

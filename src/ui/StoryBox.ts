@@ -34,6 +34,8 @@ export interface StoryBoxOptions {
   onFinished: () => void;
   /** Skip tutorial, confirmed. */
   onSkip: () => void;
+  /** Standalone help can be dismissed without offering to skip the whole tutorial. */
+  hideSkip?: boolean;
 }
 
 /** Her portrait at 1x: the badger art is about 27x34 already. */
@@ -106,6 +108,7 @@ export class StoryBox extends Phaser.GameObjects.Container {
     this.arrow = addArt(scene, 0, 0, 'pointerArrow').setOrigin(0.5, 1).setScale(2).setVisible(false);
 
     this.add([panel, portrait, this.text, this.nextButton, this.skip, this.arrow]);
+    this.skip.setVisible(!options.hideSkip);
     this.setDepth(options.depth ?? 90); // over the scene, under its own pop-up panels (100)
     scene.add.existing(this);
     this.showLine();

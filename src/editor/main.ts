@@ -70,7 +70,7 @@ const STEP_LABELS: Record<TutorialStep, string> = {
   explore: 'Explore reminder',
   farewell: 'Farewell',
 };
-const TIP_LABELS: Record<TipId, string> = { decorate: 'Decorate', marketplace: 'Marketplace', forest: 'Forest' };
+const TIP_LABELS: Record<TipId, string> = { decorate: 'Decorate', marketplace: 'Marketplace', forest: 'Forest', multiDish: 'Multiple dishes' };
 
 const stepTooLong = (key: TutorialStep | TipId, lines: TextLine[]) => lines.some((l) => fitWarning(l.text, STEP_FIT[key]));
 const stringsTooLong = (lines: string[], fit: Fit) => lines.some((l) => fitWarning(l, fit));

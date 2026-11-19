@@ -2,6 +2,12 @@ import { TUTORIAL_RECIPE, TUTORIAL_STEPS, type TutorialStep } from '../data/tuto
 import type { LocationId } from '../data/locations';
 import type { FloorGuide } from './floor';
 import type { Order } from './types';
+import type { GameState } from './gameState';
+
+/** Solo animals may request two dishes too; the guide follows plate count, not party size. */
+export function needsMultiDishGuide(state: Pick<GameState, 'tipsSeen'>, plates: number): boolean {
+  return plates > 1 && !state.tipsSeen.includes('multiDish');
+}
 
 // The tutorial's rules (GAME_DESIGN.md §5.9): which step comes after which,
 // and what finishes each. Plain functions over plain data, like the rest of
