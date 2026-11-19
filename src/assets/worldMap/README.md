@@ -32,3 +32,21 @@ powershell -NoProfile -File tools/build-map-waterfall.ps1
 
 Pass `-PreviewPath <path.png>` to inspect all six enlarged map composites.
 The sprite gallery also shows a continuously looping map preview.
+
+## Approved flower repair
+
+`source/flower-approved.png` is the petal-and-stem correction approved by the
+user. `flower.json` records its match to the original flower cluster near the
+lower-left path. The small `flower.png` overlay uses only that approved crop;
+its mask covers the old cluster and its filtered edges while leaving the
+surrounding grass transparent. It renders at native 37×37 with nearest-neighbour
+filtering and moves with the map illustration in Arrange mode. The original
+`source/island.png` remains unchanged.
+
+Regenerate and optionally compare at enlarged game resolution:
+
+```powershell
+powershell -NoProfile -File tools/build-map-flower.ps1 -PreviewPath <path.png>
+```
+
+The sprite gallery's Map flower repair PNG section also shows before/after.

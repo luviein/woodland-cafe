@@ -7,6 +7,7 @@ import { MUSEUM_ART } from '../art/sprites/museum';
 import { CHRISTMAS_SELL_ART } from '../art/sprites/christmasSell';
 import { createGardenPreviews } from './gardenPreview';
 import { createWaterfallPreview } from './waterfallPreview';
+import { createMapFlowerPreview } from './flowerPreview';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from '../art/sprites/seedPouch';
 import { GARDEN_ART } from '../art/sprites/garden';
@@ -250,6 +251,7 @@ function build(): void {
   main.append(group('Gardening animations', 0, gardening.node));
   waterfall = createWaterfallPreview();
   main.append(group('Map waterfall PNG animation', 0, waterfall.node));
+  main.append(group('Map flower repair PNG', 0, createMapFlowerPreview()));
   const journalCards = el('div', { className: 'cards' });
   for (const [name, url] of Object.entries(JOURNAL_IMAGES)) {
     const image = el('img', { src: url, alt: name });

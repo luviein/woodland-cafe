@@ -1,0 +1,6 @@
+{
+  "mapCrop": { "x": 548, "y": 708, "width": 97, "height": 96 },
+  "selection": { "x": 16, "y": 24, "width": 78, "height": 62 },
+  "display": { "x": 210, "y": 271, "width": 37, "height": 37 },
+  "maskPadding": 3
+}

@@ -1,6 +1,8 @@
 import island from './source/island.png';
 import waterfall from './waterfall.png';
 import waterfallConfig from './waterfall.json';
+import flower from './flower.png';
+import flowerConfig from './flower.json';
 
 /** The approved source stays unchanged; this frame reuses blank wallet parchment for live text. */
 export const MAP_IMAGE = island;
@@ -10,3 +12,6 @@ export const MAP_WATERFALL_IMAGE = waterfall;
 export const MAP_WATERFALL_KEY = 'worldMap:waterfall';
 export const MAP_WATERFALL_ANIMATION = 'worldMap:waterfall:flow';
 export const MAP_WATERFALL = waterfallConfig;
+export const MAP_FLOWER_IMAGE = flower;
+export const MAP_FLOWER_KEY = 'worldMap:flowerRepair';
+export const MAP_FLOWER = flowerConfig;
