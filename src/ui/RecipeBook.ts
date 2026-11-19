@@ -93,7 +93,7 @@ export class RecipeBook extends Phaser.GameObjects.Container {
     // Icon: the dish's layers at 1x (6px each), stacked upward from the row's bottom.
     const iconBottom = 30;
     recipe.layers.forEach((ing, i) => {
-      row.add(addLayerArt(this.scene, ing, false, 14, iconBottom - 3 - i * 6, 28, 1));
+      row.add(addLayerArt(this.scene, ing, false, 14, iconBottom - 3 - i * 6, 28, 1, i === 0));
     });
 
     row.add(this.scene.add.text(38, 2, recipe.name, { ...TEXT.body, fontStyle: 'bold' }));

@@ -1,0 +1,10 @@
+{
+  "width": 56,
+  "height": 8,
+  "endWidth": 12,
+  "sources": {
+    "breadBottomLayer": { "file": "bread-bottom.png", "crop": { "x": 204, "y": 78, "width": 215, "height": 43 } },
+    "mushroomLayer": { "file": "mushroom.png", "crop": { "x": 235, "y": 66, "width": 207, "height": 42 } },
+    "jamLayer": { "file": "jam.png", "crop": { "x": 227, "y": 40, "width": 207, "height": 50 } }
+  }
+}

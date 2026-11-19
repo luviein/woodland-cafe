@@ -133,6 +133,7 @@ export const SPRITE_ART = {
   // Prep station: bin icons are named after their ingredient
   ...INGREDIENT_ICONS,
   breadLayer: INGREDIENT_LAYERS.bread,
+  breadBottomLayer: INGREDIENT_LAYERS.bread,
   breadToastedLayer: TOASTED_BREAD_LAYER,
   mushroomLayer: INGREDIENT_LAYERS.mushroom,
   jamLayer: INGREDIENT_LAYERS.jam,

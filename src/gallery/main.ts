@@ -8,6 +8,8 @@ import { CHRISTMAS_SELL_ART } from '../art/sprites/christmasSell';
 import { createGardenPreviews } from './gardenPreview';
 import { createWaterfallPreview } from './waterfallPreview';
 import { createMapFlowerPreview } from './flowerPreview';
+import { createPrepLayerPreviews } from './prepLayerPreview';
+import { PREP_LAYER_IMAGES } from '../assets/prep';
 import { SEED_PANEL_ART } from '../art/sprites/seedPouchPanel';
 import { SEED_POUCH_ART } from '../art/sprites/seedPouch';
 import { GARDEN_ART } from '../art/sprites/garden';
@@ -77,6 +79,7 @@ function groupOf(name: ArtName): string {
 }
 
 function source(name: ArtName): string {
+  if (name in PREP_LAYER_IMAGES) return 'approved prep PNG (src/assets/prep/); frames below are code fallbacks';
   if (name in WARDROBE_PANEL_ART) return 'your supplied wardrobe reference with live item fields (tools/wardrobePanelArt.cjs)';
   if (name in MUSEUM_ART) return 'modular museum furnishings from your supplied reference (tools/museumArt.cjs)';
   if (name in CHRISTMAS_SELL_ART) return 'your supplied selling board and Christmas ticket (tools/christmasSellArt.cjs)';
@@ -181,7 +184,7 @@ function card(name: ArtName): { node: HTMLElement; problems: string[] } {
     frames,
   );
   if (CRITTER_ART.includes(name) || VIEW_ART.has(name)) node.append(walkStrip(name));
-  if (DRAWN_ART.has(name)) {
+  if (DRAWN_ART.has(name) || name in PREP_LAYER_IMAGES) {
     node.append(el('div', { className: 'meta' }, 'In the game your PNG is used; the checks and frames above are the code version it replaces.'));
   }
   if (problems.length) {
@@ -252,6 +255,7 @@ function build(): void {
   waterfall = createWaterfallPreview();
   main.append(group('Map waterfall PNG animation', 0, waterfall.node));
   main.append(group('Map flower repair PNG', 0, createMapFlowerPreview()));
+  main.append(group('Approved bread, mushroom and jam layer PNGs', 0, createPrepLayerPreviews()));
   const journalCards = el('div', { className: 'cards' });
   for (const [name, url] of Object.entries(JOURNAL_IMAGES)) {
     const image = el('img', { src: url, alt: name });

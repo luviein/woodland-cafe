@@ -6,9 +6,8 @@ import { COLORS, TEXT } from './theme';
 
 const LAYER_WIDTH = 112;
 const LAYER_HEIGHT = 12;
-/** Layer art (art/sprites/kitchen.ts): 6px tall, with 4px-wide ends. */
+/** The original layer height determines stack spacing; approved PNGs can have taller details. */
 const LAYER_ART_HEIGHT = 6;
-const LAYER_END = 4;
 
 /**
  * One dish layer, `width` wide, centred on (x, y), at a whole-number
@@ -24,12 +23,16 @@ export function addLayerArt(
   y: number,
   width: number,
   scale: number,
+  bottomBread = false,
 ): Phaser.GameObjects.Container {
-  const key = artKey(layerArt(id, toasted));
+  const key = artKey(layerArt(id, toasted, bottomBread));
+  const leftWidth = scene.textures.getFrame(key, LAYER_LEFT).width;
+  const rightWidth = scene.textures.getFrame(key, LAYER_RIGHT).width;
+  const layerHeight = scene.textures.getFrame(key, LAYER_MIDDLE).height;
   const half = width / 2;
   const left = scene.add.image(-half, 0, key, LAYER_LEFT).setOrigin(0, 0.5).setScale(scale);
   const middle = scene.add
-    .tileSprite(-half + LAYER_END * scale, 0, width / scale - 2 * LAYER_END, LAYER_ART_HEIGHT, key, LAYER_MIDDLE)
+    .tileSprite(-half + leftWidth * scale, 0, width / scale - leftWidth - rightWidth, layerHeight, key, LAYER_MIDDLE)
     .setOrigin(0, 0.5)
     .setScale(scale);
   const right = scene.add.image(half, 0, key, LAYER_RIGHT).setOrigin(1, 0.5).setScale(scale);
@@ -55,7 +58,7 @@ export function drawLayerStack(
   // The art is drawn at whatever whole-number scale makes it `height` tall.
   const scale = Math.max(1, Math.round(height / LAYER_ART_HEIGHT));
   dish.forEach((id, i) => {
-    into.add(addLayerArt(into.scene, id, toasted, 0, bottomY - i * height, width, scale));
+    into.add(addLayerArt(into.scene, id, toasted, 0, bottomY - i * height, width, scale, i === 0));
   });
 }
 

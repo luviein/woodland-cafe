@@ -4,6 +4,8 @@ import { DRAWN_ART } from '../art/drawnArt';
 import { spriteSize } from '../art/pixelSprite';
 import { ART_NAMES, isArtName, SPRITE_ART } from '../art/spriteArt';
 import { artKey, buildArtTexture } from '../ui/art';
+import { PREP_LAYER_IMAGES, PREP_LAYER_LAYOUT } from '../assets/prep';
+import { LAYER_LEFT, LAYER_MIDDLE, LAYER_RIGHT } from '../art/sprites/kitchen';
 
 /**
  * The very first scene: gets every sprite's texture ready, then opens the
@@ -28,6 +30,9 @@ export class BootScene extends Phaser.Scene {
       const { width, height } = spriteSize(SPRITE_ART[name]);
       this.load.spritesheet(artKey(name), url, { frameWidth: width, frameHeight: height });
     }
+    for (const name of Object.keys(PREP_LAYER_IMAGES) as (keyof typeof PREP_LAYER_IMAGES)[]) {
+      if (!DRAWN_ART.has(name)) this.load.image(artKey(name), PREP_LAYER_IMAGES[name]);
+    }
   }
 
   create(): void {
@@ -39,6 +44,16 @@ export class BootScene extends Phaser.Scene {
     // their downscaling; critters, tiles and the rest of the pixel art stay crisp.
     for (const name of ['goldenCollectionBadge', 'christmasCollectionBadge', 'masterCollectorRibbon', 'masterCollectorWorldRibbon'] as const) {
       this.textures.get(journalImageKey(name)).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+    // Approved full strips use narrow caps and a detailed middle instead of equal-sized frames.
+    for (const name of Object.keys(PREP_LAYER_IMAGES) as (keyof typeof PREP_LAYER_IMAGES)[]) {
+      if (DRAWN_ART.has(name) || !this.textures.exists(artKey(name))) continue;
+      const texture = this.textures.get(artKey(name));
+      const { width, height, endWidth } = PREP_LAYER_LAYOUT;
+      texture.add(LAYER_LEFT, 0, 0, 0, endWidth, height);
+      texture.add(LAYER_MIDDLE, 0, endWidth, 0, width - 2 * endWidth, height);
+      texture.add(LAYER_RIGHT, 0, width - endWidth, 0, endWidth, height);
+      texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
     // Code-drawn art for everything that has no PNG (or whose PNG failed to load).
     for (const name of ART_NAMES) {

@@ -33,8 +33,9 @@ export function buildArtTexture(textures: Phaser.Textures.TextureManager, name: 
 }
 
 /** A dish layer's art. Toasting only changes how bread looks (GAME_DESIGN.md §3.4). */
-export function layerArt(id: IngredientId, toasted: boolean): ArtName {
-  return toasted && id === 'bread' ? 'breadToastedLayer' : `${id}Layer`;
+export function layerArt(id: IngredientId, toasted: boolean, bottomBread = false): ArtName {
+  if (id === 'bread') return toasted ? 'breadToastedLayer' : bottomBread ? 'breadBottomLayer' : 'breadLayer';
+  return `${id}Layer`;
 }
 
 /** Adds a sprite's art, centred on (x, y). */
