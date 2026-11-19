@@ -3,6 +3,7 @@ import { LAYER_LEFT, LAYER_MIDDLE, LAYER_RIGHT } from '../art/sprites/kitchen';
 import { INGREDIENTS, type IngredientId } from '../data/ingredients';
 import { artKey, layerArt } from './art';
 import { COLORS, TEXT } from './theme';
+import { PREP_LAYER_IMAGES, prepLayerLayout, type PrepLayerName } from '../assets/prep';
 
 const LAYER_WIDTH = 112;
 const LAYER_HEIGHT = 12;
@@ -25,17 +26,21 @@ export function addLayerArt(
   scale: number,
   bottomBread = false,
 ): Phaser.GameObjects.Container {
-  const key = artKey(layerArt(id, toasted, bottomBread));
+  const name = layerArt(id, toasted, bottomBread);
+  const key = artKey(name);
   const leftWidth = scene.textures.getFrame(key, LAYER_LEFT).width;
   const rightWidth = scene.textures.getFrame(key, LAYER_RIGHT).width;
   const layerHeight = scene.textures.getFrame(key, LAYER_MIDDLE).height;
+  const bodyHeight = name in PREP_LAYER_IMAGES ? prepLayerLayout(name as PrepLayerName).bodyHeight : layerHeight;
+  // Extra canvas below the body holds hanging drips; it must not lift the whole layer.
+  const offsetY = Math.max(0, layerHeight - bodyHeight) * scale / 2;
   const half = width / 2;
-  const left = scene.add.image(-half, 0, key, LAYER_LEFT).setOrigin(0, 0.5).setScale(scale);
+  const left = scene.add.image(-half, offsetY, key, LAYER_LEFT).setOrigin(0, 0.5).setScale(scale);
   const middle = scene.add
-    .tileSprite(-half + leftWidth * scale, 0, width / scale - leftWidth - rightWidth, layerHeight, key, LAYER_MIDDLE)
+    .tileSprite(-half + leftWidth * scale, offsetY, width / scale - leftWidth - rightWidth, layerHeight, key, LAYER_MIDDLE)
     .setOrigin(0, 0.5)
     .setScale(scale);
-  const right = scene.add.image(half, 0, key, LAYER_RIGHT).setOrigin(1, 0.5).setScale(scale);
+  const right = scene.add.image(half, offsetY, key, LAYER_RIGHT).setOrigin(1, 0.5).setScale(scale);
   return scene.add.container(x, y, [left, middle, right]);
 }
 

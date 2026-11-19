@@ -11,8 +11,8 @@ function fixture() {
   const image = vi.fn(object), tileSprite = vi.fn(object);
   const scene = {
     textures: { getFrame: (key: string, frame: number) => ({
-      width: ['art:breadBottomLayer', 'art:mushroomLayer', 'art:jamLayer'].includes(key) ? frame === 1 ? 32 : 12 : 4,
-      height: ['art:breadBottomLayer', 'art:mushroomLayer', 'art:jamLayer'].includes(key) ? 8 : 6,
+      width: key === 'art:jamLayer' ? frame === 0 ? 8 : frame === 2 ? 16 : 32 : ['art:breadBottomLayer', 'art:mushroomLayer'].includes(key) ? frame === 1 ? 32 : 12 : 4,
+      height: key === 'art:jamLayer' ? 16 : ['art:breadBottomLayer', 'art:mushroomLayer'].includes(key) ? 8 : 6,
     }) },
     add: { image, tileSprite, container: vi.fn((_x: number, _y: number, children: unknown[]) => children) },
   } as unknown as Phaser.Scene;
@@ -32,6 +32,13 @@ describe('approved dish layers', () => {
     addLayerArt(test.scene, 'mushroom', false, 0, 0, 112, 2);
     expect(test.tileSprite).toHaveBeenCalledWith(-32, 0, 32, 8, 'art:mushroomLayer', 1);
     expect(test.image.mock.calls.map(call => call.slice(2))).toEqual([['art:mushroomLayer', 0], ['art:mushroomLayer', 2]]);
+  });
+
+  it('anchors the jam body while letting its end drip hang over the layer below', () => {
+    const test = fixture();
+    addLayerArt(test.scene, 'jam', false, 0, 0, 112, 2);
+    expect(test.tileSprite).toHaveBeenCalledWith(-40, 8, 32, 16, 'art:jamLayer', 1);
+    expect(test.image.mock.calls.map(call => call[1])).toEqual([8, 8]);
   });
 
   it('keeps the original six-pixel art and cap geometry for other ingredients', () => {

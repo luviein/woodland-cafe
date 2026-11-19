@@ -1,8 +1,9 @@
 # Approved prep layers
 
 The original bread-bottom, mushroom and jam images are preserved in `source/`.
-Each contains three full-width artwork options; the complete centre strip is
-used as a static layer. `layers.json` records its source crop and game size.
+Each contains three full-width artwork options. Bread and mushroom use the
+centre strip; jam uses the rightmost strip to preserve its hanging drip.
+`layers.json` records its source crop and game size.
 
 Regenerate the transparent PNGs with:
 
@@ -15,8 +16,11 @@ background pixels connected to the crop edge, preserving enclosed details,
 then samples the existing colours with nearest-neighbour resizing. It does
 not redraw, recolour or generate additional views.
 
-Boot registers 12px left/right caps and a 32px repeating middle from each
-56×8 strip. The power-of-two middle avoids Phaser resampling it to a larger
+Bread and mushroom use 56×8 strips with 12px caps and a 32px repeating middle.
+Jam uses a 56×16 transparent canvas with 12px of artwork and 8px/16px caps,
+keeping the hanging drip entirely in the right cap. Its eight-pixel body stays
+aligned with other layers while the tail hangs over the layer below.
+The power-of-two middle avoids Phaser resampling it to a larger
 texture before tiling, keeping the approved pixels crisp. DishView reads
 frame dimensions so the approved details also
 work on the plate, toaster, drag copy and small recipe previews. Stack pitch

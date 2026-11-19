@@ -4,7 +4,7 @@ import { DRAWN_ART } from '../art/drawnArt';
 import { spriteSize } from '../art/pixelSprite';
 import { ART_NAMES, isArtName, SPRITE_ART } from '../art/spriteArt';
 import { artKey, buildArtTexture } from '../ui/art';
-import { PREP_LAYER_IMAGES, PREP_LAYER_LAYOUT } from '../assets/prep';
+import { PREP_LAYER_IMAGES, prepLayerLayout } from '../assets/prep';
 import { LAYER_LEFT, LAYER_MIDDLE, LAYER_RIGHT } from '../art/sprites/kitchen';
 
 /**
@@ -49,10 +49,10 @@ export class BootScene extends Phaser.Scene {
     for (const name of Object.keys(PREP_LAYER_IMAGES) as (keyof typeof PREP_LAYER_IMAGES)[]) {
       if (DRAWN_ART.has(name) || !this.textures.exists(artKey(name))) continue;
       const texture = this.textures.get(artKey(name));
-      const { width, height, endWidth } = PREP_LAYER_LAYOUT;
-      texture.add(LAYER_LEFT, 0, 0, 0, endWidth, height);
-      texture.add(LAYER_MIDDLE, 0, endWidth, 0, width - 2 * endWidth, height);
-      texture.add(LAYER_RIGHT, 0, width - endWidth, 0, endWidth, height);
+      const { width, height, leftWidth, rightWidth } = prepLayerLayout(name);
+      texture.add(LAYER_LEFT, 0, 0, 0, leftWidth, height);
+      texture.add(LAYER_MIDDLE, 0, leftWidth, 0, width - leftWidth - rightWidth, height);
+      texture.add(LAYER_RIGHT, 0, width - rightWidth, 0, rightWidth, height);
       texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
     // Code-drawn art for everything that has no PNG (or whose PNG failed to load).

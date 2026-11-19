@@ -1,4 +1,4 @@
-import { PREP_LAYER_IMAGES, PREP_LAYER_LAYOUT } from '../assets/prep';
+import { PREP_LAYER_IMAGES, prepLayerLayout, type PrepLayerName } from '../assets/prep';
 
 /** Inspect supplied PNGs directly; the regular sprite cards below also retain code fallbacks. */
 export function createPrepLayerPreviews(): HTMLElement {
@@ -7,10 +7,11 @@ export function createPrepLayerPreviews(): HTMLElement {
     const card = document.createElement('article'); card.className = 'card';
     const title = document.createElement('h3'); title.textContent = name;
     const image = document.createElement('img'); image.src = url; image.alt = name;
-    image.width = PREP_LAYER_LAYOUT.width * 4; image.height = PREP_LAYER_LAYOUT.height * 4;
+    const layout = prepLayerLayout(name as PrepLayerName);
+    image.width = layout.width * 4; image.height = layout.height * 4;
     image.style.imageRendering = 'pixelated'; image.style.maxWidth = '100%';
     const note = document.createElement('p');
-    note.textContent = 'Approved centre strip. Transparent checkerboard removal; original source preserved in src/assets/prep/source/.';
+    note.textContent = 'Approved supplied strip. Jam keeps the rightmost hanging drip. Original source preserved in src/assets/prep/source/.';
     card.append(title, image, note); group.append(card);
   }
   return group;

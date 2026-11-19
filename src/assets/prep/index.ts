@@ -11,3 +11,16 @@ export const PREP_LAYER_IMAGES = {
   jamLayer: jam,
 } satisfies Partial<Record<ArtName, string>>;
 export const PREP_LAYER_LAYOUT = { width: config.width, height: config.height, endWidth: config.endWidth };
+
+export type PrepLayerName = keyof typeof PREP_LAYER_IMAGES;
+
+export function prepLayerLayout(name: PrepLayerName) {
+  const source = config.sources[name];
+  return {
+    width: config.width,
+    height: 'height' in source ? source.height : config.height,
+    bodyHeight: config.height,
+    leftWidth: 'leftWidth' in source ? source.leftWidth : config.endWidth,
+    rightWidth: 'rightWidth' in source ? source.rightWidth : config.endWidth,
+  };
+}
