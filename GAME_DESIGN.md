@@ -986,6 +986,14 @@ The party shares a patience budget of 25 seconds per requested plate, starting
 when orders are taken, and waits at the counter until every plate is ready.
 If time runs out, the whole party leaves unpaid and seats are freed.
 
+On the first multi-dish order, show a short, dismissible Grandma guide explaining
+browsing with < and >, preparing each plate, pressing Ready, and serving together
+only after every plate is ready. Pause cafe time and patience while reading this
+guide and block prep controls until dismissal. Remember dismissal immediately
+without committing unfinished cafe-day earnings or stock changes. Existing saves
+without this tip see it on their next multi-dish order; skipping the tutorial
+also skips this guide. Single-dish orders retain their existing tutorial.
+
 Prep keeps customer speech as the recipe clue. Show an "Order 1 of 4" counter
 with < and > buttons to browse the requested dishes, without revealing hinted
 recipes. Disable previous on the first order and next on the last. Preserve
