@@ -5,7 +5,8 @@ import { seededRng } from './random';
 import { ORDER_CONFIG } from '../data/orderConfig';
 import { computePayment } from './payment';
 import { binStatus } from './stock';
-import { mealIngredients, mealPantry, mealReady, scoreMeal, type MealItem, type MealPlate } from './meal';
+import { mealIngredients, mealPantry, mealPlate, mealReady, scoreMeal, type MealItem, type MealPlate } from './meal';
+import { startToasting, stepToasting, takeFromToaster, untoasted } from './toasting';
 
 const items: MealItem[] = [
   { customerId: 1, order: { recipeId: 'plainBread', modifiers: [], quantity: 1 } },
@@ -34,7 +35,36 @@ describe('independent dish requests', () => {
   });
 });
 
-describe('a held meal', () => {
+describe('preparing a meal without per-plate confirmation', () => {
+  it('can serve two or four nonempty plates directly, without checking their recipe accuracy', () => {
+    for (const count of [2, 4]) {
+      const requests = Array.from({ length: count }, (_, i) => ({ ...items[0], customerId: i % 2 }));
+      const drafts = requests.map(() => mealPlate(['bread'], untoasted()));
+      expect(mealReady(requests, drafts)).toBe(true);
+      expect(scoreMeal(requests, drafts, 1)?.every(s => s.result.score === 'perfect')).toBe(true);
+      drafts[0] = mealPlate(['jam', 'jam', 'jam', 'jam'], untoasted());
+      expect(mealReady(requests, drafts)).toBe(true);
+      expect(scoreMeal(requests, drafts, 1)?.[0].result.score).toBe('wrong');
+      drafts[0] = mealPlate([], untoasted());
+      expect(mealReady(requests, drafts)).toBe(false);
+    }
+  });
+
+  it('requires a toasted dish to return to its plate, then enables serving automatically', () => {
+    const requests = items.slice(0, 2);
+    const layers = ['bread', 'jam'] as const;
+    const toasting = startToasting(untoasted());
+    const popped = stepToasting(toasting, 100);
+    const first = mealPlate(['bread'], untoasted());
+    expect(mealReady(requests, [first, mealPlate(layers, toasting)])).toBe(false);
+    expect(mealReady(requests, [first, mealPlate(layers, popped)])).toBe(false);
+    const returned = mealPlate(layers, takeFromToaster(popped));
+    expect(mealReady(requests, [first, returned])).toBe(true);
+    expect(returned.modifiers).toEqual(['toasted']);
+  });
+});
+
+describe('a prepared meal', () => {
   it('cannot serve until every nonempty plate is ready', () => {
     expect(mealReady(items, ready())).toBe(true);
     expect(scoreMeal(items, ready().slice(1), 1)).toBeNull();

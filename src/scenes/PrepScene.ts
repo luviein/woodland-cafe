@@ -8,14 +8,13 @@ import { devActions } from '../debug/devActions';
 import { buildGaveUp, buildReaction, buildSpeech, hintRatioForDay } from '../logic/dialogue';
 import { availableRecipes, expectedPlate } from '../logic/orders';
 import type { Payment } from '../logic/payment';
-import { mealPantry, mealReady, worstScore, type MealItem, type MealPlate, type MealServing } from '../logic/meal';
+import { mealPantry, mealPlate, mealReady, worstScore, type MealItem, type MealPlate, type MealServing } from '../logic/meal';
 import { binStatus, type BinStatus } from '../logic/stock';
 import {
   canToast,
   startToasting,
   stepToasting,
   takeFromToaster,
-  toastModifiers,
   toastingProgress,
   untoasted,
   type DishToast,
@@ -100,7 +99,7 @@ export interface PrepRequest {
 export class PrepScene extends Phaser.Scene {
   private request!: PrepRequest;
   /** Layers, bottom first. */
-  private drafts: { layers: IngredientId[]; toast: DishToast; ready: boolean }[] = [];
+  private drafts: { layers: IngredientId[]; toast: DishToast }[] = [];
   private active = 0;
   private previousRequest: Button | null = null;
   private nextRequest: Button | null = null;
@@ -114,7 +113,7 @@ export class PrepScene extends Phaser.Scene {
   private get toast(): DishToast { return this.drafts[this.active].toast; }
   private set toast(toast: DishToast) { this.drafts[this.active].toast = toast; }
   private plates(): MealPlate[] {
-    return this.drafts.map(d => ({ layers: d.layers, modifiers: toastModifiers(d.toast), ready: d.ready }));
+    return this.drafts.map(d => mealPlate(d.layers, d.toast));
   }
   /** True once the customer is reacting (served, or gave up); input is ignored. */
   private busy = false;
@@ -157,7 +156,7 @@ export class PrepScene extends Phaser.Scene {
     // Reset state here, not only in field initialisers: Phaser reuses the
     // same scene object every time prep opens, and initialisers run only once.
     this.active = 0;
-    this.drafts = this.request.items.map(() => ({ layers: [], toast: untoasted(), ready: false }));
+    this.drafts = this.request.items.map(() => ({ layers: [], toast: untoasted() }));
     this.previousRequest = null;
     this.nextRequest = null;
     this.requestCounter = null;
@@ -210,6 +209,7 @@ export class PrepScene extends Phaser.Scene {
     const serveAt = at('serve', 544, 260);
     this.serveButton = new Button(this, serveAt.x, serveAt.y, 112, 36, 'Serve', COLORS.serve, () => this.serve()).setSound(null);
     arrangeable(this, 'prep', 'serve', serveAt, this.serveButton);
+    this.serveButton.setVisible(this.request.items.length === 1);
     const resetAt = at('reset', 544, 308);
     this.resetButton = new Button(this, resetAt.x, resetAt.y, 112, 36, 'Reset', COLORS.reset, () =>
       this.resetDish(),
@@ -252,7 +252,7 @@ export class PrepScene extends Phaser.Scene {
     // be makeable with when it was taken.
     devActions.serve = (score) => {
       if (this.busy) return;
-      this.drafts = this.request.items.map(item => ({ layers: [...expectedPlate(item.order).layers], toast: { place: 'plate', secondsLeft: 0, toasted: item.order.modifiers.includes('toasted') }, ready: true }));
+      this.drafts = this.request.items.map(item => ({ layers: [...expectedPlate(item.order).layers], toast: { place: 'plate', secondsLeft: 0, toasted: item.order.modifiers.includes('toasted') } }));
       this.deliver(score);
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -397,7 +397,6 @@ export class PrepScene extends Phaser.Scene {
 
   private addIngredient(id: IngredientId): void {
     if (this.busy || this.dish.length >= MAX_DISH_LAYERS || this.binStatus(id).kind === 'out') return;
-    this.drafts[this.active].ready = false;
     this.dish.push(id);
     playSound('add');
     this.refreshDish();
@@ -405,7 +404,6 @@ export class PrepScene extends Phaser.Scene {
 
   private resetDish(): void {
     if (this.busy || this.toast.place !== 'plate') return;
-    this.drafts[this.active].ready = false;
     this.dish = [];
     this.toast = untoasted();
     this.refreshDish();
@@ -477,7 +475,6 @@ export class PrepScene extends Phaser.Scene {
 
   private putInToaster(): void {
     if (this.busy || !this.toaster || !canToast(this.toast, this.dish.length)) return;
-    this.drafts[this.active].ready = false;
     this.toast = startToasting(this.toast);
     this.toaster.startToasting();
     playSound('toastIn');
@@ -516,14 +513,8 @@ export class PrepScene extends Phaser.Scene {
   }
 
   private serve(): void {
-    if (this.busy || this.dragged || this.dish.length === 0 || this.toast.place !== 'plate') return;
-    this.drafts[this.active].ready = true;
-    if (this.request.items.length === 1) this.deliver();
-    else {
-      const next = this.drafts.findIndex(d => !d.ready);
-      if (next >= 0) this.selectRequest(next);
-      this.refreshDish();
-    }
+    if (this.request.items.length !== 1 || this.busy || this.dragged || this.dish.length === 0 || this.toast.place !== 'plate') return;
+    this.deliver();
   }
 
   private deliver(forcedScore?: import('../logic/types').Score): void {
@@ -592,15 +583,13 @@ export class PrepScene extends Phaser.Scene {
     const hasItems = onPlate && this.dish.length > 0 && !this.busy;
     // The guided first order can only be served once it's complete.
     this.serveButton.setEnabled(
-      hasItems && !this.lockedForGuide() && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === null),
+      this.request.items.length === 1 && hasItems && !this.lockedForGuide() && (this.guidedNextLayer() === undefined || this.guidedNextLayer() === null),
     );
     this.resetButton.setEnabled(hasItems);
-    if (this.request.items.length > 1) this.serveButton.setText(this.drafts[this.active].ready ? mealWords.held : mealWords.ready);
     const canBrowse = !this.busy && !this.dragged && onPlate;
     this.previousRequest?.setEnabled(canBrowse && this.active > 0);
     this.nextRequest?.setEnabled(canBrowse && this.active < this.request.items.length - 1);
-    this.requestCounter?.setText(mealWords.counter.replace('{current}', String(this.active + 1)).replace('{total}', String(this.request.items.length))
-      + (this.drafts[this.active].ready ? mealWords.readyMark : ''));
+    this.requestCounter?.setText(mealWords.counter.replace('{current}', String(this.active + 1)).replace('{total}', String(this.request.items.length)));
     this.serveAllButton?.setEnabled(!this.busy && !this.dragged && mealReady(this.request.items, this.plates()));
     this.refreshBins();
   }
@@ -705,7 +694,7 @@ export class PrepScene extends Phaser.Scene {
         if (this.toast.place === 'ready') this.takeBackFromToaster();
         else this.putInToaster();
       } else if (event.key === 'Enter') {
-        if (this.serveAllButton && mealReady(this.request.items, this.plates())) this.serveAllButton.press();
+        if (this.serveAllButton) this.serveAllButton.press();
         else this.serveButton.press();
       } else if (event.key === 'Backspace') {
         // Stop the browser treating Backspace as "go back" in older browsers.

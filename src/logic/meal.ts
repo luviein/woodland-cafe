@@ -4,6 +4,7 @@ import { computePayment, type Payment } from './payment';
 import { scoreDish } from './scoreDish';
 import { planIngredients, plateIngredients, useIngredients, type Pantry } from './stock';
 import type { Order, Plate, Score, ScoreResult } from './types';
+import { toastModifiers, type DishToast } from './toasting';
 
 export interface MealItem {
   customerId: number;
@@ -11,7 +12,12 @@ export interface MealItem {
 }
 
 export interface MealPlate extends Plate {
+  /** Availability on the plate, derived from prep state rather than a confirmation button. */
   ready: boolean;
+}
+
+export function mealPlate(layers: readonly IngredientId[], toast: DishToast): MealPlate {
+  return { layers, modifiers: toastModifiers(toast), ready: layers.length > 0 && toast.place === 'plate' };
 }
 
 export interface MealServing {

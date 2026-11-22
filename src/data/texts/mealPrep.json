@@ -1,13 +1,10 @@
 {
-  "ready": "Ready",
-  "held": "Ready!",
   "serveTogether": "Serve together",
   "counter": "Order {current} of {total}",
   "previous": "<",
   "next": ">",
-  "readyMark": " Ready",
-  "hint": "Ready each plate, then serve together",
-  "keys": "Enter: ready / serve",
+  "hint": "Prepare every plate, then serve together",
+  "keys": "Enter: serve together",
   "noPairSeats": "Need two clean seats at one table!",
   "reaction": "Animal {animal}: {line}"
 }
