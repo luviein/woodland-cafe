@@ -987,8 +987,8 @@ when orders are taken, and waits at the counter until every plate is ready.
 If time runs out, the whole party leaves unpaid and seats are freed.
 
 On the first multi-dish order, show a short, dismissible Grandma guide explaining
-browsing with < and >, preparing each plate, pressing Ready, and serving together
-only after every plate is ready. Pause cafe time and patience while reading this
+browsing with < and >, preparing each plate, and pressing Serve together
+once every plate has food and is back on its plate. Pause cafe time and patience while reading this
 guide and block prep controls until dismissal. Remember dismissal immediately
 without committing unfinished cafe-day earnings or stock changes. Existing saves
 without this tip see it on their next multi-dish order; skipping the tutorial
@@ -998,9 +998,12 @@ Prep keeps customer speech as the recipe clue. Show an "Order 1 of 4" counter
 with < and > buttons to browse the requested dishes, without revealing hinted
 recipes. Disable previous on the first order and next on the last. Preserve
 each unfinished plate and its toast state when browsing, and indicate when
-the selected plate is ready.
-Use Ready to hold a finished plate, and Serve together only when every plate
-is ready. Prepared plates reserve ingredients and rush costs without paying
+the selected plate has food. Multi-dish orders have no Ready button or manual
+confirmation per plate. Enable Serve together once every dish is nonempty and
+back on its plate, with no drag in progress. Enter presses Serve together;
+single-dish orders keep their existing Serve button. Serving still scores
+accuracy; eligibility must not reveal whether a recipe is correct.
+Prepared plates reserve ingredients and rush costs without paying
 or consuming stock yet. Reset/edit returns those reservations. Check stock
 and affordable rush costs for the entire party before accepting orders; if
 unmakeable, the whole party leaves and each counts as out of stock.
