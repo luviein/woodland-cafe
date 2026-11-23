@@ -15,6 +15,8 @@ export interface DayStats {
   /** Leaves earned from dish prices, and from tips, kept apart for the summary. */
   priceLeaves: number;
   tipLeaves: number;
+  /** One clean closing reward, separate from dish prices and tips. */
+  cleanBonusLeaves: number;
   /** Leaves spent on rush deliveries. */
   rushLeaves: number;
   /** Leaves paid in wages at the end of the day (employees.ts payWages). */
@@ -32,6 +34,7 @@ export function createDayStats(): DayStats {
     outOfStock: 0,
     priceLeaves: 0,
     tipLeaves: 0,
+    cleanBonusLeaves: 0,
     rushLeaves: 0,
     wageLeaves: 0,
     quit: [],
@@ -79,7 +82,7 @@ export function totalServed(stats: DayStats): number {
 }
 
 export function totalEarned(stats: DayStats): number {
-  return stats.priceLeaves + stats.tipLeaves;
+  return stats.priceLeaves + stats.tipLeaves + stats.cleanBonusLeaves;
 }
 
 /** Earned minus spent on rush deliveries and wages. Can be negative on a bad day. */
@@ -98,11 +101,14 @@ export function summaryLines(stats: DayStats, wallet: number): string[] {
   const wages = stats.wageLeaves > 0 || stats.quit.length > 0 ? [`Wages: 🍃 ${stats.wageLeaves}`] : [];
   const quit =
     stats.quit.length > 0 ? [`Couldn't pay, quit: ${stats.quit.map((r) => EMPLOYEES[r].name).join(', ')}`] : [];
+  const earnings = stats.cleanBonusLeaves > 0
+    ? [`Earned: 🍃 ${totalEarned(stats)}`, `  (${stats.priceLeaves} dishes + ${stats.tipLeaves} tips)`, `Clean bonus: 🍃 ${stats.cleanBonusLeaves}`]
+    : [`Earned: 🍃 ${totalEarned(stats)} (${stats.priceLeaves} dishes + ${stats.tipLeaves} tips)`];
   return [
     `Served: ${totalServed(stats)} (${perfect} perfect, ${close} close, ${wrong} wrong)`,
     `Gave up waiting: ${stats.gaveUp}`,
     `Left, out of stock: ${stats.outOfStock}`,
-    `Earned: 🍃 ${totalEarned(stats)} (${stats.priceLeaves} dishes + ${stats.tipLeaves} tips)`,
+    ...earnings,
     `Rush deliveries: 🍃 ${stats.rushLeaves}`,
     ...wages,
     ...quit,

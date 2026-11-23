@@ -52,7 +52,8 @@ export class DaySummaryScene extends Phaser.Scene {
     const top = cy - PANEL_HEIGHT / 2;
     const left = cx - PANEL_WIDTH / 2;
     // Reserve a 24px gutter after the totals, including their dish/tip breakdown.
-    const body = { ...TEXT.body, lineSpacing: 7 };
+    // Leave room for the bonus breakdown alongside wages and staff departures.
+    const body = { ...TEXT.body, lineSpacing: this.request.stats.cleanBonusLeaves > 0 ? 5 : 7 };
     const parts = [
       panel,
       this.add.text(cx, top + 20, `Day ${state.day} is over`, TEXT.heading).setOrigin(0.5, 0),

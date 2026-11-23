@@ -11,10 +11,20 @@ export interface DayState {
   elapsed: number;
   /** What happened today, for the summary at the end. */
   stats: DayStats;
+  /** Snapshot at the most recent departure that emptied the cafe, even before closing. */
+  cleanAtLastDeparture: boolean;
+  /** Settled once at closing, including days which earned no bonus. */
+  cleanBonusSettled: boolean;
 }
 
 export function createDay(): DayState {
-  return { elapsed: 0, stats: createDayStats() };
+  return { elapsed: 0, stats: createDayStats(), cleanAtLastDeparture: false, cleanBonusSettled: false };
+}
+
+/** Check after customer movement, using messes already cleaned by the player or staff. */
+export function recordLastDeparture(day: DayState, before: FloorState, after: FloorState): DayState {
+  if (day.cleanBonusSettled || before.customers.length === 0 || after.customers.length !== 0) return day;
+  return { ...day, cleanAtLastDeparture: after.messySeats.length === 0 };
 }
 
 export function stepDay(day: DayState, seconds: number): DayState {

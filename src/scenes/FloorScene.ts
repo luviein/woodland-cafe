@@ -27,7 +27,8 @@ import {
   type Customer,
   type FloorState,
 } from '../logic/floor';
-import { clockText, createDay, doorsOpen, isDayOver, stepDay, type DayState } from '../logic/day';
+import { clockText, createDay, doorsOpen, isDayOver, recordLastDeparture, stepDay, type DayState } from '../logic/day';
+import { settleCleanBonus } from '../logic/cleanBonus';
 import { recordGaveUp, recordIngredients, recordOutOfStock, recordServe, recordWages } from '../logic/dayStats';
 import { payWages } from '../logic/employees';
 import { servePartyMeal } from '../logic/serveMeal';
@@ -321,6 +322,7 @@ export class FloorScene extends Phaser.Scene {
     if (this.floor.doorsOpen && !doorsOpen(this.day)) this.floor = { ...this.floor, doorsOpen: false };
     const before = this.floor;
     this.floor = stepFloor(this.floor, this.layout, floorSeconds);
+    this.day = recordLastDeparture(this.day, before, this.floor);
     const gaveUp = countGaveUp(before, this.floor);
     if (gaveUp > 0) {
       this.day = { ...this.day, stats: recordGaveUp(this.day.stats, gaveUp) };
@@ -493,7 +495,10 @@ export class FloorScene extends Phaser.Scene {
     if (getGameState(this).tutorial === 'freePlay') tutorialEvent(this, 'next');
     playSound('dayEnd');
     this.destinationMarker.setVisible(false);
-    // Wages come out at the end of the day, after the day's takings are in.
+    const bonus = settleCleanBonus(getGameState(this), this.day, this.floor);
+    this.day = bonus.day;
+    setGameState(this, bonus.game);
+    // Wages come out after all takings, including the clean closing reward.
     const wages = payWages(getGameState(this));
     setGameState(this, wages.state);
     this.day = { ...this.day, stats: recordWages(this.day.stats, wages.paid, wages.quit) };
