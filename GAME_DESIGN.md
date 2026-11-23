@@ -238,6 +238,15 @@ The player can leave the counter **before taking an order** to clean messes; the
 
 ### 5.1 Day cycle
 
+- **Clean bonus:** award 10 🍃 once at the end of the day if no seat messes
+  remained when the day's last customer walked out. Cleaning by the player or
+  hired Cleaner counts. Record cleanliness at departure, so cleaning afterwards
+  cannot qualify. If the last customer left before closing, retain that result
+  until another customer leaves; a day with no customers gets no bonus.
+  Add the bonus before wages, show a separate Clean bonus line in the summary,
+  and include it in earnings and net. Keep this eligibility transient to the
+  cafe day; the existing end-of-day save records the resulting wallet normally.
+
 - One cafe **run is one day**.
 - **Day clock:** a day runs from **8:00 to 17:00** in game time, which takes **3 real minutes** (config value). The clock is shown on the floor and at the prep station (it keeps ticking while cooking).
 - **Closing time:** at 17:00 the doors close and **no new customers arrive**. Everyone **still waiting in the queue goes home** (calmly: unpaid, but not counted as giving up). A customer whose order has been taken can still be served, and seated customers finish eating. The day is **over once the last customer has left**.
